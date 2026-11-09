@@ -3,6 +3,8 @@
 [ext_resource type="Texture2D" uid="uid://bn3kdydtmcfjj" path="res://tinyswords/Terrain/Tileset/Water Background color.png" id="1_e0an3"]
 [ext_resource type="Texture2D" uid="uid://dw0v6taxdp6vm" path="res://tinyswords/Terrain/Tileset/Tilemap_color3.png" id="2_p5pve"]
 [ext_resource type="Texture2D" uid="uid://tmwcikrk31tt" path="res://tinyswords/Terrain/Tileset/Tilemap_color1.png" id="3_urblq"]
+[ext_resource type="PackedScene" uid="uid://dwdfbgv7efdqp" path="res://player.tscn" id="4_p5pve"]
+[ext_resource type="PackedScene" uid="uid://clfegld6kofya" path="res://ennemy.tscn" id="5_urblq"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_iw27f"]
 texture = ExtResource("1_e0an3")
@@ -266,3 +268,9 @@ tile_set = SubResource("TileSet_o5ibt")
 [node name="cliffs" type="TileMapLayer" parent="." unique_id=845770678]
 tile_map_data = PackedByteArray("AAAHAAwAAAAHAAIAAAAHAAsAAAAHAAEAAAAHAAoAAAAHAAEAAAAHAAkAAAAHAAEAAAAHAAgAAAAHAAAAAAAGAAwAAAAGAAIAAAAGAAsAAAAGAAEAAAAGAAoAAAAGAAEAAAAGAAkAAAAGAAEAAAAGAAgAAAAGAAAAAAAFAAwAAAAGAAIAAAAFAAsAAAAGAAEAAAAFAAoAAAAGAAEAAAAFAAkAAAAGAAEAAAAFAAgAAAAGAAAAAAAEAAwAAAAGAAIAAAAEAAsAAAAGAAEAAAAEAAoAAAAGAAEAAAAEAAkAAAAGAAEAAAAEAAgAAAAGAAAAAAADAAwAAAAGAAIAAAADAAsAAAAGAAEAAAADAAoAAAAGAAEAAAADAAkAAAAGAAEAAAADAAgAAAAGAAAAAAACAAwAAAAGAAIAAAACAAsAAAAGAAEAAAACAAoAAAAGAAEAAAACAAkAAAAGAAEAAAACAAgAAAAGAAAAAAABAAwAAAAFAAIAAAABAAsAAAAFAAEAAAABAAoAAAAFAAEAAAABAAkAAAAFAAEAAAABAAgAAAAFAAAAAAAHAA0AAAAHAAQAAAAGAA0AAAAGAAQAAAAFAA0AAAAGAAQAAAAEAA0AAAAGAAQAAAADAA0AAAAGAAQAAAACAA0AAAAGAAQAAAABAA0AAAAFAAUAAAA=")
 tile_set = SubResource("TileSet_agnng")
+
+[node name="Player" parent="." unique_id=882835849 instance=ExtResource("4_p5pve")]
+position = Vector2(867, 542)
+
+[node name="Player2" parent="." unique_id=169508463 instance=ExtResource("5_urblq")]
+position = Vector2(1422, 457)
