@@ -1,0 +1,222 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://menu.gd" id="1_menu"]
+
+[node name="MenuUI" type="CanvasLayer"]
+script = ExtResource("1_menu")
+
+[node name="BoutonMenu" type="Button" parent="."]
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -176.0
+offset_top = -64.0
+offset_right = -16.0
+offset_bottom = -16.0
+text = "Menu"
+
+[node name="BarreCascade" type="HBoxContainer" parent="."]
+visible = false
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -848.0
+offset_top = -64.0
+offset_right = -184.0
+offset_bottom = -16.0
+theme_override_constants/separation = 8
+
+[node name="Personnage" type="Button" parent="BarreCascade"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+text = "Personnage"
+
+[node name="Sorts" type="Button" parent="BarreCascade"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+text = "Sorts"
+
+[node name="Quetes" type="Button" parent="BarreCascade"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+text = "Quêtes"
+
+[node name="Inventaire" type="Button" parent="BarreCascade"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+text = "Inventaire"
+
+[node name="Fenetre" type="Panel" parent="."]
+visible = false
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -450.0
+offset_top = -320.0
+offset_right = 450.0
+offset_bottom = 320.0
+
+[node name="Entete" type="HBoxContainer" parent="Fenetre"]
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 14.0
+offset_right = -20.0
+offset_bottom = 62.0
+theme_override_constants/separation = 16
+
+[node name="Titre" type="Label" parent="Fenetre/Entete"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+text = "Menu"
+vertical_alignment = 1
+
+[node name="Fermer" type="Button" parent="Fenetre/Entete"]
+layout_mode = 2
+text = "X"
+
+[node name="Corps" type="HBoxContainer" parent="Fenetre"]
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 74.0
+offset_right = -20.0
+offset_bottom = -20.0
+theme_override_constants/separation = 16
+
+[node name="ContenuPersonnage" type="VBoxContainer" parent="Fenetre/Corps"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Héros"
+
+[node name="RaceClasse" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Race : Humain — Classe : Épéiste"
+
+[node name="Niveau" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Niveau 1"
+
+[node name="XP" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+layout_mode = 2
+text = "Expérience : 0 / 100"
+
+[node name="Vie" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+layout_mode = 2
+text = "Vie : 100 / 100"
+
+[node name="Argent" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Berry : 0"
+
+[node name="Points" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Points à répartir : 0"
+
+[node name="StatsTitre" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Caractéristiques"
+
+[node name="StatsGrid" type="GridContainer" parent="Fenetre/Corps/ContenuPersonnage"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 3
+theme_override_constants/h_separation = 24
+theme_override_constants/v_separation = 8
+
+[node name="ActionsStats" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BtnValider" type="Button" parent="Fenetre/Corps/ContenuPersonnage/ActionsStats"]
+layout_mode = 2
+text = "Valider"
+
+[node name="BtnReinitialiser" type="Button" parent="Fenetre/Corps/ContenuPersonnage/ActionsStats"]
+layout_mode = 2
+text = "Réinitialiser"
+
+[node name="BtnEffacerPerso" type="Button" parent="Fenetre/Corps/ContenuPersonnage/ActionsStats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.25, 0.25, 1)
+text = "Effacer le perso (debug)"
+
+[node name="ContenuSorts" type="VBoxContainer" parent="Fenetre/Corps"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="DefilementSorts" type="ScrollContainer" parent="Fenetre/Corps/ContenuSorts"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListeSorts" type="VBoxContainer" parent="Fenetre/Corps/ContenuSorts/DefilementSorts"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="ContenuQuetes" type="VBoxContainer" parent="Fenetre/Corps"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="DefilementQuetes" type="ScrollContainer" parent="Fenetre/Corps/ContenuQuetes"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListeQuetes" type="VBoxContainer" parent="Fenetre/Corps/ContenuQuetes/DefilementQuetes"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Aucune" type="Label" parent="Fenetre/Corps/ContenuQuetes"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Aucune quête active"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContenuInventaire" type="VBoxContainer" parent="Fenetre/Corps"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="DefilementInventaire" type="ScrollContainer" parent="Fenetre/Corps/ContenuInventaire"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Grille" type="GridContainer" parent="Fenetre/Corps/ContenuInventaire/DefilementInventaire"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 4
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+
+[node name="Vide" type="Label" parent="Fenetre/Corps/ContenuInventaire"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Inventaire vide"
+horizontal_alignment = 1
+vertical_alignment = 1
