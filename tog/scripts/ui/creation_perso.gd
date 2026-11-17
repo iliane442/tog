@@ -3,9 +3,8 @@ extends CanvasLayer
 
 @onready var liste_races: ItemList = $Panneau/VBoxContainer/Corps/VBoxRace/ListeRaces
 @onready var liste_classes: ItemList = $Panneau/VBoxContainer/Corps/VBoxClasse/ListeClasses
-@onready var label_details_race: Label = $Panneau/VBoxContainer/Corps/VBoxRace/LabelDetailsRace
-@onready var label_details_classe: Label = $Panneau/VBoxContainer/Corps/VBoxClasse/ScrollDetailsClasse/LabelDetailsClasse
-@onready var label_resume: Label = $Panneau/VBoxContainer/Corps/VBoxDetails/LabelResume
+@onready var label_details: Label = $Panneau/VBoxContainer/Corps/VBoxDetails/ScrollDescriptions/LabelDescriptions
+@onready var label_resume: Label = $Panneau/VBoxContainer/ZoneBas/LabelResume
 @onready var champ_nom: LineEdit = $Panneau/VBoxContainer/ZoneBas/LigneNom/ChampNom
 @onready var option_sexe: OptionButton = $Panneau/VBoxContainer/ZoneBas/LigneSexe/OptionSexe
 @onready var btn_commencer: Button = $Panneau/VBoxContainer/ZoneBas/BtnCommencer
@@ -107,39 +106,38 @@ func _on_classe_choisie(index: int) -> void:
 func _maj_affichage() -> void:
 	var race := _race_selectionnee()
 	var classe := _classe_selectionnee()
+	var bloc_race := "Race : %s\n%s" % [race.get("nom", "—"), race.get("description", "")]
 	var bonus_race := _texte_bonus(race)
 	if bonus_race != "":
-		bonus_race = "\n\n" + bonus_race
-	label_details_race.text = "%s\n%s%s" % [
-		race.get("nom", "—"), race.get("description", ""), bonus_race,
-	]
-	var sorts_txt := _texte_sorts(classe)
-	if sorts_txt != "":
-		sorts_txt = "\n\nSorts de départ : %s" % sorts_txt
+		bloc_race += "\n\n" + bonus_race
+	var bloc_classe := "Classe : %s\n%s" % [classe.get("nom", "—"), classe.get("description", "")]
 	var bonus_classe := _texte_bonus(classe)
 	if bonus_classe != "":
-		bonus_classe = "\n\n" + bonus_classe
-	label_details_classe.text = "%s\n%s%s%s" % [
-		classe.get("nom", "—"), classe.get("description", ""), bonus_classe, sorts_txt,
-	]
+		bloc_classe += "\n\n" + bonus_classe
+	var sorts_txt := _texte_sorts(classe)
+	if sorts_txt != "":
+		bloc_classe += "\n\nSorts de départ : %s" % sorts_txt
+	label_details.text = bloc_race + "\n\n" + bloc_classe
+
 	var nouveau_nom := champ_nom.text.strip_edges()
-	var resume: String = "Nom : %s" % (nouveau_nom if nouveau_nom != "" else "—")
-	resume += "\nRace : %s" % race.get("nom", "—")
-	resume += "\nClasse : %s" % classe.get("nom", "—")
-	resume += "\nSexe : %s" % LIBELLES_SEXES[option_sexe.selected]
+	var resume: String = "Nom : %s — Race : %s — Classe : %s — Sexe : %s" % [
+		(nouveau_nom if nouveau_nom != "" else "—"),
+		race.get("nom", "—"), classe.get("nom", "—"),
+		LIBELLES_SEXES[option_sexe.selected],
+	]
 	var nom_metier := "—"
 	var id_metier := _metier_de_la_classe()
 	if id_metier != "" and Personnage.professions().has(id_metier):
 		nom_metier = str(Personnage.professions()[id_metier]["nom"])
-	resume += "\nMétier : %s" % nom_metier
+	resume += " — Métier : %s" % nom_metier
 	var stats: Array[String] = []
 	for cle in ["vie", "attaque", "defense", "vitesse", "force", "intelligence", "agilite", "vitalite", "sagesse", "chance"]:
 		var total := int(race.get(cle, 0)) + int(classe.get(cle, 0))
 		if total != 0:
 			stats.append("%s %+d" % [cle, total])
 	if not stats.is_empty():
-		resume += "\n\nSuppléments : " + " ; ".join(PackedStringArray(stats))
-	resume += "\n\nVie de départ : %d" % maxi(100 + int(race.get("vie", 0)) + int(classe.get("vie", 0)), 1)
+		resume += " — Suppléments : " + " ; ".join(PackedStringArray(stats))
+	resume += " — Vie de départ : %d" % maxi(100 + int(race.get("vie", 0)) + int(classe.get("vie", 0)), 1)
 	label_resume.text = resume
 
 func _on_commencer() -> void:
