@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c7xeag2bsssxo"
-path="res://.godot/imported/makino.png-b65d6ceb41fd0ece69ea3fc9a35f90ef.ctex"
+uid="uid://blbmnrcbf2lgb"
+path="res://.godot/imported/shanksette.png-a31ca550d55289c6430123bf43e21cfa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/makino.png"
-dest_files=["res://.godot/imported/makino.png-b65d6ceb41fd0ece69ea3fc9a35f90ef.ctex"]
+source_file="res://assets/sprites/pnj/shanksette.png"
+dest_files=["res://.godot/imported/shanksette.png-a31ca550d55289c6430123bf43e21cfa.ctex"]
 
 [params]
 

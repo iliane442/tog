@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://c8co2h468kkd6" path="res://pnj.gd" id="1_makino"]
-[ext_resource type="Texture2D" uid="uid://c7xeag2bsssxo" path="res://assets/sprites/makino.png" id="2_makino"]
+[ext_resource type="Script" uid="uid://c8co2h468kkd6" path="res://scripts/pnj.gd" id="1_makino"]
+[ext_resource type="Texture2D" uid="uid://c7xeag2bsssxo" path="res://assets/sprites/pnj/makino.png" id="2_makino"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_makino"]
 radius = 24.020824

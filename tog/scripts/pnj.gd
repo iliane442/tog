@@ -12,7 +12,7 @@ extends Node2D
 @onready var area: Area2D = $Area2D
 @onready var sprite: Sprite2D = $Sprite2D
 
-const shader_surlignage := preload("res://surlignage.gdshader")
+const shader_surlignage := preload("res://assets/shaders/surlignage.gdshader")
 
 signal dialogue_opened(quest_id: String, pnj: Node2D)
 
