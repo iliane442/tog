@@ -23,6 +23,7 @@ Inventaire="*res://scripts/autoloads/inventaire.gd"
 Personnage="*res://scripts/autoloads/personnage.gd"
 HotelVentes="*res://scripts/autoloads/hotel_ventes.gd"
 Equipages="*res://scripts/autoloads/equipages.gd"
+Coffres="*res://scripts/autoloads/coffres.gd"
 
 [display]
 

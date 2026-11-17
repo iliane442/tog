@@ -311,6 +311,18 @@ theme_override_font_sizes/font_size = 20
 layout_mode = 2
 text = "Équiper"
 
+[node name="BtnOuvrirCoffre" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+text = "Ouvrir le coffre"
+
+[node name="BtnOuvrirTous" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+text = "Ouvrir tous les coffres"
+
+[node name="BtnDebugBerry" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+text = "Debug : +1M Berry"
+
 [node name="Vide" type="Label" parent="Fenetre/Corps/ContenuInventaire"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -332,6 +344,18 @@ autowrap_mode = 2
 [node name="ChampRechercheWiki" type="LineEdit" parent="Fenetre/Corps/ContenuWiki"]
 layout_mode = 2
 placeholder_text = "Rechercher un objet..."
+
+[node name="LigneFiltreWiki" type="HBoxContainer" parent="Fenetre/Corps/ContenuWiki"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LabelTypeWiki" type="Label" parent="Fenetre/Corps/ContenuWiki/LigneFiltreWiki"]
+layout_mode = 2
+text = "Type :"
+
+[node name="OptionTypeWiki" type="OptionButton" parent="Fenetre/Corps/ContenuWiki/LigneFiltreWiki"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="ZoneWiki" type="HBoxContainer" parent="Fenetre/Corps/ContenuWiki"]
 layout_mode = 2
@@ -394,6 +418,11 @@ autowrap_mode = 2
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 autowrap_mode = 2
+
+[node name="BtnDonnerItemWiki" type="Button" parent="Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki/ColonneWiki"]
+visible = false
+layout_mode = 2
+text = "Donner x5 (debug)"
 
 [node name="ContenuMetiers" type="VBoxContainer" parent="Fenetre/Corps"]
 visible = false

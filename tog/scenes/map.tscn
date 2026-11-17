@@ -11,6 +11,9 @@
 [ext_resource type="PackedScene" path="res://scenes/menu.tscn" id="8_menuui"]
 [ext_resource type="PackedScene" path="res://scenes/creation_perso.tscn" id="9_creation"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="10_hud"]
+[ext_resource type="PackedScene" path="res://scenes/fenetre_coffre.tscn" id="13_coffreui"]
+[ext_resource type="PackedScene" path="res://scenes/boutique_coffres.tscn" id="14_boutique"]
+[ext_resource type="PackedScene" path="res://scenes/shankette.tscn" id="15_shankette"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_iw27f"]
 texture = ExtResource("1_e0an3")
@@ -317,3 +320,10 @@ text = "Refuser"
 [node name="CreationPerso" parent="." unique_id=1764442469 instance=ExtResource("9_creation")]
 
 [node name="HUD" parent="." instance=ExtResource("10_hud")]
+
+[node name="CoffreUI" parent="." instance=ExtResource("13_coffreui")]
+
+[node name="shankette" parent="." instance=ExtResource("15_shankette")]
+position = Vector2(1080, 580)
+
+[node name="BoutiqueUI" parent="." instance=ExtResource("14_boutique")]
