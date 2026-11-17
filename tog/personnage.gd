@@ -30,6 +30,10 @@ const POINTS_PAR_NIVEAU := 5
 # Race et classe (ids des tables character_races / character_classes)
 var race_id: String = "1"
 var classe_id: String = "1"
+# sexe ("M" ou "F") — seul élément de personnalisation choisi à la création,
+# l'apparence dépend ensuite de l'équipement porté
+var sexe: String = "M"
+const VALEURS_SEXES_VALIDES: Array[String] = ["M", "F"]
 var perso_cree := false
 
 # Caractéristiques (style Dofus)
@@ -327,10 +331,11 @@ func desequiper(emplacement: String) -> void:
 
 # Création définitive du personnage (depuis l'interface de création)
 func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
-		id_profession: String = "") -> void:
+		id_profession: String = "", nouveau_sexe: String = "M") -> void:
 	nom = nouveau_nom
 	race_id = nouvelle_race
 	classe_id = nouvelle_classe
+	sexe = nouveau_sexe if VALEURS_SEXES_VALIDES.has(nouveau_sexe) else "M"
 	niveau = 1
 	xp = 0
 	berry = 0
@@ -363,6 +368,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "nom", nom)
 	cfg.set_value("perso", "race", race_id)
 	cfg.set_value("perso", "classe", classe_id)
+	cfg.set_value("perso", "sexe", sexe)
 	cfg.set_value("perso", "berry", berry)
 	cfg.set_value("perso", "niveau", niveau)
 	cfg.set_value("perso", "xp", xp)
@@ -381,6 +387,8 @@ func charger_perso() -> void:
 	nom = str(cfg.get_value("perso", "nom", "Héros"))
 	race_id = str(cfg.get_value("perso", "race", "1"))
 	classe_id = str(cfg.get_value("perso", "classe", "1"))
+	var sexe_lu := str(cfg.get_value("perso", "sexe", "M"))
+	sexe = sexe_lu if VALEURS_SEXES_VALIDES.has(sexe_lu) else "M"
 	berry = int(cfg.get_value("perso", "berry", 0))
 	points_statistique = int(cfg.get_value("perso", "points_statistique", 0))
 	var depenses = cfg.get_value("perso", "points_depenses", {})
@@ -503,6 +511,10 @@ const XP_METIER_BASE := 100  # xp pour passer du niveau n à n+1 : XP_METIER_BAS
 
 # toutes les professions connues (id -> infos), lues dans la base
 var _professions: Dictionary = {}
+# métiers liés à chaque classe (id de classe -> [ids de professions de la
+# table character_class_professions]) : la classe choisie à la création
+# détermine les métiers proposés
+var _metiers_par_classe: Dictionary = {}
 # recettes actives (tableau), indexées par id
 var _recettes: Array = []
 var _recettes_par_id: Dictionary = {}
@@ -520,6 +532,15 @@ func charger_donnees_metiers() -> void:
 			"icone": str(ligne["icon"]),
 			"couleur": Color.from_string(str(ligne["color"]), Color.WHITE),
 		}
+	_metiers_par_classe.clear()
+	for ligne in BaseDonnees.lire(
+		"SELECT ccp.class_id, ccp.profession_id FROM character_class_professions ccp"
+		+ " JOIN professions p ON p.id = ccp.profession_id AND p.is_active = 1"
+		+ " ORDER BY ccp.class_id, p.display_name;"):
+		var id_classe := str(ligne["class_id"])
+		if not _metiers_par_classe.has(id_classe):
+			_metiers_par_classe[id_classe] = []
+		_metiers_par_classe[id_classe].append(str(ligne["profession_id"]))
 	_recettes.clear()
 	_recettes_par_id.clear()
 	# tous les ingrédients en une requête, groupés par objet fabriqué
@@ -555,6 +576,18 @@ func charger_donnees_metiers() -> void:
 
 func professions() -> Dictionary:
 	return _professions
+
+# métiers proposés pour une classe donnée : ceux de la table de liaison, ou
+# toutes les professions actives en repli (classe sans métier défini)
+func professions_pour_classe(id_classe: String) -> Array:
+	var ids = _metiers_par_classe.get(id_classe, [])
+	if not ids.is_empty():
+		var actifs: Array = []
+		for id_profession in ids:
+			if _professions.has(id_profession):
+				actifs.append(str(id_profession))
+		return actifs
+	return _professions.keys()
 
 func recettes(id_profession: String = "") -> Array:
 	if id_profession == "":

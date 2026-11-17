@@ -1,11 +1,13 @@
 # pnj.gd — sur le nœud racine CharacterBody2D ou Node2D du PNJ
 extends Node2D
 
-@export var quest_id: String = "1"
-
 # Dimension de la zone cliquable autour du PNJ (englobe le sprite)
 @export var largeur_zone_clic: float = 128.0
 @export var hauteur_zone_clic: float = 160.0
+
+# chaîne des quêtes proposées par ce PNJ, dans l'ordre ; la première non
+# terminée et non déjà en cours est proposée à chaque dialogue
+@export var chain_quetes: Array[String] = ["1"]
 
 @onready var area: Area2D = $Area2D
 @onready var sprite: Sprite2D = $Sprite2D
@@ -17,11 +19,8 @@ signal dialogue_opened(quest_id: String, pnj: Node2D)
 var player_near: bool = false
 # vrai quand on a cliqué sur le PNJ depuis loin : dialogue dès l'arrivée
 var interaction_en_attente := false
-# quête actuellement proposée par ce PNJ (avance quand la quête est terminée)
-var quest_actuelle := ""
 
 func _ready() -> void:
-	quest_actuelle = quest_id
 	var mat := ShaderMaterial.new()
 	mat.shader = shader_surlignage
 	sprite.material = mat
@@ -65,18 +64,17 @@ func _clic_sur_pnj(point: Vector2) -> bool:
 	)
 	return zone.has_point(point - global_position)
 
-# Détermine la quête à proposer : la courante, ou celle d'après si elle est
-# terminée (y compris lors d'une session précédente). Renvoie "" quand il
-# n'y a plus de quête à proposer.
+# Détermine la quête à proposer : la première de la chaîne qui n'est ni déjà
+# en cours ni terminée (y compris lors d'une session précédente).
+# Renvoie "" quand il n'y a plus de quête à proposer.
 func quest_suivante() -> String:
-	while QuestManager.quetes.has(quest_actuelle) and (
-		QuestManager.est_terminee(quest_actuelle)
-		or QuestManager.est_deja_terminee(quest_actuelle)
-	):
-		quest_actuelle = str(int(quest_actuelle) + 1)
-	if not QuestManager.quetes.has(quest_actuelle):
-		return ""
-	return quest_actuelle
+	for id_quete in chain_quetes:
+		if not QuestManager.quetes.has(id_quete):
+			continue
+		if QuestManager.quetes_actives.has(id_quete) or QuestManager.est_deja_terminee(id_quete):
+			continue
+		return id_quete
+	return ""
 
 func ouvrir_dialogue() -> void:
 	var quest := quest_suivante()

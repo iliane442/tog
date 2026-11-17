@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://dwdfbgv7efdqp" path="res://player.tscn" id="4_p5pve"]
 [ext_resource type="PackedScene" uid="uid://clfegld6kofya" path="res://ennemy.tscn" id="5_urblq"]
 [ext_resource type="Script" uid="uid://uoj5esapjsho" path="res://canvas_layer.gd" id="6_iw27f"]
-[ext_resource type="PackedScene" uid="uid://b45dxpcimydbe" path="res://pnj.tscn" id="7_71pa8"]
+[ext_resource type="PackedScene" path="res://makino.tscn" id="11_makino"]
 [ext_resource type="PackedScene" path="res://menu.tscn" id="8_menuui"]
 [ext_resource type="PackedScene" path="res://creation_perso.tscn" id="9_creation"]
 [ext_resource type="PackedScene" path="res://hud.tscn" id="10_hud"]
@@ -282,7 +282,7 @@ position = Vector2(867, 542)
 [node name="ennemy" parent="." unique_id=169508463 instance=ExtResource("5_urblq")]
 position = Vector2(1422, 457)
 
-[node name="pnj" parent="." unique_id=413577914 instance=ExtResource("7_71pa8")]
+[node name="makino" parent="." unique_id=413577914 instance=ExtResource("11_makino")]
 position = Vector2(4, 1095)
 
 [node name="DialogueUI" type="CanvasLayer" parent="." unique_id=634557583]

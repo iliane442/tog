@@ -7,15 +7,19 @@ extends CanvasLayer
 @onready var label_details_classe: Label = $Panneau/VBoxContainer/Corps/VBoxClasse/ScrollDetailsClasse/LabelDetailsClasse
 @onready var label_resume: Label = $Panneau/VBoxContainer/Corps/VBoxDetails/LabelResume
 @onready var champ_nom: LineEdit = $Panneau/VBoxContainer/ZoneBas/LigneNom/ChampNom
-@onready var option_metier: OptionButton = $Panneau/VBoxContainer/ZoneBas/LigneMetier/OptionMetier
+@onready var option_sexe: OptionButton = $Panneau/VBoxContainer/ZoneBas/LigneSexe/OptionSexe
 @onready var btn_commencer: Button = $Panneau/VBoxContainer/ZoneBas/BtnCommencer
 @onready var label_erreur: Label = $Panneau/VBoxContainer/ZoneBas/LabelErreur
 
 var ids_races: Array = []
 var ids_classes: Array = []
-var ids_metiers: Array = []
 var index_race := 0
 var index_classe := 0
+
+# seul choix de personnalisation à la création : le sexe
+# (l'apparence dépendra ensuite de l'équipement porté)
+const LIBELLES_SEXES: Array[String] = ["Masculin", "Féminin"]
+const VALEURS_SEXES: Array[String] = ["M", "F"]
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -27,10 +31,12 @@ func _ready() -> void:
 	btn_commencer.pressed.connect(_on_commencer)
 	liste_races.item_selected.connect(_on_race_choisie)
 	liste_classes.item_selected.connect(_on_classe_choisie)
-	option_metier.item_selected.connect(func(_i): _maj_affichage())
+	option_sexe.item_selected.connect(func(_i): _maj_affichage())
 	champ_nom.text_changed.connect(func(_texte: String): _maj_affichage())
 	_peupler()
-	_peupler_metiers()
+	for libelle in LIBELLES_SEXES:
+		option_sexe.add_item(libelle)
+	option_sexe.select(0)
 	_maj_affichage()
 
 func _peupler() -> void:
@@ -47,18 +53,18 @@ func _peupler() -> void:
 	liste_races.select(0)
 	liste_classes.select(0)
 
-# métiers proposés à la création — un seul, définitif
-func _peupler_metiers() -> void:
-	for id_profession in Personnage.professions():
-		ids_metiers.append(id_profession)
-		option_metier.add_item(str(Personnage.professions()[id_profession]["nom"]))
-	if not ids_metiers.is_empty():
-		option_metier.select(0)
-
-func _metier_choisi() -> String:
-	if ids_metiers.is_empty():
+# métier lié à la classe choisie (table character_class_professions) — la
+# classe détermine le métier, aucun choix séparé n'est proposé
+func _metier_de_la_classe() -> String:
+	if ids_classes.is_empty():
 		return ""
-	return str(ids_metiers[option_metier.selected])
+	var professions := Personnage.professions_pour_classe(ids_classes[index_classe])
+	if professions.is_empty():
+		return ""
+	return str(professions[0])
+
+func _sexe_choisi() -> String:
+	return VALEURS_SEXES[option_sexe.selected]
 
 func _race_selectionnee() -> Dictionary:
 	if ids_races.is_empty():
@@ -120,9 +126,11 @@ func _maj_affichage() -> void:
 	var resume: String = "Nom : %s" % (nouveau_nom if nouveau_nom != "" else "—")
 	resume += "\nRace : %s" % race.get("nom", "—")
 	resume += "\nClasse : %s" % classe.get("nom", "—")
+	resume += "\nSexe : %s" % LIBELLES_SEXES[option_sexe.selected]
 	var nom_metier := "—"
-	if _metier_choisi() != "":
-		nom_metier = str(Personnage.professions()[_metier_choisi()]["nom"])
+	var id_metier := _metier_de_la_classe()
+	if id_metier != "" and Personnage.professions().has(id_metier):
+		nom_metier = str(Personnage.professions()[id_metier]["nom"])
 	resume += "\nMétier : %s" % nom_metier
 	var stats: Array[String] = []
 	for cle in ["vie", "attaque", "defense", "vitesse", "force", "intelligence", "agilite", "vitalite", "sagesse", "chance"]:
@@ -142,11 +150,12 @@ func _on_commencer() -> void:
 	if nouveau_nom == "":
 		label_erreur.text = "Choisissez un nom pour votre personnage."
 		return
-	if _metier_choisi() == "":
-		label_erreur.text = "Choisissez un métier — il sera définitif."
+	var id_metier := _metier_de_la_classe()
+	if id_metier == "":
+		label_erreur.text = "Aucun métier lié à cette classe."
 		return
-	Personnage.creer(nouveau_nom, ids_races[index_race], ids_classes[index_classe], _metier_choisi())
-	_donner_ingredients_debug(_metier_choisi())
+	Personnage.creer(nouveau_nom, ids_races[index_race], ids_classes[index_classe], id_metier, _sexe_choisi())
+	_donner_ingredients_debug(id_metier)
 	get_tree().paused = false
 	queue_free()
 

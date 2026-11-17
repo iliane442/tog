@@ -128,32 +128,17 @@ size_flags_horizontal = 3
 max_length = 16
 placeholder_text = "Ex : Iliane"
 
-[node name="LigneMetier" type="HBoxContainer" parent="Panneau/VBoxContainer/ZoneBas"]
+[node name="LigneSexe" type="HBoxContainer" parent="Panneau/VBoxContainer/ZoneBas"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="LabelMetier" type="Label" parent="Panneau/VBoxContainer/ZoneBas/LigneMetier"]
+[node name="LabelSexe" type="Label" parent="Panneau/VBoxContainer/ZoneBas/LigneSexe"]
 layout_mode = 2
-text = "Métier (choix définitif) :"
+text = "Sexe :"
 
-[node name="OptionMetier" type="OptionButton" parent="Panneau/VBoxContainer/ZoneBas/LigneMetier"]
+[node name="OptionSexe" type="OptionButton" parent="Panneau/VBoxContainer/ZoneBas/LigneSexe"]
 layout_mode = 2
 size_flags_horizontal = 3
-
-[node name="LigneDesign" type="HBoxContainer" parent="Panneau/VBoxContainer/ZoneBas"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="LabelDesign" type="Label" parent="Panneau/VBoxContainer/ZoneBas/LigneDesign"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Apparence"
-vertical_alignment = 1
-
-[node name="BtnDesign" type="Button" parent="Panneau/VBoxContainer/ZoneBas/LigneDesign"]
-layout_mode = 2
-disabled = true
-text = "Bientôt disponible"
 
 [node name="BtnCommencer" type="Button" parent="Panneau/VBoxContainer/ZoneBas"]
 layout_mode = 2
