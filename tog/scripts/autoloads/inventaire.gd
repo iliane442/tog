@@ -15,11 +15,15 @@ signal inventaire_modifie
 const CHEMIN_CONNUS := "user://items_connus.cfg"
 var items_connus: Dictionary = {}
 
+# sauvegarde du contenu de l'inventaire (id -> quantité)
+const CHEMIN_SAUVEGARDE := "user://inventaire.cfg"
+
 func _ready() -> void:
 	_charger_connus()
 	if BaseDonnees.disponible:
 		charger_noms_depuis_base()
-	_ajouter_objets_depart()
+	if not _charger_objets():
+		_ajouter_objets_depart()
 
 func _charger_connus() -> void:
 	var cfg := ConfigFile.new()
@@ -49,11 +53,25 @@ func _ajouter_objets_depart() -> void:
 	ajouter_objet("1", 1)   # Épée en bois
 	ajouter_objet("3", 1)   # Katana
 
+# charge l'inventaire sauvegardé ; faux si aucune sauvegarde exploitable
+func _charger_objets() -> bool:
+	var cfg := ConfigFile.new()
+	if cfg.load(CHEMIN_SAUVEGARDE) != OK:
+		return false
+	objets = cfg.get_value("inventaire", "objets", {}).duplicate()
+	return not objets.is_empty()
+
+func _sauver_objets() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("inventaire", "objets", objets)
+	cfg.save(CHEMIN_SAUVEGARDE)
+
 # remet l'inventaire aux objets de départ (réinitialisation debug du perso)
 func reinitialiser() -> void:
 	objets.clear()
 	items_connus.clear()
 	_sauver_connus()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(CHEMIN_SAUVEGARDE))
 	inventaire_modifie.emit()
 	_ajouter_objets_depart()
 
@@ -65,6 +83,7 @@ func charger_noms_depuis_base() -> void:
 func ajouter_objet(id: String, quantite: int = 1) -> void:
 	objets[id] = objets.get(id, 0) + quantite
 	_marquer_connu(id)
+	_sauver_objets()
 	inventaire_modifie.emit()
 
 func retirer_objet(id: String, quantite: int = 1) -> void:
@@ -73,6 +92,7 @@ func retirer_objet(id: String, quantite: int = 1) -> void:
 	objets[id] -= quantite
 	if objets[id] <= 0:
 		objets.erase(id)
+	_sauver_objets()
 	inventaire_modifie.emit()
 
 func nom_objet(id: String) -> String:

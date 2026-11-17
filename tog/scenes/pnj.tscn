@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://b45dxpcimydbe"]
 
-[ext_resource type="Script" uid="uid://c8co2h468kkd6" path="res://pnj.gd" id="1_pcvj2"]
+[ext_resource type="Script" uid="uid://c8co2h468kkd6" path="res://scripts/pnj.gd" id="1_pcvj2"]
 [ext_resource type="Texture2D" uid="uid://dl4kjnbk5ofy6" path="res://tinyswords/Units/Yellow Units/Monk/Idle.png" id="1_s4y78"]
 
 [sub_resource type="Animation" id="Animation_pcvj2"]

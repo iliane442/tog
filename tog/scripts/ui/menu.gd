@@ -36,6 +36,8 @@ var points_en_attente: Dictionary = {}
 @onready var prix_detail: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/PrixItem
 @onready var compteur_wiki: Label = $Fenetre/Corps/ContenuWiki/CompteurWiki
 @onready var champ_recherche: LineEdit = $Fenetre/Corps/ContenuWiki/ChampRechercheWiki
+@onready var option_type_wiki: OptionButton = $Fenetre/Corps/ContenuWiki/LigneFiltreWiki/OptionTypeWiki
+@onready var btn_donner_item_wiki: Button = $Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki/ColonneWiki/BtnDonnerItemWiki
 @onready var liste_wiki: VBoxContainer = $Fenetre/Corps/ContenuWiki/ZoneWiki/DefilementWiki/ListeWiki
 @onready var icone_wiki: TextureRect = $Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki/ColonneWiki/IconeWiki
 @onready var nom_wiki: Label = $Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki/ColonneWiki/NomWiki
@@ -49,6 +51,9 @@ var points_en_attente: Dictionary = {}
 @onready var titre_recettes: Label = $Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/TitreRecettes
 @onready var liste_recettes: VBoxContainer = $Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/DefilementRecettes/ListeRecettes
 @onready var btn_equiper: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnEquip
+@onready var btn_ouvrir_coffre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnOuvrirCoffre
+@onready var btn_ouvrir_tous: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnOuvrirTous
+@onready var btn_debug_berry: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnDebugBerry
 @onready var silhouette: Control = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette
 @onready var argent_hotel: Label = $Fenetre/Corps/ContenuHotel/ArgentHotel
 @onready var info_achats_hotel: Label = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/InfoAchats
@@ -160,6 +165,9 @@ func _ready() -> void:
 	fenetre.visible = false
 	_creer_emplacements()
 	btn_equiper.pressed.connect(_on_bouton_equiper)
+	btn_ouvrir_coffre.pressed.connect(_on_bouton_ouvrir_coffre)
+	btn_ouvrir_tous.pressed.connect(_on_bouton_ouvrir_tous)
+	btn_debug_berry.pressed.connect(_on_debug_berry)
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
@@ -171,6 +179,9 @@ func _ready() -> void:
 	$BarreCascade/Inventaire.pressed.connect(ouvrir.bind("inventaire"))
 	$BarreCascade/Wiki.pressed.connect(ouvrir.bind("wiki"))
 	champ_recherche.text_changed.connect(func(_t): maj_wiki())
+	_peupler_types_wiki()
+	option_type_wiki.item_selected.connect(func(_i): maj_wiki())
+	btn_donner_item_wiki.pressed.connect(_on_donner_item_wiki)
 	$BarreCascade/Metiers.pressed.connect(ouvrir.bind("metiers"))
 	$BarreCascade/Hotel.pressed.connect(ouvrir.bind("hotel"))
 	$BarreCascade/Equipage.pressed.connect(ouvrir.bind("equipage"))
@@ -233,6 +244,8 @@ func fermer() -> void:
 func maj_section() -> void:
 	for section in contenus:
 		contenus[section].visible = section == section_actuelle
+	# bouton debug visible uniquement dans l'inventaire
+	btn_debug_berry.visible = section_actuelle == "inventaire"
 	titre.text = noms_sections[section_actuelle]
 	match section_actuelle:
 		"personnage":
@@ -330,6 +343,7 @@ func _on_effacer_perso() -> void:
 	Inventaire.reinitialiser()
 	HotelVentes.reinitialiser()
 	Equipages.reinitialiser()
+	Coffres.reinitialiser()
 	get_tree().reload_current_scene()
 
 const TAILLE_CASE_SORT := Vector2(56, 56)
@@ -559,6 +573,8 @@ func maj_detail_aucun() -> void:
 	stats_detail.text = ""
 	prix_detail.text = ""
 	btn_equiper.visible = false
+	btn_ouvrir_coffre.visible = false
+	btn_ouvrir_tous.visible = false
 
 # construit le paperdoll : portrait du personnage au centre, un slot
 # cliquable par emplacement positionné sur le corps
@@ -587,6 +603,9 @@ func _creer_emplacements() -> void:
 
 # met à jour le bouton Équiper/Déséquiper selon l'objet affiché dans le détail
 func _maj_bouton_equiper(details: Dictionary, id: String) -> void:
+	var est_coffre := str(details.get("type", "")) == "coffre"
+	btn_ouvrir_coffre.visible = est_coffre
+	btn_ouvrir_tous.visible = est_coffre and int(Inventaire.objets.get(id, 0)) >= 2
 	var equipable := Personnage.emplacement_equipement(str(details.get("type", "")), str(details.get("sous_type", ""))) != ""
 	btn_equiper.visible = equipable
 	if not equipable:
@@ -607,6 +626,64 @@ func _on_bouton_equiper() -> void:
 	maj_equipement()
 	maj_grille()
 	maj_detail_item(detail_id_courant)
+
+# ouvre un coffre-objet de l'inventaire : le consomme, tire le loot via Coffres
+# et l'affiche dans la fenêtre de loot ; le reliquat est emporté à la fermeture
+func _on_bouton_ouvrir_coffre() -> void:
+	if detail_id_courant == "":
+		return
+	var details := Inventaire.details_objet(detail_id_courant)
+	if str(details.get("type", "")) != "coffre":
+		return
+	var rarete := Coffres.rarete_depuis_sous_type(str(details.get("sous_type", "")))
+	if rarete == 0:
+		return
+	# état temporaire dans Coffres : même logique que les coffres de la carte
+	var id_coffre := "inventaire_%s_%d" % [detail_id_courant, randi()]
+	var contenu := Coffres.ouvrir(id_coffre, rarete)
+	Inventaire.retirer_objet(detail_id_courant, 1)
+	maj_grille()
+	if Inventaire.objets.has(detail_id_courant):
+		maj_detail_item(detail_id_courant)
+	else:
+		maj_detail_aucun()
+	var ui := get_tree().get_first_node_in_group("coffres_ui")
+	if ui != null:
+		ui.ouvrir_contenu("Coffre %s" % str(details.get("sous_type", "commun")).to_lower(), id_coffre, contenu, rarete)
+
+# ouvre d'un coup tous les exemplaires du coffre sélectionné : ils sont
+# consommés, le loot de chaque coffre est tiré et regroupé dans la fenêtre
+func _on_bouton_ouvrir_tous() -> void:
+	if detail_id_courant == "":
+		return
+	var details := Inventaire.details_objet(detail_id_courant)
+	if str(details.get("type", "")) != "coffre":
+		return
+	var rarete := Coffres.rarete_depuis_sous_type(str(details.get("sous_type", "")))
+	if rarete == 0:
+		return
+	var nombre := int(Inventaire.objets.get(detail_id_courant, 0))
+	if nombre < 2:
+		return
+	# état temporaire unique : une section pour tout le lot
+	var id_coffre := "inventaire_%s_%d" % [detail_id_courant, randi()]
+	var contenu := Coffres.ouvrir_lot(id_coffre, rarete, nombre)
+	Inventaire.retirer_objet(detail_id_courant, nombre)
+	maj_grille()
+	if Inventaire.objets.has(detail_id_courant):
+		maj_detail_item(detail_id_courant)
+	else:
+		maj_detail_aucun()
+	var ui := get_tree().get_first_node_in_group("coffres_ui")
+	if ui != null:
+		ui.ouvrir_contenu(
+			"Coffres %s (x%d)" % [str(details.get("sous_type", "commun")).to_lower(), nombre],
+			id_coffre, contenu, rarete)
+
+# debug : crédite un million de Berry pour tester la boutique
+func _on_debug_berry() -> void:
+	Personnage.ajouter_berry(1_000_000)
+	maj_personnage()
 
 func _on_emplacement_clique(evenement: InputEvent, emplacement: String) -> void:
 	if evenement is InputEventMouseButton and evenement.pressed and evenement.button_index == MOUSE_BUTTON_LEFT:
@@ -671,8 +748,6 @@ const ICONES_PAR_TYPE := {
 	"armure": "res://addons/pixel_ui_fantasy/icons/shield.png",
 	"accessoire": "res://addons/pixel_ui_fantasy/icons/gem.png",
 	"consumable": "res://addons/pixel_ui_fantasy/icons/potion_red.png",
-	"consummable": "res://addons/pixel_ui_fantasy/icons/potion_red.png",
-	"resource": "res://addons/pixel_ui_fantasy/icons/scroll.png",
 	"ressource": "res://addons/pixel_ui_fantasy/icons/scroll.png",
 }
 
@@ -688,10 +763,31 @@ func _icone_objet(details: Dictionary) -> Texture2D:
 const COULEUR_INCONNU := Color(0.55, 0.5, 0.45)
 const ICONE_CADENAS := "res://addons/pixel_ui_fantasy/icons/lock.png"
 
+# types proposés par le filtre du wiki ; "" = tous les types
+var types_wiki: Array = [""]
+# objet affiché dans la fiche du wiki (cible du bouton debug "Donner x5")
+var id_wiki_courant := ""
+
+# remplit le filtre de types avec les types réellement présents en base
+func _peupler_types_wiki() -> void:
+	option_type_wiki.clear()
+	types_wiki = [""]
+	option_type_wiki.add_item("Tous")
+	for ligne in BaseDonnees.lire(
+		"SELECT DISTINCT type FROM items WHERE is_active = 1 ORDER BY type;"):
+		var type_item := str(ligne["type"])
+		types_wiki.append(type_item)
+		option_type_wiki.add_item(type_item.capitalize())
+	option_type_wiki.select(0)
+
 func maj_wiki() -> void:
 	for enfant in liste_wiki.get_children():
 		enfant.queue_free()
-	var lignes := BaseDonnees.lire("SELECT id, name FROM items WHERE is_active = 1 ORDER BY id;")
+	var type_choisi := str(types_wiki[option_type_wiki.selected]) if option_type_wiki.selected >= 0 else ""
+	var condition := "is_active = 1"
+	if type_choisi != "":
+		condition += " AND type = '%s'" % type_choisi
+	var lignes := BaseDonnees.lire("SELECT id, name FROM items WHERE " + condition + " ORDER BY id;")
 	var filtre := champ_recherche.text.strip_edges().to_lower()
 	var connus := 0
 	var affiches := 0
@@ -714,15 +810,20 @@ func maj_wiki() -> void:
 			bouton.add_theme_color_override("font_hover_color", COULEUR_INCONNU.lightened(0.2))
 		bouton.pressed.connect(maj_detail_wiki.bind(id))
 		liste_wiki.add_child(bouton)
+	var prefixe := ""
+	if type_choisi != "":
+		prefixe = "Type : %s — " % type_choisi.capitalize()
 	if filtre == "":
-		compteur_wiki.text = "Objets découverts : %d / %d" % [connus, lignes.size()]
+		compteur_wiki.text = prefixe + "Objets découverts : %d / %d" % [connus, lignes.size()]
 	elif affiches > 0:
-		compteur_wiki.text = "Recherche : %d objet(s) — %d découvert(s)" % [affiches, connus]
+		compteur_wiki.text = prefixe + "Recherche : %d objet(s) — %d découvert(s)" % [affiches, connus]
 	else:
-		compteur_wiki.text = "Aucun objet ne correspond à « %s »" % filtre
+		compteur_wiki.text = prefixe + "Aucun objet ne correspond à « %s »" % filtre
 	maj_detail_aucun_wiki()
 
 func maj_detail_wiki(id: String) -> void:
+	id_wiki_courant = id
+	btn_donner_item_wiki.visible = true
 	nom_wiki.text = Inventaire.nom_objet(id)
 	if not Inventaire.est_connu(id):
 		icone_wiki.texture = load(ICONE_CADENAS)
@@ -755,6 +856,15 @@ func maj_detail_aucun_wiki() -> void:
 	description_wiki.text = ""
 	stats_wiki.text = ""
 	prix_wiki.text = ""
+	id_wiki_courant = ""
+	btn_donner_item_wiki.visible = false
+
+# debug : ajoute 5 exemplaires de l'objet affiché dans la fiche du wiki
+func _on_donner_item_wiki() -> void:
+	if id_wiki_courant != "":
+		Inventaire.ajouter_objet(id_wiki_courant, 5)
+		var nom := Inventaire.nom_objet(id_wiki_courant)
+		description_wiki.text = "Debug : %s x5 ajouté à l'inventaire" % nom
 
 # --- Métiers et artisanat ---
 

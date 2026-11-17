@@ -1,23 +1,17 @@
-# pnj.gd — sur le nœud racine CharacterBody2D ou Node2D du PNJ
+# vendeuse_coffres.gd — PNJ Shanksette, marchande de coffres
 extends Node2D
 
-# Dimension de la zone cliquable autour du PNJ (englobe le sprite)
+# dimension de la zone cliquable autour du PNJ (englobe le sprite)
 @export var largeur_zone_clic: float = 128.0
 @export var hauteur_zone_clic: float = 160.0
 
-# chaîne des quêtes proposées par ce PNJ, dans l'ordre ; la première non
-# terminée et non déjà en cours est proposée à chaque dialogue
-@export var chain_quetes: Array[String] = ["1"]
-
-@onready var area: Area2D = $Area2D
 @onready var sprite: Sprite2D = $Sprite2D
+@onready var area: Area2D = $Area2D
 
-const shader_surlignage := preload("res://surlignage.gdshader")
-
-signal dialogue_opened(quest_id: String, pnj: Node2D)
+const shader_surlignage := preload("res://assets/shaders/surlignage.gdshader")
 
 var player_near: bool = false
-# vrai quand on a cliqué sur le PNJ depuis loin : dialogue dès l'arrivée
+# vrai quand on a cliqué sur le PNJ depuis loin : boutique dès l'arrivée
 var interaction_en_attente := false
 
 func _ready() -> void:
@@ -37,7 +31,7 @@ func _on_body_entered(body: Node2D) -> void:
 		player_near = true
 		if interaction_en_attente:
 			interaction_en_attente = false
-			ouvrir_dialogue()
+			ouvrir_boutique()
 
 func _on_body_exited(body: Node2D) -> void:
 	if body.is_in_group("player"):
@@ -49,12 +43,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not _clic_sur_pnj(get_global_mouse_position()):
 			return
 		if player_near:
-			ouvrir_dialogue()
-			# le clic n'envoie pas le joueur ailleurs
+			ouvrir_boutique()
 			get_viewport().set_input_as_handled()
 		else:
 			# le clic propage au joueur (il marche vers le PNJ),
-			# dialogue dès qu'il entre dans la zone
+			# boutique dès qu'il entre dans la zone
 			interaction_en_attente = true
 
 func _clic_sur_pnj(point: Vector2) -> bool:
@@ -64,19 +57,7 @@ func _clic_sur_pnj(point: Vector2) -> bool:
 	)
 	return zone.has_point(point - global_position)
 
-# Détermine la quête à proposer : la première de la chaîne qui n'est ni déjà
-# en cours ni terminée (y compris lors d'une session précédente).
-# Renvoie "" quand il n'y a plus de quête à proposer.
-func quest_suivante() -> String:
-	for id_quete in chain_quetes:
-		if not QuestManager.quetes.has(id_quete):
-			continue
-		if QuestManager.quetes_actives.has(id_quete) or QuestManager.est_deja_terminee(id_quete):
-			continue
-		return id_quete
-	return ""
-
-func ouvrir_dialogue() -> void:
-	var quest := quest_suivante()
-	if quest != "":
-		dialogue_opened.emit(quest, self)
+func ouvrir_boutique() -> void:
+	var ui := get_tree().get_first_node_in_group("boutique_ui")
+	if ui != null:
+		ui.ouvrir()
