@@ -57,6 +57,7 @@ var sorts: Dictionary = {
 	"tir_puissant": {"nom": "Tir puissant", "type": "attack", "degats": 12, "portee": 5, "recharge": 1, "description": "Inflige de gros dégâts à distance."},
 	"soin_leger": {"nom": "Soin Mineur", "type": "heal", "degats": 0, "portee": 1, "recharge": 2, "description": "Restaure quelques points de vie."},
 }
+var etats: Dictionary = {}
 
 # Races et classes connues (id -> infos) — remplies depuis la base
 var races: Dictionary = {
@@ -87,17 +88,39 @@ func charger_depuis_base() -> void:
 
 func charger_sorts() -> void:
 	sorts.clear()
+	etats.clear()
+	for ligne in BaseDonnees.lire("SELECT id, name, description, effect_type, is_stackable, max_stacks FROM status_effects;"):
+		etats[int(ligne["id"])] = {
+			"nom": str(ligne["name"]),
+			"description": str(ligne["description"]),
+			"type": str(ligne["effect_type"]),
+			"empilable": int(ligne["is_stackable"]) == 1,
+			"max_stacks": maxi(int(ligne["max_stacks"]), 1),
+		}
 	var lignes := BaseDonnees.lire(
-		"SELECT id, name, description, base_damage, base_cooldown, type, range FROM skills;"
+		"SELECT id, name, description, base_damage, base_cooldown, type, range FROM skills ORDER BY id;"
 	)
 	for ligne in lignes:
+		var effets: Array[Dictionary] = []
+		for effet in BaseDonnees.lire(
+			"SELECT status_effect_id, chance, duration, value FROM skill_status_effects WHERE skill_id = %d;" % int(ligne["id"])
+		):
+			effets.append({
+				"id": int(effet["status_effect_id"]),
+				"chance": float(effet["chance"]),
+				"duree": int(effet["duration"]),
+				"valeur": float(effet["value"]),
+			})
 		sorts[str(ligne["id"])] = {
+			"id": int(ligne["id"]),
 			"nom": ligne["name"],
 			"type": ligne["type"],
 			"degats": int(ligne["base_damage"]),
 			"portee": int(ligne["range"]),
+			"cout_pa": maxi(int(ligne["base_cooldown"]), 1),
 			"recharge": int(ligne["base_cooldown"]),
 			"description": ligne["description"],
+			"effets": effets,
 		}
 
 func charger_races() -> void:

@@ -14,6 +14,8 @@
 [ext_resource type="PackedScene" path="res://scenes/fenetre_coffre.tscn" id="13_coffreui"]
 [ext_resource type="PackedScene" path="res://scenes/boutique_coffres.tscn" id="14_boutique"]
 [ext_resource type="PackedScene" path="res://scenes/shankette.tscn" id="15_shankette"]
+[ext_resource type="Script" path="res://scripts/combat/combat_manager.gd" id="16_combat"]
+[ext_resource type="Script" path="res://scripts/combat/overlay.gd" id="17_overlay"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_iw27f"]
 texture = ExtResource("1_e0an3")
@@ -280,10 +282,10 @@ tile_map_data = PackedByteArray("AAAHAAwAAAAHAAIAAAAHAAsAAAAHAAEAAAAHAAoAAAAHAAE
 tile_set = SubResource("TileSet_agnng")
 
 [node name="player" parent="." unique_id=882835849 groups=["player"] instance=ExtResource("4_p5pve")]
-position = Vector2(867, 542)
+position = Vector2(864, 544)
 
 [node name="ennemy" parent="." unique_id=169508463 instance=ExtResource("5_urblq")]
-position = Vector2(1422, 457)
+position = Vector2(1440, 480)
 
 [node name="makino" parent="." unique_id=413577914 instance=ExtResource("11_makino")]
 position = Vector2(4, 1095)
@@ -327,3 +329,9 @@ text = "Refuser"
 position = Vector2(1080, 580)
 
 [node name="BoutiqueUI" parent="." instance=ExtResource("14_boutique")]
+
+[node name="CombatManager" type="Node" parent="."]
+script = ExtResource("16_combat")
+
+[node name="Overlay" type="Node2D" parent="."]
+script = ExtResource("17_overlay")

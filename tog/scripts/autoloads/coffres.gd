@@ -59,13 +59,13 @@ func ouvrir(coffre_id: String, rarete_coffre: int) -> Array:
 # ouvre n exemplaires d'un même coffre (lot acheté, ouverture groupée)
 # sous un même état temporaire : le contenu est la somme des tirages
 func ouvrir_lot(coffre_id: String, rarete_coffre: int, nombre: int) -> Array:
-	var contenu := []
+	var contenu_lot := []
 	for _i in range(maxi(1, nombre)):
-		contenu.append_array(_tirer_contenu(rarete_coffre))
-	_etat[coffre_id] = {"ouvert": true, "contenu": contenu}
+		contenu_lot.append_array(_tirer_contenu(rarete_coffre))
+	_etat[coffre_id] = {"ouvert": true, "contenu": contenu_lot}
 	_sauver()
 	coffre_modifie.emit(coffre_id)
-	return contenu.duplicate()
+	return contenu_lot.duplicate()
 
 # retire du coffre l'objet à cet index et le renvoie
 func prendre_objet(coffre_id: String, index: int) -> Dictionary:
@@ -105,12 +105,12 @@ func rarete_depuis_sous_type(sous_type: String) -> int:
 func _tirer_contenu(rarete_coffre: int) -> Array:
 	var bornes: Array = NOMBRE_OBJETS.get(rarete_coffre, [2, 2])
 	var n := randi_range(int(bornes[0]), int(bornes[1]))
-	var contenu := []
+	var objets_tires := []
 	for _i in n:
 		var prise := _tirer_objet(rarete_coffre)
 		if not prise.is_empty():
-			contenu.append(prise)
-	return contenu
+			objets_tires.append(prise)
+	return objets_tires
 
 func _tirer_objet(rarete_coffre: int) -> Dictionary:
 	if not BaseDonnees.disponible:
