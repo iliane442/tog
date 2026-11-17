@@ -1,0 +1,152 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://creation_perso.gd" id="1_creation"]
+
+[node name="CreationPerso" type="CanvasLayer"]
+script = ExtResource("1_creation")
+
+[node name="Fond" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="Panneau" type="Panel" parent="."]
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -520.0
+offset_top = -360.0
+offset_right = 520.0
+offset_bottom = 360.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panneau"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 18.0
+offset_right = -24.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Titre" type="Label" parent="Panneau/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+text = "Création de personnage"
+horizontal_alignment = 1
+
+[node name="Corps" type="HBoxContainer" parent="Panneau/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="VBoxRace" type="VBoxContainer" parent="Panneau/VBoxContainer/Corps"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="LabelRace" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxRace"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Race"
+horizontal_alignment = 1
+
+[node name="ListeRaces" type="ItemList" parent="Panneau/VBoxContainer/Corps/VBoxRace"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LabelDetailsRace" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxRace"]
+layout_mode = 2
+text = "—"
+autowrap_mode = 2
+
+[node name="VBoxClasse" type="VBoxContainer" parent="Panneau/VBoxContainer/Corps"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="LabelClasse" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxClasse"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Classe"
+horizontal_alignment = 1
+
+[node name="ListeClasses" type="ItemList" parent="Panneau/VBoxContainer/Corps/VBoxClasse"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScrollDetailsClasse" type="ScrollContainer" parent="Panneau/VBoxContainer/Corps/VBoxClasse"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 110)
+horizontal_scroll_mode = 0
+
+[node name="LabelDetailsClasse" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxClasse/ScrollDetailsClasse"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "—"
+autowrap_mode = 2
+
+[node name="VBoxDetails" type="VBoxContainer" parent="Panneau/VBoxContainer/Corps"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="LabelResumeTitre" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxDetails"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Résumé"
+horizontal_alignment = 1
+
+[node name="LabelResume" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxDetails"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "—"
+autowrap_mode = 2
+
+[node name="ZoneBas" type="VBoxContainer" parent="Panneau/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LigneNom" type="HBoxContainer" parent="Panneau/VBoxContainer/ZoneBas"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LabelNom" type="Label" parent="Panneau/VBoxContainer/ZoneBas/LigneNom"]
+layout_mode = 2
+text = "Nom du personnage :"
+
+[node name="ChampNom" type="LineEdit" parent="Panneau/VBoxContainer/ZoneBas/LigneNom"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_length = 16
+placeholder_text = "Ex : Iliane"
+
+[node name="LigneSexe" type="HBoxContainer" parent="Panneau/VBoxContainer/ZoneBas"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LabelSexe" type="Label" parent="Panneau/VBoxContainer/ZoneBas/LigneSexe"]
+layout_mode = 2
+text = "Sexe :"
+
+[node name="OptionSexe" type="OptionButton" parent="Panneau/VBoxContainer/ZoneBas/LigneSexe"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BtnCommencer" type="Button" parent="Panneau/VBoxContainer/ZoneBas"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Commencer l'aventure"
+
+[node name="LabelErreur" type="Label" parent="Panneau/VBoxContainer/ZoneBas"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.25, 0.25, 1)
+text = ""
+horizontal_alignment = 1

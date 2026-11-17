@@ -11,13 +11,33 @@ config_version=5
 [application]
 
 config/name="tog"
+run/main_scene="uid://c36j2e8st7r56"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[autoload]
+
+BaseDonnees="*res://base_donnees.gd"
+QuestManager="*uid://332dmi1v2ncp"
+Inventaire="*res://inventaire.gd"
+Personnage="*res://personnage.gd"
+HotelVentes="*res://hotel_ventes.gd"
+Equipages="*res://equipages.gd"
+
 [display]
 
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[editor_plugins]
+
+enabled=PackedStringArray("godot-sqlite")
+
+[gui]
+
+theme/custom="res://addons/pixel_ui_fantasy/themes/parchment.tres"
 
 [physics]
 
@@ -25,6 +45,7 @@ window/stretch/aspect="expand"
 
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"

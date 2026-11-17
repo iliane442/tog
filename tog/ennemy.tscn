@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://clfegld6kofya"]
+
+[ext_resource type="Texture2D" uid="uid://bgwlqosggfajj" path="res://assets/sprites/wolf.png" id="2_8dqw5"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_rvcwp"]
+size = Vector2(63, 67)
+
+[node name="ennemy" type="CharacterBody2D" unique_id=882835849]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=809915295]
+position = Vector2(0, -33)
+texture = ExtResource("2_8dqw5")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=314533753]
+visible = false
+position = Vector2(7, -33)
+shape = SubResource("RectangleShape2D_rvcwp")
