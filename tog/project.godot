@@ -17,12 +17,13 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-BaseDonnees="*res://base_donnees.gd"
+BaseDonnees="*res://scripts/autoloads/base_donnees.gd"
 QuestManager="*uid://332dmi1v2ncp"
-Inventaire="*res://inventaire.gd"
-Personnage="*res://personnage.gd"
-HotelVentes="*res://hotel_ventes.gd"
-Equipages="*res://equipages.gd"
+Inventaire="*res://scripts/autoloads/inventaire.gd"
+Personnage="*res://scripts/autoloads/personnage.gd"
+HotelVentes="*res://scripts/autoloads/hotel_ventes.gd"
+Equipages="*res://scripts/autoloads/equipages.gd"
+Coffres="*res://scripts/autoloads/coffres.gd"
 
 [display]
 
