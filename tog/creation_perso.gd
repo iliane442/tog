@@ -4,14 +4,16 @@ extends CanvasLayer
 @onready var liste_races: ItemList = $Panneau/VBoxContainer/Corps/VBoxRace/ListeRaces
 @onready var liste_classes: ItemList = $Panneau/VBoxContainer/Corps/VBoxClasse/ListeClasses
 @onready var label_details_race: Label = $Panneau/VBoxContainer/Corps/VBoxRace/LabelDetailsRace
-@onready var label_details_classe: Label = $Panneau/VBoxContainer/Corps/VBoxClasse/LabelDetailsClasse
+@onready var label_details_classe: Label = $Panneau/VBoxContainer/Corps/VBoxClasse/ScrollDetailsClasse/LabelDetailsClasse
 @onready var label_resume: Label = $Panneau/VBoxContainer/Corps/VBoxDetails/LabelResume
 @onready var champ_nom: LineEdit = $Panneau/VBoxContainer/ZoneBas/LigneNom/ChampNom
+@onready var option_metier: OptionButton = $Panneau/VBoxContainer/ZoneBas/LigneMetier/OptionMetier
 @onready var btn_commencer: Button = $Panneau/VBoxContainer/ZoneBas/BtnCommencer
 @onready var label_erreur: Label = $Panneau/VBoxContainer/ZoneBas/LabelErreur
 
 var ids_races: Array = []
 var ids_classes: Array = []
+var ids_metiers: Array = []
 var index_race := 0
 var index_classe := 0
 
@@ -25,8 +27,10 @@ func _ready() -> void:
 	btn_commencer.pressed.connect(_on_commencer)
 	liste_races.item_selected.connect(_on_race_choisie)
 	liste_classes.item_selected.connect(_on_classe_choisie)
+	option_metier.item_selected.connect(func(_i): _maj_affichage())
 	champ_nom.text_changed.connect(func(_texte: String): _maj_affichage())
 	_peupler()
+	_peupler_metiers()
 	_maj_affichage()
 
 func _peupler() -> void:
@@ -42,6 +46,19 @@ func _peupler() -> void:
 		liste_classes.add_item(Personnage.classes[id]["nom"])
 	liste_races.select(0)
 	liste_classes.select(0)
+
+# métiers proposés à la création — un seul, définitif
+func _peupler_metiers() -> void:
+	for id_profession in Personnage.professions():
+		ids_metiers.append(id_profession)
+		option_metier.add_item(str(Personnage.professions()[id_profession]["nom"]))
+	if not ids_metiers.is_empty():
+		option_metier.select(0)
+
+func _metier_choisi() -> String:
+	if ids_metiers.is_empty():
+		return ""
+	return str(ids_metiers[option_metier.selected])
 
 func _race_selectionnee() -> Dictionary:
 	if ids_races.is_empty():
@@ -103,6 +120,10 @@ func _maj_affichage() -> void:
 	var resume: String = "Nom : %s" % (nouveau_nom if nouveau_nom != "" else "—")
 	resume += "\nRace : %s" % race.get("nom", "—")
 	resume += "\nClasse : %s" % classe.get("nom", "—")
+	var nom_metier := "—"
+	if _metier_choisi() != "":
+		nom_metier = str(Personnage.professions()[_metier_choisi()]["nom"])
+	resume += "\nMétier : %s" % nom_metier
 	var stats: Array[String] = []
 	for cle in ["vie", "attaque", "defense", "vitesse", "force", "intelligence", "agilite", "vitalite", "sagesse", "chance"]:
 		var total := int(race.get(cle, 0)) + int(classe.get(cle, 0))
@@ -121,6 +142,34 @@ func _on_commencer() -> void:
 	if nouveau_nom == "":
 		label_erreur.text = "Choisissez un nom pour votre personnage."
 		return
-	Personnage.creer(nouveau_nom, ids_races[index_race], ids_classes[index_classe])
+	if _metier_choisi() == "":
+		label_erreur.text = "Choisissez un métier — il sera définitif."
+		return
+	Personnage.creer(nouveau_nom, ids_races[index_race], ids_classes[index_classe], _metier_choisi())
+	_donner_ingredients_debug(_metier_choisi())
 	get_tree().paused = false
 	queue_free()
+
+# debug : donne au nouveau personnage les ingrédients pour fabriquer les
+# DEBUG_NB_RECETTES premières recettes actives de son métier,
+# DEBUG_FABRICATIONS fois chacune
+const DEBUG_NB_RECETTES := 3
+const DEBUG_FABRICATIONS := 10
+
+func _donner_ingredients_debug(id_profession: String) -> void:
+	if not BaseDonnees.disponible:
+		return
+	var condition := "is_active = 1"
+	if id_profession != "":
+		condition += " AND profession_id = %d" % int(id_profession)
+	var besoins: Dictionary = {}
+	for ligne in BaseDonnees.lire(
+		"SELECT result_item_id FROM crafts WHERE " + condition
+		+ " ORDER BY id LIMIT %d;" % DEBUG_NB_RECETTES):
+		for ing in BaseDonnees.lire(
+			"SELECT ingredient_id, quantity FROM item_craft_ingredients"
+			+ " WHERE item_id = %d;" % int(ligne["result_item_id"])):
+			var id := str(ing["ingredient_id"])
+			besoins[id] = int(besoins.get(id, 0)) + int(ing["quantity"]) * DEBUG_FABRICATIONS
+	for id in besoins:
+		Inventaire.ajouter_objet(id, int(besoins[id]))

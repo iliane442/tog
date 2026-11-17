@@ -17,17 +17,17 @@ offset_right = -16.0
 offset_bottom = -16.0
 text = "Menu"
 
-[node name="BarreCascade" type="HBoxContainer" parent="."]
+[node name="BarreCascade" type="VBoxContainer" parent="."]
 visible = false
 anchors_preset = -1
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -848.0
-offset_top = -64.0
-offset_right = -184.0
-offset_bottom = -16.0
+offset_left = -176.0
+offset_top = -512.0
+offset_right = -16.0
+offset_bottom = -72.0
 theme_override_constants/separation = 8
 
 [node name="Personnage" type="Button" parent="BarreCascade"]
@@ -50,6 +50,26 @@ custom_minimum_size = Vector2(160, 48)
 layout_mode = 2
 text = "Inventaire"
 
+[node name="Wiki" type="Button" parent="BarreCascade"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+text = "Wiki"
+
+[node name="Metiers" type="Button" parent="BarreCascade"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+text = "Métiers"
+
+[node name="Hotel" type="Button" parent="BarreCascade"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+text = "HDV"
+
+[node name="Equipage" type="Button" parent="BarreCascade"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+text = "Équipage"
+
 [node name="Fenetre" type="Panel" parent="."]
 visible = false
 anchors_preset = -1
@@ -57,10 +77,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -450.0
-offset_top = -320.0
-offset_right = 450.0
-offset_bottom = 320.0
+offset_left = -600.0
+offset_top = -400.0
+offset_right = 600.0
+offset_bottom = 400.0
 
 [node name="Entete" type="HBoxContainer" parent="Fenetre"]
 anchors_preset = -1
@@ -74,7 +94,7 @@ theme_override_constants/separation = 16
 [node name="Titre" type="Label" parent="Fenetre/Entete"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 30
+theme_override_font_sizes/font_size = 36
 text = "Menu"
 vertical_alignment = 1
 
@@ -98,64 +118,74 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+[node name="DefilementPersonnage" type="ScrollContainer" parent="Fenetre/Corps/ContenuPersonnage"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
+size_flags_vertical = 3
+size_flags_horizontal = 3
+
+[node name="ColonnePersonnage" type="VBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "Héros"
 
-[node name="RaceClasse" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+[node name="RaceClasse" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 24
 text = "Race : Humain — Classe : Épéiste"
 
-[node name="Niveau" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+[node name="Niveau" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 24
 text = "Niveau 1"
 
-[node name="XP" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+[node name="XP" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
 text = "Expérience : 0 / 100"
 
-[node name="Vie" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+[node name="Vie" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
 text = "Vie : 100 / 100"
 
-[node name="Argent" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+[node name="Argent" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 24
 text = "Berry : 0"
 
-[node name="Points" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+[node name="Points" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 24
 text = "Points à répartir : 0"
 
-[node name="StatsTitre" type="Label" parent="Fenetre/Corps/ContenuPersonnage"]
+[node name="StatsTitre" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 26
 text = "Caractéristiques"
 
-[node name="StatsGrid" type="GridContainer" parent="Fenetre/Corps/ContenuPersonnage"]
+[node name="StatsGrid" type="GridContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
 size_flags_horizontal = 3
 columns = 3
 theme_override_constants/h_separation = 24
 theme_override_constants/v_separation = 8
 
-[node name="ActionsStats" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage"]
+[node name="ActionsStats" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="BtnValider" type="Button" parent="Fenetre/Corps/ContenuPersonnage/ActionsStats"]
+[node name="BtnValider" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats"]
 layout_mode = 2
 text = "Valider"
 
-[node name="BtnReinitialiser" type="Button" parent="Fenetre/Corps/ContenuPersonnage/ActionsStats"]
+[node name="BtnReinitialiser" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats"]
 layout_mode = 2
 text = "Réinitialiser"
 
-[node name="BtnEffacerPerso" type="Button" parent="Fenetre/Corps/ContenuPersonnage/ActionsStats"]
+[node name="BtnEffacerPerso" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.25, 0.25, 1)
 text = "Effacer le perso (debug)"
@@ -203,16 +233,83 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="DefilementInventaire" type="ScrollContainer" parent="Fenetre/Corps/ContenuInventaire"]
+[node name="ZoneInventaire" type="HBoxContainer" parent="Fenetre/Corps/ContenuInventaire"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 16
 
-[node name="Grille" type="GridContainer" parent="Fenetre/Corps/ContenuInventaire/DefilementInventaire"]
+[node name="PanneauSilhouette" type="PanelContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire"]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+
+[node name="Silhouette" type="Control" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette"]
 layout_mode = 2
 size_flags_horizontal = 3
-columns = 4
+size_flags_vertical = 3
+
+[node name="CoteDroit" type="VBoxContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="DefilementInventaire" type="ScrollContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_horizontal = 3
+
+[node name="Grille" type="GridContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DefilementInventaire"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 5
 theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 12
+
+[node name="DetailItem" type="PanelContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MargesDetail" type="MarginContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="ColonneDetail" type="VBoxContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="IconeItem" type="TextureRect" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NomItem" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
+[node name="TypeRareteItem" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="DescriptionItem" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="StatsItem" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="PrixItem" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="BtnEquip" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+text = "Équiper"
 
 [node name="Vide" type="Label" parent="Fenetre/Corps/ContenuInventaire"]
 layout_mode = 2
@@ -220,3 +317,449 @@ size_flags_vertical = 3
 text = "Inventaire vide"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="ContenuWiki" type="VBoxContainer" parent="Fenetre/Corps"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="CompteurWiki" type="Label" parent="Fenetre/Corps/ContenuWiki"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 2
+
+[node name="ChampRechercheWiki" type="LineEdit" parent="Fenetre/Corps/ContenuWiki"]
+layout_mode = 2
+placeholder_text = "Rechercher un objet..."
+
+[node name="ZoneWiki" type="HBoxContainer" parent="Fenetre/Corps/ContenuWiki"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="DefilementWiki" type="ScrollContainer" parent="Fenetre/Corps/ContenuWiki/ZoneWiki"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_horizontal = 3
+
+[node name="ListeWiki" type="VBoxContainer" parent="Fenetre/Corps/ContenuWiki/ZoneWiki/DefilementWiki"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="DetailWiki" type="PanelContainer" parent="Fenetre/Corps/ContenuWiki/ZoneWiki"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MargesWiki" type="MarginContainer" parent="Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="ColonneWiki" type="VBoxContainer" parent="Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="IconeWiki" type="TextureRect" parent="Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki/ColonneWiki"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NomWiki" type="Label" parent="Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki/ColonneWiki"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+autowrap_mode = 2
+
+[node name="TypeWiki" type="Label" parent="Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki/ColonneWiki"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 2
+
+[node name="DescriptionWiki" type="Label" parent="Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki/ColonneWiki"]
+layout_mode = 2
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="StatsWiki" type="Label" parent="Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki/ColonneWiki"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 2
+
+[node name="PrixWiki" type="Label" parent="Fenetre/Corps/ContenuWiki/ZoneWiki/DetailWiki/MargesWiki/ColonneWiki"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 2
+
+[node name="ContenuMetiers" type="VBoxContainer" parent="Fenetre/Corps"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="ZoneMetiers" type="HBoxContainer" parent="Fenetre/Corps/ContenuMetiers"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="PanneauMetier" type="PanelContainer" parent="Fenetre/Corps/ContenuMetiers/ZoneMetiers"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MargesMetier" type="MarginContainer" parent="Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="ColonneMetier" type="VBoxContainer" parent="Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="NomMetier" type="Label" parent="Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+autowrap_mode = 2
+size_flags_horizontal = 3
+
+[node name="DescMetier" type="Label" parent="Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 2
+size_flags_horizontal = 3
+
+[node name="XpMetier" type="Label" parent="Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 2
+size_flags_horizontal = 3
+
+[node name="TitreRecettes" type="Label" parent="Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Recettes"
+
+[node name="DefilementRecettes" type="ScrollContainer" parent="Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListeRecettes" type="VBoxContainer" parent="Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/DefilementRecettes"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ContenuHotel" type="VBoxContainer" parent="Fenetre/Corps"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="ArgentHotel" type="Label" parent="Fenetre/Corps/ContenuHotel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Berry : 0"
+
+[node name="ZoneHotel" type="HBoxContainer" parent="Fenetre/Corps/ContenuHotel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="PanneauAchats" type="PanelContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MargesAchats" type="MarginContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="ColonneAchats" type="VBoxContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitreAchats" type="Label" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Offres des vendeurs"
+
+[node name="InfoAchats" type="Label" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+autowrap_mode = 2
+size_flags_horizontal = 3
+text = "Prochain réapprovisionnement des vendeurs dans 300 s"
+
+[node name="DefilementAchats" type="ScrollContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListeAchats" type="VBoxContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/DefilementAchats"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="PanneauVentes" type="PanelContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MargesVentes" type="MarginContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="ColonneVentes" type="VBoxContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitreVentes" type="Label" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Mes ventes"
+
+[node name="DefilementVentes" type="ScrollContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListeVentes" type="VBoxContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/DefilementVentes"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="TitreMise" type="Label" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Mettre en vente (commission de 2 % à la vente)"
+
+[node name="RangeeObjet" type="HBoxContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EtiquetteObjet" type="Label" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/RangeeObjet"]
+layout_mode = 2
+text = "Objet :"
+
+[node name="ChampObjet" type="OptionButton" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/RangeeObjet"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RangeeMise" type="HBoxContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EtiquetteQuantite" type="Label" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/RangeeMise"]
+layout_mode = 2
+text = "Quantité :"
+
+[node name="NbQuantite" type="SpinBox" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/RangeeMise"]
+layout_mode = 2
+max_value = 999.0
+value = 1.0
+
+[node name="RangeePrix" type="HBoxContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EtiquettePrix" type="Label" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/RangeePrix"]
+layout_mode = 2
+text = "Prix unitaire :"
+
+[node name="NbPrix" type="SpinBox" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/RangeePrix"]
+layout_mode = 2
+max_value = 9999999.0
+value = 1.0
+
+[node name="BtnMettre" type="Button" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/RangeeMise"]
+layout_mode = 2
+text = "Mettre en vente"
+
+[node name="InfoMise" type="Label" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+autowrap_mode = 2
+size_flags_horizontal = 3
+text = "Des acheteurs achètent vos objets au fil du temps : plus votre prix est proche du prix officiel, plus ils viennent vite."
+
+[node name="ContenuEquipage" type="VBoxContainer" parent="Fenetre/Corps"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="ZoneEquipage" type="HBoxContainer" parent="Fenetre/Corps/ContenuEquipage"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="PanneauEquipage" type="PanelContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MargesEquipage" type="MarginContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="DefilementEquipage" type="ScrollContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ColonneEquipage" type="VBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitreEquipage" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Mon équipage"
+
+[node name="InfoEquipage" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Fondez votre équipage pour recruter des matelots et sceller des alliances."
+autowrap_mode = 2
+
+[node name="FormeCreationEquipage" type="HBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ChampNomEquipage" type="LineEdit" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCreationEquipage"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Nom de l'équipage..."
+
+[node name="BtnFonder" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCreationEquipage"]
+layout_mode = 2
+text = "Fonder l'équipage"
+
+[node name="TitreMembres" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Membres"
+
+[node name="ListeMembres" type="VBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="BtnDissoudre" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.25, 0.25, 1)
+text = "Dissoudre l'équipage"
+
+[node name="FormeAjoutMembre" type="HBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ChampNomMembre" type="LineEdit" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeAjoutMembre"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Nom du joueur à recruter..."
+
+[node name="BtnAjouterMembre" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeAjoutMembre"]
+layout_mode = 2
+text = "Ajouter"
+
+[node name="BtnQuitter" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+text = "Quitter l'équipage"
+
+[node name="PanneauFlotte" type="PanelContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MargesFlotte" type="MarginContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="ColonneFlotte" type="VBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitreFlotte" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Alliances et flotte"
+
+[node name="InfoFlotte" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Sans équipage, pas d'alliance possible."
+autowrap_mode = 2
+
+[node name="BtnRompreFlotte" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte"]
+layout_mode = 2
+text = "Rompre l'alliance (quitter la flotte)"
+
+[node name="DefilementAlliances" type="ScrollContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListeAlliances" type="VBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte/DefilementAlliances"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="FormeDescription" type="HBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ChampDescription" type="LineEdit" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeDescription"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Description de l'équipage..."
+
+[node name="BtnModifierDescription" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeDescription"]
+layout_mode = 2
+text = "Modifier"
+
+[node name="InfoCaisse" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Caisse : 0 Berry"
+autowrap_mode = 2
+
+[node name="FormeCaisse" type="HBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NbCaisse" type="SpinBox" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse"]
+layout_mode = 2
+max_value = 999999999.0
+value = 100.0
+
+[node name="BtnDeposer" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse"]
+layout_mode = 2
+text = "Déposer"
+
+[node name="BtnRetirerCaisse" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse"]
+layout_mode = 2
+text = "Retirer"
+
+[node name="TitreJournal" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Journal de bord"
+
+[node name="DefilementJournal" type="ScrollContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte"]
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListeJournal" type="VBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte/DefilementJournal"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2

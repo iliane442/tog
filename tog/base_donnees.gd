@@ -32,7 +32,9 @@ func lire(requete: String) -> Array:
 	return db.query_result
 
 # parse un champ JSON en tableau ; tolère NULL, vide ou corrompu
-# ("[object Object]") sans lever d'erreur, en rendant []
+# ("[object Object]") sans lever d'erreur, en rendant [].
+# Les nombres entiers arrivent en float depuis le JSON (1.0) : on les
+# restitue en int pour qu'ils correspondent aux ids de la base.
 func json_tableau(valeur: Variant) -> Array:
 	if valeur == null:
 		return []
@@ -40,7 +42,17 @@ func json_tableau(valeur: Variant) -> Array:
 	if not epure.begins_with("[") or epure.contains("object Object"):
 		return []
 	var brut: Variant = JSON.parse_string(epure)
-	return brut if brut is Array else []
+	if not brut is Array:
+		return []
+	if brut.is_empty():
+		return []
+	var propre: Array = []
+	for element in brut:
+		if element is float and element == floor(element):
+			propre.append(int(element))
+		else:
+			propre.append(element)
+	return propre
 
 # réimporte la base embarquée (écrase la copie user://, donc les données du
 # joueur enregistrées dedans seraient perdues ; à appeler volontairement)

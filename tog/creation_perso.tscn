@@ -38,7 +38,7 @@ theme_override_constants/separation = 12
 
 [node name="Titre" type="Label" parent="Panneau/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 38
 text = "Création de personnage"
 horizontal_alignment = 1
 
@@ -54,7 +54,7 @@ theme_override_constants/separation = 8
 
 [node name="LabelRace" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxRace"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 26
 text = "Race"
 horizontal_alignment = 1
 
@@ -74,7 +74,7 @@ theme_override_constants/separation = 8
 
 [node name="LabelClasse" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxClasse"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 26
 text = "Classe"
 horizontal_alignment = 1
 
@@ -82,8 +82,14 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LabelDetailsClasse" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxClasse"]
+[node name="ScrollDetailsClasse" type="ScrollContainer" parent="Panneau/VBoxContainer/Corps/VBoxClasse"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 110)
+horizontal_scroll_mode = 0
+
+[node name="LabelDetailsClasse" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxClasse/ScrollDetailsClasse"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "—"
 autowrap_mode = 2
 
@@ -94,7 +100,7 @@ theme_override_constants/separation = 8
 
 [node name="LabelResumeTitre" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxDetails"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 26
 text = "Résumé"
 horizontal_alignment = 1
 
@@ -122,6 +128,18 @@ size_flags_horizontal = 3
 max_length = 16
 placeholder_text = "Ex : Iliane"
 
+[node name="LigneMetier" type="HBoxContainer" parent="Panneau/VBoxContainer/ZoneBas"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LabelMetier" type="Label" parent="Panneau/VBoxContainer/ZoneBas/LigneMetier"]
+layout_mode = 2
+text = "Métier (choix définitif) :"
+
+[node name="OptionMetier" type="OptionButton" parent="Panneau/VBoxContainer/ZoneBas/LigneMetier"]
+layout_mode = 2
+size_flags_horizontal = 3
+
 [node name="LigneDesign" type="HBoxContainer" parent="Panneau/VBoxContainer/ZoneBas"]
 layout_mode = 2
 theme_override_constants/separation = 8
@@ -139,7 +157,7 @@ text = "Bientôt disponible"
 
 [node name="BtnCommencer" type="Button" parent="Panneau/VBoxContainer/ZoneBas"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 24
 text = "Commencer l'aventure"
 
 [node name="LabelErreur" type="Label" parent="Panneau/VBoxContainer/ZoneBas"]

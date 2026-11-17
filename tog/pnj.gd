@@ -8,6 +8,9 @@ extends Node2D
 @export var hauteur_zone_clic: float = 160.0
 
 @onready var area: Area2D = $Area2D
+@onready var sprite: Sprite2D = $Sprite2D
+
+const shader_surlignage := preload("res://surlignage.gdshader")
 
 signal dialogue_opened(quest_id: String, pnj: Node2D)
 
@@ -19,8 +22,16 @@ var quest_actuelle := ""
 
 func _ready() -> void:
 	quest_actuelle = quest_id
+	var mat := ShaderMaterial.new()
+	mat.shader = shader_surlignage
+	sprite.material = mat
 	area.body_entered.connect(_on_body_entered)
 	area.body_exited.connect(_on_body_exited)
+
+func _process(_delta: float) -> void:
+	var survol := _clic_sur_pnj(get_global_mouse_position())
+	if sprite.material.get_shader_parameter("surligne") != survol:
+		sprite.material.set_shader_parameter("surligne", survol)
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player"):
