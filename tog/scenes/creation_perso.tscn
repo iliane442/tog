@@ -50,6 +50,7 @@ theme_override_constants/separation = 20
 [node name="VBoxRace" type="VBoxContainer" parent="Panneau/VBoxContainer/Corps"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.25
 theme_override_constants/separation = 8
 
 [node name="LabelRace" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxRace"]
@@ -61,15 +62,12 @@ horizontal_alignment = 1
 [node name="ListeRaces" type="ItemList" parent="Panneau/VBoxContainer/Corps/VBoxRace"]
 layout_mode = 2
 size_flags_vertical = 3
-
-[node name="LabelDetailsRace" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxRace"]
-layout_mode = 2
-text = "—"
-autowrap_mode = 2
+custom_minimum_size = Vector2(0, 137)
 
 [node name="VBoxClasse" type="VBoxContainer" parent="Panneau/VBoxContainer/Corps"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.25
 theme_override_constants/separation = 8
 
 [node name="LabelClasse" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxClasse"]
@@ -81,17 +79,7 @@ horizontal_alignment = 1
 [node name="ListeClasses" type="ItemList" parent="Panneau/VBoxContainer/Corps/VBoxClasse"]
 layout_mode = 2
 size_flags_vertical = 3
-
-[node name="ScrollDetailsClasse" type="ScrollContainer" parent="Panneau/VBoxContainer/Corps/VBoxClasse"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 110)
-horizontal_scroll_mode = 0
-
-[node name="LabelDetailsClasse" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxClasse/ScrollDetailsClasse"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "—"
-autowrap_mode = 2
+custom_minimum_size = Vector2(0, 137)
 
 [node name="VBoxDetails" type="VBoxContainer" parent="Panneau/VBoxContainer/Corps"]
 layout_mode = 2
@@ -101,12 +89,17 @@ theme_override_constants/separation = 8
 [node name="LabelResumeTitre" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxDetails"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
-text = "Résumé"
+text = "Descriptions"
 horizontal_alignment = 1
 
-[node name="LabelResume" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxDetails"]
+[node name="ScrollDescriptions" type="ScrollContainer" parent="Panneau/VBoxContainer/Corps/VBoxDetails"]
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="LabelDescriptions" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxDetails/ScrollDescriptions"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "—"
 autowrap_mode = 2
 
@@ -139,6 +132,13 @@ text = "Sexe :"
 [node name="OptionSexe" type="OptionButton" parent="Panneau/VBoxContainer/ZoneBas/LigneSexe"]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="LabelResume" type="Label" parent="Panneau/VBoxContainer/ZoneBas"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "—"
+autowrap_mode = 2
+horizontal_alignment = 1
 
 [node name="BtnCommencer" type="Button" parent="Panneau/VBoxContainer/ZoneBas"]
 layout_mode = 2

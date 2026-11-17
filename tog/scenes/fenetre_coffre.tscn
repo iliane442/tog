@@ -7,61 +7,70 @@ script = ExtResource("1_coffreui")
 
 [node name="Fenetre" type="PanelContainer" parent="."]
 anchors_preset = -1
-anchor_left = 0.3
-anchor_top = 0.25
-anchor_right = 0.7
-anchor_bottom = 0.75
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = 40.0
+offset_right = -50.0
+offset_bottom = -40.0
 
 [node name="VBox" type="VBoxContainer" parent="Fenetre"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 20
 
 [node name="Titre" type="Label" parent="Fenetre/VBox"]
 layout_mode = 2
 text = "Coffre"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 40
 
 [node name="Defilement" type="ScrollContainer" parent="Fenetre/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-custom_minimum_size = Vector2(0, 280)
 
 [node name="Liste" type="VBoxContainer" parent="Fenetre/VBox/Defilement"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 10
+theme_override_constants/separation = 16
 
 [node name="Vide" type="Label" parent="Fenetre/VBox"]
 layout_mode = 2
 text = "Le coffre est vide."
+theme_override_font_sizes/font_size = 26
 
 [node name="Popup" type="Label" parent="Fenetre/VBox"]
 layout_mode = 2
 text = ""
 autowrap_mode = 3
+theme_override_font_sizes/font_size = 24
 
 [node name="Boutons" type="HBoxContainer" parent="Fenetre/VBox"]
 layout_mode = 2
 alignment = 1
-theme_override_constants/separation = 24
+theme_override_constants/separation = 32
 
 [node name="Suivant" type="Button" parent="Fenetre/VBox/Boutons"]
 layout_mode = 2
+custom_minimum_size = Vector2(230, 0)
 text = "Suivant"
+theme_override_font_sizes/font_size = 24
 
 [node name="ToutAfficher" type="Button" parent="Fenetre/VBox/Boutons"]
 layout_mode = 2
+custom_minimum_size = Vector2(230, 0)
 text = "Tout afficher"
+theme_override_font_sizes/font_size = 24
 
 [node name="ToutPrendre" type="Button" parent="Fenetre/VBox/Boutons"]
 layout_mode = 2
+custom_minimum_size = Vector2(230, 0)
 text = "Tout prendre"
+theme_override_font_sizes/font_size = 24
 
 [node name="Fermer" type="Button" parent="Fenetre/VBox/Boutons"]
 layout_mode = 2
+custom_minimum_size = Vector2(230, 0)
 text = "Fermer"
+theme_override_font_sizes/font_size = 24
