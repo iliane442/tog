@@ -311,6 +311,10 @@ theme_override_font_sizes/font_size = 20
 layout_mode = 2
 text = "Équiper"
 
+[node name="BtnMangerFruit" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+text = "Manger le fruit"
+
 [node name="BtnOuvrirCoffre" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
 layout_mode = 2
 text = "Ouvrir le coffre"

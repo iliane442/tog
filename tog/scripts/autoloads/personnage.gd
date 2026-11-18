@@ -52,6 +52,10 @@ var caracteristiques: Dictionary = {
 const TAILLE_BARRE_SORTS := 10
 var barre_sorts: Array[String] = []
 
+# Fruit du démon mangé (id de l'item, table `items`) ; "" si aucun.
+# Manger un fruit est définitif : un seul fruit par personnage.
+var fruit_id := ""
+
 # Sorts connus (id -> infos) — remplis depuis la table `skills`
 var sorts: Dictionary = {
 	"tir_puissant": {"nom": "Tir puissant", "type": "attack", "degats": 12, "portee": 5, "recharge": 1, "description": "Inflige de gros dégâts à distance."},
@@ -187,17 +191,38 @@ func sorts_de_classe() -> Array[String]:
 			ids.append(id)
 	return ids
 
+# ids des pouvoirs du fruit du démon mangé (table `fruit_skills`)
+func sorts_fruit() -> Array[String]:
+	var ids: Array[String] = []
+	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
+		return ids
+	for ligne in BaseDonnees.lire(
+		"SELECT skill_id FROM fruit_skills WHERE fruit_item_id = %d;" % fruit_id.to_int()):
+		var id := str(ligne["skill_id"])
+		if sorts.has(id):
+			ids.append(id)
+	return ids
+
+# sorts plaçables dans la barre de combat : ceux de la classe, plus
+# les pouvoirs du fruit mangé
+func sorts_disponibles() -> Array[String]:
+	var ids := sorts_de_classe()
+	for id in sorts_fruit():
+		if not ids.has(id):
+			ids.append(id)
+	return ids
+
 func sort_dans_barre(id: String) -> bool:
 	return id in barre_sorts
 
 func barre_sorts_pleine() -> bool:
 	return barre_sorts.size() >= TAILLE_BARRE_SORTS
 
-# place un sort de la classe dans le premier emplacement libre de la
-# barre de combat ; renvoie false si le sort n'est pas de la classe ou
-# si la barre est déjà pleine
+# place un sort disponible (classe ou fruit mangé) dans le premier
+# emplacement libre de la barre de combat ; renvoie false si le sort
+# n'est pas disponible ou si la barre est déjà pleine
 func ajouter_sort_barre(id: String) -> bool:
-	if not sorts_de_classe().has(id) or sort_dans_barre(id) or barre_sorts_pleine():
+	if not sorts_disponibles().has(id) or sort_dans_barre(id) or barre_sorts_pleine():
 		return false
 	barre_sorts.append(id)
 	sauvegarder()
@@ -210,12 +235,51 @@ func retirer_sort_barre(id: String) -> void:
 		barre_sorts.erase(id)
 		sauvegarder()
 
-# garde en barre uniquement les sorts de la classe actuelle (utile si
-# la classe a changé entre deux sauvegardes)
+# garde en barre uniquement les sorts disponibles (classe + fruit mangé)
 func _filtrer_barre_sorts() -> void:
 	for id_sort in barre_sorts.duplicate():
-		if not sorts_de_classe().has(id_sort):
+		if not sorts_disponibles().has(id_sort):
 			barre_sorts.erase(id_sort)
+
+# Mange un fruit du démon de l'inventaire : ses pouvoirs sont débloqués
+# définitivement, ses bonus passifs s'appliquent et le fruit ne peut plus
+# être trouvé dans le monde (unique_items). Renvoie "" si réussi, sinon
+# un message d'erreur expliquant le refus.
+func manger_fruit(id_fruit: String) -> String:
+	if fruit_id != "":
+		return "Un second fruit serait mortel — tu en as déjà mangé un."
+	if not Inventaire.objets.has(id_fruit):
+		return "Tu ne possèdes pas ce fruit."
+	var details := Inventaire.details_objet(id_fruit)
+	if str(details.get("type", "")) != "fruit_demon":
+		return "Cet objet n'est pas un fruit du démon."
+	if not sorts_fruit_disponibles_pour(id_fruit):
+		return "Aucun pouvoir n'est rattaché à ce fruit (table fruit_skills)."
+	Inventaire.retirer_objet(id_fruit, 1)
+	fruit_id = id_fruit
+	if BaseDonnees.disponible and id_fruit.is_valid_int():
+		BaseDonnees.lire(
+			"UPDATE unique_items SET is_consumed = 1 WHERE item_id = %d;" % id_fruit.to_int())
+	# les pouvoirs du fruit rejoignent la barre s'il reste de la place
+	for id in _pouvoirs_fruit(id_fruit):
+		if sorts.has(id) and not sort_dans_barre(id) and not barre_sorts_pleine():
+			barre_sorts.append(id)
+	recalculer_stats()
+	sauvegarder()
+	return ""
+
+# ids des sorts de ce fruit en base (sans dépendre du fruit mangé)
+func _pouvoirs_fruit(id_fruit: String) -> Array[String]:
+	var ids: Array[String] = []
+	if not BaseDonnees.disponible or not id_fruit.is_valid_int():
+		return ids
+	for ligne in BaseDonnees.lire(
+		"SELECT skill_id FROM fruit_skills WHERE fruit_item_id = %d;" % id_fruit.to_int()):
+		ids.append(str(ligne["skill_id"]))
+	return ids
+
+func sorts_fruit_disponibles_pour(id_fruit: String) -> bool:
+	return not _pouvoirs_fruit(id_fruit).is_empty()
 
 # Applique les bonus de la race et de la classe sur les stats de base,
 # puis réapplique les points de caractéristiques dépensés
@@ -248,27 +312,34 @@ func recalculer_stats() -> void:
 		var id_equipe: String = str(equipement[emplacement])
 		if id_equipe == "":
 			continue
-		var effets: Dictionary = Inventaire.details_objet(id_equipe).get("effets", {})
-		for cle in effets:
-			var valeur := int(effets[cle])
-			match cle:
-				"attack":
-					attaque += valeur
-				"defense":
-					defense += valeur
-				"speed":
-					vitesse += valeur
-				"vie", "health":
-					vie_max += valeur
-				"vitalite":
-					caracteristiques[cle] += valeur
-					vie_max += 5 * valeur
-				_:
-					if caracteristiques.has(cle):
-						caracteristiques[cle] += valeur
+		_appliquer_effets_objet(Inventaire.details_objet(id_equipe).get("effets", {}))
+	# bonus passifs du fruit du démon mangé (effects_json de l'item fruit)
+	if fruit_id != "":
+		_appliquer_effets_objet(Inventaire.details_objet(fruit_id).get("effets", {}))
 	vie_max = maxi(vie_max, 1)
 	vie = vie_max
 	caracteristiques_modifiees.emit()
+
+# applique les effets d'un objet (paires clé -> valeur de effects_json)
+# sur les stats du personnage
+func _appliquer_effets_objet(effets: Dictionary) -> void:
+	for cle in effets:
+		var valeur := int(effets[cle])
+		match cle:
+			"attack":
+				attaque += valeur
+			"defense":
+				defense += valeur
+			"speed":
+				vitesse += valeur
+			"vie", "health":
+				vie_max += valeur
+			"vitalite":
+				caracteristiques[cle] += valeur
+				vie_max += 5 * valeur
+			_:
+				if caracteristiques.has(cle):
+					caracteristiques[cle] += valeur
 
 # emplacement d'équipement d'un objet selon son type et son sous-type
 # ("" si non équipable ; "anneau" est virtuel : résolu en anneau1/anneau2)
@@ -364,6 +435,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	berry = 0
 	points_statistique = 0
 	barre_sorts = []
+	fruit_id = ""
 	metiers = {}
 	# métier unique, choisi à la création
 	if id_profession != "" and _professions.has(id_profession):
@@ -401,6 +473,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "equipement", equipement)
 	cfg.set_value("perso", "metiers", metiers)
 	cfg.set_value("perso", "barre_sorts", barre_sorts)
+	cfg.set_value("perso", "fruit", fruit_id)
 	perso_cree = cfg.save(CHEMIN_PERSO) == OK
 
 func charger_perso() -> void:
@@ -427,6 +500,7 @@ func charger_perso() -> void:
 			var id := str(id_sort)
 			if not barre_sorts.has(id):
 				barre_sorts.append(id)
+	fruit_id = str(cfg.get_value("perso", "fruit", ""))
 	_filtrer_barre_sorts()
 	var equip = cfg.get_value("perso", "equipement", {})
 	if equip is Dictionary:
@@ -460,6 +534,7 @@ func supprimer_perso() -> void:
 	berry = 0
 	points_statistique = 0
 	barre_sorts = []
+	fruit_id = ""
 	metiers = {}
 	points_depenses = {}
 	equipement = {

@@ -51,6 +51,7 @@ var points_en_attente: Dictionary = {}
 @onready var titre_recettes: Label = $Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/TitreRecettes
 @onready var liste_recettes: VBoxContainer = $Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/DefilementRecettes/ListeRecettes
 @onready var btn_equiper: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnEquip
+@onready var btn_manger_fruit: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnMangerFruit
 @onready var btn_ouvrir_coffre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnOuvrirCoffre
 @onready var btn_ouvrir_tous: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnOuvrirTous
 @onready var btn_debug_berry: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnDebugBerry
@@ -165,6 +166,8 @@ func _ready() -> void:
 	fenetre.visible = false
 	_creer_emplacements()
 	btn_equiper.pressed.connect(_on_bouton_equiper)
+	btn_manger_fruit.pressed.connect(_on_bouton_manger_fruit)
+	btn_manger_fruit.visible = false
 	btn_ouvrir_coffre.pressed.connect(_on_bouton_ouvrir_coffre)
 	btn_ouvrir_tous.pressed.connect(_on_bouton_ouvrir_tous)
 	btn_debug_berry.pressed.connect(_on_debug_berry)
@@ -361,13 +364,13 @@ func _icone_sort(sort: Dictionary) -> Texture2D:
 	return load(chemin)
 
 # onglet Sorts : barre de combat en haut (cliquer un sort placé pour le
-# retirer), puis la liste des sorts de la classe avec un bouton pour
-# placer chacun dans la barre ou l'en retirer
+# retirer), puis la liste des sorts de la classe et des pouvoirs du fruit
+# mangé, avec un bouton pour placer chacun dans la barre ou l'en retirer
 func maj_sorts() -> void:
 	for enfant in liste_sorts.get_children():
 		enfant.queue_free()
 	_construire_barre_sorts()
-	var ids := Personnage.sorts_de_classe()
+	var ids := Personnage.sorts_disponibles()
 	if ids.is_empty():
 		var vide := Label.new()
 		vide.text = "Votre classe ne dispose d'aucun sort connu."
@@ -573,6 +576,7 @@ func maj_detail_aucun() -> void:
 	stats_detail.text = ""
 	prix_detail.text = ""
 	btn_equiper.visible = false
+	btn_manger_fruit.visible = false
 	btn_ouvrir_coffre.visible = false
 	btn_ouvrir_tous.visible = false
 
@@ -601,11 +605,21 @@ func _creer_emplacements() -> void:
 		silhouette.add_child(slot)
 		emplacements_ui[emplacement] = {"slot": slot, "icone": icone}
 
-# met à jour le bouton Équiper/Déséquiper selon l'objet affiché dans le détail
+# met à jour les boutons d'action selon l'objet affiché dans le détail :
+# Équiper/Déséquiper, Ouvrir les coffres, Manger les fruits du démon
 func _maj_bouton_equiper(details: Dictionary, id: String) -> void:
 	var est_coffre := str(details.get("type", "")) == "coffre"
 	btn_ouvrir_coffre.visible = est_coffre
 	btn_ouvrir_tous.visible = est_coffre and int(Inventaire.objets.get(id, 0)) >= 2
+	var est_fruit := str(details.get("type", "")) == "fruit_demon"
+	btn_manger_fruit.visible = est_fruit
+	if est_fruit:
+		if Personnage.fruit_id != "":
+			btn_manger_fruit.text = "Fruit déjà mangé"
+			btn_manger_fruit.disabled = true
+		else:
+			btn_manger_fruit.text = "Manger le fruit"
+			btn_manger_fruit.disabled = false
 	var equipable := Personnage.emplacement_equipement(str(details.get("type", "")), str(details.get("sous_type", ""))) != ""
 	btn_equiper.visible = equipable
 	if not equipable:
@@ -626,6 +640,56 @@ func _on_bouton_equiper() -> void:
 	maj_equipement()
 	maj_grille()
 	maj_detail_item(detail_id_courant)
+
+# mange le fruit du démon sélectionné dans le détail — action définitive
+# (un seul fruit par personnage), d'où l'écran de confirmation ; les
+# pouvoirs débloqués apparaissent dans la barre et l'onglet Sorts
+func _on_bouton_manger_fruit() -> void:
+	if detail_id_courant == "" or Personnage.fruit_id != "":
+		return
+	var details := Inventaire.details_objet(detail_id_courant)
+	if str(details.get("type", "")) != "fruit_demon":
+		return
+	var id_fruit := detail_id_courant
+	var dialogue := ConfirmationDialog.new()
+	dialogue.title = "Manger le fruit"
+	dialogue.dialog_text = "Manger %s est définitif : ses pouvoirs deviendront les tiens, mais aucun autre fruit du démon ne pourra jamais être mangé.\n\nSes pouvoirs rejoignent ta barre de sorts." % Inventaire.nom_objet(id_fruit)
+	dialogue.ok_button_text = "Manger"
+	dialogue.cancel_button_text = "Attendre"
+	dialogue.confirmed.connect(_confirmer_manger_fruit.bind(id_fruit))
+	add_child(dialogue)
+	dialogue.popup_centered()
+	dialogue.visibility_changed.connect(func() -> void:
+		if not dialogue.visible:
+			dialogue.queue_free())
+
+func _confirmer_manger_fruit(id_fruit: String) -> void:
+	var message := Personnage.manger_fruit(id_fruit)
+	if message != "":
+		avertir(message)
+		return
+	maj_grille()
+	maj_detail_aucun()
+	maj_sorts()
+	var info := AcceptDialog.new()
+	info.title = "Fruit mangé !"
+	info.dialog_text = "Le fruit a été absorbé : ses pouvoirs sont débloqués (onglet Sorts) et son aura t'a transformé pour toujours."
+	add_child(info)
+	info.popup_centered()
+	info.visibility_changed.connect(func() -> void:
+		if not info.visible:
+			info.queue_free())
+
+# petite fenêtre d'information bloquante
+func avertir(texte: String) -> void:
+	var info := AcceptDialog.new()
+	info.title = "Attention"
+	info.dialog_text = texte
+	add_child(info)
+	info.popup_centered()
+	info.visibility_changed.connect(func() -> void:
+		if not info.visible:
+			info.queue_free())
 
 # ouvre un coffre-objet de l'inventaire : le consomme, tire le loot via Coffres
 # et l'affiche dans la fenêtre de loot ; le reliquat est emporté à la fermeture

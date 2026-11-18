@@ -286,6 +286,144 @@ position = Vector2(864, 544)
 
 [node name="ennemy" parent="." unique_id=169508463 instance=ExtResource("5_urblq")]
 position = Vector2(1440, 480)
+mob_id = 1
+
+[node name="ennemy2" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(480, 352)
+pv_max = 80
+degats_attaque = 8
+mob_id = 2
+
+[node name="ennemy3" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(992, -32)
+pv_max = 100
+degats_attaque = 10
+mob_id = 5
+
+[node name="ennemy4" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(416, 992)
+pv_max = 60
+degats_attaque = 6
+mob_id = 1
+
+[node name="ennemy5" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(1632, -32)
+pv_max = 120
+degats_attaque = 12
+pm_max = 4
+mob_id = 3
+
+[node name="ennemy6_boss" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(1312, -608)
+pv_max = 220
+degats_attaque = 18
+pm_max = 4
+portee_attaque = 3
+mob_id = 8
+
+[node name="boss_alvida" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(608, 1568)
+pv_max = 150
+degats_attaque = 14
+pm_max = 3
+portee_attaque = 1
+mob_id = 9
+
+[node name="boss_kuro" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(-288, -160)
+pv_max = 170
+degats_attaque = 16
+pm_max = 4
+portee_attaque = 2
+mob_id = 10
+
+[node name="boss_krieg" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(2080, 288)
+pv_max = 210
+degats_attaque = 17
+pm_max = 3
+portee_attaque = 2
+mob_id = 11
+
+[node name="boss_arlong" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(4576, -1440)
+pv_max = 300
+degats_attaque = 22
+pm_max = 4
+portee_attaque = 2
+mob_id = 12
+
+[node name="ennemy_squelette" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(736, -1440)
+pv_max = 70
+degats_attaque = 8
+mob_id = 13
+
+[node name="ennemy_momie" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(3424, -288)
+pv_max = 110
+degats_attaque = 12
+mob_id = 14
+
+[node name="ennemy_roi_des_os" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(2464, 1824)
+pv_max = 160
+degats_attaque = 15
+mob_id = 15
+
+[node name="ennemy_colombe" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(1120, 416)
+pv_max = 40
+degats_attaque = 4
+mob_id = 16
+
+[node name="ennemy_poule" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(672, 800)
+pv_max = 45
+degats_attaque = 5
+mob_id = 17
+
+[node name="ennemy_chien" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(544, 1056)
+pv_max = 60
+degats_attaque = 7
+mob_id = 18
+
+[node name="ennemy_cerf" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(928, 1312)
+pv_max = 75
+degats_attaque = 9
+mob_id = 19
+
+[node name="ennemy_cheval" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(1696, 1056)
+pv_max = 95
+degats_attaque = 10
+mob_id = 20
+
+[node name="ennemy_elan" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(2016, 160)
+pv_max = 110
+degats_attaque = 12
+mob_id = 21
+
+[node name="ennemy_ours" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(2976, 544)
+pv_max = 140
+degats_attaque = 15
+mob_id = 22
+
+[node name="ennemy_fantome" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(2784, 1568)
+pv_max = 170
+degats_attaque = 17
+mob_id = 23
+
+[node name="ennemy_zombie_chevalier" parent="." instance=ExtResource("5_urblq")]
+position = Vector2(2912, 1760)
+pv_max = 220
+degats_attaque = 20
+mob_id = 24
 
 [node name="makino" parent="." unique_id=413577914 instance=ExtResource("11_makino")]
 position = Vector2(4, 1095)

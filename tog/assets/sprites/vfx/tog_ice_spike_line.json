@@ -1,0 +1,859 @@
+{
+ "frames": [
+  {
+   "filename": "tog-ice-spike-line 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 1.png",
+   "frame": {
+    "x": 272,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 2.png",
+   "frame": {
+    "x": 544,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 3.png",
+   "frame": {
+    "x": 816,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 4.png",
+   "frame": {
+    "x": 1088,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 5.png",
+   "frame": {
+    "x": 1360,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 6.png",
+   "frame": {
+    "x": 0,
+    "y": 104,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 7.png",
+   "frame": {
+    "x": 272,
+    "y": 104,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 8.png",
+   "frame": {
+    "x": 544,
+    "y": 104,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 9.png",
+   "frame": {
+    "x": 816,
+    "y": 104,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 10.png",
+   "frame": {
+    "x": 1088,
+    "y": 104,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 11.png",
+   "frame": {
+    "x": 1360,
+    "y": 104,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 12.png",
+   "frame": {
+    "x": 0,
+    "y": 208,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 13.png",
+   "frame": {
+    "x": 272,
+    "y": 208,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 14.png",
+   "frame": {
+    "x": 544,
+    "y": 208,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 15.png",
+   "frame": {
+    "x": 816,
+    "y": 208,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 16.png",
+   "frame": {
+    "x": 1088,
+    "y": 208,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 17.png",
+   "frame": {
+    "x": 1360,
+    "y": 208,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 18.png",
+   "frame": {
+    "x": 0,
+    "y": 312,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 19.png",
+   "frame": {
+    "x": 272,
+    "y": 312,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 20.png",
+   "frame": {
+    "x": 544,
+    "y": 312,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 21.png",
+   "frame": {
+    "x": 816,
+    "y": 312,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 22.png",
+   "frame": {
+    "x": 1088,
+    "y": 312,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 23.png",
+   "frame": {
+    "x": 1360,
+    "y": 312,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 24.png",
+   "frame": {
+    "x": 0,
+    "y": 416,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 25.png",
+   "frame": {
+    "x": 272,
+    "y": 416,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 26.png",
+   "frame": {
+    "x": 544,
+    "y": 416,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 27.png",
+   "frame": {
+    "x": 816,
+    "y": 416,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 28.png",
+   "frame": {
+    "x": 1088,
+    "y": 416,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 29.png",
+   "frame": {
+    "x": 1360,
+    "y": 416,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 30.png",
+   "frame": {
+    "x": 0,
+    "y": 520,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-ice-spike-line 31.png",
+   "frame": {
+    "x": 272,
+    "y": 520,
+    "w": 272,
+    "h": 104
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 272,
+    "h": 104
+   },
+   "sourceSize": {
+    "w": 272,
+    "h": 104
+   },
+   "pivot": {
+    "x": 0.029411764705882353,
+    "y": 0.8846153846153846
+   },
+   "duration": 111
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-ice-spike-line.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 1632,
+   "h": 624
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 8,
+   "y": 92
+  },
+  "frameTags": [
+   {
+    "name": "tog-ice-spike-line",
+    "from": 0,
+    "to": 31,
+    "direction": "forward"
+   }
+  ]
+ }
+}

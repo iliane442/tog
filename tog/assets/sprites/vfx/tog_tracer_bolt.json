@@ -1,0 +1,833 @@
+{
+ "frames": [
+  {
+   "filename": "tog-tracer-bolt 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 1.png",
+   "frame": {
+    "x": 246,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 2.png",
+   "frame": {
+    "x": 492,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 3.png",
+   "frame": {
+    "x": 738,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 4.png",
+   "frame": {
+    "x": 984,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 5.png",
+   "frame": {
+    "x": 1230,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 6.png",
+   "frame": {
+    "x": 0,
+    "y": 116,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 7.png",
+   "frame": {
+    "x": 246,
+    "y": 116,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 8.png",
+   "frame": {
+    "x": 492,
+    "y": 116,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 9.png",
+   "frame": {
+    "x": 738,
+    "y": 116,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 10.png",
+   "frame": {
+    "x": 984,
+    "y": 116,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 11.png",
+   "frame": {
+    "x": 1230,
+    "y": 116,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 12.png",
+   "frame": {
+    "x": 0,
+    "y": 232,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 13.png",
+   "frame": {
+    "x": 246,
+    "y": 232,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 14.png",
+   "frame": {
+    "x": 492,
+    "y": 232,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 15.png",
+   "frame": {
+    "x": 738,
+    "y": 232,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 16.png",
+   "frame": {
+    "x": 984,
+    "y": 232,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 17.png",
+   "frame": {
+    "x": 1230,
+    "y": 232,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 18.png",
+   "frame": {
+    "x": 0,
+    "y": 348,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 19.png",
+   "frame": {
+    "x": 246,
+    "y": 348,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 20.png",
+   "frame": {
+    "x": 492,
+    "y": 348,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 21.png",
+   "frame": {
+    "x": 738,
+    "y": 348,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 22.png",
+   "frame": {
+    "x": 984,
+    "y": 348,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 23.png",
+   "frame": {
+    "x": 1230,
+    "y": 348,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 24.png",
+   "frame": {
+    "x": 0,
+    "y": 464,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 25.png",
+   "frame": {
+    "x": 246,
+    "y": 464,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 26.png",
+   "frame": {
+    "x": 492,
+    "y": 464,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 27.png",
+   "frame": {
+    "x": 738,
+    "y": 464,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 28.png",
+   "frame": {
+    "x": 984,
+    "y": 464,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 29.png",
+   "frame": {
+    "x": 1230,
+    "y": 464,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-tracer-bolt 30.png",
+   "frame": {
+    "x": 0,
+    "y": 580,
+    "w": 246,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 246,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 246,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.0975609756097561,
+    "y": 0.6637931034482759
+   },
+   "duration": 33
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-tracer-bolt.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 1476,
+   "h": 696
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 24,
+   "y": 77
+  },
+  "frameTags": [
+   {
+    "name": "tog-tracer-bolt",
+    "from": 0,
+    "to": 30,
+    "direction": "forward"
+   }
+  ]
+ }
+}

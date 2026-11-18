@@ -18,6 +18,7 @@ const VISUELS_RACES := {
 }
 const RACE_DEFAUT := "human"
 const SORT_BOULE_DE_FEU := preload("res://scripts/combat/sort.gd")
+const EFFET_SORT := preload("res://scripts/combat/effet_sort.gd")
 
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -36,6 +37,7 @@ var _pa := 0
 var _pm := 0
 var _cases_placement: Array[Vector2i] = []
 var _sort_boule_de_feu
+var _cache_effets := {}  # id_sort -> ligne de la table `animations` (ou {})
 
 var _sol: TileMapLayer
 var _obstacles: TileMapLayer
@@ -186,6 +188,8 @@ func _calculer_portee() -> Dictionary:
 			var suivante := courante + voisin
 			if distances.has(suivante) or not _case_libre(suivante):
 				continue
+			if _combat_manager != null and not _combat_manager.dans_zone_combat(suivante):
+				continue
 			distances[suivante] = int(distances[courante]) + 1
 			file.append(suivante)
 	return distances
@@ -198,7 +202,7 @@ func _cases_du_sort(portee_max: int = -1, portee_min: int = 1) -> Array[Vector2i
 		for y in range(-portee, portee + 1):
 			var distance := absi(x) + absi(y)
 			var case := depart + Vector2i(x, y)
-			if distance >= portee_min and distance <= portee and _sol.get_cell_source_id(case) != -1:
+			if distance >= portee_min and distance <= portee and _sol.get_cell_source_id(case) != -1 and (_combat_manager == null or _combat_manager.dans_zone_combat(case)):
 				cases.append(case)
 	return cases
 
@@ -235,6 +239,8 @@ func _on_placement_commence() -> void:
 	_en_deplacement = false
 	velocity = Vector2.ZERO
 	_cases_placement.clear()
+	if _combat_manager != null:
+		_ennemi = _combat_manager.ennemi_actuel()
 	if _sol == null or _ennemi == null or not is_instance_valid(_ennemi):
 		_combat_manager.valider_placement()
 		return
@@ -257,6 +263,7 @@ func _on_placement_commence() -> void:
 			var candidate := meilleure_case + Vector2i(x, y)
 			if absi(x) + absi(y) <= rayon_placement and _case_libre(candidate):
 				_cases_placement.append(candidate)
+	_afficher_grille()
 	if _overlay != null:
 		_overlay.afficher(_cases_placement)
 
@@ -272,6 +279,7 @@ func _on_combat_commence() -> void:
 	_tour_joueur = true
 	_pa = pa_max
 	_pm = pm_max
+	_afficher_grille()
 	_maj_affichage()
 	_afficher_cases()
 
@@ -281,7 +289,20 @@ func _on_combat_termine(_victoire: bool) -> void:
 	_cases_placement.clear()
 	if _overlay != null:
 		_overlay.effacer()
+		_overlay.masquer_grille()
 	_maj_affichage()
+
+func _afficher_grille() -> void:
+	if _overlay == null or _sol == null:
+		return
+	var cases: Array[Vector2i] = []
+	for case in _sol.get_used_cells():
+		if _obstacles != null and _obstacles.get_cell_source_id(case) != -1:
+			continue
+		if _combat_manager != null and not _combat_manager.dans_zone_combat(case):
+			continue
+		cases.append(case)
+	_overlay.afficher_grille(cases)
 
 func _afficher_cases() -> void:
 	if _overlay == null or _sol == null or _combat_manager == null or not _combat_manager.en_combat:
@@ -344,6 +365,7 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		_pa -= cout
 		_combat_manager.afficher_message("Le sort rate sa cible.")
 	else:
+		_jouer_effet_sort(_id_sort, cible)
 		if str(sort.get("type", "")) == "heal":
 			Personnage.soigner(absi(int(sort.get("degats", 0))))
 			_maj_affichage()
@@ -365,6 +387,39 @@ func _distance_ennemi() -> int:
 	var cible := _case_de(_ennemi.global_position)
 	return absi(depart.x - cible.x) + absi(depart.y - cible.y)
 
+# ligne de la table `animations` pour ce sort ({} si aucun effet) ; la
+# boule de feu codée en dur est enregistrée avec l'id de sort 0
+func _details_effet_sort(id_sort: String) -> Dictionary:
+	if _cache_effets.has(id_sort):
+		return _cache_effets[id_sort]
+	var details := {}
+	if BaseDonnees.disponible:
+		var id_sort_bdd := 0 if id_sort == "boule_de_feu" else id_sort.to_int()
+		var lignes := BaseDonnees.lire(
+			"SELECT sprite_sheet_path, frame_count, frame_delay_ms, loop, frame_width, frame_height"
+			+ " FROM animations WHERE entity_type = 'skill' AND entity_id = %d;" % id_sort_bdd)
+		if not lignes.is_empty():
+			details = lignes[0]
+	_cache_effets[id_sort] = details
+	return details
+
+# affiche l'animation du sort sur la cible (l'effet est autonome : il
+# joue ses frames puis se libère tout seul)
+func _jouer_effet_sort(id_sort: String, cible: Node2D) -> void:
+	var details := _details_effet_sort(id_sort)
+	if details.is_empty() or cible == null or not is_instance_valid(cible):
+		return
+	var effet := EFFET_SORT.new()
+	effet.configure(
+		str(details.get("sprite_sheet_path", "")),
+		int(details.get("frame_count", 1)),
+		int(details.get("frame_delay_ms", 100)),
+		int(details.get("loop", 0)) == 1,
+		int(details.get("frame_width", 32)),
+		int(details.get("frame_height", 32)))
+	get_tree().current_scene.add_child(effet)
+	effet.jouer(cible.global_position)
+
 func _lancer_boule_de_feu() -> bool:
 	if _ennemi == null or not is_instance_valid(_ennemi) or _pa < _sort_boule_de_feu.cout_pa:
 		_combat_manager.afficher_message("Le sort ne peut pas être lancé pour le moment.")
@@ -380,6 +435,7 @@ func _lancer_boule_de_feu() -> bool:
 		return false
 	_pa -= _sort_boule_de_feu.cout_pa
 	if _combat_manager.precision_reussie(self):
+		_jouer_effet_sort("boule_de_feu", _ennemi)
 		_ennemi.recevoir_degats(_combat_manager.calculer_degats(self, _ennemi, _sort_boule_de_feu.degats))
 		_combat_manager.effacer_message()
 	else:

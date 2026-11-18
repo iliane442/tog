@@ -7,8 +7,11 @@ signal sort_demandee(id_sort: String)
 signal fin_tour_demandee
 signal placement_valide
 
+@export var taille_zone_combat := 40
+
 var en_combat := false
 var en_placement := false
+var zone_combat := Rect2i()
 var _joueur: Node
 var _ennemi
 var _ui: CanvasLayer
@@ -21,6 +24,8 @@ var _label_etats: Label
 var _bouton_sort: Button
 var _bouton_fin_tour: Button
 var _bouton_pret: Button
+var _bouton_combattre: Button
+var _ennemi_propose: Node
 var _liste_sorts: VBoxContainer
 var _conteneur_sorts: ScrollContainer
 var _etats_actifs: Dictionary = {}
@@ -43,6 +48,27 @@ func enregistrer_ennemi(ennemi: Node) -> void:
 	_ennemi = ennemi
 	if _barre_vie_ennemi != null:
 		mettre_a_jour_stats(Personnage.vie, Personnage.vie_max, 0, 0, 0, 0)
+
+func ennemi_actuel() -> Node:
+	return _ennemi
+
+func _calculer_zone_combat() -> void:
+	zone_combat = Rect2i()
+	if taille_zone_combat <= 0 or _joueur == null or _ennemi == null:
+		return
+	var sol := get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
+	if sol == null:
+		return
+	var case_joueur := sol.local_to_map(sol.to_local(_joueur.global_position))
+	var case_ennemi := sol.local_to_map(sol.to_local(_ennemi.global_position))
+	var centre := (case_joueur + case_ennemi) / 2
+	var demi := taille_zone_combat / 2
+	zone_combat = Rect2i(centre - Vector2i(demi, demi), Vector2i(taille_zone_combat, taille_zone_combat))
+
+func dans_zone_combat(case: Vector2i) -> bool:
+	if zone_combat.size.x <= 0:
+		return true
+	return zone_combat.has_point(case)
 
 func _construire_interface() -> void:
 	_ui = CanvasLayer.new()
@@ -90,6 +116,14 @@ func _construire_interface() -> void:
 	_bouton_pret.text = "Valider le placement"
 	_bouton_pret.pressed.connect(func() -> void: placement_valide.emit())
 	colonne.add_child(_bouton_pret)
+	_bouton_combattre = Button.new()
+	_bouton_combattre.text = "Combattre"
+	_bouton_combattre.custom_minimum_size = Vector2(160, 44)
+	_bouton_combattre.pressed.connect(_on_bouton_combattre_presse)
+	_ui.add_child(_bouton_combattre)
+	_bouton_combattre.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_bouton_combattre.offset_top -= 110.0
+	_bouton_combattre.offset_bottom -= 110.0
 	_panneau.hide()
 	_bouton_sort.hide()
 	_conteneur_sorts.hide()
@@ -99,7 +133,9 @@ func _construire_interface() -> void:
 func _construire_sorts_etats() -> void:
 	for enfant in _liste_sorts.get_children():
 		enfant.queue_free()
-	for id_sort in Personnage.sorts:
+	# seuls les sorts de la classe et les pouvoirs du fruit mangé
+	# peuvent être lancés en combat
+	for id_sort in Personnage.sorts_disponibles():
 		var sort: Dictionary = Personnage.sorts[id_sort]
 		var effets: Array = sort.get("effets", [])
 		if effets.is_empty():
@@ -123,9 +159,30 @@ func _creer_barre(parent: VBoxContainer, nom: String, variation: String) -> Prog
 	ligne.add_child(barre)
 	return barre
 
+func proposer_combat(ennemi: Node) -> void:
+	if en_combat or ennemi == null or not is_instance_valid(ennemi):
+		return
+	_ennemi_propose = ennemi
+	_bouton_combattre.show()
+
+func annuler_proposition_combat(ennemi: Node) -> void:
+	if ennemi != _ennemi_propose:
+		return
+	_ennemi_propose = null
+	if not en_combat:
+		_bouton_combattre.hide()
+
+func _on_bouton_combattre_presse() -> void:
+	var ennemi := _ennemi_propose
+	_ennemi_propose = null
+	_bouton_combattre.hide()
+	lancer_combat(ennemi)
+
 func lancer_combat(ennemi: Node = null) -> void:
 	if en_combat:
 		return
+	_bouton_combattre.hide()
+	_ennemi_propose = null
 	if ennemi != null:
 		_ennemi = ennemi
 	if _joueur == null or _ennemi == null:
@@ -133,6 +190,7 @@ func lancer_combat(ennemi: Node = null) -> void:
 		return
 	_aligner_sur_grille(_joueur)
 	_aligner_sur_grille(_ennemi)
+	_calculer_zone_combat()
 	_etats_actifs.clear()
 	en_combat = true
 	en_placement = true
@@ -167,7 +225,10 @@ func terminer_combat(victoire: bool) -> void:
 		return
 	en_combat = false
 	en_placement = false
+	zone_combat = Rect2i()
 	_etats_actifs.clear()
+	_ennemi_propose = null
+	_bouton_combattre.hide()
 	_mettre_a_jour_etiquette_etats()
 	_panneau.hide()
 	combat_termine.emit(victoire)
@@ -361,7 +422,7 @@ func _deplacer_par_etat(cible: Node, nombre: int, repousser: bool) -> void:
 	var destination := depart
 	for _i in range(nombre):
 		var suivante := destination + axe
-		if sol.get_cell_source_id(suivante) == -1 or (obstacles != null and obstacles.get_cell_source_id(suivante) != -1):
+		if sol.get_cell_source_id(suivante) == -1 or not dans_zone_combat(suivante) or (obstacles != null and obstacles.get_cell_source_id(suivante) != -1):
 			break
 		if (cible == _joueur and _ennemi != null and suivante == sol.local_to_map(sol.to_local(_ennemi.global_position))) or (cible == _ennemi and suivante == sol.local_to_map(sol.to_local(_joueur.global_position))):
 			break
