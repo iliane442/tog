@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/creation_perso.gd" id="1_creation"]
+[ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="2_theme"]
 
 [node name="CreationPerso" type="CanvasLayer"]
 script = ExtResource("1_creation")
@@ -11,7 +12,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.7)
+color = Color(0.09, 0.035, 0.025, 0.78)
 
 [node name="Panneau" type="Panel" parent="."]
 anchors_preset = -1
@@ -23,6 +24,7 @@ offset_left = -520.0
 offset_top = -360.0
 offset_right = 520.0
 offset_bottom = 360.0
+theme = ExtResource("2_theme")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panneau"]
 anchors_preset = 15
@@ -38,6 +40,7 @@ theme_override_constants/separation = 12
 
 [node name="Titre" type="Label" parent="Panneau/VBoxContainer"]
 layout_mode = 2
+theme_type_variation = "Title"
 theme_override_font_sizes/font_size = 38
 text = "Création de personnage"
 horizontal_alignment = 1

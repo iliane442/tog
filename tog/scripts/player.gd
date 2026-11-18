@@ -32,6 +32,7 @@ var _occupe := false
 var _tour_joueur := false
 var _sort_selectionne := false
 var _sort_selectionne_id := "boule_de_feu"
+var _sort_preselectionne_combat := ""
 var _pa := 0
 var _pm := 0
 var _cases_placement: Array[Vector2i] = []
@@ -73,6 +74,27 @@ func _connecter_combat() -> void:
 	_combat_manager.sort_demandee.connect(_selectionner_sort)
 	_combat_manager.fin_tour_demandee.connect(_fin_du_tour)
 	_combat_manager.placement_valide.connect(_valider_placement)
+
+func utiliser_sort_hors_combat(id_sort: String) -> void:
+	if _combat_manager != null and _combat_manager.en_combat:
+		return
+	if not Personnage.sorts.has(id_sort):
+		return
+	var sort: Dictionary = Personnage.sorts[id_sort]
+	var interface_hud := get_tree().current_scene.find_child("HUD", true, false)
+	if str(sort.get("type", "")) == "heal":
+		var soin := absi(int(sort.get("degats", 0)))
+		if soin <= 0:
+			if interface_hud != null:
+				interface_hud.afficher_message_sort("Ce sort ne peut pas être lancé hors combat.")
+			return
+		Personnage.soigner(soin)
+		if interface_hud != null:
+			interface_hud.afficher_message_sort("%s : +%d PV" % [str(sort.get("nom", "Soin")), soin])
+		return
+	_sort_preselectionne_combat = id_sort
+	if interface_hud != null:
+		interface_hud.afficher_message_sort("%s prêt — approche un ennemi pour l’utiliser." % str(sort.get("nom", "Sort")))
 
 func _id_technique_race() -> String:
 	return str(Personnage.races.get(Personnage.race_id, {}).get("id_technique", RACE_DEFAUT))
@@ -271,9 +293,13 @@ func _valider_placement() -> void:
 func _on_combat_commence() -> void:
 	_tour_joueur = true
 	_pa = pa_max
-	_pm = pm_max
+	_pm = _combat_manager.points_mouvement(self, pm_max)
 	_maj_affichage()
 	_afficher_cases()
+	if _sort_preselectionne_combat != "":
+		var sort_choisi := _sort_preselectionne_combat
+		_sort_preselectionne_combat = ""
+		_selectionner_sort(sort_choisi)
 
 func _on_combat_termine(_victoire: bool) -> void:
 	_tour_joueur = false

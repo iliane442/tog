@@ -69,6 +69,7 @@ var classes: Dictionary = {
 
 signal caracteristiques_modifiees
 signal metiers_modifies
+signal barre_sorts_modifiee
 
 func _ready() -> void:
 	# sauvegarde automatique du perso à chaque changement de stats
@@ -193,14 +194,14 @@ func sort_dans_barre(id: String) -> bool:
 func barre_sorts_pleine() -> bool:
 	return barre_sorts.size() >= TAILLE_BARRE_SORTS
 
-# place un sort de la classe dans le premier emplacement libre de la
-# barre de combat ; renvoie false si le sort n'est pas de la classe ou
-# si la barre est déjà pleine
+# place un sort connu dans le premier emplacement libre de la barre de
+# combat ; les sorts d'état et sorts obtenus hors classe sont acceptés.
 func ajouter_sort_barre(id: String) -> bool:
-	if not sorts_de_classe().has(id) or sort_dans_barre(id) or barre_sorts_pleine():
+	if not sorts.has(id) or sort_dans_barre(id) or barre_sorts_pleine():
 		return false
 	barre_sorts.append(id)
 	sauvegarder()
+	barre_sorts_modifiee.emit()
 	return true
 
 # retire un sort de la barre de combat ; l'ordre des autres sorts est
@@ -209,12 +210,12 @@ func retirer_sort_barre(id: String) -> void:
 	if barre_sorts.has(id):
 		barre_sorts.erase(id)
 		sauvegarder()
+		barre_sorts_modifiee.emit()
 
-# garde en barre uniquement les sorts de la classe actuelle (utile si
-# la classe a changé entre deux sauvegardes)
+# garde en barre uniquement les sorts qui existent toujours en base.
 func _filtrer_barre_sorts() -> void:
 	for id_sort in barre_sorts.duplicate():
-		if not sorts_de_classe().has(id_sort):
+		if not sorts.has(id_sort):
 			barre_sorts.erase(id_sort)
 
 # Applique les bonus de la race et de la classe sur les stats de base,

@@ -6,25 +6,23 @@ signal placement_commence
 signal sort_demandee(id_sort: String)
 signal fin_tour_demandee
 signal placement_valide
+signal ressources_joueur_modifiees(pa: int, pa_max: int, pm: int, pm_max: int)
 
 var en_combat := false
 var en_placement := false
 var _joueur: Node
 var _ennemi
 var _ui: CanvasLayer
-var _panneau: PanelContainer
-var _barre_vie_joueur: ProgressBar
+var _fiche_ennemi: PanelContainer
 var _barre_vie_ennemi: ProgressBar
-var _label_stats: Label
-var _label_message: Label
-var _label_etats: Label
-var _bouton_sort: Button
-var _bouton_fin_tour: Button
-var _bouton_pret: Button
-var _liste_sorts: VBoxContainer
-var _conteneur_sorts: ScrollContainer
+var _label_nom_ennemi: Label
+var _label_vie_ennemi: Label
+var _label_stats_ennemi: Label
+var _label_etats_ennemi: Label
+var _souris_sur_ennemi := false
 var _etats_actifs: Dictionary = {}
 var _hasard := RandomNumberGenerator.new()
+const SCENE_COMBAT_UI := preload("res://scenes/combat_ui.tscn")
 
 func _ready() -> void:
 	_hasard.randomize()
@@ -33,101 +31,134 @@ func _ready() -> void:
 	if _ennemi == null:
 		_ennemi = get_tree().current_scene.find_child("ennemy", true, false)
 	_construire_interface()
+	_connecter_survol_ennemi()
 	mettre_a_jour_stats(Personnage.vie, Personnage.vie_max, 6, 6, 3, 3)
 
 func initialiser(joueur: Node, ennemi: Node) -> void:
 	_joueur = joueur
 	_ennemi = ennemi
+	_connecter_survol_ennemi()
+	_actualiser_fiche_ennemi()
 
 func enregistrer_ennemi(ennemi: Node) -> void:
 	_ennemi = ennemi
-	if _barre_vie_ennemi != null:
-		mettre_a_jour_stats(Personnage.vie, Personnage.vie_max, 0, 0, 0, 0)
+	_connecter_survol_ennemi()
+	_actualiser_fiche_ennemi()
 
 func _construire_interface() -> void:
-	_ui = CanvasLayer.new()
-	_ui.name = "CombatUI"
-	_ui.layer = 5
-	add_child(_ui)
-	_panneau = PanelContainer.new()
-	_panneau.name = "PanneauCombat"
-	_panneau.position = Vector2(24, 110)
-	_panneau.custom_minimum_size = Vector2(330, 0)
-	_ui.add_child(_panneau)
-	var colonne := VBoxContainer.new()
-	colonne.add_theme_constant_override("separation", 8)
-	_panneau.add_child(colonne)
-	var titre := Label.new()
-	titre.text = "Combat"
-	titre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	colonne.add_child(titre)
-	_barre_vie_joueur = _creer_barre(colonne, "Vie du joueur", "RedBar")
-	_barre_vie_ennemi = _creer_barre(colonne, "Vie de l’ennemi", "RedBar")
-	_label_stats = Label.new()
-	colonne.add_child(_label_stats)
-	_label_etats = Label.new()
-	_label_etats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	colonne.add_child(_label_etats)
-	_label_message = Label.new()
-	_label_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	colonne.add_child(_label_message)
-	_bouton_sort = Button.new()
-	_bouton_sort.text = "Lancer la boule de feu (3 PA)"
-	_bouton_sort.pressed.connect(func() -> void: sort_demandee.emit("boule_de_feu"))
-	colonne.add_child(_bouton_sort)
-	_conteneur_sorts = ScrollContainer.new()
-	_conteneur_sorts.custom_minimum_size = Vector2(290, 230)
-	colonne.add_child(_conteneur_sorts)
-	_liste_sorts = VBoxContainer.new()
-	_liste_sorts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_conteneur_sorts.add_child(_liste_sorts)
-	_construire_sorts_etats()
-	_bouton_fin_tour = Button.new()
-	_bouton_fin_tour.text = "Fin du tour"
-	_bouton_fin_tour.pressed.connect(func() -> void: fin_tour_demandee.emit())
-	colonne.add_child(_bouton_fin_tour)
-	_bouton_pret = Button.new()
-	_bouton_pret.text = "Valider le placement"
-	_bouton_pret.pressed.connect(func() -> void: placement_valide.emit())
-	colonne.add_child(_bouton_pret)
-	_panneau.hide()
-	_bouton_sort.hide()
-	_conteneur_sorts.hide()
-	_bouton_fin_tour.hide()
-	_bouton_pret.hide()
+	var ui_existante := get_node_or_null("CombatUI")
+	if ui_existante == null:
+		_ui = SCENE_COMBAT_UI.instantiate() as CanvasLayer
+		if _ui == null:
+			push_warning("Impossible de charger l'interface de combat.")
+			return
+		_ui.name = "CombatUI"
+		add_child(_ui)
+	else:
+		_ui = ui_existante as CanvasLayer
+	if _ui == null:
+		push_warning("La scène de combat ne contient pas de CanvasLayer CombatUI.")
+		return
+	_fiche_ennemi = _ui.get_node("FicheEnnemi") as PanelContainer
+	_label_nom_ennemi = _ui.get_node("FicheEnnemi/Marges/Colonne/Nom") as Label
+	_barre_vie_ennemi = _ui.get_node("FicheEnnemi/Marges/Colonne/LigneVie/Vie") as ProgressBar
+	_label_vie_ennemi = _ui.get_node("FicheEnnemi/Marges/Colonne/LigneVie/VieTexte") as Label
+	_label_stats_ennemi = _ui.get_node("FicheEnnemi/Marges/Colonne/Stats") as Label
+	_label_etats_ennemi = _ui.get_node("FicheEnnemi/Marges/Colonne/Etats") as Label
+	_fiche_ennemi.hide()
+	_actualiser_fiche_ennemi()
 
-func _construire_sorts_etats() -> void:
-	for enfant in _liste_sorts.get_children():
-		enfant.queue_free()
-	for id_sort in Personnage.sorts:
-		var sort: Dictionary = Personnage.sorts[id_sort]
-		var effets: Array = sort.get("effets", [])
-		if effets.is_empty():
-			continue
-		var bouton := Button.new()
-		bouton.text = "%s (%d PA)" % [str(sort.get("nom", "Sort")), int(sort.get("cout_pa", 2))]
-		bouton.tooltip_text = str(sort.get("description", ""))
-		bouton.pressed.connect(func() -> void: sort_demandee.emit(str(id_sort)))
-		_liste_sorts.add_child(bouton)
+func _connecter_survol_ennemi() -> void:
+	if _ennemi == null or not is_instance_valid(_ennemi):
+		return
+	var survol_entree := Callable(self, "_survol_ennemi")
+	var survol_sortie := Callable(self, "_quitter_survol_ennemi")
+	if _ennemi.has_signal("mouse_entered") and not _ennemi.is_connected("mouse_entered", survol_entree):
+		_ennemi.connect("mouse_entered", survol_entree)
+	if _ennemi.has_signal("mouse_exited") and not _ennemi.is_connected("mouse_exited", survol_sortie):
+		_ennemi.connect("mouse_exited", survol_sortie)
+	var maj_sante := Callable(self, "_sante_ennemi_modifiee")
+	if _ennemi.has_signal("sante_modifiee") and not _ennemi.is_connected("sante_modifiee", maj_sante):
+		_ennemi.connect("sante_modifiee", maj_sante)
 
-func _creer_barre(parent: VBoxContainer, nom: String, variation: String) -> ProgressBar:
-	var ligne := VBoxContainer.new()
-	parent.add_child(ligne)
-	var label := Label.new()
-	label.text = nom
-	ligne.add_child(label)
-	var barre := ProgressBar.new()
-	barre.theme_type_variation = variation
-	barre.custom_minimum_size = Vector2(290, 22)
-	barre.show_percentage = false
-	ligne.add_child(barre)
-	return barre
+func _survol_ennemi() -> void:
+	_souris_sur_ennemi = true
+	if not en_combat or _fiche_ennemi == null:
+		return
+	_actualiser_fiche_ennemi()
+	_fiche_ennemi.show()
+	_positionner_fiche_ennemi()
+
+func _quitter_survol_ennemi() -> void:
+	_souris_sur_ennemi = false
+	if _fiche_ennemi != null:
+		_fiche_ennemi.hide()
+
+func _sante_ennemi_modifiee(_vie: int, _vie_max: int) -> void:
+	_actualiser_fiche_ennemi()
+
+func _actualiser_fiche_ennemi() -> void:
+	if _fiche_ennemi == null or _ennemi == null or not is_instance_valid(_ennemi):
+		return
+	var nom_ennemi: String = str(_ennemi.get("nom"))
+	if nom_ennemi.is_empty():
+		nom_ennemi = "Ennemi"
+	var vie_max: int = maxi(int(_ennemi.get("pv_max")), 1)
+	var vie: int = clampi(int(_ennemi.get("pv")), 0, vie_max)
+	_label_nom_ennemi.text = nom_ennemi
+	_barre_vie_ennemi.max_value = vie_max
+	_barre_vie_ennemi.value = vie
+	_label_vie_ennemi.text = "%d / %d" % [vie, vie_max]
+	_label_stats_ennemi.text = "ATTAQUE : %d\nPORTEE : %d cases\nDEPLACEMENT : %d PM" % [
+		int(_ennemi.get("degats_attaque")),
+		int(_ennemi.get("portee_attaque")),
+		int(_ennemi.get("pm_max")),
+	]
+	_label_etats_ennemi.text = _texte_etats_cible(_ennemi)
+
+func _texte_etats_cible(cible: Node) -> String:
+	if cible == null or not is_instance_valid(cible):
+		return "Aucun"
+	var effets: Dictionary = _etats_actifs.get(cible.get_instance_id(), {})
+	if effets.is_empty():
+		return "Aucun"
+	var lignes: Array[String] = []
+	for id_texte in effets:
+		var definition: Dictionary = Personnage.etats.get(int(id_texte), {})
+		var nom_etat: String = str(definition.get("nom", "Etat %d" % int(id_texte)))
+		var effet_actif: Dictionary = effets[id_texte]
+		var piles: int = int(effet_actif.get("piles", 1))
+		var duree: int = int(effet_actif.get("duree", 1))
+		var duree_texte: String = "1 tour" if duree == 1 else "%d tours" % duree
+		var piles_texte: String = " x%d" % piles if piles > 1 else ""
+		lignes.append("%s - %s%s" % [nom_etat, duree_texte, piles_texte])
+	return "\n".join(lignes)
+
+func _positionner_fiche_ennemi() -> void:
+	if _fiche_ennemi == null or not _fiche_ennemi.visible:
+		return
+	var taille_vue: Vector2 = get_viewport().get_visible_rect().size
+	var taille_fiche: Vector2 = _fiche_ennemi.size
+	if taille_fiche == Vector2.ZERO:
+		taille_fiche = _fiche_ennemi.custom_minimum_size
+	var souris: Vector2 = get_viewport().get_mouse_position()
+	var position_fiche: Vector2 = souris + Vector2(18, 18)
+	if position_fiche.x + taille_fiche.x > taille_vue.x:
+		position_fiche.x = souris.x - taille_fiche.x - 18
+	if position_fiche.y + taille_fiche.y > taille_vue.y:
+		position_fiche.y = souris.y - taille_fiche.y - 18
+	_fiche_ennemi.position = position_fiche
+
+func _process(_delta: float) -> void:
+	if _fiche_ennemi != null and _fiche_ennemi.visible:
+		_positionner_fiche_ennemi()
 
 func lancer_combat(ennemi: Node = null) -> void:
 	if en_combat:
 		return
 	if ennemi != null:
 		_ennemi = ennemi
+	_connecter_survol_ennemi()
 	if _joueur == null or _ennemi == null:
 		push_warning("Combat impossible : joueur ou ennemi introuvable.")
 		return
@@ -136,11 +167,10 @@ func lancer_combat(ennemi: Node = null) -> void:
 	_etats_actifs.clear()
 	en_combat = true
 	en_placement = true
-	_panneau.show()
-	_bouton_sort.hide()
-	_conteneur_sorts.hide()
-	_bouton_fin_tour.hide()
-	_bouton_pret.show()
+	_mettre_a_jour_etiquette_etats()
+	_actualiser_fiche_ennemi()
+	if _souris_sur_ennemi:
+		_survol_ennemi()
 	placement_commence.emit()
 
 func _aligner_sur_grille(entite: Node2D) -> void:
@@ -156,10 +186,6 @@ func valider_placement() -> void:
 	if not en_combat or not en_placement:
 		return
 	en_placement = false
-	_bouton_pret.hide()
-	_bouton_sort.show()
-	_conteneur_sorts.show()
-	_bouton_fin_tour.show()
 	combat_commence.emit()
 
 func terminer_combat(victoire: bool) -> void:
@@ -169,27 +195,37 @@ func terminer_combat(victoire: bool) -> void:
 	en_placement = false
 	_etats_actifs.clear()
 	_mettre_a_jour_etiquette_etats()
-	_panneau.hide()
+	if _fiche_ennemi != null:
+		_fiche_ennemi.hide()
+	ressources_joueur_modifiees.emit(0, 0, 0, 0)
 	combat_termine.emit(victoire)
 
-func mettre_a_jour_stats(vie: int, vie_max: int, pa: int, pa_max: int, pm: int, pm_max: int) -> void:
-	if _barre_vie_joueur == null:
-		return
-	_barre_vie_joueur.max_value = maxi(vie_max, 1)
-	_barre_vie_joueur.value = vie
-	if _ennemi != null and is_instance_valid(_ennemi):
-		_barre_vie_ennemi.max_value = maxi(_ennemi.pv_max, 1)
-		_barre_vie_ennemi.value = _ennemi.pv
-	_label_stats.text = "PA : %d / %d    PM : %d / %d" % [pa, pa_max, pm, pm_max]
+func mettre_a_jour_stats(_vie: int, _vie_max: int, pa: int, pa_max: int, pm: int, pm_max: int) -> void:
+	ressources_joueur_modifiees.emit(pa, pa_max, pm, pm_max)
+	_actualiser_fiche_ennemi()
 	_mettre_a_jour_etiquette_etats()
 
 func afficher_message(message: String) -> void:
-	if _label_message != null:
-		_label_message.text = message
+	var interface_hud: Node = get_tree().current_scene.find_child("HUD", true, false)
+	if interface_hud != null and interface_hud.has_method("afficher_message_sort"):
+		interface_hud.call("afficher_message_sort", message)
 
 func effacer_message() -> void:
-	if _label_message != null:
-		_label_message.text = ""
+	var interface_hud: Node = get_tree().current_scene.find_child("HUD", true, false)
+	if interface_hud != null and interface_hud.has_method("afficher_message_sort"):
+		interface_hud.call("afficher_message_sort", "Touches 1-0 : sort | clic : cible ou deplacement")
+
+func demander_sort(id_sort: String) -> void:
+	if en_combat and not en_placement:
+		sort_demandee.emit(id_sort)
+
+func demander_validation_placement() -> void:
+	if en_combat and en_placement:
+		placement_valide.emit()
+
+func demander_fin_tour() -> void:
+	if en_combat and not en_placement:
+		fin_tour_demandee.emit()
 
 func est_allie(sort: Dictionary) -> bool:
 	return str(sort.get("type", "")) in ["buff", "defense", "heal", "healing"]
@@ -202,9 +238,9 @@ func appliquer_effets_sort(cible: Node, sort: Dictionary) -> void:
 		if _hasard.randf() > float(effet.get("chance", 1.0)):
 			continue
 		var id_etat := int(effet.get("id", 0))
-		var etat: Dictionary = Personnage.etats.get(id_etat, {})
-		if etat.is_empty():
+		if id_etat <= 0:
 			continue
+		var etat: Dictionary = Personnage.etats.get(id_etat, {})
 		var par_cible: Dictionary = _etats_actifs.get(cible.get_instance_id(), {})
 		var cle := str(id_etat)
 		var existant: Dictionary = par_cible.get(cle, {})
@@ -261,28 +297,18 @@ func terminer_tour(cible: Node) -> void:
 	_mettre_a_jour_etiquette_etats()
 
 func _mettre_a_jour_etiquette_etats() -> void:
-	if _label_etats == null:
-		return
-	var lignes: Array[String] = []
-	for cible in [_joueur, _ennemi]:
-		if cible == null or not is_instance_valid(cible):
-			continue
-		var par_cible: Dictionary = _etats_actifs.get(cible.get_instance_id(), {})
-		if par_cible.is_empty():
-			continue
-		var noms: Array[String] = []
-		for id_texte in par_cible:
-			var donnees: Dictionary = Personnage.etats.get(int(id_texte), {})
-			var nom := str(donnees.get("nom", "État"))
-			var piles := int(par_cible[id_texte].get("piles", 1))
-			if piles > 1:
-				nom += " x%d" % piles
-			noms.append(nom)
-		lignes.append(("Toi" if cible == _joueur else "Ennemi") + " : " + ", ".join(noms))
-	_label_etats.text = "États actifs\n" + "\n".join(lignes) if not lignes.is_empty() else "Aucun état actif"
+	_actualiser_fiche_ennemi()
+	var interface_hud: Node = get_tree().current_scene.find_child("HUD", true, false)
+	if interface_hud != null and interface_hud.has_method("maj_etats_joueur"):
+		interface_hud.call("maj_etats_joueur", _texte_etats_cible(_joueur))
+
+func etats_joueur_texte() -> String:
+	return _texte_etats_cible(_joueur)
 
 func calculer_degats(lanceur: Node, cible: Node, degats_base: int) -> int:
 	var degats := float(maxi(degats_base, 0))
+	if lanceur == _joueur:
+		degats += float(Personnage.attaque)
 	if a_etat(lanceur, 13):
 		degats *= 1.0 + float(_valeur_etat(lanceur, 13)) * _piles_etat(lanceur, 13)
 	if a_etat(lanceur, 16) and _hasard.randf() < float(_valeur_etat(lanceur, 16)):
@@ -297,6 +323,8 @@ func calculer_degats(lanceur: Node, cible: Node, degats_base: int) -> int:
 		degats *= 1.2
 	if a_etat(cible, 17):
 		degats *= 1.0 + float(_valeur_etat(cible, 17)) * _piles_etat(cible, 17)
+	if cible == _joueur:
+		degats -= float(Personnage.defense)
 	return maxi(int(round(degats)), 0)
 
 func precision_reussie(lanceur: Node) -> bool:

@@ -4,22 +4,27 @@
 # Échap ou M ouvre et referme aussi l'interface.
 extends CanvasLayer
 
+signal menu_ouvert
+signal menu_ferme
+
 var section_actuelle: String = ""
 # répartition en cours, pas encore validée (cle -> points en attente)
 var points_en_attente: Dictionary = {}
+var _tween_fenetre: Tween
+const SCENE_CASE_INVENTAIRE := preload("res://scenes/case_inventaire.tscn")
+const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 
 @onready var fenetre: Panel = $Fenetre
 @onready var btn_menu: Button = $BoutonMenu
-@onready var barre_cascade: VBoxContainer = $BarreCascade
 @onready var titre: Label = $Fenetre/Entete/Titre
 @onready var grille: GridContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DefilementInventaire/Grille
 @onready var label_vide: Label = $Fenetre/Corps/ContenuInventaire/Vide
 @onready var liste_quetes: VBoxContainer = $Fenetre/Corps/ContenuQuetes/DefilementQuetes/ListeQuetes
 @onready var label_aucune_quete: Label = $Fenetre/Corps/ContenuQuetes/Aucune
 @onready var liste_sorts: VBoxContainer = $Fenetre/Corps/ContenuSorts/DefilementSorts/ListeSorts
-@onready var label_nom: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/Nom
-@onready var label_race_classe: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/RaceClasse
-@onready var label_niveau: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/Niveau
+@onready var label_nom: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Nom
+@onready var label_race_classe: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/RaceClasse
+@onready var label_niveau: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Niveau
 @onready var label_xp: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/XP
 @onready var label_vie: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/Vie
 @onready var label_argent: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/Argent
@@ -27,7 +32,18 @@ var points_en_attente: Dictionary = {}
 @onready var btn_valider: Button = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats/BtnValider
 @onready var btn_reinitialiser: Button = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats/BtnReinitialiser
 @onready var btn_effacer_perso: Button = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats/BtnEffacerPerso
-@onready var grille_stats: GridContainer = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid
+@onready var grille_stats: VBoxContainer = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid
+@onready var valeur_vie_max: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/VieMax/VieMax/Valeur
+@onready var valeur_attaque: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/Attaque/Attaque/Valeur
+@onready var valeur_defense: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/Defense/Defense/Valeur
+@onready var lignes_stats: Dictionary = {
+	"vitalite": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatVitalite/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatVitalite/Ligne/Ajouter},
+	"sagesse": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatSagesse/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatSagesse/Ligne/Ajouter},
+	"force": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatForce/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatForce/Ligne/Ajouter},
+	"intelligence": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence/Ligne/Ajouter},
+	"chance": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance/Ligne/Ajouter},
+	"agilite": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite/Ligne/Ajouter},
+}
 @onready var icone_detail: TextureRect = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/IconeItem
 @onready var nom_detail: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/NomItem
 @onready var type_detail: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/TypeRareteItem
@@ -90,24 +106,6 @@ var points_en_attente: Dictionary = {}
 @onready var liste_alliances: VBoxContainer = $Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte/DefilementAlliances/ListeAlliances
 
 # positions des emplacements sur le visuel du personnage (paperdoll)
-const POSITIONS_EMPLACEMENTS := {
-	"tête": Vector2(178, 24),
-	"visage": Vector2(110, 44),
-	"cou": Vector2(252, 56),
-	"corps": Vector2(170, 130),
-	"cape": Vector2(34, 122),
-	"ceinture": Vector2(170, 222),
-	"pantalon": Vector2(170, 292),
-	"pieds": Vector2(170, 364),
-	"main": Vector2(38, 214),
-	"arme": Vector2(318, 262),
-	"anneau1": Vector2(320, 84),
-	"anneau2": Vector2(320, 140),
-}
-const TAILLE_SLOT := Vector2(48, 48)
-const PORTRAIT := "res://assets/sprites/clown.png"
-
-# emplacements d'équipement affichés en haut de l'inventaire
 var emplacements_ui := {}
 var detail_id_courant := ""
 
@@ -124,6 +122,38 @@ const TEXTES_EMPLACEMENTS := {
 	"pieds": "Chaussures",
 	"anneau1": "Anneau 1",
 	"anneau2": "Anneau 2",
+}
+const LABELS_COURTS_EMPLACEMENTS := {
+	"ceinture": "Ceint.",
+	"pieds": "Chauss.",
+}
+const NOMS_NODES_EMPLACEMENTS := {
+	"arme": "EquipementArme",
+	"corps": "EquipementCorps",
+	"tête": "EquipementTete",
+	"visage": "EquipementVisage",
+	"cou": "EquipementCou",
+	"main": "EquipementMain",
+	"cape": "EquipementCape",
+	"ceinture": "EquipementCeinture",
+	"pantalon": "EquipementPantalon",
+	"pieds": "EquipementPieds",
+	"anneau1": "EquipementAnneau1",
+	"anneau2": "EquipementAnneau2",
+}
+const POSITIONS_REPLI_EMPLACEMENTS := {
+	"tête": Vector2(14, 70),
+	"visage": Vector2(298, 70),
+	"cou": Vector2(298, 146),
+	"corps": Vector2(14, 146),
+	"cape": Vector2(14, 222),
+	"ceinture": Vector2(16, 402),
+	"pantalon": Vector2(108, 402),
+	"pieds": Vector2(200, 402),
+	"main": Vector2(14, 298),
+	"arme": Vector2(298, 222),
+	"anneau1": Vector2(298, 298),
+	"anneau2": Vector2(292, 402),
 }
 const ICONES_EMPLACEMENTS := {
 	"arme": "res://addons/pixel_ui_fantasy/icons/sword.png",
@@ -163,6 +193,7 @@ const ICONES_EMPLACEMENTS := {
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	fenetre.visible = false
+	_ajuster_fenetre()
 	_creer_emplacements()
 	btn_equiper.pressed.connect(_on_bouton_equiper)
 	btn_ouvrir_coffre.pressed.connect(_on_bouton_ouvrir_coffre)
@@ -172,19 +203,23 @@ func _ready() -> void:
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
 	btn_effacer_perso.pressed.connect(_on_effacer_perso)
+	for cle: String in lignes_stats:
+		var ligne_stat: Dictionary = lignes_stats[cle]
+		var bouton_ajouter: Button = ligne_stat["ajouter"] as Button
+		bouton_ajouter.pressed.connect(_on_augmenter_stat.bind(cle))
 	btn_menu.pressed.connect(_on_bouton_menu)
-	$BarreCascade/Personnage.pressed.connect(ouvrir.bind("personnage"))
-	$BarreCascade/Sorts.pressed.connect(ouvrir.bind("sorts"))
-	$BarreCascade/Quetes.pressed.connect(ouvrir.bind("quetes"))
-	$BarreCascade/Inventaire.pressed.connect(ouvrir.bind("inventaire"))
-	$BarreCascade/Wiki.pressed.connect(ouvrir.bind("wiki"))
+	$Fenetre/Corps/NavigationPirate/BarreCascade/Personnage.pressed.connect(ouvrir.bind("personnage"))
+	$Fenetre/Corps/NavigationPirate/BarreCascade/Sorts.pressed.connect(ouvrir.bind("sorts"))
+	$Fenetre/Corps/NavigationPirate/BarreCascade/Quetes.pressed.connect(ouvrir.bind("quetes"))
+	$Fenetre/Corps/NavigationPirate/BarreCascade/Inventaire.pressed.connect(ouvrir.bind("inventaire"))
+	$Fenetre/Corps/NavigationPirate/BarreCascade/Wiki.pressed.connect(ouvrir.bind("wiki"))
 	champ_recherche.text_changed.connect(func(_t): maj_wiki())
 	_peupler_types_wiki()
 	option_type_wiki.item_selected.connect(func(_i): maj_wiki())
 	btn_donner_item_wiki.pressed.connect(_on_donner_item_wiki)
-	$BarreCascade/Metiers.pressed.connect(ouvrir.bind("metiers"))
-	$BarreCascade/Hotel.pressed.connect(ouvrir.bind("hotel"))
-	$BarreCascade/Equipage.pressed.connect(ouvrir.bind("equipage"))
+	$Fenetre/Corps/NavigationPirate/BarreCascade/Metiers.pressed.connect(ouvrir.bind("metiers"))
+	$Fenetre/Corps/NavigationPirate/BarreCascade/Hotel.pressed.connect(ouvrir.bind("hotel"))
+	$Fenetre/Corps/NavigationPirate/BarreCascade/Equipage.pressed.connect(ouvrir.bind("equipage"))
 	Inventaire.inventaire_modifie.connect(maj_grille)
 	QuestManager.quete_acceptee.connect(maj_quetes)
 	QuestManager.quete_progressee.connect(maj_quetes)
@@ -203,6 +238,15 @@ func _ready() -> void:
 	btn_deposer.pressed.connect(_on_deposer_caisse)
 	btn_retirer_caisse.pressed.connect(_on_retirer_caisse)
 	Equipages.equipage_modifie.connect(_on_equipage_modifie)
+func _ajuster_fenetre() -> void:
+	var taille_ecran: Vector2 = get_viewport().get_visible_rect().size
+	var demi_largeur := minf(600.0, taille_ecran.x * 0.47)
+	var demi_hauteur := minf(400.0, taille_ecran.y * 0.44)
+	fenetre.offset_left = -demi_largeur
+	fenetre.offset_right = demi_largeur
+	fenetre.offset_top = -demi_hauteur
+	fenetre.offset_bottom = demi_hauteur
+	fenetre.pivot_offset = Vector2(demi_largeur, demi_hauteur)
 
 func _process(_delta: float) -> void:
 	# referme la fenêtre si un dialogue met le jeu en pause
@@ -220,11 +264,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _on_bouton_menu() -> void:
-	barre_cascade.visible = not barre_cascade.visible
-	if barre_cascade.visible:
-		barre_cascade.modulate.a = 0.0
-		var fondu := create_tween()
-		fondu.tween_property(barre_cascade, "modulate:a", 1.0, 0.15)
+	if fenetre.visible:
+		fermer()
+	else:
+		ouvrir()
 
 func ouvrir(section: String = "") -> void:
 	if get_tree().paused:
@@ -233,13 +276,33 @@ func ouvrir(section: String = "") -> void:
 		section_actuelle = section
 	elif section_actuelle == "":
 		section_actuelle = "personnage"
+	var etait_fermee := not fenetre.visible
+	if _tween_fenetre != null and _tween_fenetre.is_running():
+		_tween_fenetre.kill()
 	fenetre.visible = true
+	if etait_fermee:
+		menu_ouvert.emit()
+		fenetre.modulate.a = 0.0
+		fenetre.scale = Vector2(0.98, 0.98)
+		_tween_fenetre = create_tween().set_parallel(true)
+		_tween_fenetre.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		_tween_fenetre.tween_property(fenetre, "modulate:a", 1.0, 0.18)
+		_tween_fenetre.tween_property(fenetre, "scale", Vector2.ONE, 0.18)
 	maj_section()
 
 func fermer() -> void:
 	# les points non validés sont abandonnés à la fermeture
 	points_en_attente = {}
-	fenetre.visible = false
+	if not fenetre.visible:
+		return
+	if _tween_fenetre != null and _tween_fenetre.is_running():
+		_tween_fenetre.kill()
+	menu_ferme.emit()
+	_tween_fenetre = create_tween().set_parallel(true)
+	_tween_fenetre.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	_tween_fenetre.tween_property(fenetre, "modulate:a", 0.0, 0.14)
+	_tween_fenetre.tween_property(fenetre, "scale", Vector2(0.98, 0.98), 0.14)
+	_tween_fenetre.finished.connect(fenetre.hide)
 
 func maj_section() -> void:
 	for section in contenus:
@@ -267,18 +330,10 @@ func maj_section() -> void:
 			maj_equipage()
 
 func maj_personnage() -> void:
-	var libelles: Dictionary = {
-		"vitalite": "Vitalité",
-		"sagesse": "Sagesse",
-		"force": "Force",
-		"intelligence": "Intelligence",
-		"chance": "Chance",
-		"agilite": "Agilité",
-	}
 	var en_attente := _total_points_en_attente()
 	var restants := maxi(Personnage.points_statistique - en_attente, 0)
 	label_nom.text = Personnage.nom
-	label_race_classe.text = "Race : %s — Classe : %s" % [Personnage.nom_race(), Personnage.nom_classe()]
+	label_race_classe.text = "Race : %s | Classe : %s" % [Personnage.nom_race(), Personnage.nom_classe()]
 	label_niveau.text = "Niveau %d" % Personnage.niveau
 	label_xp.text = "Expérience : %d / %d" % [Personnage.xp, Personnage.xp_prochain_niveau()]
 	var vie_max_affichee: int = Personnage.vie_max + 5 * int(points_en_attente.get("vitalite", 0))
@@ -289,28 +344,15 @@ func maj_personnage() -> void:
 		label_points.text += "  (non validés : %d)" % en_attente
 	btn_valider.disabled = en_attente == 0
 	btn_reinitialiser.disabled = en_attente == 0
-	for enfant in grille_stats.get_children():
-		enfant.queue_free()
-	for entree in [["Vie max", vie_max_affichee], ["Attaque", Personnage.attaque], ["Défense", Personnage.defense]]:
-		var etiquette := Label.new()
-		etiquette.text = entree[0]
-		var valeur_fixe := Label.new()
-		valeur_fixe.text = str(entree[1])
-		grille_stats.add_child(etiquette)
-		grille_stats.add_child(valeur_fixe)
-		grille_stats.add_child(Control.new())  # colonne vide pour l'alignement
-	for cle in Personnage.caracteristiques:
-		var nom := Label.new()
-		nom.text = libelles.get(cle, cle)
-		var valeur := Label.new()
-		valeur.text = str(Personnage.caracteristiques[cle] + int(points_en_attente.get(cle, 0)))
-		var btn_augmenter := Button.new()
-		btn_augmenter.text = "+"
-		btn_augmenter.disabled = restants <= 0
-		btn_augmenter.pressed.connect(_on_augmenter_stat.bind(cle))
-		grille_stats.add_child(nom)
-		grille_stats.add_child(valeur)
-		grille_stats.add_child(btn_augmenter)
+	valeur_vie_max.text = str(vie_max_affichee)
+	valeur_attaque.text = str(Personnage.attaque)
+	valeur_defense.text = str(Personnage.defense)
+	for cle: String in Personnage.caracteristiques:
+		var ligne_stat: Dictionary = lignes_stats[cle]
+		var valeur_stat: Label = ligne_stat["valeur"] as Label
+		var bouton_ajouter: Button = ligne_stat["ajouter"] as Button
+		valeur_stat.text = str(int(Personnage.caracteristiques[cle]) + int(points_en_attente.get(cle, 0)))
+		bouton_ajouter.disabled = restants <= 0
 
 func _total_points_en_attente() -> int:
 	var total := 0
@@ -360,21 +402,41 @@ func _icone_sort(sort: Dictionary) -> Texture2D:
 	var chemin: String = ICONES_SORTS.get(str(sort.get("type", "")).to_lower(), ICONE_SORT_DEFAUT)
 	return load(chemin)
 
-# onglet Sorts : barre de combat en haut (cliquer un sort placé pour le
-# retirer), puis la liste des sorts de la classe avec un bouton pour
-# placer chacun dans la barre ou l'en retirer
+# onglet Sorts : barre de combat puis tous les sorts connus, répartis
+# entre sorts de classe et autres sorts/états équipables.
 func maj_sorts() -> void:
 	for enfant in liste_sorts.get_children():
 		enfant.queue_free()
 	_construire_barre_sorts()
-	var ids := Personnage.sorts_de_classe()
-	if ids.is_empty():
+	var ids_classe: Array[String] = Personnage.sorts_de_classe()
+	var ids_combat: Array[String] = []
+	var ids_connus: Array[String] = []
+	for cle: Variant in Personnage.sorts.keys():
+		var id_sort: String = str(cle)
+		ids_connus.append(id_sort)
+	ids_connus.sort()
+	for id_sort in ids_connus:
+		if not ids_classe.has(id_sort):
+			ids_combat.append(id_sort)
+	if ids_connus.is_empty():
 		var vide := Label.new()
-		vide.text = "Votre classe ne dispose d'aucun sort connu."
+		vide.text = "Aucun sort n'est disponible pour le moment."
 		liste_sorts.add_child(vide)
 		return
-	for id in ids:
-		_construire_carte_sort(id)
+	if not ids_classe.is_empty():
+		_ajouter_titre_section_sorts("Sorts de classe")
+		for id_classe in ids_classe:
+			if Personnage.sorts.has(id_classe):
+				_construire_carte_sort(id_classe)
+	if not ids_combat.is_empty():
+		_ajouter_titre_section_sorts("Sorts de combat et états")
+		for id_combat in ids_combat:
+			_construire_carte_sort(id_combat)
+func _ajouter_titre_section_sorts(texte: String) -> void:
+	var titre_section := Label.new()
+	titre_section.text = texte
+	titre_section.add_theme_font_size_override("font_size", 24)
+	liste_sorts.add_child(titre_section)
 
 # barre de sorts : un bouton par emplacement ; les emplacements vides
 # sont grisés, cliquer un sort placé le retire de la barre
@@ -383,7 +445,7 @@ func _construire_barre_sorts() -> void:
 	var colonne := VBoxContainer.new()
 	colonne.add_theme_constant_override("separation", 8)
 	var titre_barre := Label.new()
-	titre_barre.text = "Barre de sorts — %d / %d" % [
+	titre_barre.text = "Barre de sorts - %d / %d" % [
 		Personnage.barre_sorts.size(), Personnage.TAILLE_BARRE_SORTS]
 	titre_barre.add_theme_font_size_override("font_size", 22)
 	colonne.add_child(titre_barre)
@@ -435,14 +497,32 @@ func _construire_carte_sort(id: String) -> void:
 	entete.add_child(nom)
 	entete.add_child(btn_barre)
 	var infos := Label.new()
-	var texte_infos := "Type : %s — Portée : %d — Recharge : %d" % [
-		sort.get("type", "—"), int(sort.get("portee", 0)), int(sort.get("recharge", 0)),
+	var texte_infos := "Type : %s | Portée : %d | Recharge : %d" % [
+		sort.get("type", "-"), int(sort.get("portee", 0)), int(sort.get("recharge", 0)),
 	]
 	if int(sort.get("degats", 0)) > 0:
-		texte_infos += " — Dégâts : %d" % int(sort["degats"])
+		texte_infos += " | Dégâts : %d" % int(sort["degats"])
 	infos.text = texte_infos
 	var description := Label.new()
-	description.text = str(sort.get("description", ""))
+	var texte_description: String = str(sort.get("description", ""))
+	var effets: Array = sort.get("effets", [])
+	if not effets.is_empty():
+		var noms_effets: Array[String] = []
+		for effet: Variant in effets:
+			if effet is Dictionary:
+				var id_etat: int = int(effet.get("id", 0))
+				var donnees_etat: Dictionary = Personnage.etats.get(id_etat, {})
+				var nom_effet: String = str(donnees_etat.get("nom", "État %d" % id_etat))
+				var duree: int = int(effet.get("duree", 0))
+				var chance_brute: float = float(effet.get("chance", 1.0))
+				var chance: int = roundi(chance_brute * 100.0 if chance_brute <= 1.0 else chance_brute)
+				var texte_effet: String = "%s - %d%%" % [nom_effet, chance]
+				if duree > 0:
+					texte_effet += " - %d tour%s" % [duree, "s" if duree > 1 else ""]
+				noms_effets.append(texte_effet)
+		if not noms_effets.is_empty():
+			texte_description += "\nEffets : " + ", ".join(noms_effets)
+	description.text = texte_description
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	boite.add_child(entete)
 	boite.add_child(infos)
@@ -509,34 +589,19 @@ func maj_grille() -> void:
 		return
 	for id in Inventaire.objets:
 		var details := Inventaire.details_objet(id)
-		var slot := PanelContainer.new()
+		var quantite_objet: int = int(Inventaire.objets[id])
+		var slot := SCENE_CASE_INVENTAIRE.instantiate() as PanelContainer
+		if slot == null:
+			push_warning("Impossible de charger la case d'inventaire.")
+			continue
 		slot.theme_type_variation = _variation_rarete(int(details.get("id_rarete", 1)))
-		slot.custom_minimum_size = Vector2(130, 90)
 		slot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		slot.gui_input.connect(_on_slot_clique.bind(id))
-		var boite := VBoxContainer.new()
-		boite.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		boite.alignment = BoxContainer.ALIGNMENT_CENTER
-		var icone := TextureRect.new()
-		icone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.tooltip_text = "%s x%d\n%s" % [Inventaire.nom_objet(id), quantite_objet, str(details.get("description", ""))]
+		var icone: TextureRect = slot.get_node("Boite/Icone")
 		icone.texture = _icone_objet(details)
-		icone.custom_minimum_size = Vector2(32, 32)
-		icone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		var nom := Label.new()
-		nom.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		nom.text = Inventaire.nom_objet(id)
-		nom.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		nom.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		nom.add_theme_font_size_override("font_size", 20)
-		var quantite := Label.new()
-		quantite.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		quantite.text = "x%d" % Inventaire.objets[id]
-		quantite.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		boite.add_child(icone)
-		boite.add_child(nom)
-		boite.add_child(quantite)
-		slot.add_child(boite)
+		var quantite: Label = slot.get_node("Boite/Quantite")
+		quantite.text = "x%d" % quantite_objet
 		grille.add_child(slot)
 
 func _on_slot_clique(evenement: InputEvent, id: String) -> void:
@@ -551,7 +616,7 @@ func maj_detail_item(id: String) -> void:
 	nom_detail.add_theme_color_override("font_color", details["couleur_rarete"])
 	var type_texte: String = details.get("type", "").capitalize()
 	if details.get("sous_type", "") != "":
-		type_texte += " — %s" % details["sous_type"].capitalize()
+		type_texte += " | %s" % details["sous_type"].capitalize()
 	if details.get("rarete", "") != "":
 		type_texte += "\n%s" % details["rarete"]
 	type_detail.text = type_texte
@@ -579,26 +644,22 @@ func maj_detail_aucun() -> void:
 # construit le paperdoll : portrait du personnage au centre, un slot
 # cliquable par emplacement positionné sur le corps
 func _creer_emplacements() -> void:
-	var portrait := TextureRect.new()
-	portrait.texture = load(PORTRAIT)
-	portrait.custom_minimum_size = Vector2(260, 430)
-	portrait.position = Vector2(70, 40)
-	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	silhouette.add_child(portrait)
 	for emplacement in TEXTES_EMPLACEMENTS:
-		var slot := PanelContainer.new()
-		slot.custom_minimum_size = TAILLE_SLOT
-		slot.position = POSITIONS_EMPLACEMENTS[emplacement]
+		var nom_noeud: String = str(NOMS_NODES_EMPLACEMENTS[str(emplacement)])
+		var slot: PanelContainer = silhouette.get_node_or_null(nom_noeud) as PanelContainer
+		if slot == null:
+			slot = SCENE_CASE_EQUIPEMENT.instantiate() as PanelContainer
+			if slot == null:
+				push_warning("Impossible de charger la case d'équipement : %s." % str(emplacement))
+				continue
+			slot.name = nom_noeud
+			slot.position = POSITIONS_REPLI_EMPLACEMENTS[str(emplacement)]
+			silhouette.add_child(slot)
 		slot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		slot.gui_input.connect(_on_emplacement_clique.bind(emplacement))
-		var icone := TextureRect.new()
-		icone.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		slot.add_child(icone)
-		silhouette.add_child(slot)
+		var icone: TextureRect = slot.get_node("Contenu/Icone")
+		var libelle: Label = slot.get_node("Contenu/Libelle")
+		libelle.text = LABELS_COURTS_EMPLACEMENTS.get(emplacement, TEXTES_EMPLACEMENTS[emplacement])
 		emplacements_ui[emplacement] = {"slot": slot, "icone": icone}
 
 # met à jour le bouton Équiper/Déséquiper selon l'objet affiché dans le détail
@@ -812,11 +873,11 @@ func maj_wiki() -> void:
 		liste_wiki.add_child(bouton)
 	var prefixe := ""
 	if type_choisi != "":
-		prefixe = "Type : %s — " % type_choisi.capitalize()
+		prefixe = "Type : %s | " % type_choisi.capitalize()
 	if filtre == "":
 		compteur_wiki.text = prefixe + "Objets découverts : %d / %d" % [connus, lignes.size()]
 	elif affiches > 0:
-		compteur_wiki.text = prefixe + "Recherche : %d objet(s) — %d découvert(s)" % [affiches, connus]
+		compteur_wiki.text = prefixe + "Recherche : %d objet(s) | %d découvert(s)" % [affiches, connus]
 	else:
 		compteur_wiki.text = prefixe + "Aucun objet ne correspond à « %s »" % filtre
 	maj_detail_aucun_wiki()
@@ -837,7 +898,7 @@ func maj_detail_wiki(id: String) -> void:
 	nom_wiki.add_theme_color_override("font_color", details["couleur_rarete"])
 	var type_texte: String = details.get("type", "").capitalize()
 	if details.get("sous_type", "") != "":
-		type_texte += " — %s" % details["sous_type"].capitalize()
+		type_texte += " | %s" % details["sous_type"].capitalize()
 	if details.get("rarete", "") != "":
 		type_texte += "\n%s" % details["rarete"]
 	type_wiki.text = type_texte
@@ -889,17 +950,17 @@ func maj_metiers() -> void:
 func afficher_metier(id_profession: String) -> void:
 	metier_affiche = id_profession
 	var infos: Dictionary = Personnage.professions().get(id_profession, {})
-	nom_metier.text = str(infos.get("nom", "—"))
+	nom_metier.text = str(infos.get("nom", "-"))
 	desc_metier.text = str(infos.get("description", ""))
 	if not Personnage.a_metier(id_profession):
-		xp_metier.text = "Métier non choisi — un seul métier est accordé à la création du personnage."
+		xp_metier.text = "Métier non choisi - un seul métier est accordé à la création du personnage."
 		titre_recettes.visible = false
 		for enfant in liste_recettes.get_children():
 			enfant.queue_free()
 		return
 	titre_recettes.visible = true
 	var donnees: Dictionary = Personnage.metiers[id_profession]
-	xp_metier.text = "Niveau %d — %d / %d XP" % [
+	xp_metier.text = "Niveau %d - %d / %d XP" % [
 		Personnage.niveau_metier(id_profession),
 		int(donnees["xp"]),
 		Personnage.xp_prochain_niveau_metier(id_profession),
@@ -950,7 +1011,7 @@ func _construire_recettes(id_profession: String) -> void:
 		var infos := Label.new()
 		infos.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		infos.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		infos.text = "Niveau %d requis · Coût %d Berry · +%d XP · %d s" % [
+		infos.text = "Niveau %d requis - Coût %d Berry - +%d XP - %d s" % [
 			int(r["niveau_requis"]), int(r["cout_berry"]), int(r["xp"]), int(r["temps"]),
 		]
 		boite.add_child(entete)
@@ -1014,7 +1075,7 @@ func _construire_achats_hotel() -> void:
 		var ligne_action := HBoxContainer.new()
 		ligne_action.add_theme_constant_override("separation", 12)
 		var prix := Label.new()
-		prix.text = "x%d — %d Berry" % [int(offre["quantite"]), int(offre["prix"])]
+		prix.text = "x%d - %d Berry" % [int(offre["quantite"]), int(offre["prix"])]
 		prix.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		prix.add_theme_font_size_override("font_size", 20)
 		var btn := Button.new()
@@ -1053,7 +1114,7 @@ func _construire_ventes_hotel() -> void:
 		var ligne_action := HBoxContainer.new()
 		ligne_action.add_theme_constant_override("separation", 12)
 		var prix := Label.new()
-		prix.text = "x%d à %d Berry/u — %d Berry" % [int(mise["quantite"]), int(mise["prix_unite"]), total]
+		prix.text = "x%d à %d Berry/u - %d Berry" % [int(mise["quantite"]), int(mise["prix_unite"]), total]
 		prix.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		prix.add_theme_font_size_override("font_size", 20)
 		var btn := Button.new()
@@ -1138,7 +1199,7 @@ func maj_equipage() -> void:
 	if equipe:
 		titre_membres.text = "Membres (%d / %d)" % [
 			Equipages.nb_membres(), Equipages.MEMBRES_MAX]
-		info_equipage.text = "« %s » — Niveau %d — Capitaine : %s" % [
+		info_equipage.text = "« %s » - Niveau %d - Capitaine : %s" % [
 			Equipages.mon_equipage["nom"], int(Equipages.mon_equipage["niveau"]),
 			Equipages.mon_equipage["capitaine"]]
 		var description := str(Equipages.mon_equipage.get("description", ""))
@@ -1170,7 +1231,7 @@ func _construire_membres() -> void:
 	var boite_capitaine := HBoxContainer.new()
 	boite_capitaine.add_theme_constant_override("separation", 12)
 	var nom_capitaine := Label.new()
-	nom_capitaine.text = "%s — Capitaine" % Equipages.mon_equipage["capitaine"]
+	nom_capitaine.text = "%s - Capitaine" % Equipages.mon_equipage["capitaine"]
 	nom_capitaine.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	nom_capitaine.add_theme_font_size_override("font_size", 22)
 	boite_capitaine.add_child(nom_capitaine)
@@ -1188,7 +1249,7 @@ func _construire_membres() -> void:
 		var boite := HBoxContainer.new()
 		boite.add_theme_constant_override("separation", 12)
 		var nom := Label.new()
-		nom.text = nom_membre if rang == Equipages.RANG_MATELOT else "%s — %s" % [nom_membre, rang.capitalize()]
+		nom.text = nom_membre if rang == Equipages.RANG_MATELOT else "%s - %s" % [nom_membre, rang.capitalize()]
 		nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nom.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		nom.add_theme_font_size_override("font_size", 22)
@@ -1222,7 +1283,7 @@ func _construire_alliances() -> void:
 	if flotte.is_empty():
 		info_flotte.text = "Aucune flotte : concluez une alliance avec un autre équipage pour fonder la vôtre."
 	else:
-		info_flotte.text = "« %s » — %d équipage(s)" % [
+		info_flotte.text = "« %s » - %d équipage(s)" % [
 			flotte["nom"], Equipages.membres_de_ma_flotte().size()]
 	var gerant := Equipages.puis_je_gerer()
 	var autres := Equipages.autres_equipages()
@@ -1238,12 +1299,12 @@ func _construire_alliances() -> void:
 		var boite := HBoxContainer.new()
 		boite.add_theme_constant_override("separation", 12)
 		var nom := Label.new()
-		nom.text = "« %s » — Capitaine %s" % [str(ligne["nom"]), str(ligne["capitaine"])]
+		nom.text = "« %s » - Capitaine %s" % [str(ligne["nom"]), str(ligne["capitaine"])]
 		nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nom.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		nom.add_theme_font_size_override("font_size", 22)
 		var infos := Label.new()
-		infos.text = "Niveau %d — %d membres" % [
+		infos.text = "Niveau %d - %d membres" % [
 			int(ligne["niveau"]), Equipages.nb_membres_de(id_equipage)]
 		boite.add_child(nom)
 		boite.add_child(infos)
