@@ -357,7 +357,7 @@ func emplacement_equipement(type: String, sous_type: String = "") -> String:
 					return "pantalon"
 				"chaussures", "pieds":
 					return "pieds"
-				"gants", "mains", "main":
+				"gants", "mains", "main", "protège-bras", "bracelet", "bouclier":
 					return "main"
 				_:
 					return "corps"
@@ -365,13 +365,17 @@ func emplacement_equipement(type: String, sous_type: String = "") -> String:
 			match sous_type.to_lower():
 				"tête":
 					return "tête"
-				"visage":
+				"visage", "monocle":
 					return "visage"
 				"cou":
 					return "cou"
 				"anneau":
 					return "anneau"
-				"gants", "mains", "main":
+				"ceinture":
+					return "ceinture"
+				"pieds", "chaussures":
+					return "pieds"
+				"gants", "mains", "main", "bracelet", "boussole", "longue-vue", "sextant", "dial", "instrument":
 					return "main"
 	return ""
 
