@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs><linearGradient id="gold" x2="0" y2="1"><stop stop-color="#fff0a0"/><stop offset=".5" stop-color="#dc9c34"/><stop offset="1" stop-color="#8b4a16"/></linearGradient><linearGradient id="straw" x2="0" y2="1"><stop stop-color="#ffe89a"/><stop offset="1" stop-color="#bf7820"/></linearGradient></defs>
+  <g fill="none" stroke="url(#gold)" stroke-width="10" stroke-linecap="round"><path d="M24 88 104 113M104 88 24 113"/><path d="m19 82-7-8m13 12-2-12m13 15-7-11m78 4 7-8m-13 12 2-12m-13 15 7-11m-62 31-8 7m12-13-12 2m15-13-11 7m78 4 8 7m-12-13 12 2m-15-13 11 7" stroke-width="4"/></g>
+  <path d="M31 52c2-21 17-34 33-34s31 13 33 34c10 4 16 13 14 21-3 13-18 20-47 20S20 86 17 73c-2-8 4-17 14-21Z" fill="#f5dfb2" stroke="#542719" stroke-width="5"/>
+  <path d="M48 54c-7 0-12 6-12 14 0 7 5 12 12 12s12-5 12-12c0-8-5-14-12-14Zm32 0c-7 0-12 6-12 14 0 7 5 12 12 12s12-5 12-12c0-8-5-14-12-14Z" fill="#321817"/>
+  <path d="M54 77q10 9 20 0v10H54Z" fill="#b85b35" stroke="#542719" stroke-width="3"/>
+  <path d="M17 37Q64 0 111 37L103 47Q64 35 25 47Z" fill="url(#straw)" stroke="#542719" stroke-width="5"/>
+  <path d="M21 39Q64 23 107 39L103 48Q64 40 25 48Z" fill="#8f221e" stroke="#542719" stroke-width="3"/>
+  <path d="M64 14v9" stroke="#542719" stroke-width="3"/>
+</svg>

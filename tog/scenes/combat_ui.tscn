@@ -1,0 +1,95 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="1_theme"]
+
+[node name="CombatUI" type="CanvasLayer"]
+layer = 20
+
+[node name="FicheEnnemi" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(340, 320)
+anchors_preset = 0
+offset_right = 340.0
+offset_bottom = 320.0
+theme = ExtResource("1_theme")
+theme_type_variation = "ParchmentPanel"
+visible = false
+mouse_filter = 2
+
+[node name="Marges" type="MarginContainer" parent="FicheEnnemi"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Colonne" type="VBoxContainer" parent="FicheEnnemi/Marges"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 5
+
+[node name="Titre" type="Label" parent="FicheEnnemi/Marges/Colonne"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = "Ribbon"
+theme_override_font_sizes/font_size = 19
+text = "ENNEMI"
+horizontal_alignment = 1
+
+[node name="Nom" type="Label" parent="FicheEnnemi/Marges/Colonne"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = "Nameplate"
+theme_override_font_sizes/font_size = 18
+text = "Ennemi"
+horizontal_alignment = 1
+
+[node name="LigneVie" type="HBoxContainer" parent="FicheEnnemi/Marges/Colonne"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Vie" type="ProgressBar" parent="FicheEnnemi/Marges/Colonne/LigneVie"]
+custom_minimum_size = Vector2(120, 24)
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+theme = ExtResource("1_theme")
+theme_type_variation = "RedBar"
+show_percentage = false
+
+[node name="VieTexte" type="Label" parent="FicheEnnemi/Marges/Colonne/LigneVie"]
+custom_minimum_size = Vector2(74, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+text = "100 / 100"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Stats" type="Label" parent="FicheEnnemi/Marges/Colonne"]
+custom_minimum_size = Vector2(0, 74)
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.12, 0.055, 0.025, 1)
+text = "ATTAQUE : 10\nPORTEE : 2 cases\nDEPLACEMENT : 3 PM"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EtatsTitre" type="Label" parent="FicheEnnemi/Marges/Colonne"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.12, 0.055, 0.025, 1)
+text = "ETATS SUBIS"
+
+[node name="Etats" type="Label" parent="FicheEnnemi/Marges/Colonne"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.12, 0.055, 0.025, 1)
+text = "Aucun etat"
+autowrap_mode = 2
+horizontal_alignment = 1

@@ -101,6 +101,7 @@ var classes: Dictionary = {
 
 signal caracteristiques_modifiees
 signal metiers_modifies
+signal barre_sorts_modifiee
 
 func _ready() -> void:
 	# sauvegarde automatique du perso à chaque changement de stats
@@ -314,6 +315,7 @@ func ajouter_sort_barre(id: String) -> bool:
 		return false
 	barre_sorts.append(id)
 	sauvegarder()
+	barre_sorts_modifiee.emit()
 	return true
 
 # retire un sort de la barre de combat ; l'ordre des autres sorts est
@@ -322,6 +324,7 @@ func retirer_sort_barre(id: String) -> void:
 	if barre_sorts.has(id):
 		barre_sorts.erase(id)
 		sauvegarder()
+		barre_sorts_modifiee.emit()
 
 # garde en barre uniquement les sorts disponibles (classe + fruit mangé)
 func _filtrer_barre_sorts() -> void:

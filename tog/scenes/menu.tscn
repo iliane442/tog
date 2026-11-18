@@ -1,11 +1,23 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/menu.gd" id="1_menu"]
+[ext_resource type="Texture2D" path="res://assets/sprites/clown_sans_fond.png" id="3_portrait"]
+[ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://assets/ui/jolly_roger.svg" id="4_embleme"]
+[ext_resource type="Texture2D" path="res://assets/ui/fond_menu_pirate.png" id="5_fond"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/heart.png" id="6_stat_vitalite"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/mana.png" id="7_stat_sagesse"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/sword.png" id="8_stat_force"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/gem.png" id="9_stat_intelligence"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/coin.png" id="10_stat_chance"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/arrow_right.png" id="11_stat_agilite"]
+[ext_resource type="PackedScene" path="res://scenes/case_equipement.tscn" id="12_case_equipement"]
 
 [node name="MenuUI" type="CanvasLayer"]
 script = ExtResource("1_menu")
 
 [node name="BoutonMenu" type="Button" parent="."]
+visible = false
 anchors_preset = -1
 anchor_left = 1.0
 anchor_top = 1.0
@@ -16,104 +28,139 @@ offset_top = -64.0
 offset_right = -16.0
 offset_bottom = -16.0
 text = "Menu"
-
-[node name="BarreCascade" type="VBoxContainer" parent="."]
-visible = false
-anchors_preset = -1
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -176.0
-offset_top = -512.0
-offset_right = -16.0
-offset_bottom = -72.0
-theme_override_constants/separation = 8
-
-[node name="Personnage" type="Button" parent="BarreCascade"]
-custom_minimum_size = Vector2(160, 48)
-layout_mode = 2
-text = "Personnage"
-
-[node name="Sorts" type="Button" parent="BarreCascade"]
-custom_minimum_size = Vector2(160, 48)
-layout_mode = 2
-text = "Sorts"
-
-[node name="Quetes" type="Button" parent="BarreCascade"]
-custom_minimum_size = Vector2(160, 48)
-layout_mode = 2
-text = "Quêtes"
-
-[node name="Inventaire" type="Button" parent="BarreCascade"]
-custom_minimum_size = Vector2(160, 48)
-layout_mode = 2
-text = "Inventaire"
-
-[node name="Wiki" type="Button" parent="BarreCascade"]
-custom_minimum_size = Vector2(160, 48)
-layout_mode = 2
-text = "Wiki"
-
-[node name="Metiers" type="Button" parent="BarreCascade"]
-custom_minimum_size = Vector2(160, 48)
-layout_mode = 2
-text = "Métiers"
-
-[node name="Hotel" type="Button" parent="BarreCascade"]
-custom_minimum_size = Vector2(160, 48)
-layout_mode = 2
-text = "HDV"
-
-[node name="Equipage" type="Button" parent="BarreCascade"]
-custom_minimum_size = Vector2(160, 48)
-layout_mode = 2
-text = "Équipage"
+theme = ExtResource("2_theme")
 
 [node name="Fenetre" type="Panel" parent="."]
-visible = false
+visible = true
 anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -600.0
-offset_top = -400.0
-offset_right = 600.0
-offset_bottom = 400.0
+offset_left = -760.0
+offset_top = -440.0
+offset_right = 760.0
+offset_bottom = 440.0
+
+theme = ExtResource("2_theme")
+
+[node name="FondIllustration" type="TextureRect" parent="Fenetre"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("5_fond")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
 
 [node name="Entete" type="HBoxContainer" parent="Fenetre"]
 anchors_preset = -1
 anchor_right = 1.0
-offset_left = 20.0
-offset_top = 14.0
-offset_right = -20.0
-offset_bottom = 62.0
+offset_left = 112.0
+offset_top = 74.0
+offset_right = -84.0
+offset_bottom = 148.0
 theme_override_constants/separation = 16
 
 [node name="Titre" type="Label" parent="Fenetre/Entete"]
 layout_mode = 2
+theme_type_variation = "Title"
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 36
 text = "Menu"
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Fermer" type="Button" parent="Fenetre/Entete"]
+custom_minimum_size = Vector2(58, 58)
 layout_mode = 2
+theme_type_variation = "CloseButton"
 text = "X"
+
+[node name="EmblemePirate" type="TextureRect" parent="Fenetre"]
+anchors_preset = -1
+offset_left = 730.0
+offset_top = 12.0
+offset_right = 790.0
+offset_bottom = 72.0
+texture = ExtResource("4_embleme")
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
 
 [node name="Corps" type="HBoxContainer" parent="Fenetre"]
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 74.0
-offset_right = -20.0
-offset_bottom = -20.0
+offset_left = 24.0
+offset_top = 166.0
+offset_right = -24.0
+offset_bottom = -28.0
 theme_override_constants/separation = 16
 
+[node name="NavigationPirate" type="PanelContainer" parent="Fenetre/Corps"]
+custom_minimum_size = Vector2(228, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_type_variation = "InsetPanel"
+
+[node name="BarreCascade" type="VBoxContainer" parent="Fenetre/Corps/NavigationPirate"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+[node name="Personnage" type="Button" parent="Fenetre/Corps/NavigationPirate/BarreCascade"]
+custom_minimum_size = Vector2(200, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Personnage"
+
+[node name="Sorts" type="Button" parent="Fenetre/Corps/NavigationPirate/BarreCascade"]
+custom_minimum_size = Vector2(200, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Sorts"
+
+[node name="Quetes" type="Button" parent="Fenetre/Corps/NavigationPirate/BarreCascade"]
+custom_minimum_size = Vector2(200, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Quêtes"
+
+[node name="Inventaire" type="Button" parent="Fenetre/Corps/NavigationPirate/BarreCascade"]
+custom_minimum_size = Vector2(200, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Inventaire"
+
+[node name="Wiki" type="Button" parent="Fenetre/Corps/NavigationPirate/BarreCascade"]
+custom_minimum_size = Vector2(200, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Wiki"
+
+[node name="Metiers" type="Button" parent="Fenetre/Corps/NavigationPirate/BarreCascade"]
+custom_minimum_size = Vector2(200, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Métiers"
+
+[node name="Hotel" type="Button" parent="Fenetre/Corps/NavigationPirate/BarreCascade"]
+custom_minimum_size = Vector2(200, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "HDV"
+
+[node name="Equipage" type="Button" parent="Fenetre/Corps/NavigationPirate/BarreCascade"]
+custom_minimum_size = Vector2(200, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Équipage"
+
 [node name="ContenuPersonnage" type="VBoxContainer" parent="Fenetre/Corps"]
-visible = false
+visible = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
@@ -128,50 +175,377 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+[node name="CarnetTitre" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
+theme_type_variation = "Nameplate"
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.55, 0.08, 0.07, 1)
+text = "AVIS DE RECHERCHE"
+horizontal_alignment = 1
+
+[node name="CarteIdentite" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+custom_minimum_size = Vector2(0, 142)
+layout_mode = 2
+theme_type_variation = "ParchmentPanel"
+
+[node name="IdentiteRow" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="PortraitCadre" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow"]
+custom_minimum_size = Vector2(118, 118)
+layout_mode = 2
+theme_type_variation = "InsetPanel"
+
+[node name="Portrait" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/PortraitCadre"]
+layout_mode = 2
+texture = ExtResource("3_portrait")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Identite" type="VBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite"]
+layout_mode = 2
+theme_type_variation = "Nameplate"
 theme_override_font_sizes/font_size = 32
 text = "Héros"
 
-[node name="RaceClasse" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+[node name="RaceClasse" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Race : Humain — Classe : Épéiste"
+theme_override_font_sizes/font_size = 22
+text = "Race : Humain | Classe : Épéiste"
 
-[node name="Niveau" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+[node name="Niveau" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "Niveau 1"
-
 [node name="XP" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "Nameplate"
 text = "Expérience : 0 / 100"
+vertical_alignment = 1
 
 [node name="Vie" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "Nameplate"
 text = "Vie : 100 / 100"
+vertical_alignment = 1
 
 [node name="Argent" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "Nameplate"
 theme_override_font_sizes/font_size = 24
 text = "Berry : 0"
+vertical_alignment = 1
 
 [node name="Points" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "Nameplate"
 theme_override_font_sizes/font_size = 24
 text = "Points à répartir : 0"
+vertical_alignment = 1
 
 [node name="StatsTitre" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
 text = "Caractéristiques"
 
-[node name="StatsGrid" type="GridContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+[node name="StatsDerivees" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="VieMax" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees"]
 layout_mode = 2
 size_flags_horizontal = 3
-columns = 3
-theme_override_constants/h_separation = 24
-theme_override_constants/v_separation = 8
+theme_type_variation = "ParchmentPanel"
+
+[node name="VieMax" type="VBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/VieMax"]
+layout_mode = 2
+
+[node name="Titre" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/VieMax/VieMax"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "VIE MAX"
+horizontal_alignment = 1
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/VieMax/VieMax"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "0"
+horizontal_alignment = 1
+
+[node name="Attaque" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ParchmentPanel"
+
+[node name="Attaque" type="VBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/Attaque"]
+layout_mode = 2
+
+[node name="Titre" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/Attaque/Attaque"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "ATTAQUE"
+horizontal_alignment = 1
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/Attaque/Attaque"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "0"
+horizontal_alignment = 1
+
+[node name="Defense" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ParchmentPanel"
+
+[node name="Defense" type="VBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/Defense"]
+layout_mode = 2
+
+[node name="Titre" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/Defense/Defense"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "DÉFENSE"
+horizontal_alignment = 1
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/Defense/Defense"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "0"
+horizontal_alignment = 1
+
+[node name="StatsGrid" type="VBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="StatVitalite" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ParchmentPanel"
+
+[node name="Ligne" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatVitalite"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icone" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatVitalite/Ligne"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+texture = ExtResource("6_stat_vitalite")
+expand_mode = 1
+stretch_mode = 5
+modulate = Color(1, 0.36, 0.32, 1)
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatVitalite/Ligne"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Vitalité"
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatVitalite/Ligne"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 2
+
+[node name="Ajouter" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatVitalite/Ligne"]
+custom_minimum_size = Vector2(42, 38)
+layout_mode = 2
+text = "+"
+
+[node name="StatSagesse" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ParchmentPanel"
+
+[node name="Ligne" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatSagesse"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icone" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatSagesse/Ligne"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+texture = ExtResource("7_stat_sagesse")
+expand_mode = 1
+stretch_mode = 5
+modulate = Color(0.34, 0.68, 0.98, 1)
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatSagesse/Ligne"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Sagesse"
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatSagesse/Ligne"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 2
+
+[node name="Ajouter" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatSagesse/Ligne"]
+custom_minimum_size = Vector2(42, 38)
+layout_mode = 2
+text = "+"
+
+[node name="StatForce" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ParchmentPanel"
+
+[node name="Ligne" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatForce"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icone" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatForce/Ligne"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+texture = ExtResource("8_stat_force")
+expand_mode = 1
+stretch_mode = 5
+modulate = Color(1, 0.58, 0.28, 1)
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatForce/Ligne"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Force"
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatForce/Ligne"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 2
+
+[node name="Ajouter" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatForce/Ligne"]
+custom_minimum_size = Vector2(42, 38)
+layout_mode = 2
+text = "+"
+
+[node name="StatIntelligence" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ParchmentPanel"
+
+[node name="Ligne" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icone" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence/Ligne"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+texture = ExtResource("9_stat_intelligence")
+expand_mode = 1
+stretch_mode = 5
+modulate = Color(0.72, 0.44, 0.95, 1)
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence/Ligne"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Intelligence"
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence/Ligne"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 2
+
+[node name="Ajouter" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence/Ligne"]
+custom_minimum_size = Vector2(42, 38)
+layout_mode = 2
+text = "+"
+
+[node name="StatChance" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ParchmentPanel"
+
+[node name="Ligne" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icone" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance/Ligne"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+texture = ExtResource("10_stat_chance")
+expand_mode = 1
+stretch_mode = 5
+modulate = Color(0.4, 0.78, 0.36, 1)
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance/Ligne"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Chance"
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance/Ligne"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 2
+
+[node name="Ajouter" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance/Ligne"]
+custom_minimum_size = Vector2(42, 38)
+layout_mode = 2
+text = "+"
+
+[node name="StatAgilite" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ParchmentPanel"
+
+[node name="Ligne" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icone" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite/Ligne"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+texture = ExtResource("11_stat_agilite")
+expand_mode = 1
+stretch_mode = 5
+modulate = Color(0.72, 0.48, 0.94, 1)
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite/Ligne"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Agilité"
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite/Ligne"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 2
+
+[node name="Ajouter" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite/Ligne"]
+custom_minimum_size = Vector2(42, 38)
+layout_mode = 2
+text = "+"
 
 [node name="ActionsStats" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
@@ -239,13 +613,96 @@ size_flags_vertical = 3
 theme_override_constants/separation = 16
 
 [node name="PanneauSilhouette" type="PanelContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire"]
-custom_minimum_size = Vector2(400, 0)
+custom_minimum_size = Vector2(400, 500)
 layout_mode = 2
 
 [node name="Silhouette" type="Control" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+
+[node name="PortraitEquipement" type="TextureRect" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette"]
+layout_mode = 0
+offset_left = 70.0
+offset_top = 20.0
+offset_right = 330.0
+offset_bottom = 450.0
+mouse_filter = 2
+texture = ExtResource("3_portrait")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="EquipementTete" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 14.0
+offset_top = 70.0
+offset_right = 82.0
+offset_bottom = 134.0
+
+[node name="EquipementVisage" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 298.0
+offset_top = 70.0
+offset_right = 366.0
+offset_bottom = 134.0
+
+[node name="EquipementCou" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 298.0
+offset_top = 146.0
+offset_right = 366.0
+offset_bottom = 210.0
+
+[node name="EquipementCorps" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 14.0
+offset_top = 146.0
+offset_right = 82.0
+offset_bottom = 210.0
+
+[node name="EquipementCape" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 14.0
+offset_top = 222.0
+offset_right = 82.0
+offset_bottom = 286.0
+
+[node name="EquipementCeinture" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 16.0
+offset_top = 402.0
+offset_right = 84.0
+offset_bottom = 466.0
+
+[node name="EquipementPantalon" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 108.0
+offset_top = 402.0
+offset_right = 176.0
+offset_bottom = 466.0
+
+[node name="EquipementPieds" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 200.0
+offset_top = 402.0
+offset_right = 268.0
+offset_bottom = 466.0
+
+[node name="EquipementMain" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 14.0
+offset_top = 298.0
+offset_right = 82.0
+offset_bottom = 362.0
+
+[node name="EquipementArme" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 298.0
+offset_top = 222.0
+offset_right = 366.0
+offset_bottom = 286.0
+
+[node name="EquipementAnneau1" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 298.0
+offset_top = 298.0
+offset_right = 366.0
+offset_bottom = 362.0
+
+[node name="EquipementAnneau2" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette" instance=ExtResource("12_case_equipement")]
+offset_left = 292.0
+offset_top = 402.0
+offset_right = 360.0
+offset_bottom = 466.0
 
 [node name="CoteDroit" type="VBoxContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire"]
 layout_mode = 2
