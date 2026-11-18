@@ -7,8 +7,9 @@
 #   1 : Berry + parfois un consommable commun
 #   2 : Berry + une pièce d'équipement rare
 #   3 : Berry + une pièce d'équipement épique
-#   4 : Berry + un objet unique (lame introuvable ailleurs dans ce
-#       monde), sinon une pièce d'équipement légendaire
+#   4 : Berry + une pièce d'équipement légendaire, avec une chance
+#       sur mille d'y trouver un objet unique : un fruit du démon ou
+#       une lame unique (introuvables ailleurs que dans les coffres)
 #
 # Les croix non fouillées survivent à la fermeture du jeu.
 extends Node
@@ -23,6 +24,8 @@ const SCRIPT_CROIX := preload("res://scripts/croix_tresor.gd")
 const DISTANCE_MIN_CASES := 6
 # essais de placement avant d'accepter une case proche du joueur
 const ESSAIS_PLACEMENT := 40
+# trésor légendaire : chance d'un objet unique (fruit du démon ou lame)
+const PROBA_UNIQUE := 0.001
 
 # croix actives : { "case_sol": Vector2i, "rarete": int }
 var _croix: Array = []
@@ -117,9 +120,10 @@ func _tirer_tresor(niveau: int) -> Dictionary:
 		3:
 			prise = _tirer_item_equipement([3])
 		4:
-			# un objet unique s'il en reste un dans ce monde, sinon du
-			# légendaire classique
-			prise = _tirer_lame_unique()
+			# une chance sur mille de déterrer un objet unique : un fruit
+			# du démon ou une lame unique ; sinon du légendaire classique
+			if randf() < PROBA_UNIQUE:
+				prise = _tirer_item_unique()
 			if prise.is_empty():
 				prise = _tirer_item_equipement([4])
 	if not prise.is_empty():
@@ -166,21 +170,44 @@ func _tirer_types(type_sql: String, raretes: Array) -> Dictionary:
 # une lame unique non détenue, non enfermée dans un coffre du monde
 # (un seul exemplaire de chaque lame par monde, comme les coffres)
 func _tirer_lame_unique() -> Dictionary:
+	return _tirer_unique(
+		" WHERE type = 'arme' AND rarity_id = 6 AND is_active = 1"
+		+ " AND id IN (SELECT item_id FROM unique_items WHERE is_consumed = 0);")
+
+# un fruit du démon non consommé, non détenu, non enfermé dans un coffre
+# (le fruit mangé par le perso n'existe plus que pour lui)
+func _tirer_fruit_unique() -> Dictionary:
+	return _tirer_unique(
+		" WHERE type = 'fruit_demon' AND is_active = 1"
+		+ " AND id NOT IN (SELECT item_id FROM unique_items WHERE is_consumed = 1);")
+
+# id d'un objet unique encore libre (aucune requête => {})
+func _tirer_unique(filtre: String) -> Dictionary:
 	if not BaseDonnees.disponible:
 		return {}
 	var pris := Coffres.ids_en_coffres()
 	var ids: Array[String] = []
-	for ligne in BaseDonnees.lire(
-		"SELECT id FROM items"
-		+ " WHERE type = 'arme' AND rarity_id = 6 AND is_active = 1"
-		+ " AND is_droppable = 0"
-		+ " AND id IN (SELECT item_id FROM unique_items WHERE is_consumed = 0);"):
+	for ligne in BaseDonnees.lire("SELECT id FROM items" + filtre):
 		var id := str(ligne["id"])
+		if id == Personnage.fruit_id:
+			continue
 		if not Inventaire.objets.has(id) and not pris.has(id):
 			ids.append(id)
 	if ids.is_empty():
 		return {}
 	return {"id": ids[randi() % ids.size()], "qte": 1}
+
+# l'objet unique du trésor légendaire : à pile ou face entre un fruit
+# du démon et une lame unique, parmi les exemplaires encore libres ;
+# renvoie {} si plus aucun n'est disponible
+func _tirer_item_unique() -> Dictionary:
+	var libres := []
+	for prise in [_tirer_fruit_unique(), _tirer_lame_unique()]:
+		if not (prise as Dictionary).is_empty():
+			libres.append(prise)
+	if libres.is_empty():
+		return {}
+	return libres[randi() % libres.size()]
 
 # popup de fin de chasse : ce que la croix recélait
 func _annancer_tresor(berry: int, objets: Array) -> void:
