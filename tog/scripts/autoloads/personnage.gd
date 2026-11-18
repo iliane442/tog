@@ -187,13 +187,24 @@ func nom_race() -> String:
 func nom_classe() -> String:
 	return classes.get(classe_id, {}).get("nom", classe_id)
 
-# ids des sorts de la classe du personnage (uniquement ceux connus)
+# ids des sorts de la classe du personnage (uniquement ceux connus) :
+# les sorts de base (starting_skills_json) plus ceux débloqués au niveau
+# actuel (table class_skills)
 func sorts_de_classe() -> Array[String]:
 	var ids: Array[String] = []
 	for id_sort in classes.get(classe_id, {}).get("sorts_initiaux", []):
 		var id := str(id_sort)
-		if sorts.has(id):
+		if sorts.has(id) and not ids.has(id):
 			ids.append(id)
+	# sorts de classe débloqués par le niveau, du plus tôt au plus tard
+	if BaseDonnees.disponible and classe_id.is_valid_int():
+		for ligne in BaseDonnees.lire(
+			("SELECT skill_id FROM class_skills"
+			+ " WHERE class_id = %d AND unlock_level <= %d"
+			+ " ORDER BY unlock_level;") % [classe_id.to_int(), niveau]):
+			var sort_debloque := str(ligne["skill_id"])
+			if sorts.has(sort_debloque) and not ids.has(sort_debloque):
+				ids.append(sort_debloque)
 	return ids
 
 # ids des pouvoirs du fruit du démon mangé (table `fruit_skills`)
@@ -491,6 +502,11 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	barre_sorts = []
 	fruit_id = ""
 	buffs = []
+	# sorts de base de la classe : placés d'office dans la barre de combat
+	for id_sort in classes.get(nouvelle_classe, {}).get("sorts_initiaux", []):
+		var id := str(id_sort)
+		if sorts.has(id) and not barre_sorts.has(id):
+			barre_sorts.append(id)
 	metiers = {}
 	# métier unique, choisi à la création
 	if id_profession != "" and _professions.has(id_profession):
@@ -613,12 +629,19 @@ func xp_prochain_niveau() -> int:
 
 func gagner_xp(montant: int) -> void:
 	xp += montant
+	var niveau_avant := niveau
 	while xp >= xp_prochain_niveau():
 		xp -= xp_prochain_niveau()
 		niveau += 1
 		vie_max += 5
 		vie = vie_max
 		points_statistique += POINTS_PAR_NIVEAU
+	# un nouveau sort de classe s'est débloqué -> placé dans la barre
+	# s'il reste de la place (même comportement que le fruit du démon)
+	if niveau > niveau_avant:
+		for id_sort in sorts_de_classe():
+			if not sort_dans_barre(id_sort) and not barre_sorts_pleine():
+				barre_sorts.append(id_sort)
 	caracteristiques_modifiees.emit()
 
 # Dépense un point de caractéristique ; renvoie true si réussi
