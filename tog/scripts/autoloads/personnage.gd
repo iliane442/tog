@@ -67,6 +67,13 @@ var barre_sorts: Array[String] = []
 # Manger un fruit est définitif : un seul fruit par personnage.
 var fruit_id := ""
 
+# Expérience du fruit mangé : un pouvoir du fruit lancé avec succès en
+# combat vaut 1 point. Le niveau du fruit suit (10 x n x (n+1) / 2
+# points pour atteindre le niveau n) : niveau 1 à 10 lancements, 2 à
+# 30, 3 à 60, 4 (éveil) à 100 — les pouvoirs se débloquent par niveau
+# de fruit, pas par niveau de personnage.
+var fruit_xp := 0
+
 # Buffs temporaires des consommables utilisés : [{id: str, effets: {},
 # expire: float}] ; expire = temps unix ; les buffs échus sont purgés
 # à chaque recalcul de stats.
@@ -218,9 +225,16 @@ func sorts_de_classe() -> Array[String]:
 				ids.append(sort_debloque)
 	return ids
 
-# ids des pouvoirs du fruit du démon mangé (table `fruit_skills`),
-# débloqués au niveau actuel (4 sorts + 1 éveil par fruit)
-func sorts_fruit() -> Array[String]:
+# niveau actuel du fruit mangé (0 tant qu'il n'a pas été utilisé)
+func niveau_fruit() -> int:
+	var niveau := 0
+	while fruit_xp >= 10 * (niveau + 1) * (niveau + 2) / 2:
+		niveau += 1
+	return niveau
+
+# ids des pouvoirs du fruit du démon mangé (table `fruit_skills`)
+# débloqués au niveau de fruit donné
+func _sorts_fruit_niveau(niveau: int) -> Array[String]:
 	var ids: Array[String] = []
 	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
 		return ids
@@ -232,6 +246,45 @@ func sorts_fruit() -> Array[String]:
 		if sorts.has(id):
 			ids.append(id)
 	return ids
+
+# pouvoirs du fruit débloqués à son niveau actuel (4 sorts + 1 éveil)
+func sorts_fruit() -> Array[String]:
+	return _sorts_fruit_niveau(niveau_fruit())
+
+# true si ce sort est l'un des pouvoirs du fruit mangé (peu importe
+# s'il est déjà débloqué)
+func sort_est_du_fruit(id_sort: String) -> bool:
+	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
+		return false
+	if not id_sort.is_valid_int():
+		return false
+	return not BaseDonnees.lire(
+		"SELECT skill_id FROM fruit_skills WHERE fruit_item_id = %d AND skill_id = %d;"
+		% [fruit_id.to_int(), id_sort.to_int()]).is_empty()
+
+# Un pouvoir du fruit vient d'être lancé en combat : le fruit gagne de
+# l'expérience et franchit parfois un niveau — les pouvoirs fraîchement
+# débloqués sont auto-placés dans la barre s'il reste de la place.
+# Renvoie la liste des sorts débloqués par ce lancement.
+func utiliser_pouvoir_fruit(id_sort: String) -> Array[String]:
+	var debloques: Array[String] = []
+	if not sort_est_du_fruit(id_sort):
+		return debloques
+	var niveau_avant := niveau_fruit()
+	fruit_xp += 1
+	var niveau_apres := niveau_fruit()
+	if niveau_apres > niveau_avant:
+		var connus := {}
+		for id in _sorts_fruit_niveau(niveau_avant):
+			connus[id] = true
+		for id in _sorts_fruit_niveau(niveau_apres):
+			if not connus.has(id):
+				debloques.append(id)
+				if not sort_dans_barre(id) and not barre_sorts_pleine():
+					barre_sorts.append(id)
+		caracteristiques_modifiees.emit()
+	sauvegarder()
+	return debloques
 
 # sorts plaçables dans la barre de combat : ceux de la classe, plus
 # les pouvoirs du fruit mangé
@@ -287,6 +340,7 @@ func manger_fruit(id_fruit: String) -> String:
 		return "Aucun pouvoir n'est rattaché à ce fruit (table fruit_skills)."
 	Inventaire.retirer_objet(id_fruit, 1)
 	fruit_id = id_fruit
+	fruit_xp = 0
 	if BaseDonnees.disponible and id_fruit.is_valid_int():
 		BaseDonnees.lire(
 			"UPDATE unique_items SET is_consumed = 1 WHERE item_id = %d;" % id_fruit.to_int())
@@ -516,6 +570,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	points_statistique = 0
 	barre_sorts = []
 	fruit_id = ""
+	fruit_xp = 0
 	buffs = []
 	# sorts de base de la classe : placés d'office dans la barre de combat
 	for id_sort in classes.get(nouvelle_classe, {}).get("sorts_initiaux", []):
@@ -560,6 +615,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "metiers", metiers)
 	cfg.set_value("perso", "barre_sorts", barre_sorts)
 	cfg.set_value("perso", "fruit", fruit_id)
+	cfg.set_value("perso", "fruit_xp", fruit_xp)
 	cfg.set_value("perso", "buffs", buffs)
 	perso_cree = cfg.save(CHEMIN_PERSO) == OK
 
@@ -593,6 +649,7 @@ func charger_perso() -> void:
 			if not barre_sorts.has(id):
 				barre_sorts.append(id)
 	fruit_id = str(cfg.get_value("perso", "fruit", ""))
+	fruit_xp = maxi(int(cfg.get_value("perso", "fruit_xp", 0)), 0)
 	buffs = []
 	var buffs_lus = cfg.get_value("perso", "buffs", [])
 	if buffs_lus is Array:
@@ -641,6 +698,7 @@ func supprimer_perso() -> void:
 	points_statistique = 0
 	barre_sorts = []
 	fruit_id = ""
+	fruit_xp = 0
 	buffs = []
 	metiers = {}
 	points_depenses = {}
@@ -664,10 +722,11 @@ func gagner_xp(montant: int) -> void:
 		vie_max += 5
 		vie = vie_max
 		points_statistique += POINTS_PAR_NIVEAU
-	# un nouveau sort de classe ou de fruit s'est débloqué -> placé dans
-	# la barre s'il reste de la place (même comportement que le fruit)
+	# un nouveau sort de classe s'est débloqué -> placé dans la barre
+	# s'il reste de la place ; les pouvoirs du fruit suivent une autre
+	# progression : le niveau du fruit (utiliser_pouvoir_fruit)
 	if niveau > niveau_avant:
-		for id_sort in sorts_de_classe() + sorts_fruit():
+		for id_sort in sorts_de_classe():
 			if not sort_dans_barre(id_sort) and not barre_sorts_pleine():
 				barre_sorts.append(id_sort)
 	caracteristiques_modifiees.emit()

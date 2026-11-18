@@ -1,11 +1,11 @@
 -- Pouvoirs complets des fruits du démon : 4 sorts + 1 éveil par fruit.
 --
--- Structure : chaque fruit possède 5 pouvoirs débloqués par le niveau
--- du personnage (table fruit_skills, colonne unlock_level) :
---   sort 1 -> niveau 1 ( dès le fruit mangé)
---   sort 2 -> niveau 10, sort 3 -> niveau 20, sort 4 -> niveau 35
---   éveil  -> niveau 60 (colonne is_eveil = 1)
--- L'ancien sort ultime de chaque fruit descend au palier 35.
+-- Structure : chaque fruit possède 5 pouvoirs débloqués par le NIVEAU
+-- DU FRUIT (colonne unlock_level), qui progresse à force d'être
+-- utilisé en combat (xp_fruit dans Personnage, seuil 10 x n x (n+1) / 2) :
+--   sort 1 -> niveau 0 (dès le fruit mangé)
+--   sort 2 -> niveau 1, sort 3 -> niveau 2, sort 4 -> niveau 3
+--   éveil  -> niveau 4
 --
 -- Nouveaux sorts : ids 130-177 (3 par fruit : sort 2, sort 3, éveil).
 -- Effets visuels : la table `animations` réutilise les spritesheets
@@ -225,7 +225,7 @@ INSERT OR IGNORE INTO animations (name, entity_type, entity_id, animation_type, 
 
 -- ------------------------------------------------------------------
 -- 4. Table fruit_skills reconstruite : 4 sorts + 1 éveil par fruit
---    paliers : 1 (base) / 10 / 20 / 35 / 60 (éveil)
+--    niveaux de fruit : 0 (base) / 1 / 2 / 3 / 4 (éveil)
 -- ------------------------------------------------------------------
 DROP TABLE IF EXISTS fruit_skills;
 CREATE TABLE fruit_skills (
@@ -241,34 +241,34 @@ CREATE TABLE fruit_skills (
 
 INSERT INTO fruit_skills (fruit_item_id, skill_id, unlock_level, is_eveil) VALUES
   -- Caoutchouc : Pistol, Gatling, Rifle, Bazooka, Bajrang Gun
-  (900, 3, 1, 0), (900, 130, 10, 0), (900, 4, 20, 0), (900, 5, 35, 0), (900, 132, 60, 1),
+  (900, 3, 0, 0), (900, 130, 1, 0), (900, 4, 2, 0), (900, 5, 3, 0), (900, 132, 4, 1),
   -- Flamme : Poing Ardent, Hiken, Higan, Nova, Mer Ardente
-  (901, 100, 1, 0), (901, 133, 10, 0), (901, 134, 20, 0), (901, 101, 35, 0), (901, 135, 60, 1),
+  (901, 100, 0, 0), (901, 133, 1, 0), (901, 134, 2, 0), (901, 101, 3, 0), (901, 135, 4, 1),
   -- Foudre : Éclair céleste, Bâton, Mamaragan, Jugement, Raigo
-  (902, 102, 1, 0), (902, 136, 10, 0), (902, 137, 20, 0), (902, 103, 35, 0), (902, 138, 60, 1),
+  (902, 102, 0, 0), (902, 136, 1, 0), (902, 137, 2, 0), (902, 103, 3, 0), (902, 138, 4, 1),
   -- Glace : Lance, Sabre, Grêle, Ère Glaciaire, Monde Gelé
-  (903, 104, 1, 0), (903, 139, 10, 0), (903, 140, 20, 0), (903, 105, 35, 0), (903, 141, 60, 1),
+  (903, 104, 0, 0), (903, 139, 1, 0), (903, 140, 2, 0), (903, 105, 3, 0), (903, 141, 4, 1),
   -- Léopard : Griffes, Bond, Griffes Croisées, Forme Hybride, Fauve Sacré
-  (904, 106, 1, 0), (904, 142, 10, 0), (904, 143, 20, 0), (904, 107, 35, 0), (904, 144, 60, 1),
+  (904, 106, 0, 0), (904, 142, 1, 0), (904, 143, 2, 0), (904, 107, 3, 0), (904, 144, 4, 1),
   -- Ténèbres : Vortex, Nuit, Gouffre, Étreinte, Trou Noir
-  (905, 108, 1, 0), (905, 145, 10, 0), (905, 146, 20, 0), (905, 109, 35, 0), (905, 147, 60, 1),
+  (905, 108, 0, 0), (905, 145, 1, 0), (905, 146, 2, 0), (905, 109, 3, 0), (905, 147, 4, 1),
   -- Bistouri : Scalpel, Shambles, Amputation, Gamma, K-Room Fatal
-  (906, 110, 1, 0), (906, 148, 10, 0), (906, 149, 20, 0), (906, 111, 35, 0), (906, 150, 60, 1),
+  (906, 110, 0, 0), (906, 148, 1, 0), (906, 149, 2, 0), (906, 111, 3, 0), (906, 150, 4, 1),
   -- Lumière : Salve, Reflet, Yasakani, Lame Céleste, Ama no Murakumo
-  (907, 112, 1, 0), (907, 151, 10, 0), (907, 152, 20, 0), (907, 113, 35, 0), (907, 153, 60, 1),
+  (907, 112, 0, 0), (907, 151, 1, 0), (907, 152, 2, 0), (907, 113, 3, 0), (907, 153, 4, 1),
   -- Magma : Poing, Chien, Pluie, Éruption, Enfer Volcanique
-  (908, 114, 1, 0), (908, 154, 10, 0), (908, 155, 20, 0), (908, 115, 35, 0), (908, 156, 60, 1),
+  (908, 114, 0, 0), (908, 154, 1, 0), (908, 155, 2, 0), (908, 115, 3, 0), (908, 156, 4, 1),
   -- Fleurs : Seize Fleur, Mille Bras, Fleur Épineuse, Déluge, Jardin Écrasant
-  (909, 116, 1, 0), (909, 157, 10, 0), (909, 158, 20, 0), (909, 117, 35, 0), (909, 159, 60, 1),
+  (909, 116, 0, 0), (909, 157, 1, 0), (909, 158, 2, 0), (909, 117, 3, 0), (909, 159, 4, 1),
   -- Sable : Jet, Crocs, Tempête, Sarcophage, Sécheresse Absolue
-  (910, 118, 1, 0), (910, 160, 10, 0), (910, 161, 20, 0), (910, 119, 35, 0), (910, 162, 60, 1),
+  (910, 118, 0, 0), (910, 160, 1, 0), (910, 161, 2, 0), (910, 119, 3, 0), (910, 162, 4, 1),
   -- Fumée : Pistolet, Écran, Serrement, Serpent, Asphyxie
-  (911, 120, 1, 0), (911, 163, 10, 0), (911, 164, 20, 0), (911, 121, 35, 0), (911, 165, 60, 1),
+  (911, 120, 0, 0), (911, 163, 1, 0), (911, 164, 2, 0), (911, 121, 3, 0), (911, 165, 4, 1),
   -- Séisme : Fracas, Secousse, Vague, Faille, Faille du Monde
-  (912, 122, 1, 0), (912, 166, 10, 0), (912, 167, 20, 0), (912, 123, 35, 0), (912, 168, 60, 1),
+  (912, 122, 0, 0), (912, 166, 1, 0), (912, 167, 2, 0), (912, 123, 3, 0), (912, 168, 4, 1),
   -- Poison : Vague, Venin, Champ, Hydre, Démon Venimeux
-  (913, 124, 1, 0), (913, 169, 10, 0), (913, 170, 20, 0), (913, 125, 35, 0), (913, 171, 60, 1),
+  (913, 124, 0, 0), (913, 169, 1, 0), (913, 170, 2, 0), (913, 125, 3, 0), (913, 171, 4, 1),
   -- Fils : Parasites, Toile, Marionnettiste, Bourrasque, Cage d'Oiseau
-  (914, 126, 1, 0), (914, 172, 10, 0), (914, 173, 20, 0), (914, 127, 35, 0), (914, 174, 60, 1),
+  (914, 126, 0, 0), (914, 172, 1, 0), (914, 173, 2, 0), (914, 127, 3, 0), (914, 174, 4, 1),
   -- Phénix : Serres, Vol, Braises, Renaissance, Renaissance Éternelle
-  (915, 128, 1, 0), (915, 175, 10, 0), (915, 176, 20, 0), (915, 129, 35, 0), (915, 177, 60, 1);
+  (915, 128, 0, 0), (915, 175, 1, 0), (915, 176, 2, 0), (915, 129, 3, 0), (915, 177, 4, 1);

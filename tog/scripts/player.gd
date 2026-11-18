@@ -375,6 +375,12 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 			_combat_manager.appliquer_effets_sort(cible, sort)
 		_pa -= cout
 		_combat_manager.afficher_message("%s lancé." % str(sort.get("nom", "Sort")))
+		# le fruit mangé progresse à chaque pouvoir utilisé : ses sorts
+		# se débloquent par son niveau (voir Personnage.fruit_xp)
+		if Personnage.fruit_id != "":
+			for id_debloque in Personnage.utiliser_pouvoir_fruit(_id_sort):
+				var nom_nouveau: String = str(Personnage.sorts.get(id_debloque, {}).get("nom", "Nouveau pouvoir"))
+				_combat_manager.afficher_message("Ton fruit s'élève : %s débloqué !" % nom_nouveau)
 	_sort_selectionne = false
 	_maj_affichage()
 	_afficher_cases()

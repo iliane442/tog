@@ -98,17 +98,17 @@ CREATE TABLE IF NOT EXISTS fruit_skills (
 -- est définie dans seeds_fruits_eveils.sql, à exécuter après ce fichier
 INSERT OR IGNORE INTO fruit_skills (fruit_item_id, skill_id, unlock_level, is_eveil) VALUES
   -- Fruit du Caoutchouc : sorts existants 3-5
-  (900, 3,   1, 0), (900, 4, 20, 0), (900, 5, 35, 0),
+  (900, 3,   0, 0), (900, 4, 2, 0), (900, 5, 3, 0),
   -- Flamme
-  (901, 100, 1, 0), (901, 101, 35, 0),
+  (901, 100, 0, 0), (901, 101, 3, 0),
   -- Foudre
-  (902, 102, 1, 0), (902, 103, 35, 0),
+  (902, 102, 0, 0), (902, 103, 3, 0),
   -- Glace
-  (903, 104, 1, 0), (903, 105, 35, 0),
+  (903, 104, 0, 0), (903, 105, 3, 0),
   -- Léopard
-  (904, 106, 1, 0), (904, 107, 35, 0),
+  (904, 106, 0, 0), (904, 107, 3, 0),
   -- Ténèbres
-  (905, 108, 1, 0), (905, 109, 35, 0);
+  (905, 108, 0, 0), (905, 109, 3, 0);
 
 -- ------------------------------------------------------------------
 -- 4. Registre d'unicité mondiale
@@ -234,16 +234,16 @@ INSERT OR IGNORE INTO items (
    80000, 0, 0, 0, 10, '{"vie": 50, "speed": 10}', 1);
 
 INSERT OR IGNORE INTO fruit_skills (fruit_item_id, skill_id, unlock_level, is_eveil) VALUES
-  (906, 110, 1, 0), (906, 111, 35, 0),  -- Bistouri
-  (907, 112, 1, 0), (907, 113, 35, 0),  -- Lumière
-  (908, 114, 1, 0), (908, 115, 35, 0),  -- Magma
-  (909, 116, 1, 0), (909, 117, 35, 0),  -- Fleurs
-  (910, 118, 1, 0), (910, 119, 35, 0),  -- Sable
-  (911, 120, 1, 0), (911, 121, 35, 0),  -- Fumée
-  (912, 122, 1, 0), (912, 123, 35, 0),  -- Séisme
-  (913, 124, 1, 0), (913, 125, 35, 0),  -- Poison
-  (914, 126, 1, 0), (914, 127, 35, 0),  -- Fils
-  (915, 128, 1, 0), (915, 129, 35, 0);  -- Phénix (Renaissance = signature)
+  (906, 110, 0, 0), (906, 111, 3, 0),  -- Bistouri
+  (907, 112, 0, 0), (907, 113, 3, 0),  -- Lumière
+  (908, 114, 0, 0), (908, 115, 3, 0),  -- Magma
+  (909, 116, 0, 0), (909, 117, 3, 0),  -- Fleurs
+  (910, 118, 0, 0), (910, 119, 3, 0),  -- Sable
+  (911, 120, 0, 0), (911, 121, 3, 0),  -- Fumée
+  (912, 122, 0, 0), (912, 123, 3, 0),  -- Séisme
+  (913, 124, 0, 0), (913, 125, 3, 0),  -- Poison
+  (914, 126, 0, 0), (914, 127, 3, 0),  -- Fils
+  (915, 128, 0, 0), (915, 129, 3, 0);  -- Phénix (Renaissance = signature)
 
 INSERT OR IGNORE INTO unique_items (item_id, owner_player_id, is_consumed) VALUES
   (906, NULL, 0),
@@ -277,3 +277,32 @@ UPDATE items
 UPDATE items
    SET min_level = 1
  WHERE type = 'fruit_demon' AND min_level != 1;
+
+-- ------------------------------------------------------------------
+-- 8. Icônes individuelles des fruits dans l'inventaire et le wiki
+-- ------------------------------------------------------------------
+WITH icones(item_id, fichier) AS (
+  VALUES
+    (900, '900_fruit_du_caoutchouc.png'),
+    (901, '901_fruit_de_la_flamme.png'),
+    (902, '902_fruit_de_la_foudre.png'),
+    (903, '903_fruit_de_la_glace.png'),
+    (904, '904_fruit_du_leopard.png'),
+    (905, '905_fruit_des_tenebres.png'),
+    (906, '906_fruit_du_bistouri.png'),
+    (907, '907_fruit_de_la_lumiere.png'),
+    (908, '908_fruit_du_magma.png'),
+    (909, '909_fruit_des_fleurs.png'),
+    (910, '910_fruit_du_sable.png'),
+    (911, '911_fruit_de_la_fumee.png'),
+    (912, '912_fruit_du_seisme.png'),
+    (913, '913_fruit_du_poison.png'),
+    (914, '914_fruit_des_fils.png'),
+    (915, '915_fruit_du_phenix.png')
+)
+UPDATE items
+   SET icon_path = 'assets/items/fruits_demon/' || icones.fichier
+  FROM icones
+ WHERE items.id = icones.item_id
+   AND items.type = 'fruit_demon'
+   AND COALESCE(items.icon_path, '') IN ('', 'assets/sprites/items/fruits-mythe-oni.webp');
