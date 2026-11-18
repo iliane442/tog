@@ -736,7 +736,8 @@ func _on_bouton_utiliser() -> void:
 	if detail_id_courant == "":
 		return
 	var nom := Inventaire.nom_objet(detail_id_courant)
-	var effets: Dictionary = Inventaire.details_objet(detail_id_courant).get("effets", {})
+	var details := Inventaire.details_objet(detail_id_courant)
+	var effets: Dictionary = details.get("effets", {})
 	var soin := int(effets.get("heal", 0))
 	var message := Personnage.utiliser_objet(detail_id_courant)
 	maj_grille()
@@ -752,6 +753,9 @@ func _on_bouton_utiliser() -> void:
 	var texte := "Ses bonus sont actifs temporairement."
 	if soin > 0:
 		texte = "Tu récupères %d points de vie." % soin
+	# carte au trésor : la croix est plantée, la chasse commence
+	if str(details.get("sous_type", "")) == "carte_tresor":
+		texte = "Une croix marque un trésor sur la carte du monde. File la déterrer !"
 	info.dialog_text = texte
 	add_child(info)
 	info.popup_centered()

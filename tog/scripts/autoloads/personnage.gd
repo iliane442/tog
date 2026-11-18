@@ -386,6 +386,15 @@ func utiliser_objet(id_objet: String) -> String:
 	if str(details.get("type", "")) != "consumable":
 		return "Cet objet ne se consomme pas."
 	var effets: Dictionary = details.get("effets", {})
+	# carte au trésor : elle se déchiffre et plante une croix sur la
+	# carte du monde (aucun soin ni buff)
+	if str(details.get("sous_type", "")) == "carte_tresor":
+		var niveau := clampi(int(effets.get("tresor", 1)), 1, 4)
+		if not CartesTresor.creer_croix(niveau):
+			return "Aucun emplacement exploitable sur la carte."
+		Inventaire.retirer_objet(id_objet, 1)
+		sauvegarder()
+		return ""
 	var soin := int(effets.get("heal", 0))
 	# clés de bonus durable (hors soin et durée de l'effet)
 	var bonus := {}

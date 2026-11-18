@@ -103,6 +103,16 @@ func vider(coffre_id: String) -> Array:
 	coffre_modifie.emit(coffre_id)
 	return prises
 
+# ids des objets encore enfermés dans les coffres non vidés : sert aux
+# autres systèmes (cartes au trésor) à respecter l'exemplarité des
+# objets uniques
+func ids_en_coffres() -> Dictionary:
+	var pris := {}
+	for id_coffre in _etat:
+		for prise in _etat[id_coffre].get("contenu", []):
+			pris[str(prise.get("id", ""))] = true
+	return pris
+
 # remet tous les coffres à zéro (réinitialisation debug du perso)
 func reinitialiser() -> void:
 	_etat.clear()
