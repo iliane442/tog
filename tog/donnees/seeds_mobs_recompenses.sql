@@ -27,6 +27,8 @@ INSERT OR IGNORE INTO mobs (
 UPDATE mobs SET sprite_path = 'assets/sprites/ennemis/goon_pirate.png'  WHERE id = 1;
 UPDATE mobs SET sprite_path = 'assets/sprites/ennemis/pirate_ivre.png'  WHERE id = 2;
 UPDATE mobs SET sprite_path = 'assets/sprites/ennemis/moussaillon.png'  WHERE id = 3;
+UPDATE mobs SET sprite_path = 'assets/sprites/ennemis/officier_marine.png' WHERE id = 4 AND COALESCE(sprite_path, '') = '';
 UPDATE mobs SET sprite_path = 'assets/sprites/wolf.png'                  WHERE id = 5 AND sprite_path IS NULL;
+UPDATE mobs SET sprite_path = 'assets/sprites/ennemis/crabe_geant.png' WHERE id = 6 AND COALESCE(sprite_path, '') = '';
 UPDATE mobs SET sprite_path = 'assets/sprites/wolf.png'                  WHERE id = 11 AND sprite_path IS NULL;
 UPDATE mobs SET sprite_path = 'assets/sprites/ennemis/buggy_clown.png'  WHERE id = 8;

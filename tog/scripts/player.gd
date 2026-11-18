@@ -15,6 +15,13 @@ const VISUELS_RACES := {
 	"human": "humain_pirate",
 	"mink": "mink_pirate",
 	"fishman": "fishman_pirate",
+	"giant": "geant_pirate",
+}
+const VISUELS_FEMININS := {
+	"human": "humaine_pirate",
+	"mink": "mink_pirate_f",
+	"fishman": "femme_poisson_pirate",
+	"giant": "geante_pirate",
 }
 const RACE_DEFAUT := "human"
 const SORT_BOULE_DE_FEU := preload("res://scripts/combat/sort.gd")
@@ -27,7 +34,7 @@ var _ligne := 0
 var _colonne := 0.0
 var _texture_repos: Texture2D
 var _texture_marche: Texture2D
-var _race_chargee := ""
+var _visuel_charge := ""
 var _en_deplacement := false
 var _occupe := false
 var _tour_joueur := false
@@ -48,7 +55,7 @@ var _combat_manager
 func _ready() -> void:
 	add_to_group("player")
 	target = global_position
-	_maj_visuels_race()
+	_maj_visuels_race(_prefixe_visuel_race())
 	_sol = get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
 	_obstacles = get_tree().current_scene.get_node_or_null("cliffs") as TileMapLayer
 	_ennemi = get_tree().current_scene.find_child("ennemy", true, false)
@@ -76,12 +83,13 @@ func _connecter_combat() -> void:
 	_combat_manager.fin_tour_demandee.connect(_fin_du_tour)
 	_combat_manager.placement_valide.connect(_valider_placement)
 
-func _id_technique_race() -> String:
-	return str(Personnage.races.get(Personnage.race_id, {}).get("id_technique", RACE_DEFAUT))
+func _prefixe_visuel_race() -> String:
+	var race := str(Personnage.races.get(Personnage.race_id, {}).get("id_technique", RACE_DEFAUT))
+	var visuels := VISUELS_FEMININS if Personnage.sexe == "F" else VISUELS_RACES
+	return visuels.get(race, VISUELS_RACES[RACE_DEFAUT])
 
-func _maj_visuels_race() -> void:
-	var race := _id_technique_race()
-	var prefixe: String = VISUELS_RACES.get(race, RACE_DEFAUT)
+func _maj_visuels_race(visuel: String) -> void:
+	var prefixe := visuel
 	var repos := "res://assets/sprites/%s/%s_idle.png" % [prefixe, prefixe]
 	var marche := "res://assets/sprites/%s/%s_walk.png" % [prefixe, prefixe]
 	if not (ResourceLoader.exists(repos) and ResourceLoader.exists(marche)):
@@ -92,7 +100,7 @@ func _maj_visuels_race() -> void:
 	_texture_marche = load(marche)
 	sprite.texture = _texture_marche
 	sprite.hframes = FRAMES_MARCHE
-	_race_chargee = race
+	_visuel_charge = visuel
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
@@ -104,9 +112,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_en_deplacement = true
 
 func _physics_process(delta: float) -> void:
-	var race := _id_technique_race()
-	if race != _race_chargee:
-		_maj_visuels_race()
+	var visuel := _prefixe_visuel_race()
+	if visuel != _visuel_charge:
+		_maj_visuels_race(visuel)
 	if _combat_manager != null and _combat_manager.en_combat:
 		velocity = Vector2.ZERO
 		move_and_slide()
