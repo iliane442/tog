@@ -56,6 +56,11 @@ var barre_sorts: Array[String] = []
 # Manger un fruit est définitif : un seul fruit par personnage.
 var fruit_id := ""
 
+# Buffs temporaires des consommables utilisés : [{id: str, effets: {},
+# expire: float}] ; expire = temps unix ; les buffs échus sont purgés
+# à chaque recalcul de stats.
+var buffs: Array = []
+
 # Sorts connus (id -> infos) — remplis depuis la table `skills`
 var sorts: Dictionary = {
 	"tir_puissant": {"nom": "Tir puissant", "type": "attack", "degats": 12, "portee": 5, "recharge": 1, "description": "Inflige de gros dégâts à distance."},
@@ -281,6 +286,42 @@ func _pouvoirs_fruit(id_fruit: String) -> Array[String]:
 func sorts_fruit_disponibles_pour(id_fruit: String) -> bool:
 	return not _pouvoirs_fruit(id_fruit).is_empty()
 
+# Utilise un consommable de l'inventaire : les points de vie sont
+# restaurés immédiatement, les autres bonus (attaque, défense...) sont
+# actifs pendant `duration` minutes, puis l'objet est retiré. Boire la
+# même potion rafraîchit son buff au lieu de le cumuler. Renvoie ""
+# si réussi, sinon un message d'erreur expliquant le refus.
+func utiliser_objet(id_objet: String) -> String:
+	if not Inventaire.objets.has(id_objet):
+		return "Tu ne possèdes pas cet objet."
+	var details := Inventaire.details_objet(id_objet)
+	if str(details.get("type", "")) != "consumable":
+		return "Cet objet ne se consomme pas."
+	var effets: Dictionary = details.get("effets", {})
+	var soin := int(effets.get("heal", 0))
+	# clés de bonus durable (hors soin et durée de l'effet)
+	var bonus := {}
+	for cle in effets:
+		if str(cle) != "heal" and str(cle) != "health" and str(cle) != "duration":
+			bonus[str(cle)] = int(effets[cle])
+	if soin == 0 and bonus.is_empty():
+		return "Cet objet n'a aucun effet."
+	Inventaire.retirer_objet(id_objet, 1)
+	if soin > 0:
+		soigner(soin)
+	if not bonus.is_empty():
+		var duree_minutes := maxi(int(effets.get("duration", 30)), 1)
+		var expire := Time.get_unix_time_from_system() + 60.0 * duree_minutes
+		# un même consommable ne se cumule pas : il rafraîchit son buff
+		for i in range(buffs.size()):
+			if str(buffs[i].get("id", "")) == id_objet:
+				buffs.remove_at(i)
+				break
+		buffs.append({"id": id_objet, "effets": bonus, "expire": expire})
+	recalculer_stats()
+	sauvegarder()
+	return ""
+
 # Applique les bonus de la race et de la classe sur les stats de base,
 # puis réapplique les points de caractéristiques dépensés
 func recalculer_stats() -> void:
@@ -316,6 +357,15 @@ func recalculer_stats() -> void:
 	# bonus passifs du fruit du démon mangé (effects_json de l'item fruit)
 	if fruit_id != "":
 		_appliquer_effets_objet(Inventaire.details_objet(fruit_id).get("effets", {}))
+	# bonus temporaires des consommables utilisés (buffs non échus)
+	var maintenant := Time.get_unix_time_from_system()
+	var actifs: Array = []
+	for buff in buffs:
+		if buff is Dictionary and float(buff.get("expire", 0.0)) > maintenant:
+			actifs.append(buff)
+	buffs = actifs
+	for buff in actifs:
+		_appliquer_effets_objet(buff.get("effets", {}))
 	vie_max = maxi(vie_max, 1)
 	vie = vie_max
 	caracteristiques_modifiees.emit()
@@ -440,6 +490,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	points_statistique = 0
 	barre_sorts = []
 	fruit_id = ""
+	buffs = []
 	metiers = {}
 	# métier unique, choisi à la création
 	if id_profession != "" and _professions.has(id_profession):
@@ -478,6 +529,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "metiers", metiers)
 	cfg.set_value("perso", "barre_sorts", barre_sorts)
 	cfg.set_value("perso", "fruit", fruit_id)
+	cfg.set_value("perso", "buffs", buffs)
 	perso_cree = cfg.save(CHEMIN_PERSO) == OK
 
 func charger_perso() -> void:
@@ -505,6 +557,12 @@ func charger_perso() -> void:
 			if not barre_sorts.has(id):
 				barre_sorts.append(id)
 	fruit_id = str(cfg.get_value("perso", "fruit", ""))
+	buffs = []
+	var buffs_lus = cfg.get_value("perso", "buffs", [])
+	if buffs_lus is Array:
+		for buff in buffs_lus:
+			if buff is Dictionary:
+				buffs.append(buff)
 	_filtrer_barre_sorts()
 	var equip = cfg.get_value("perso", "equipement", {})
 	if equip is Dictionary:
@@ -539,6 +597,7 @@ func supprimer_perso() -> void:
 	points_statistique = 0
 	barre_sorts = []
 	fruit_id = ""
+	buffs = []
 	metiers = {}
 	points_depenses = {}
 	equipement = {

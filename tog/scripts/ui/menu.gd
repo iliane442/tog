@@ -112,6 +112,10 @@ const PORTRAIT := "res://assets/sprites/clown.png"
 var emplacements_ui := {}
 var detail_id_courant := ""
 
+# bouton d'utilisation des consommables (créé dans _ready : la scène ne
+# contient que les boutons Équiper, Fruit et Coffres)
+var btn_utiliser: Button
+
 const TEXTES_EMPLACEMENTS := {
 	"arme": "Arme",
 	"corps": "Manteau",
@@ -171,6 +175,11 @@ func _ready() -> void:
 	btn_ouvrir_coffre.pressed.connect(_on_bouton_ouvrir_coffre)
 	btn_ouvrir_tous.pressed.connect(_on_bouton_ouvrir_tous)
 	btn_debug_berry.pressed.connect(_on_debug_berry)
+	btn_utiliser = Button.new()
+	btn_utiliser.text = "Utiliser"
+	btn_utiliser.visible = false
+	btn_equiper.get_parent().add_child(btn_utiliser)
+	btn_utiliser.pressed.connect(_on_bouton_utiliser)
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
@@ -565,6 +574,7 @@ func maj_detail_item(id: String) -> void:
 	stats_detail.visible = texte_stats != ""
 	prix_detail.text = "Prix : %d Berry" % int(details.get("prix", 0))
 	_maj_bouton_equiper(details, id)
+	_maj_bouton_utiliser(details)
 
 func maj_detail_aucun() -> void:
 	detail_id_courant = ""
@@ -579,6 +589,8 @@ func maj_detail_aucun() -> void:
 	btn_manger_fruit.visible = false
 	btn_ouvrir_coffre.visible = false
 	btn_ouvrir_tous.visible = false
+	if btn_utiliser != null:
+		btn_utiliser.visible = false
 
 # construit le paperdoll : portrait du personnage au centre, un slot
 # cliquable par emplacement positionné sur le corps
@@ -640,6 +652,48 @@ func _on_bouton_equiper() -> void:
 	maj_equipement()
 	maj_grille()
 	maj_detail_item(detail_id_courant)
+
+# met à jour le bouton Utiliser selon l'objet affiché dans le détail :
+# visible pour les consommables, désactivé s'il n'a aucun effet
+func _maj_bouton_utiliser(details: Dictionary) -> void:
+	if btn_utiliser == null:
+		return
+	var consommable := str(details.get("type", "")) == "consumable"
+	btn_utiliser.visible = consommable
+	if not consommable:
+		return
+	btn_utiliser.text = "Utiliser"
+	btn_utiliser.disabled = (details.get("effets", {}) as Dictionary).is_empty()
+
+# utilise le consommable sélectionné dans le détail : applique ses effets
+# (points de vie restaurés, bonus temporaires) et le retire de
+# l'inventaire
+func _on_bouton_utiliser() -> void:
+	if detail_id_courant == "":
+		return
+	var nom := Inventaire.nom_objet(detail_id_courant)
+	var effets: Dictionary = Inventaire.details_objet(detail_id_courant).get("effets", {})
+	var soin := int(effets.get("heal", 0))
+	var message := Personnage.utiliser_objet(detail_id_courant)
+	maj_grille()
+	if Inventaire.objets.has(detail_id_courant):
+		maj_detail_item(detail_id_courant)
+	else:
+		maj_detail_aucun()
+	if message != "":
+		avertir(message)
+		return
+	var info := AcceptDialog.new()
+	info.title = "%s consommé !" % nom
+	var texte := "Ses bonus sont actifs temporairement."
+	if soin > 0:
+		texte = "Tu récupères %d points de vie." % soin
+	info.dialog_text = texte
+	add_child(info)
+	info.popup_centered()
+	info.visibility_changed.connect(func() -> void:
+		if not info.visible:
+			info.queue_free())
 
 # mange le fruit du démon sélectionné dans le détail — action définitive
 # (un seul fruit par personnage), d'où l'écran de confirmation ; les
