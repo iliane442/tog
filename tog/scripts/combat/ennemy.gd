@@ -3,10 +3,14 @@ extends CharacterBody2D
 signal sante_modifiee(vie: int, vie_max: int)
 
 @export var pv_max := 100
+@export var nom := "Loup pirate"
 @export var degats_attaque := 10
 @export var portee_attaque := 2
 @export var pm_max := 3
 @export var quetes_a_progresser: Array[String] = ["1"]
+
+const ID_ETAT_TEST := 5 # Ralentissement
+const DUREE_ETAT_TEST := 2
 
 var pv := 100
 var _combat_manager
@@ -67,11 +71,24 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 		depart = _case_de(sol, global_position)
 		distance = absi(depart.x - cible.x) + absi(depart.y - cible.y)
 	if distance <= portee_attaque:
+		_appliquer_ralentissement_test(joueur)
 		if _combat_manager == null or _combat_manager.precision_reussie(self):
 			var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque)) if _combat_manager != null else degats_attaque
 			joueur.recevoir_degats(degats)
 	if _combat_manager != null and is_inside_tree():
 		_combat_manager.terminer_tour(self)
+
+func _appliquer_ralentissement_test(joueur: Node) -> void:
+	if _combat_manager == null:
+		return
+	var effet: Dictionary = {
+		"id": ID_ETAT_TEST,
+		"chance": 1.0,
+		"duree": DUREE_ETAT_TEST,
+		"valeur": 1.0,
+	}
+	var attaque: Dictionary = {"effets": [effet]}
+	_combat_manager.appliquer_effets_sort(joueur, attaque)
 
 func _case_de(sol: TileMapLayer, position_globale: Vector2) -> Vector2i:
 	return sol.local_to_map(sol.to_local(position_globale))

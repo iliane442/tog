@@ -10,6 +10,7 @@ size = Vector2(63, 67)
 radius = 180.0
 
 [node name="ennemy" type="CharacterBody2D" unique_id=882835849]
+input_pickable = true
 script = ExtResource("1_enemy")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=809915295]

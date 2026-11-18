@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="96" viewBox="0 0 192 96">
+  <defs><linearGradient id="gold" x2="0" y2="1"><stop stop-color="#ffe89a"/><stop offset=".3" stop-color="#e5a936"/><stop offset=".56" stop-color="#a75c1d"/><stop offset=".78" stop-color="#d28c28"/><stop offset="1" stop-color="#f9d671"/></linearGradient><linearGradient id="wine" x2="0" y2="1"><stop stop-color="#641b23"/><stop offset=".5" stop-color="#40121e"/><stop offset="1" stop-color="#260e17"/></linearGradient></defs>
+  <rect x="2" y="2" width="188" height="92" rx="22" fill="#24100d" stroke="#f6d370" stroke-width="4"/>
+  <rect x="7" y="7" width="178" height="82" rx="18" fill="url(#gold)" stroke="#653018" stroke-width="3"/>
+  <rect x="14" y="14" width="164" height="68" rx="14" fill="url(#wine)" stroke="#f1c04f" stroke-width="2"/>
+  <path d="M24 20h144" stroke="#ffe194" stroke-opacity=".35" stroke-width="2"/>
+  <g fill="#f7d06c" stroke="#4b2117" stroke-width="2"><circle cx="18" cy="18" r="4"/><circle cx="174" cy="18" r="4"/><circle cx="18" cy="78" r="4"/><circle cx="174" cy="78" r="4"/></g>
+</svg>

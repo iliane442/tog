@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" path="res://scenes/shankette.tscn" id="15_shankette"]
 [ext_resource type="Script" path="res://scripts/combat/combat_manager.gd" id="16_combat"]
 [ext_resource type="Script" path="res://scripts/combat/overlay.gd" id="17_overlay"]
+[ext_resource type="PackedScene" path="res://scenes/combat_ui.tscn" id="18_combat_ui"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_iw27f"]
 texture = ExtResource("1_e0an3")
@@ -332,6 +333,8 @@ position = Vector2(1080, 580)
 
 [node name="CombatManager" type="Node" parent="."]
 script = ExtResource("16_combat")
+
+[node name="CombatUI" parent="CombatManager" instance=ExtResource("18_combat_ui")]
 
 [node name="Overlay" type="Node2D" parent="."]
 script = ExtResource("17_overlay")

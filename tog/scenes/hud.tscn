@@ -1,6 +1,529 @@
-[gd_scene format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
+[ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/helmet.png" id="3_personnage"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/sword.png" id="4_sort"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/quest.png" id="5_quest"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/chest.png" id="6_inventaire"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/scroll.png" id="7_wiki"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/gem.png" id="8_metier"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/coin.png" id="9_hdv"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/key.png" id="10_equipage"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/heart.png" id="11_vie"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/xp.png" id="12_xp"]
 
 [node name="HUD" type="CanvasLayer"]
+layer = 10
 script = ExtResource("1_hud")
+
+[node name="QuestPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(380, 120)
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 20.0
+offset_top = 18.0
+offset_right = 400.0
+offset_bottom = 138.0
+theme = ExtResource("2_theme")
+
+[node name="Marges" type="MarginContainer" parent="QuestPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="Colonne" type="VBoxContainer" parent="QuestPanel/Marges"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="QuestTitle" type="Label" parent="QuestPanel/Marges/Colonne"]
+layout_mode = 2
+theme_type_variation = "Ribbon"
+theme_override_font_sizes/font_size = 20
+text = "QUÊTE EN COURS"
+
+[node name="QuestName" type="Label" parent="QuestPanel/Marges/Colonne"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Aucune quête en cours"
+autowrap_mode = 2
+
+[node name="QuestProgress" type="Label" parent="QuestPanel/Marges/Colonne"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Ouvre le carnet pour consulter tes quêtes."
+
+[node name="NavTop" type="HBoxContainer" parent="."]
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = 70.0
+offset_top = 18.0
+offset_right = -20.0
+offset_bottom = 78.0
+alignment = 2
+theme_override_constants/separation = 6
+
+[node name="Personnage" type="Button" parent="NavTop"]
+custom_minimum_size = Vector2(54, 54)
+layout_mode = 2
+theme = ExtResource("2_theme")
+theme_type_variation = "CompassButton"
+icon = ExtResource("3_personnage")
+expand_icon = true
+tooltip_text = "Carnet du pirate"
+
+[node name="Sorts" type="Button" parent="NavTop"]
+custom_minimum_size = Vector2(54, 54)
+layout_mode = 2
+theme = ExtResource("2_theme")
+theme_type_variation = "CompassButton"
+icon = ExtResource("4_sort")
+expand_icon = true
+tooltip_text = "Sorts et techniques"
+
+[node name="Quetes" type="Button" parent="NavTop"]
+custom_minimum_size = Vector2(54, 54)
+layout_mode = 2
+theme = ExtResource("2_theme")
+theme_type_variation = "CompassButton"
+icon = ExtResource("5_quest")
+expand_icon = true
+tooltip_text = "Quêtes"
+
+[node name="Inventaire" type="Button" parent="NavTop"]
+custom_minimum_size = Vector2(54, 54)
+layout_mode = 2
+theme = ExtResource("2_theme")
+theme_type_variation = "CompassButton"
+icon = ExtResource("6_inventaire")
+expand_icon = true
+tooltip_text = "Sac du capitaine"
+
+[node name="Wiki" type="Button" parent="NavTop"]
+custom_minimum_size = Vector2(54, 54)
+layout_mode = 2
+theme = ExtResource("2_theme")
+theme_type_variation = "CompassButton"
+icon = ExtResource("7_wiki")
+expand_icon = true
+tooltip_text = "Carnet et bestiaire"
+
+[node name="Metiers" type="Button" parent="NavTop"]
+custom_minimum_size = Vector2(54, 54)
+layout_mode = 2
+theme = ExtResource("2_theme")
+theme_type_variation = "CompassButton"
+icon = ExtResource("8_metier")
+expand_icon = true
+tooltip_text = "Métiers"
+
+[node name="Hotel" type="Button" parent="NavTop"]
+custom_minimum_size = Vector2(54, 54)
+layout_mode = 2
+theme = ExtResource("2_theme")
+theme_type_variation = "CompassButton"
+icon = ExtResource("9_hdv")
+expand_icon = true
+tooltip_text = "Hôtel des ventes"
+
+[node name="Equipage" type="Button" parent="NavTop"]
+custom_minimum_size = Vector2(54, 54)
+layout_mode = 2
+theme = ExtResource("2_theme")
+theme_type_variation = "CompassButton"
+icon = ExtResource("10_equipage")
+expand_icon = true
+tooltip_text = "Équipage"
+
+[node name="Menu" type="Button" parent="NavTop"]
+custom_minimum_size = Vector2(100, 54)
+layout_mode = 2
+theme = ExtResource("2_theme")
+text = "MENU"
+tooltip_text = "Ouvrir le carnet"
+
+[node name="BerryPanel" type="PanelContainer" parent="."]
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -250.0
+offset_top = 92.0
+offset_right = -20.0
+offset_bottom = 148.0
+theme = ExtResource("2_theme")
+theme_type_variation = "ParchmentPanel"
+
+[node name="BerryRow" type="HBoxContainer" parent="BerryPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BerryIcon" type="TextureRect" parent="BerryPanel/BerryRow"]
+custom_minimum_size = Vector2(26, 26)
+layout_mode = 2
+texture = ExtResource("9_hdv")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Berry" type="Label" parent="BerryPanel/BerryRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 21
+text = "0 Berry"
+vertical_alignment = 1
+
+[node name="PanneauStats" type="PanelContainer" parent="."]
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -344.0
+offset_top = -190.0
+offset_right = -20.0
+offset_bottom = -18.0
+theme = ExtResource("2_theme")
+theme_type_variation = "ParchmentPanel"
+
+[node name="Colonne" type="VBoxContainer" parent="PanneauStats"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Nom" type="Label" parent="PanneauStats/Colonne"]
+layout_mode = 2
+theme_type_variation = "Nameplate"
+theme_override_font_sizes/font_size = 20
+text = "Pirate - Niv. 1"
+
+[node name="LigneVie" type="HBoxContainer" parent="PanneauStats/Colonne"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="VieIcon" type="TextureRect" parent="PanneauStats/Colonne/LigneVie"]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+texture = ExtResource("11_vie")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Vie" type="ProgressBar" parent="PanneauStats/Colonne/LigneVie"]
+custom_minimum_size = Vector2(150, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("2_theme")
+theme_type_variation = "RedBar"
+show_percentage = false
+
+[node name="VieTexte" type="Label" parent="PanneauStats/Colonne/LigneVie"]
+custom_minimum_size = Vector2(88, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "100 / 100"
+horizontal_alignment = 2
+
+[node name="LigneXP" type="HBoxContainer" parent="PanneauStats/Colonne"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="XPIcon" type="TextureRect" parent="PanneauStats/Colonne/LigneXP"]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+texture = ExtResource("12_xp")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="XP" type="ProgressBar" parent="PanneauStats/Colonne/LigneXP"]
+custom_minimum_size = Vector2(150, 20)
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("2_theme")
+theme_type_variation = "GoldBar"
+show_percentage = false
+
+[node name="XPTexte" type="Label" parent="PanneauStats/Colonne/LigneXP"]
+custom_minimum_size = Vector2(88, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "0 / 100 XP"
+horizontal_alignment = 2
+
+[node name="LigneCombat" type="HBoxContainer" parent="PanneauStats/Colonne"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PA" type="Label" parent="PanneauStats/Colonne/LigneCombat"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "PA 6 / 6"
+horizontal_alignment = 1
+
+[node name="PM" type="Label" parent="PanneauStats/Colonne/LigneCombat"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "PM 3 / 3"
+horizontal_alignment = 1
+
+[node name="EtatsJoueur" type="Label" parent="PanneauStats/Colonne"]
+custom_minimum_size = Vector2(0, 54)
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.12, 0.055, 0.025, 1)
+text = "ETATS : Aucun"
+autowrap_mode = 2
+vertical_alignment = 1
+
+[node name="BoutonsCombat" type="HBoxContainer" parent="PanneauStats/Colonne"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ValiderPlacement" type="Button" parent="PanneauStats/Colonne/BoutonsCombat"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Placement OK"
+
+[node name="FinTour" type="Button" parent="PanneauStats/Colonne/BoutonsCombat"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Fin du tour"
+
+[node name="BarreDeSorts" type="PanelContainer" parent="."]
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -364.0
+offset_top = -132.0
+offset_right = 364.0
+offset_bottom = -16.0
+theme = ExtResource("2_theme")
+theme_type_variation = "ParchmentPanel"
+
+[node name="Colonne" type="VBoxContainer" parent="BarreDeSorts"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Entete" type="HBoxContainer" parent="BarreDeSorts/Colonne"]
+layout_mode = 2
+
+[node name="Titre" type="Label" parent="BarreDeSorts/Colonne/Entete"]
+layout_mode = 2
+theme_type_variation = "Ribbon"
+theme_override_font_sizes/font_size = 18
+text = "BARRE DE SORTS"
+
+[node name="Action" type="Label" parent="BarreDeSorts/Colonne/Entete"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "Touches 1-0 - clic pour utiliser"
+horizontal_alignment = 2
+
+[node name="Emplacements" type="HBoxContainer" parent="BarreDeSorts/Colonne"]
+layout_mode = 2
+size_flags_horizontal = 4
+alignment = 1
+theme_override_constants/separation = 5
+
+[node name="Sort1" type="Button" parent="BarreDeSorts/Colonne/Emplacements"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+expand_icon = true
+icon_alignment = 1
+tooltip_text = "Sort 1"
+
+[node name="Badge" type="Label" parent="BarreDeSorts/Colonne/Emplacements/Sort1"]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 0.0
+offset_right = 26.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 15
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="Sort2" type="Button" parent="BarreDeSorts/Colonne/Emplacements"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+expand_icon = true
+icon_alignment = 1
+tooltip_text = "Sort 2"
+
+[node name="Badge" type="Label" parent="BarreDeSorts/Colonne/Emplacements/Sort2"]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 0.0
+offset_right = 26.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 15
+text = "2"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="Sort3" type="Button" parent="BarreDeSorts/Colonne/Emplacements"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+expand_icon = true
+icon_alignment = 1
+tooltip_text = "Sort 3"
+
+[node name="Badge" type="Label" parent="BarreDeSorts/Colonne/Emplacements/Sort3"]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 0.0
+offset_right = 26.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 15
+text = "3"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="Sort4" type="Button" parent="BarreDeSorts/Colonne/Emplacements"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+expand_icon = true
+icon_alignment = 1
+tooltip_text = "Sort 4"
+
+[node name="Badge" type="Label" parent="BarreDeSorts/Colonne/Emplacements/Sort4"]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 0.0
+offset_right = 26.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 15
+text = "4"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="Sort5" type="Button" parent="BarreDeSorts/Colonne/Emplacements"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+expand_icon = true
+icon_alignment = 1
+tooltip_text = "Sort 5"
+
+[node name="Badge" type="Label" parent="BarreDeSorts/Colonne/Emplacements/Sort5"]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 0.0
+offset_right = 26.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 15
+text = "5"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="Sort6" type="Button" parent="BarreDeSorts/Colonne/Emplacements"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+expand_icon = true
+icon_alignment = 1
+tooltip_text = "Sort 6"
+
+[node name="Badge" type="Label" parent="BarreDeSorts/Colonne/Emplacements/Sort6"]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 0.0
+offset_right = 26.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 15
+text = "6"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="Sort7" type="Button" parent="BarreDeSorts/Colonne/Emplacements"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+expand_icon = true
+icon_alignment = 1
+tooltip_text = "Sort 7"
+
+[node name="Badge" type="Label" parent="BarreDeSorts/Colonne/Emplacements/Sort7"]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 0.0
+offset_right = 26.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 15
+text = "7"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="Sort8" type="Button" parent="BarreDeSorts/Colonne/Emplacements"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+expand_icon = true
+icon_alignment = 1
+tooltip_text = "Sort 8"
+
+[node name="Badge" type="Label" parent="BarreDeSorts/Colonne/Emplacements/Sort8"]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 0.0
+offset_right = 26.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 15
+text = "8"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="Sort9" type="Button" parent="BarreDeSorts/Colonne/Emplacements"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+expand_icon = true
+icon_alignment = 1
+tooltip_text = "Sort 9"
+
+[node name="Badge" type="Label" parent="BarreDeSorts/Colonne/Emplacements/Sort9"]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 0.0
+offset_right = 26.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 15
+text = "9"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="Sort10" type="Button" parent="BarreDeSorts/Colonne/Emplacements"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+expand_icon = true
+icon_alignment = 1
+tooltip_text = "Sort 0"
+
+[node name="Badge" type="Label" parent="BarreDeSorts/Colonne/Emplacements/Sort10"]
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 0.0
+offset_right = 26.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 15
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2

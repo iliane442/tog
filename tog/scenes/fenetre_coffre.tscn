@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/coffres_ui.gd" id="1_coffreui"]
+[ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="2_theme"]
 
 [node name="CoffreUI" type="CanvasLayer" groups=["coffres_ui"]]
 script = ExtResource("1_coffreui")
@@ -15,6 +16,7 @@ offset_left = 0.0
 offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
+theme = ExtResource("2_theme")
 
 [node name="VBox" type="VBoxContainer" parent="Fenetre"]
 layout_mode = 2
@@ -22,6 +24,7 @@ theme_override_constants/separation = 12
 
 [node name="Titre" type="Label" parent="Fenetre/VBox"]
 layout_mode = 2
+theme_type_variation = "Title"
 text = "Coffre"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 24
