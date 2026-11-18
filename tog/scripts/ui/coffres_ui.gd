@@ -231,7 +231,7 @@ func _maj_boutons_revelation() -> void:
 
 func _creer_entete(source: Dictionary) -> Label:
 	var entete := Label.new()
-	entete.add_theme_font_size_override("font_size", 19)
+	entete.add_theme_font_size_override("font_size", 26)
 	entete.add_theme_color_override("font_color", source["couleur"])
 	entete.text = source["titre"]
 	return entete
@@ -241,7 +241,7 @@ func _creer_ligne(prise: Dictionary, index_source: int, index: int) -> Button:
 	var details := Inventaire.details_objet(id)
 
 	var bouton := Button.new()
-	bouton.custom_minimum_size = Vector2(0, 64)
+	bouton.custom_minimum_size = Vector2(0, 84)
 	bouton.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	bouton.pressed.connect(_on_ligne_presee.bind(index_source, index))
 
@@ -249,15 +249,15 @@ func _creer_ligne(prise: Dictionary, index_source: int, index: int) -> Button:
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_theme_constant_override("separation", 2)
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.offset_left = 14.0
-	vbox.offset_top = 6.0
-	vbox.offset_right = -10.0
-	vbox.offset_bottom = -6.0
+	vbox.offset_left = 20.0
+	vbox.offset_top = 10.0
+	vbox.offset_right = -14.0
+	vbox.offset_bottom = -10.0
 
 	# introduction : rareté puis type s'y affichent avant l'objet
 	var intro := Label.new()
 	intro.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro.add_theme_font_size_override("font_size", 13)
+	intro.add_theme_font_size_override("font_size", 19)
 	intro.add_theme_color_override("font_color", details["couleur_rarete"])
 	intro.modulate.a = 0.0
 	intro.text = ""
@@ -265,20 +265,20 @@ func _creer_ligne(prise: Dictionary, index_source: int, index: int) -> Button:
 
 	var hbox := HBoxContainer.new()
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hbox.add_theme_constant_override("separation", 14)
+	hbox.add_theme_constant_override("separation", 22)
 	vbox.add_child(hbox)
 
 	# groupe objet (icône + nom) : révélé en dernier, après la quantité
 	var groupe_objet := HBoxContainer.new()
 	groupe_objet.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	groupe_objet.add_theme_constant_override("separation", 14)
+	groupe_objet.add_theme_constant_override("separation", 22)
 	groupe_objet.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	groupe_objet.modulate.a = 0.0
 	hbox.add_child(groupe_objet)
 
 	var icone := TextureRect.new()
 	icone.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icone.custom_minimum_size = Vector2(36, 36)
+	icone.custom_minimum_size = Vector2(56, 56)
 	icone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icone.texture = _icone(details)
@@ -288,7 +288,7 @@ func _creer_ligne(prise: Dictionary, index_source: int, index: int) -> Button:
 	nom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	nom.text = Inventaire.nom_objet(id)
 	nom.add_theme_color_override("font_color", details["couleur_rarete"])
-	nom.add_theme_font_size_override("font_size", 19)
+	nom.add_theme_font_size_override("font_size", 28)
 	nom.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	nom.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -297,10 +297,10 @@ func _creer_ligne(prise: Dictionary, index_source: int, index: int) -> Button:
 	var qte := Label.new()
 	qte.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	qte.text = "x%d" % int(prise["qte"])
-	qte.add_theme_font_size_override("font_size", 19)
+	qte.add_theme_font_size_override("font_size", 28)
 	qte.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	qte.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	qte.custom_minimum_size = Vector2(52, 0)
+	qte.custom_minimum_size = Vector2(80, 0)
 	qte.modulate.a = 0.0
 	hbox.add_child(qte)
 
