@@ -107,12 +107,12 @@ func details_objet(id: String) -> Dictionary:
 	var details := {
 		"id_rarete": 1, "rarete": "", "couleur_rarete": Color.GRAY,
 		"type": "", "sous_type": "", "description": "", "effets": {},
-		"chemin_icone": "", "prix": 0, "niveau_min": 1,
+		"chemin_icone": "", "prix": 0, "niveau_min": 1, "classe_requise": "",
 	}
 	if BaseDonnees.disponible and id.is_valid_int():
 		var lignes := BaseDonnees.lire(
 			"SELECT i.type, i.subtype, i.description, i.base_price, i.min_level,"
-			+ " i.effects_json, i.rarity_id, i.icon_path,"
+			+ " i.effects_json, i.rarity_id, i.icon_path, i.required_class,"
 			+ " r.display_name AS rarete, r.color AS couleur"
 			+ " FROM items i LEFT JOIN rarities r ON r.id = i.rarity_id"
 			+ " WHERE i.id = %d;" % id.to_int())
@@ -123,6 +123,9 @@ func details_objet(id: String) -> Dictionary:
 			details["description"] = str(ligne.get("description", ""))
 			details["prix"] = int(ligne.get("base_price", 0))
 			details["niveau_min"] = int(ligne.get("min_level", 1))
+			var classe_req: Variant = ligne.get("required_class", "")
+			if classe_req != null:
+				details["classe_requise"] = str(classe_req)
 			details["id_rarete"] = int(ligne.get("rarity_id", 1))
 			details["rarete"] = str(ligne.get("rarete", ""))
 			details["couleur_rarete"] = Color.from_string(str(ligne.get("couleur", "#808080")), Color.GRAY)

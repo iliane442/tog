@@ -17,8 +17,10 @@ var points_statistique: int = 0
 # répartition déjà effectuée (cle -> points dépensés), conservée par recalculer_stats
 var points_depenses: Dictionary = {}
 # objets équipés (emplacement -> id d'item) : un par emplacement porté
+# arme = arme principale (en accord avec la classe), arme2 = arme
+# secondaire (sans restriction)
 var equipement: Dictionary = {
-	"arme": "", "corps": "", "tête": "", "visage": "", "cou": "",
+	"arme": "", "arme2": "", "corps": "", "tête": "", "visage": "", "cou": "",
 	"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
 	"anneau1": "", "anneau2": "",
 }
@@ -522,7 +524,26 @@ func _resoudre_emplacement(details: Dictionary) -> String:
 		if equipement.get("anneau2", "") == "":
 			return "anneau2"
 		return "anneau1"
+	if emplacement == "arme":
+		# l'arme principale est obligatoirement en accord avec la classe :
+		# une arme à classe requise qui n'est pas la vôtre ne peut aller
+		# qu'en arme secondaire ; une arme accordée prend la place
+		# principale si elle est libre
+		if not arme_accordee(details):
+			return "arme2"
+		if equipement.get("arme", "") == "":
+			return "arme"
+		return "arme2"
 	return emplacement
+
+# true si l'arme peut occuper l'emplacement d'arme principale : pas de
+# classe requise (libre à tous), ou classe requise = classe du perso
+func arme_accordee(details: Dictionary) -> bool:
+	var cr: Variant = details.get("classe_requise", "")
+	var classe_requise := ("" if cr == null else str(cr)).strip_edges()
+	if classe_requise == "" or classe_requise == "<null>":
+		return true
+	return classe_requise.to_lower() == nom_classe().to_lower()
 
 # emplacement où l'objet est équipé ("" si non porté)
 func est_equipe(id: String) -> String:
@@ -586,7 +607,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 		metiers[id_profession] = {"niveau": 1, "xp": 0}
 	points_depenses = {}
 	equipement = {
-		"arme": "", "corps": "", "tête": "", "visage": "", "cou": "",
+		"arme": "", "arme2": "", "corps": "", "tête": "", "visage": "", "cou": "",
 		"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
 		"anneau1": "", "anneau2": "",
 	}
@@ -706,7 +727,7 @@ func supprimer_perso() -> void:
 	metiers = {}
 	points_depenses = {}
 	equipement = {
-		"arme": "", "corps": "", "tête": "", "visage": "", "cou": "",
+		"arme": "", "arme2": "", "corps": "", "tête": "", "visage": "", "cou": "",
 		"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
 		"anneau1": "", "anneau2": "",
 	}

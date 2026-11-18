@@ -102,6 +102,7 @@ const POSITIONS_EMPLACEMENTS := {
 	"pieds": Vector2(170, 364),
 	"main": Vector2(38, 214),
 	"arme": Vector2(318, 262),
+	"arme2": Vector2(318, 324),
 	"anneau1": Vector2(320, 84),
 	"anneau2": Vector2(320, 140),
 }
@@ -118,6 +119,7 @@ var btn_utiliser: Button
 
 const TEXTES_EMPLACEMENTS := {
 	"arme": "Arme",
+	"arme2": "Arme secondaire",
 	"corps": "Manteau",
 	"tête": "Chapeau",
 	"visage": "Visage",
@@ -132,6 +134,7 @@ const TEXTES_EMPLACEMENTS := {
 }
 const ICONES_EMPLACEMENTS := {
 	"arme": "res://addons/pixel_ui_fantasy/icons/sword.png",
+	"arme2": "res://addons/pixel_ui_fantasy/icons/sword.png",
 	"corps": "res://addons/pixel_ui_fantasy/icons/shield.png",
 	"tête": "res://addons/pixel_ui_fantasy/icons/helmet.png",
 	"visage": "res://addons/pixel_ui_fantasy/icons/scroll.png",
