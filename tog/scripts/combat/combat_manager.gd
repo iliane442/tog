@@ -133,13 +133,13 @@ func _construire_interface() -> void:
 func _construire_sorts_etats() -> void:
 	for enfant in _liste_sorts.get_children():
 		enfant.queue_free()
-	# seuls les sorts de la classe et les pouvoirs du fruit mangé
-	# peuvent être lancés en combat
-	for id_sort in Personnage.sorts_disponibles():
-		var sort: Dictionary = Personnage.sorts[id_sort]
-		var effets: Array = sort.get("effets", [])
-		if effets.is_empty():
+	# seuls les sorts équipés dans la barre de combat peuvent être
+	# lancés en combat, dans l'ordre de la barre ; un sort d'attaque
+	# sans effet d'état reste lançable (ses dégâts de base s'appliquent)
+	for id_sort in Personnage.barre_sorts:
+		if not Personnage.sorts.has(id_sort):
 			continue
+		var sort: Dictionary = Personnage.sorts[id_sort]
 		var bouton := Button.new()
 		bouton.text = "%s (%d PA)" % [str(sort.get("nom", "Sort")), int(sort.get("cout_pa", 2))]
 		bouton.tooltip_text = str(sort.get("description", ""))
@@ -192,6 +192,7 @@ func lancer_combat(ennemi: Node = null) -> void:
 	_aligner_sur_grille(_ennemi)
 	_calculer_zone_combat()
 	_etats_actifs.clear()
+	_construire_sorts_etats()
 	en_combat = true
 	en_placement = true
 	_panneau.show()
@@ -215,7 +216,9 @@ func valider_placement() -> void:
 		return
 	en_placement = false
 	_bouton_pret.hide()
-	_bouton_sort.show()
+	# la boule de feu héritée (hors base, non équipable) ne peut plus être
+	# lancée que si elle figure dans la barre de sorts
+	_bouton_sort.visible = Personnage.sort_dans_barre("boule_de_feu")
 	_conteneur_sorts.show()
 	_bouton_fin_tour.show()
 	combat_commence.emit()

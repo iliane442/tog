@@ -198,6 +198,7 @@ func _ready() -> void:
 	$BarreCascade/Hotel.pressed.connect(ouvrir.bind("hotel"))
 	$BarreCascade/Equipage.pressed.connect(ouvrir.bind("equipage"))
 	Inventaire.inventaire_modifie.connect(maj_grille)
+	Inventaire.inventaire_modifie.connect(_maj_filtre_types_wiki)
 	QuestManager.quete_acceptee.connect(maj_quetes)
 	QuestManager.quete_progressee.connect(maj_quetes)
 	QuestManager.quete_abandonnee.connect(maj_quetes)
@@ -881,31 +882,55 @@ func _icone_objet(details: Dictionary) -> Texture2D:
 const COULEUR_INCONNU := Color(0.55, 0.5, 0.45)
 const ICONE_CADENAS := "res://addons/pixel_ui_fantasy/icons/lock.png"
 
+# Encyclopédie des fruits du démon (item 950 de la base) : craftée par
+# l'Archéologue, elle révèle les fruits du démon dans le wiki
+const ID_ENCYCLOPEDIE_FRUITS := "950"
+
+# l'encyclopédie des fruits du démon est-elle dans l'inventaire ?
+func _encyclopedie_fruits_possedee() -> bool:
+	return Inventaire.objets.has(ID_ENCYCLOPEDIE_FRUITS)
+
 # types proposés par le filtre du wiki ; "" = tous les types
 var types_wiki: Array = [""]
 # objet affiché dans la fiche du wiki (cible du bouton debug "Donner x5")
 var id_wiki_courant := ""
 
-# remplit le filtre de types avec les types réellement présents en base
+# remplit le filtre de types avec les types réellement présents en base ;
+# les fruits du démon sont volontairement absents du wiki (objets secrets),
+# sauf si l'encyclopédie des fruits du démon est possédée
 func _peupler_types_wiki() -> void:
 	option_type_wiki.clear()
 	types_wiki = [""]
 	option_type_wiki.add_item("Tous")
+	var exclure_fruits := "" if _encyclopedie_fruits_possedee() else " AND type != 'fruit_demon'"
 	for ligne in BaseDonnees.lire(
-		"SELECT DISTINCT type FROM items WHERE is_active = 1 ORDER BY type;"):
+		"SELECT DISTINCT type FROM items WHERE is_active = 1" + exclure_fruits + " ORDER BY type;"):
 		var type_item := str(ligne["type"])
 		types_wiki.append(type_item)
 		option_type_wiki.add_item(type_item.capitalize())
 	option_type_wiki.select(0)
+
+# le filtre de types dépend de l'encyclopédie : il est reconstruit à chaque
+# changement d'inventaire, en conservant la sélection si elle reste valide
+func _maj_filtre_types_wiki() -> void:
+	var type_courant := ""
+	if option_type_wiki.selected >= 0 and option_type_wiki.selected < types_wiki.size():
+		type_courant = str(types_wiki[option_type_wiki.selected])
+	_peupler_types_wiki()
+	var index := types_wiki.find(type_courant)
+	option_type_wiki.select(index if index >= 0 else 0)
+	maj_wiki()
 
 func maj_wiki() -> void:
 	for enfant in liste_wiki.get_children():
 		enfant.queue_free()
 	var type_choisi := str(types_wiki[option_type_wiki.selected]) if option_type_wiki.selected >= 0 else ""
 	var condition := "is_active = 1"
+	if not _encyclopedie_fruits_possedee():
+		condition += " AND type != 'fruit_demon'"
 	if type_choisi != "":
 		condition += " AND type = '%s'" % type_choisi
-	var lignes := BaseDonnees.lire("SELECT id, name FROM items WHERE " + condition + " ORDER BY id;")
+	var lignes := BaseDonnees.lire("SELECT id, name, type FROM items WHERE " + condition + " ORDER BY id;")
 	var filtre := champ_recherche.text.strip_edges().to_lower()
 	var connus := 0
 	var affiches := 0
@@ -921,7 +946,9 @@ func maj_wiki() -> void:
 		# police contenue pour la liste : les noms de plus de 50 caractères
 		# doivent tenir dans la colonne sans défilement horizontal
 		bouton.add_theme_font_size_override("font_size", 20)
-		if Inventaire.est_connu(id):
+		# l'encyclopédie révèle les fruits du démon sans les avoir trouvés
+		var est_fruit := str(ligne["type"]) == "fruit_demon"
+		if Inventaire.est_connu(id) or (est_fruit and _encyclopedie_fruits_possedee()):
 			connus += 1
 		else:
 			bouton.add_theme_color_override("font_color", COULEUR_INCONNU)
@@ -943,14 +970,16 @@ func maj_detail_wiki(id: String) -> void:
 	id_wiki_courant = id
 	btn_donner_item_wiki.visible = true
 	nom_wiki.text = Inventaire.nom_objet(id)
-	if not Inventaire.est_connu(id):
+	var details := Inventaire.details_objet(id)
+	# l'encyclopédie des fruits du démon révèle leur fiche sans rencontre
+	var fruit_revele := str(details.get("type", "")) == "fruit_demon" and _encyclopedie_fruits_possedee()
+	if not Inventaire.est_connu(id) and not fruit_revele:
 		icone_wiki.texture = load(ICONE_CADENAS)
 		type_wiki.text = ""
 		description_wiki.text = "Objet non encore rencontré. Ses caractéristiques apparaîtront quand vous le trouverez."
 		stats_wiki.text = ""
 		prix_wiki.text = ""
 		return
-	var details := Inventaire.details_objet(id)
 	icone_wiki.texture = _icone_objet(details)
 	nom_wiki.add_theme_color_override("font_color", details["couleur_rarete"])
 	var type_texte: String = details.get("type", "").capitalize()
@@ -962,9 +991,27 @@ func maj_detail_wiki(id: String) -> void:
 	type_wiki.add_theme_color_override("font_color", details["couleur_rarete"])
 	description_wiki.text = details.get("description", "")
 	var texte_stats := _texte_stats(details)
+	# l'encyclopédie dresse aussi la liste des pouvoirs du fruit
+	if fruit_revele:
+		var pouvoirs := _pouvoirs_fruit(id)
+		if not pouvoirs.is_empty():
+			var texte_pouvoirs := "Pouvoirs : %s" % " ; ".join(pouvoirs)
+			texte_stats = (texte_pouvoirs + "\n" + texte_stats) if texte_stats != "" else texte_pouvoirs
 	stats_wiki.text = texte_stats
 	stats_wiki.visible = texte_stats != ""
 	prix_wiki.text = "Prix : %d Berry" % int(details.get("prix", 0))
+
+# pouvoirs d'un fruit du démon (tables `fruit_skills` + `skills`),
+# au format "Nom (coût PA)" ; vide si le fruit n'a aucun pouvoir rattaché
+func _pouvoirs_fruit(id_fruit: String) -> Array[String]:
+	var pouvoirs: Array[String] = []
+	if not BaseDonnees.disponible or not id_fruit.is_valid_int():
+		return pouvoirs
+	for ligne in BaseDonnees.lire(
+		"SELECT s.name, s.base_cooldown FROM fruit_skills fs"
+		+ " JOIN skills s ON s.id = fs.skill_id WHERE fs.fruit_item_id = %d ORDER BY fs.skill_id;" % id_fruit.to_int()):
+		pouvoirs.append("%s (%d PA)" % [str(ligne["name"]), maxi(int(ligne["base_cooldown"]), 1)])
+	return pouvoirs
 
 func maj_detail_aucun_wiki() -> void:
 	icone_wiki.texture = null
