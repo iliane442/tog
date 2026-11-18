@@ -36,7 +36,7 @@ INSERT OR IGNORE INTO items (
   (951, 'Yoru', 'arme', 'épée', 6,
    'Lame noire de Mihawk, « le plus fort bretteur du monde ». Saijo O Wazamono : l''une des douze lames de grade suprême. Sa taille démesurée tranche les galères en deux d''un seul geste, à distance.',
    250000, 0, 0, 0, 95, '{"attack": 95, "agilite": 25}', 1),
-  (952, 'Murakumogiri', 'arme', 'épée', 6,
+  (952, 'Murakumogiri', 'arme', 'bisento', 6,
    'Le bisento colossal de Barbe Blanche. Saijo O Wazamono : l''une des douze lames de grade suprême, capable d''engloutir des flottes entières quand son porteur frappe le ciel et la mer.',
    230000, 0, 0, 0, 85, '{"attack": 88, "force": 22}', 1),
   -- Kitetsu : lignée de lames maudites

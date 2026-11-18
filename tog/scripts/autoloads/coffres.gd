@@ -188,8 +188,8 @@ func _tirer_lame_unique() -> Dictionary:
 	var ids: Array[String] = []
 	for ligne in BaseDonnees.lire(
 		"SELECT id FROM items"
-		+ " WHERE type = 'arme' AND subtype = 'épée' AND rarity_id = 6"
-		+ " AND is_active = 1 AND is_droppable = 0"
+		+ " WHERE type = 'arme' AND rarity_id = 6 AND is_active = 1"
+		+ " AND is_droppable = 0"
 		+ " AND id IN (SELECT item_id FROM unique_items WHERE is_consumed = 0);"):
 		var id := str(ligne["id"])
 		# lame déjà trouvée : il n'existe plus qu'un exemplaire par monde
