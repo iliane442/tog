@@ -88,3 +88,43 @@ UPDATE animations SET sprite_sheet_path = 'assets/sprites/vfx/tog_fumee_beam.png
 UPDATE animations SET sprite_sheet_path = 'assets/sprites/vfx/tog_magic_fils.png',      frame_width = 128, frame_height = 128, frame_count = 12, frame_delay_ms = 83,  loop = 0 WHERE name = 'fx_fils_parasites';
 UPDATE animations SET sprite_sheet_path = 'assets/sprites/vfx/tog_slash_bleu.png',       frame_width = 96,  frame_height = 96,  frame_count = 7,  frame_delay_ms = 63,  loop = 0 WHERE name = 'fx_serres_de_feu_bleu';
 UPDATE animations SET sprite_sheet_path = 'assets/sprites/vfx/tog_heal_phenix.png',      frame_width = 80,  frame_height = 112, frame_count = 12, frame_delay_ms = 83,  loop = 1 WHERE name = 'fx_renaissance_ardente';
+
+-- Effets ImageGen des sorts sans animation. Une ligne par sort, avec
+-- six cases de 128 px et une ancre définie dans le JSON de chaque planche.
+WITH effets(id_sort, nom, delai_ms) AS (
+  VALUES
+    (7,  'shaku_shaku',             73),
+    (8,  'kuro_kabuto',             73),
+    (9,  'mirage_tempo',            92),
+    (14, 'gel',                    95),
+    (16, 'tempete',                92),
+    (18, 'fracas',                 78),
+    (19, 'venin_rampant',         100),
+    (20, 'flamme_vive',            92),
+    (21, 'prison_de_givre',       106),
+    (22, 'entrave',               100),
+    (23, 'eclat_aveuglant',        76),
+    (24, 'sceau_du_silence',       94),
+    (25, 'onde_de_choc',           80),
+    (26, 'rappel_gravitationnel',  94),
+    (27, 'voile_invisible',       105),
+    (28, 'egide',                 105),
+    (29, 'souffle_vital',         115),
+    (31, 'peau_de_pierre',        104),
+    (32, 'oeil_du_tireur',         95),
+    (33, 'presage_critique',       95),
+    (34, 'marque_de_faiblesse',    96)
+)
+INSERT OR IGNORE INTO animations (
+  name, entity_type, entity_id, animation_type, sprite_sheet_path,
+  frame_width, frame_height, frame_count, frame_delay_ms, loop
+)
+SELECT 'fx_' || effets.nom, 'skill', skills.id, skills.type,
+       'assets/sprites/vfx/tog_' || effets.nom || '.png',
+       128, 128, 6, effets.delai_ms, 0
+  FROM effets
+  JOIN skills ON skills.id = effets.id_sort
+ WHERE NOT EXISTS (
+   SELECT 1 FROM animations
+    WHERE entity_type = 'skill' AND entity_id = skills.id
+ );

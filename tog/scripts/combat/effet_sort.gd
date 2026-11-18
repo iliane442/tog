@@ -37,7 +37,7 @@ func configure(chemin: String, nb_frames: int, delai_ms: int, boucle: bool, larg
 	var chemin_png := chemin if chemin.begins_with("res://") else "res://" + chemin
 	_feuille = load(chemin_png)
 	_nb_frames = maxi(nb_frames, 1)
-	_delai = maxi(float(delai_ms) / 1000.0, 0.016)
+	_delai = maxf(float(delai_ms) / 1000.0, 0.016)
 	_boucle = boucle
 	var texte := FileAccess.get_file_as_string(chemin_png.get_basename() + ".json")
 	var atlas: Variant = JSON.parse_string(texte)
