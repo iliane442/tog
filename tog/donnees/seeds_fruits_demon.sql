@@ -87,25 +87,28 @@ CREATE TABLE IF NOT EXISTS fruit_skills (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   fruit_item_id INTEGER NOT NULL,
   skill_id INTEGER NOT NULL,
-  is_ultime BOOLEAN NOT NULL DEFAULT 0,
+  unlock_level INTEGER NOT NULL DEFAULT 1,
+  is_eveil BOOLEAN NOT NULL DEFAULT 0,
   FOREIGN KEY (fruit_item_id) REFERENCES items(id),
   FOREIGN KEY (skill_id) REFERENCES skills(id),
   UNIQUE (fruit_item_id, skill_id)
 );
 
-INSERT OR IGNORE INTO fruit_skills (fruit_item_id, skill_id, is_ultime) VALUES
+-- liens de base : la structure complète (4 sorts + 1 éveil par fruit)
+-- est définie dans seeds_fruits_eveils.sql, à exécuter après ce fichier
+INSERT OR IGNORE INTO fruit_skills (fruit_item_id, skill_id, unlock_level, is_eveil) VALUES
   -- Fruit du Caoutchouc : sorts existants 3-5
-  (900, 3,   0), (900, 4, 0), (900, 5, 1),
+  (900, 3,   1, 0), (900, 4, 20, 0), (900, 5, 35, 0),
   -- Flamme
-  (901, 100, 0), (901, 101, 1),
+  (901, 100, 1, 0), (901, 101, 35, 0),
   -- Foudre
-  (902, 102, 0), (902, 103, 1),
+  (902, 102, 1, 0), (902, 103, 35, 0),
   -- Glace
-  (903, 104, 0), (903, 105, 1),
+  (903, 104, 1, 0), (903, 105, 35, 0),
   -- Léopard
-  (904, 106, 0), (904, 107, 1),
+  (904, 106, 1, 0), (904, 107, 35, 0),
   -- Ténèbres
-  (905, 108, 0), (905, 109, 1);
+  (905, 108, 1, 0), (905, 109, 35, 0);
 
 -- ------------------------------------------------------------------
 -- 4. Registre d'unicité mondiale
@@ -230,17 +233,17 @@ INSERT OR IGNORE INTO items (
    'Un Zoan mythique : des flammes bleues qui ne brûlent pas — elles régénèrent. L''utilisateur renaît de ses cendres. Un seul fruit par personne : en manger un second est mortel.',
    80000, 0, 0, 0, 10, '{"vie": 50, "speed": 10}', 1);
 
-INSERT OR IGNORE INTO fruit_skills (fruit_item_id, skill_id, is_ultime) VALUES
-  (906, 110, 0), (906, 111, 1),  -- Bistouri
-  (907, 112, 0), (907, 113, 1),  -- Lumière
-  (908, 114, 0), (908, 115, 1),  -- Magma
-  (909, 116, 0), (909, 117, 1),  -- Fleurs
-  (910, 118, 0), (910, 119, 1),  -- Sable
-  (911, 120, 0), (911, 121, 1),  -- Fumée
-  (912, 122, 0), (912, 123, 1),  -- Séisme
-  (913, 124, 0), (913, 125, 1),  -- Poison
-  (914, 126, 0), (914, 127, 1),  -- Fils
-  (915, 128, 0), (915, 129, 1);  -- Phénix (Renaissance = signature)
+INSERT OR IGNORE INTO fruit_skills (fruit_item_id, skill_id, unlock_level, is_eveil) VALUES
+  (906, 110, 1, 0), (906, 111, 35, 0),  -- Bistouri
+  (907, 112, 1, 0), (907, 113, 35, 0),  -- Lumière
+  (908, 114, 1, 0), (908, 115, 35, 0),  -- Magma
+  (909, 116, 1, 0), (909, 117, 35, 0),  -- Fleurs
+  (910, 118, 1, 0), (910, 119, 35, 0),  -- Sable
+  (911, 120, 1, 0), (911, 121, 35, 0),  -- Fumée
+  (912, 122, 1, 0), (912, 123, 35, 0),  -- Séisme
+  (913, 124, 1, 0), (913, 125, 35, 0),  -- Poison
+  (914, 126, 1, 0), (914, 127, 35, 0),  -- Fils
+  (915, 128, 1, 0), (915, 129, 35, 0);  -- Phénix (Renaissance = signature)
 
 INSERT OR IGNORE INTO unique_items (item_id, owner_player_id, is_consumed) VALUES
   (906, NULL, 0),

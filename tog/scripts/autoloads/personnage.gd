@@ -218,13 +218,16 @@ func sorts_de_classe() -> Array[String]:
 				ids.append(sort_debloque)
 	return ids
 
-# ids des pouvoirs du fruit du démon mangé (table `fruit_skills`)
+# ids des pouvoirs du fruit du démon mangé (table `fruit_skills`),
+# débloqués au niveau actuel (4 sorts + 1 éveil par fruit)
 func sorts_fruit() -> Array[String]:
 	var ids: Array[String] = []
 	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
 		return ids
 	for ligne in BaseDonnees.lire(
-		"SELECT skill_id FROM fruit_skills WHERE fruit_item_id = %d;" % fruit_id.to_int()):
+		("SELECT skill_id FROM fruit_skills"
+		+ " WHERE fruit_item_id = %d AND unlock_level <= %d"
+		+ " ORDER BY unlock_level;") % [fruit_id.to_int(), niveau]):
 		var id := str(ligne["skill_id"])
 		if sorts.has(id):
 			ids.append(id)
@@ -287,8 +290,9 @@ func manger_fruit(id_fruit: String) -> String:
 	if BaseDonnees.disponible and id_fruit.is_valid_int():
 		BaseDonnees.lire(
 			"UPDATE unique_items SET is_consumed = 1 WHERE item_id = %d;" % id_fruit.to_int())
-	# les pouvoirs du fruit rejoignent la barre s'il reste de la place
-	for id in _pouvoirs_fruit(id_fruit):
+	# les pouvoirs du fruit déjà débloqués rejoignent la barre s'il reste
+	# de la place ; les suivants suivront au fil des niveaux (gagner_xp)
+	for id in sorts_fruit():
 		if sorts.has(id) and not sort_dans_barre(id) and not barre_sorts_pleine():
 			barre_sorts.append(id)
 	recalculer_stats()
@@ -660,10 +664,10 @@ func gagner_xp(montant: int) -> void:
 		vie_max += 5
 		vie = vie_max
 		points_statistique += POINTS_PAR_NIVEAU
-	# un nouveau sort de classe s'est débloqué -> placé dans la barre
-	# s'il reste de la place (même comportement que le fruit du démon)
+	# un nouveau sort de classe ou de fruit s'est débloqué -> placé dans
+	# la barre s'il reste de la place (même comportement que le fruit)
 	if niveau > niveau_avant:
-		for id_sort in sorts_de_classe():
+		for id_sort in sorts_de_classe() + sorts_fruit():
 			if not sort_dans_barre(id_sort) and not barre_sorts_pleine():
 				barre_sorts.append(id_sort)
 	caracteristiques_modifiees.emit()
