@@ -29,7 +29,18 @@ const POINTS_PAR_NIVEAU := 5
 
 # Race et classe (ids des tables character_races / character_classes)
 var race_id: String = "1"
-var classe_id: String = "1"
+var classe_id: String = "12"
+# remplacement des classes supprimées du jeu (seeds_classes_nettoyage) :
+# une sauvegarde antérieure qui les portait bascule sur la classe la
+# plus proche ; défaut : Sabreur
+const CLASSES_REMPLACEMENT := {
+	"1": "12",  # Épéiste -> Sabreur
+	"2": "13",  # Archer -> Tireur
+	"3": "14",  # Canonnier -> Combattant
+	"4": "12",  # Samouraï -> Sabreur
+	"6": "5",   # Infirmière -> Médecin
+	"8": "14",  # Timonier -> Combattant
+}
 # sexe ("M" ou "F") — seul élément de personnalisation choisi à la création,
 # l'apparence dépend ensuite de l'équipement porté
 var sexe: String = "M"
@@ -73,7 +84,7 @@ var races: Dictionary = {
 	"1": {"nom": "Humain", "description": "Race polyvalente sans bonus ni malus particuliers", "vie": 0},
 }
 var classes: Dictionary = {
-	"1": {"nom": "Épéiste", "categorie": "combat", "description": "Maître de l'épée.", "vie": 0, "attaque": 0, "defense": 0, "sorts_initiaux": []},
+	"12": {"nom": "Sabreur", "categorie": "combat", "description": "Bretteur au sabre.", "vie": 0, "attaque": 0, "defense": 0, "sorts_initiaux": []},
 }
 
 signal caracteristiques_modifiees
@@ -554,7 +565,12 @@ func charger_perso() -> void:
 		return
 	nom = str(cfg.get_value("perso", "nom", "Héros"))
 	race_id = str(cfg.get_value("perso", "race", "1"))
-	classe_id = str(cfg.get_value("perso", "classe", "1"))
+	classe_id = str(cfg.get_value("perso", "classe", "12"))
+	# classe supprimée du jeu : bascule sur la classe de remplacement
+	var classe_remplacee := false
+	if not classes.has(classe_id):
+		classe_id = CLASSES_REMPLACEMENT.get(classe_id, "12")
+		classe_remplacee = true
 	var sexe_lu := str(cfg.get_value("perso", "sexe", "M"))
 	sexe = sexe_lu if VALEURS_SEXES_VALIDES.has(sexe_lu) else "M"
 	berry = int(cfg.get_value("perso", "berry", 0))
@@ -596,6 +612,14 @@ func charger_perso() -> void:
 				equipement[cible] = id_equipe
 	niveau = int(cfg.get_value("perso", "niveau", 1))
 	xp = int(cfg.get_value("perso", "xp", 0))
+	# classe remappée : les sorts de l'ancienne classe ont quitté la
+	# barre (_filtrer_barre_sorts), ceux de la nouvelle la remplissent
+	# s'il reste de la place — ici le niveau est chargé, les déblocages
+	# s'appliquent
+	if classe_remplacee:
+		for id_sort in sorts_de_classe():
+			if not sort_dans_barre(id_sort) and not barre_sorts_pleine():
+				barre_sorts.append(id_sort)
 	recalculer_stats()
 	vie = clampi(int(cfg.get_value("perso", "vie", vie_max)), 0, vie_max)
 	# un seul métier par personnage — les sauvegardes à plusieurs métiers
