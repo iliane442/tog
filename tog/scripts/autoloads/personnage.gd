@@ -68,11 +68,14 @@ var barre_sorts: Array[String] = []
 var fruit_id := ""
 
 # Expérience du fruit mangé : un pouvoir du fruit lancé avec succès en
-# combat vaut 1 point. Le niveau du fruit suit (10 x n x (n+1) / 2
-# points pour atteindre le niveau n) : niveau 1 à 10 lancements, 2 à
-# 30, 3 à 60, 4 (éveil) à 100 — les pouvoirs se débloquent par niveau
-# de fruit, pas par niveau de personnage.
+# combat vaut 1 point. Le niveau du fruit suit (XP_FRUIT_PAR_PALIER x
+# n x (n+1) / 2 points pour atteindre le niveau n) : niveau 1 à 100
+# lancements, 2 à 300, 3 à 600, 4 (éveil) à 1000 — les pouvoirs se
+# débloquent par niveau de fruit, pas par niveau de personnage.
 var fruit_xp := 0
+# multiplicateur du seuil d'expérience du fruit, ajustable pour la
+# progression voulue (100 -> éveil après 1000 lancements)
+const XP_FRUIT_PAR_PALIER := 100
 
 # Buffs temporaires des consommables utilisés : [{id: str, effets: {},
 # expire: float}] ; expire = temps unix ; les buffs échus sont purgés
@@ -228,7 +231,7 @@ func sorts_de_classe() -> Array[String]:
 # niveau actuel du fruit mangé (0 tant qu'il n'a pas été utilisé)
 func niveau_fruit() -> int:
 	var niveau := 0
-	while fruit_xp >= 10 * (niveau + 1) * (niveau + 2) / 2:
+	while fruit_xp >= XP_FRUIT_PAR_PALIER * (niveau + 1) * (niveau + 2) / 2:
 		niveau += 1
 	return niveau
 
