@@ -2,6 +2,7 @@
 extends CharacterBody2D
 
 signal sante_modifiee(vie: int, vie_max: int)
+signal vaincu
 
 @export var pv_max := 100
 @export var nom := "Loup pirate"
@@ -12,6 +13,8 @@ signal sante_modifiee(vie: int, vie_max: int)
 # estimées à partir des stats de l'ennemi)
 @export var mob_id := 0
 @export var quetes_a_progresser: Array[String] = ["1"]
+@export var texture_personnalisee: Texture2D
+@export var niveau_personnalise := 1
 
 const ID_ETAT_TEST := 5 # Ralentissement
 const DUREE_ETAT_TEST := 2
@@ -42,6 +45,12 @@ func _ready() -> void:
 var _sprites_introuvables: Dictionary = {}  # chemin -> true (avertit une fois)
 
 func _charger_visuel_mob() -> void:
+	if texture_personnalisee != null:
+		sprite.texture = texture_personnalisee
+		sprite.position.y = -texture_personnalisee.get_height() / 2.0
+		if not Engine.is_editor_hint():
+			_ajouter_etiquette(nom, niveau_personnalise)
+		return
 	if mob_id <= 0 or not BaseDonnees.disponible:
 		return
 	var lignes := BaseDonnees.lire(
@@ -99,6 +108,8 @@ func _on_zone_body_exited(body: Node2D) -> void:
 		_combat_manager.annuler_proposition_combat(self)
 
 func recevoir_degats(degats: int) -> void:
+	if pv <= 0:
+		return
 	pv = maxi(pv - maxi(degats, 0), 0)
 	sante_modifiee.emit(pv, pv_max)
 	if pv > 0:
@@ -108,7 +119,8 @@ func recevoir_degats(degats: int) -> void:
 			QuestManager.progresser(quest_id)
 	recompenser_victoire()
 	if _combat_manager != null:
-		_combat_manager.terminer_combat(true)
+		_combat_manager.ennemi_vaincu(self)
+	vaincu.emit()
 	queue_free()
 
 func soigner(montant: int) -> void:

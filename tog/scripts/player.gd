@@ -52,6 +52,9 @@ var _obstacles: TileMapLayer
 var _ennemi
 var _overlay
 var _combat_manager
+var _navigation := AStarGrid2D.new()
+var _chemin_exploration: Array[Vector2i] = []
+var _action_arrivee: Callable
 
 func _ready() -> void:
 	add_to_group("player")
@@ -59,6 +62,7 @@ func _ready() -> void:
 	_maj_visuels_race(_prefixe_visuel_race())
 	_sol = get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
 	_obstacles = get_tree().current_scene.get_node_or_null("cliffs") as TileMapLayer
+	_preparer_navigation()
 	_ennemi = get_tree().current_scene.find_child("ennemy", true, false)
 	_overlay = get_tree().current_scene.find_child("Overlay", true, false)
 	_combat_manager = get_tree().current_scene.get_node_or_null("CombatManager")
@@ -133,8 +137,59 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _combat_manager != null and _combat_manager.en_combat:
 		_gerer_clic_combat()
 	else:
-		target = get_global_mouse_position()
+		_aller_vers(get_global_mouse_position())
+
+func _preparer_navigation() -> void:
+	if _sol == null:
+		return
+	_navigation.region = _sol.get_used_rect()
+	_navigation.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	_navigation.update()
+	_navigation.fill_solid_region(_navigation.region)
+	for case in _sol.get_used_cells():
+		_navigation.set_point_solid(case, false)
+
+func rejoindre_interaction(destination: Vector2, action: Callable) -> void:
+	if _combat_manager != null and _combat_manager.en_combat:
+		return
+	if global_position.distance_to(destination) <= 72.0:
+		_arreter_exploration()
+		action.call()
+		return
+	_aller_vers(destination)
+	if _en_deplacement:
+		_action_arrivee = action
+
+func _aller_vers(destination: Vector2) -> void:
+	_arreter_exploration()
+	if _sol == null or not _navigation.region.has_area():
+		target = destination
 		_en_deplacement = true
+		return
+	var depart := ma_case()
+	if not _navigation.region.has_point(depart) or _navigation.is_point_solid(depart):
+		return
+	var arrivee := _case_de(destination)
+	if not _navigation.region.has_point(arrivee) or _navigation.is_point_solid(arrivee):
+		var case_visee := arrivee
+		var distance_min := INF
+		for case in _sol.get_used_cells():
+			var distance := case.distance_squared_to(case_visee)
+			if distance < distance_min:
+				distance_min = distance
+				arrivee = case
+	_chemin_exploration = _navigation.get_id_path(depart, arrivee)
+	if _chemin_exploration.is_empty():
+		return
+	# Se recentrer dans la grille avant de longer les obstacles.
+	target = _sol.to_global(_sol.map_to_local(_chemin_exploration.pop_front()))
+	_en_deplacement = true
+
+func _arreter_exploration() -> void:
+	_en_deplacement = false
+	_chemin_exploration.clear()
+	_action_arrivee = Callable()
+	velocity = Vector2.ZERO
 
 func _physics_process(delta: float) -> void:
 	var visuel := _prefixe_visuel_race()
@@ -146,9 +201,18 @@ func _physics_process(delta: float) -> void:
 		_animer(false, delta)
 		return
 	var direction := target - global_position
-	var en_mouvement := _en_deplacement and direction.length() > 5.0
+	if _en_deplacement and direction.length() <= 4.0:
+		if _chemin_exploration.is_empty():
+			var action := _action_arrivee
+			_arreter_exploration()
+			if action.is_valid():
+				action.call()
+		else:
+			target = _sol.to_global(_sol.map_to_local(_chemin_exploration.pop_front()))
+			direction = target - global_position
+	var en_mouvement := _en_deplacement and direction.length() > 4.0
 	if en_mouvement:
-		velocity = direction.normalized() * speed
+		velocity = direction.normalized() * minf(speed, direction.length() / delta)
 		_ligne = _ligne_cardinale(direction)
 	else:
 		velocity = Vector2.ZERO
@@ -182,10 +246,17 @@ func _gerer_clic_combat() -> void:
 		return
 	if _sort_selectionne:
 		var sort: Dictionary = Personnage.sorts.get(_sort_selectionne_id, {})
-		var cible: Node2D = self if _sort_selectionne_id != "boule_de_feu" and _combat_manager.est_allie(sort) else _ennemi
+		var cible: Node2D = self
+		if _sort_selectionne_id != "boule_de_feu" and _combat_manager.est_allie(sort):
+			pass
+		else:
+			# le clic vise l'ennemi qui occupe la case (sinon le plus proche)
+			cible = _combat_manager.ennemi_sur_case(case_cliquee)
+			if cible == null:
+				cible = _combat_manager.ennemi_proche()
 		if cible != null and is_instance_valid(cible) and case_cliquee == _case_de(cible.global_position):
 			if _sort_selectionne_id == "boule_de_feu":
-				_lancer_boule_de_feu()
+				_lancer_boule_de_feu(cible)
 			else:
 				_lancer_sort_etat(_sort_selectionne_id, sort, cible)
 			return
@@ -207,7 +278,11 @@ func _case_de(position_globale: Vector2) -> Vector2i:
 func _case_libre(case: Vector2i) -> bool:
 	if _sol == null or _sol.get_cell_source_id(case) == -1:
 		return false
-	return _ennemi == null or not is_instance_valid(_ennemi) or case != _case_de(_ennemi.global_position)
+	# aucune case occupée par un ennemi engagé dans le combat n'est libre
+	for ennemi in _combat_manager.ennemis_actifs():
+		if case == _case_de((ennemi as Node2D).global_position):
+			return false
+	return true
 
 func _calculer_portee() -> Dictionary:
 	var distances := {ma_case(): 0}
@@ -269,8 +344,7 @@ func _ligne_de_vue_libre(depart: Vector2i, arrivee: Vector2i) -> bool:
 func _on_placement_commence() -> void:
 	_tour_joueur = false
 	_sort_selectionne = false
-	_en_deplacement = false
-	velocity = Vector2.ZERO
+	_arreter_exploration()
 	_cases_placement.clear()
 	if _combat_manager != null:
 		_ennemi = _combat_manager.ennemi_actuel()
@@ -378,7 +452,7 @@ func _selectionner_sort(id_sort: String) -> void:
 		return
 	_sort_selectionne_id = id_sort
 	_sort_selectionne = true
-	var cible: Node2D = self if id_sort != "boule_de_feu" and _combat_manager.est_allie(sort) else _ennemi
+	var cible: Node2D = self if id_sort != "boule_de_feu" and _combat_manager.est_allie(sort) else _combat_manager.ennemi_proche()
 	if _overlay != null:
 		_overlay.afficher_sort(_cases_du_sort(portee, 0 if cible == self else 1))
 	var distance := 0 if cible == self else _distance_ennemi()
@@ -394,7 +468,7 @@ func _selectionner_sort(id_sort: String) -> void:
 func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> bool:
 	var cout: int = int(sort.get("cout_pa", 2))
 	var portee: int = int(sort.get("portee", 1))
-	var distance := 0 if cible == self else _distance_ennemi()
+	var distance := 0 if cible == self else _distance_depuis(cible)
 	if _pa < cout or distance > portee or (cible != self and not _ligne_de_vue_libre(ma_case(), _case_de(cible.global_position))):
 		_combat_manager.afficher_message("Cible hors portée ou ligne de vue bloquée.")
 		return false
@@ -423,12 +497,20 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 	_afficher_cases()
 	return true
 
-func _distance_ennemi() -> int:
-	if _ennemi == null or not is_instance_valid(_ennemi) or _sol == null:
+# distance de Manhattan jusqu'à une cible précise
+func _distance_depuis(cible: Node2D) -> int:
+	if cible == null or not is_instance_valid(cible) or _sol == null:
 		return 1_000_000
 	var depart := ma_case()
-	var cible := _case_de(_ennemi.global_position)
-	return absi(depart.x - cible.x) + absi(depart.y - cible.y)
+	var case_cible := _case_de(cible.global_position)
+	return absi(depart.x - case_cible.x) + absi(depart.y - case_cible.y)
+
+# distance jusqu'à l'ennemi engagé le plus proche
+func _distance_ennemi() -> int:
+	var cible: Node2D = _combat_manager.ennemi_proche() if _combat_manager != null else null
+	if cible == null:
+		return 1_000_000
+	return _distance_depuis(cible)
 
 # ligne de la table `animations` pour ce sort ({} si aucun effet) ; la
 # boule de feu codée en dur est enregistrée avec l'id de sort 0
@@ -463,13 +545,16 @@ func _jouer_effet_sort(id_sort: String, cible: Node2D) -> void:
 	get_tree().current_scene.add_child(effet)
 	effet.jouer(cible.global_position)
 
-func _lancer_boule_de_feu() -> bool:
-	if _ennemi == null or not is_instance_valid(_ennemi) or _pa < _sort_boule_de_feu.cout_pa:
+func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
+	var cible: Node2D = cible_visée
+	if cible == null or not is_instance_valid(cible):
+		cible = _combat_manager.ennemi_proche()
+	if cible == null or not is_instance_valid(cible) or _pa < _sort_boule_de_feu.cout_pa:
 		_combat_manager.afficher_message("Le sort ne peut pas être lancé pour le moment.")
 		return false
-	var case_ennemi := _case_de(_ennemi.global_position)
+	var case_ennemi := _case_de(cible.global_position)
 	var depart := ma_case()
-	var distance := _distance_ennemi()
+	var distance := _distance_depuis(cible)
 	if distance < _sort_boule_de_feu.portee_min or distance > _sort_boule_de_feu.portee_max:
 		_combat_manager.afficher_message("Ennemi hors portée : déplace-toi sur une case bleue.")
 		return false
@@ -478,8 +563,8 @@ func _lancer_boule_de_feu() -> bool:
 		return false
 	_pa -= _sort_boule_de_feu.cout_pa
 	if _combat_manager.precision_reussie(self):
-		_jouer_effet_sort("boule_de_feu", _ennemi)
-		_ennemi.recevoir_degats(_combat_manager.calculer_degats(self, _ennemi, _sort_boule_de_feu.degats))
+		_jouer_effet_sort("boule_de_feu", cible)
+		cible.recevoir_degats(_combat_manager.calculer_degats(self, cible, _sort_boule_de_feu.degats))
 		_combat_manager.effacer_message()
 	else:
 		_combat_manager.afficher_message("La boule de feu rate sa cible.")
@@ -514,8 +599,11 @@ func _fin_du_tour() -> void:
 	if _overlay != null:
 		_overlay.effacer()
 	_combat_manager.terminer_tour(self)
-	if _ennemi != null and is_instance_valid(_ennemi):
-		await _ennemi.jouer_tour(self, _sol)
+	# le tour de chaque ennemi engagé, l'un après l'autre
+	for ennemi in _combat_manager.ennemis_actifs():
+		if not is_inside_tree() or not _combat_manager.en_combat:
+			return
+		await (ennemi as Node2D).jouer_tour(self, _sol)
 	await get_tree().create_timer(0.5).timeout
 	if not is_inside_tree() or not _combat_manager.en_combat:
 		return

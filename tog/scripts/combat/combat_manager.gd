@@ -14,7 +14,16 @@ var en_combat := false
 var en_placement := false
 var zone_combat := Rect2i()
 var _joueur: Node
+# ennemis engagés dans le combat en cours (le plus proche du joueur
+# reste disponible via _ennemi / ennemi_actuel pour l'interface)
+var _ennemis: Array = []
+# ennemis rencontrés sur la carte hors combat
+var _ennemis_connus: Array = []
+# ennemis dont la zone de détection chevauche le joueur : le bouton
+# « Combattre » les engage tous
+var _propositions: Array = []
 var _ennemi
+var _cible_fiche: Node
 var _ui: CanvasLayer
 var _fiche_ennemi: PanelContainer
 var _barre_vie_ennemi: ProgressBar
@@ -24,7 +33,6 @@ var _label_stats_ennemi: Label
 var _label_etats_ennemi: Label
 var _souris_sur_ennemi := false
 var _bouton_combattre: Button
-var _ennemi_propose: Node
 var _etats_actifs: Dictionary = {}
 var _hasard := RandomNumberGenerator.new()
 const SCENE_COMBAT_UI := preload("res://scenes/combat_ui.tscn")
@@ -33,38 +41,95 @@ func _ready() -> void:
 	_hasard.randomize()
 	if _joueur == null:
 		_joueur = get_tree().current_scene.find_child("player", true, false)
-	if _ennemi == null:
-		_ennemi = get_tree().current_scene.find_child("ennemy", true, false)
 	_construire_interface()
-	_connecter_survol_ennemi()
+	for ennemi in _ennemis_connus:
+		_connecter_survol_ennemi(ennemi)
+	_maj_ennemi_principal()
 	mettre_a_jour_stats(Personnage.vie, Personnage.vie_max, 6, 6, 3, 3)
 
 func initialiser(joueur: Node, ennemi: Node) -> void:
 	_joueur = joueur
-	_ennemi = ennemi
-	_connecter_survol_ennemi()
-	_actualiser_fiche_ennemi()
+	enregistrer_ennemi(ennemi)
 
+# tout ennemi présent sur la carte est connu : il participe aux combats
+# de groupe (détection, ciblage au clic) même hors de son voisinage
 func enregistrer_ennemi(ennemi: Node) -> void:
-	_ennemi = ennemi
-	_connecter_survol_ennemi()
-	_actualiser_fiche_ennemi()
+	if en_combat or ennemi == null or not is_instance_valid(ennemi):
+		return
+	if not _ennemis_connus.has(ennemi):
+		_ennemis_connus.append(ennemi)
+	_connecter_survol_ennemi(ennemi)
+	_maj_ennemi_principal()
+
+# l'ennemi principal : le plus proche du joueur — sert de cible par
+# défaut à l'interface (distances, overlays, sorts alliés)
+func _maj_ennemi_principal() -> void:
+	# les vaincus et disparus quittent le groupe
+	_ennemis = _ennemis.filter(func(e: Node) -> bool: return is_instance_valid(e) and int(e.get("pv")) > 0)
+	# le principal est l'engagé le plus proche du joueur (hors combat :
+	# le plus proche des ennemis connus)
+	_ennemi = ennemi_proche()
 
 func ennemi_actuel() -> Node:
 	return _ennemi
 
+# ennemis engagés dans le combat, vivants et encore valides
+func ennemis_actifs() -> Array:
+	var actifs := []
+	for ennemi in _ennemis:
+		if ennemi != null and is_instance_valid(ennemi) and int(ennemi.get("pv")) > 0:
+			actifs.append(ennemi)
+	return actifs
+
+# l'ennemi engagé qui occupe cette case (null si aucun)
+func ennemi_sur_case(case_sol: Vector2i) -> Node:
+	var sol := get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
+	if sol == null:
+		return null
+	for ennemi in ennemis_actifs():
+		if sol.local_to_map(sol.to_local((ennemi as Node2D).global_position)) == case_sol:
+			return ennemi
+	return null
+
+# l'ennemi le plus proche du joueur (engagés d'abord, connus sinon)
+func ennemi_proche() -> Node:
+	if _joueur == null or not is_instance_valid(_joueur):
+		return null
+	var sol := get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
+	if sol == null:
+		return null
+	var meilleure: Node = null
+	var meilleure_distance := -1
+	for ennemi in ennemis_actifs() if en_combat else _ennemis_connus:
+		if ennemi == null or not is_instance_valid(ennemi) or int(ennemi.get("pv")) <= 0:
+			continue
+		var e := ennemi as Node2D
+		var distance: float = _joueur.global_position.distance_to(e.global_position)
+		if meilleure == null or distance < meilleure_distance:
+			meilleure = ennemi
+			meilleure_distance = distance
+	return meilleure
+
 func _calculer_zone_combat() -> void:
 	zone_combat = Rect2i()
-	if taille_zone_combat <= 0 or _joueur == null or _ennemi == null:
+	var groupe := ennemis_actifs()
+	if taille_zone_combat <= 0 or _joueur == null or groupe.is_empty():
 		return
 	var sol := get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
 	if sol == null:
 		return
-	var case_joueur := sol.local_to_map(sol.to_local(_joueur.global_position))
-	var case_ennemi := sol.local_to_map(sol.to_local(_ennemi.global_position))
-	var centre := (case_joueur + case_ennemi) / 2
-	var demi := taille_zone_combat / 2
-	zone_combat = Rect2i(centre - Vector2i(demi, demi), Vector2i(taille_zone_combat, taille_zone_combat))
+	# plus petite zone carrée couvrant le joueur et l'ensemble du
+	# groupe d'ennemis (au moins taille_zone_combat de côté)
+	var min_case := sol.local_to_map(sol.to_local(_joueur.global_position))
+	var max_case := min_case
+	for ennemi in groupe:
+		var case_ennemi := sol.local_to_map(sol.to_local((ennemi as Node2D).global_position))
+		min_case = min_case.min(case_ennemi)
+		max_case = max_case.max(case_ennemi)
+	var etendue := maxi(maxi(max_case.x - min_case.x, max_case.y - min_case.y) + 4, taille_zone_combat)
+	var centre := (min_case + max_case) / 2
+	var demi := etendue / 2
+	zone_combat = Rect2i(centre - Vector2i(demi, demi), Vector2i(etendue, etendue))
 
 func dans_zone_combat(case: Vector2i) -> bool:
 	if zone_combat.size.x <= 0:
@@ -105,53 +170,64 @@ func _construire_interface() -> void:
 	_bouton_combattre.offset_bottom -= 110.0
 	_bouton_combattre.hide()
 
-func _connecter_survol_ennemi() -> void:
-	if _ennemi == null or not is_instance_valid(_ennemi):
+# branche la fiche de survol sur un ennemi donné (mouse_entered avec
+# bind pour que la fiche suive n'importe lequel des ennemis)
+func _connecter_survol_ennemi(ennemi: Node) -> void:
+	if ennemi == null or not is_instance_valid(ennemi):
 		return
-	var survol_entree := Callable(self, "_survol_ennemi")
-	var survol_sortie := Callable(self, "_quitter_survol_ennemi")
-	if _ennemi.has_signal("mouse_entered") and not _ennemi.is_connected("mouse_entered", survol_entree):
-		_ennemi.connect("mouse_entered", survol_entree)
-	if _ennemi.has_signal("mouse_exited") and not _ennemi.is_connected("mouse_exited", survol_sortie):
-		_ennemi.connect("mouse_exited", survol_sortie)
-	var maj_sante := Callable(self, "_sante_ennemi_modifiee")
-	if _ennemi.has_signal("sante_modifiee") and not _ennemi.is_connected("sante_modifiee", maj_sante):
-		_ennemi.connect("sante_modifiee", maj_sante)
+	var cible := ennemi
+	var survol_entree := Callable(self, "_survol_ennemi").bind(cible)
+	var survol_sortie := Callable(self, "_quitter_survol_ennemi").bind(cible)
+	if ennemi.has_signal("mouse_entered") and not ennemi.is_connected("mouse_entered", survol_entree):
+		ennemi.connect("mouse_entered", survol_entree)
+	if ennemi.has_signal("mouse_exited") and not ennemi.is_connected("mouse_exited", survol_sortie):
+		ennemi.connect("mouse_exited", survol_sortie)
+	var maj_sante := Callable(self, "_sante_ennemi_modifiee").bind(cible)
+	if ennemi.has_signal("sante_modifiee") and not ennemi.is_connected("sante_modifiee", maj_sante):
+		ennemi.connect("sante_modifiee", maj_sante)
 
-func _survol_ennemi() -> void:
+func _survol_ennemi(ennemi: Node = null) -> void:
 	_souris_sur_ennemi = true
+	if ennemi != null:
+		_cible_fiche = ennemi
 	if not en_combat or _fiche_ennemi == null:
+		return
+	if ennemi == null and _cible_fiche == null:
 		return
 	_actualiser_fiche_ennemi()
 	_fiche_ennemi.show()
 	_positionner_fiche_ennemi()
 
-func _quitter_survol_ennemi() -> void:
+func _quitter_survol_ennemi(_ennemi_survole: Node = null) -> void:
 	_souris_sur_ennemi = false
 	if _fiche_ennemi != null:
 		_fiche_ennemi.hide()
 
-func _sante_ennemi_modifiee(_vie: int, _vie_max: int) -> void:
+# la fiche se met à jour pour l'ennemi survolé (ou vu au dernier survol)
+func _sante_ennemi_modifiee(_vie: int, _vie_max: int, ennemi: Node = null) -> void:
+	if ennemi != null and _cible_fiche != ennemi:
+		return
 	_actualiser_fiche_ennemi()
 
 func _actualiser_fiche_ennemi() -> void:
-	if _fiche_ennemi == null or _ennemi == null or not is_instance_valid(_ennemi):
+	var cible: Node = _cible_fiche if _cible_fiche != null else ennemi_actuel()
+	if _fiche_ennemi == null or cible == null or not is_instance_valid(cible):
 		return
-	var nom_ennemi: String = str(_ennemi.get("nom"))
+	var nom_ennemi: String = str(cible.get("nom"))
 	if nom_ennemi.is_empty():
 		nom_ennemi = "Ennemi"
-	var vie_max: int = maxi(int(_ennemi.get("pv_max")), 1)
-	var vie: int = clampi(int(_ennemi.get("pv")), 0, vie_max)
+	var vie_max: int = maxi(int(cible.get("pv_max")), 1)
+	var vie: int = clampi(int(cible.get("pv")), 0, vie_max)
 	_label_nom_ennemi.text = nom_ennemi
 	_barre_vie_ennemi.max_value = vie_max
 	_barre_vie_ennemi.value = vie
 	_label_vie_ennemi.text = "%d / %d" % [vie, vie_max]
 	_label_stats_ennemi.text = "ATTAQUE : %d\nPORTEE : %d cases\nDEPLACEMENT : %d PM" % [
-		int(_ennemi.get("degats_attaque")),
-		int(_ennemi.get("portee_attaque")),
-		int(_ennemi.get("pm_max")),
+		int(cible.get("degats_attaque")),
+		int(cible.get("portee_attaque")),
+		int(cible.get("pm_max")),
 	]
-	_label_etats_ennemi.text = _texte_etats_cible(_ennemi)
+	_label_etats_ennemi.text = _texte_etats_cible(cible)
 
 func _texte_etats_cible(cible: Node) -> String:
 	if cible == null or not is_instance_valid(cible):
@@ -190,38 +266,62 @@ func _process(_delta: float) -> void:
 	if _fiche_ennemi != null and _fiche_ennemi.visible:
 		_positionner_fiche_ennemi()
 
+# un ennemi détecte le joueur : il rejoint les proposition ; le bouton
+# « Combattre » engage tous les ennemis qui le proposent
 func proposer_combat(ennemi: Node) -> void:
 	if en_combat or ennemi == null or not is_instance_valid(ennemi):
 		return
-	_ennemi_propose = ennemi
+	if ennemi.get("pv") != null and int(ennemi.get("pv")) <= 0:
+		return
+	if not _propositions.has(ennemi):
+		_propositions.append(ennemi)
+	_bouton_combattre.text = "Combattre" if _propositions.size() == 1 else "Combattre (x%d)" % _propositions.size()
 	_bouton_combattre.show()
 
 func annuler_proposition_combat(ennemi: Node) -> void:
-	if ennemi != _ennemi_propose:
+	if not _propositions.has(ennemi):
 		return
-	_ennemi_propose = null
-	if not en_combat:
+	_propositions.erase(ennemi)
+	if not en_combat and _propositions.is_empty():
 		_bouton_combattre.hide()
+	else:
+		_bouton_combattre.text = "Combattre" if _propositions.size() == 1 else "Combattre (x%d)" % _propositions.size()
 
 func _on_bouton_combattre_presse() -> void:
-	var ennemi := _ennemi_propose
-	_ennemi_propose = null
+	var groupe := _propositions.duplicate()
+	_propositions.clear()
 	_bouton_combattre.hide()
-	lancer_combat(ennemi)
+	lancer_combat(groupe)
 
-func lancer_combat(ennemi: Node = null) -> void:
+# engage un combat : contre le groupe d'ennemis donné (tableau), ou
+# l'ennemi le plus proche du joueur si rien n'est fourni
+func lancer_combat(groupe = null) -> void:
 	if en_combat:
 		return
 	_bouton_combattre.hide()
-	_ennemi_propose = null
-	if ennemi != null:
-		_ennemi = ennemi
-	_connecter_survol_ennemi()
-	if _joueur == null or _ennemi == null:
-		push_warning("Combat impossible : joueur ou ennemi introuvable.")
+	_propositions.clear()
+	var ennemis: Array = []
+	if groupe is Array:
+		for ennemi in groupe:
+			if ennemi != null and is_instance_valid(ennemi) and int(ennemi.get("pv")) > 0:
+				ennemis.append(ennemi)
+	elif groupe != null:
+		ennemis.append(groupe)
+	if ennemis.is_empty():
+		var proche := ennemi_proche()
+		if proche == null:
+			push_warning("Combat impossible : joueur ou ennemi introuvable.")
+			return
+		ennemis.append(proche)
+	if _joueur == null:
+		push_warning("Combat impossible : joueur introuvable.")
 		return
+	_ennemis = ennemis
+	_maj_ennemi_principal()
+	for ennemi in _ennemis:
+		_connecter_survol_ennemi(ennemi)
+		_aligner_sur_grille(ennemi)
 	_aligner_sur_grille(_joueur)
-	_aligner_sur_grille(_ennemi)
 	_calculer_zone_combat()
 	_etats_actifs.clear()
 	en_combat = true
@@ -231,6 +331,18 @@ func lancer_combat(ennemi: Node = null) -> void:
 	if _souris_sur_ennemi:
 		_survol_ennemi()
 	placement_commence.emit()
+
+# un ennemi du groupe est vaincu : le combat continue tant qu'il en
+# reste un debout
+func ennemi_vaincu(ennemi: Node) -> void:
+	_ennemis.erase(ennemi)
+	_ennemis_connus.erase(ennemi)
+	if ennemi == _ennemi:
+		_maj_ennemi_principal()
+	if _propositions.has(ennemi):
+		_propositions.erase(ennemi)
+	if en_combat and ennemis_actifs().is_empty():
+		terminer_combat(true)
 
 func _aligner_sur_grille(entite: Node2D) -> void:
 	var sol := get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
@@ -254,7 +366,8 @@ func terminer_combat(victoire: bool) -> void:
 	en_placement = false
 	zone_combat = Rect2i()
 	_etats_actifs.clear()
-	_ennemi_propose = null
+	_ennemis.clear()
+	_propositions.clear()
 	_bouton_combattre.hide()
 	_mettre_a_jour_etiquette_etats()
 	if _fiche_ennemi != null:
@@ -433,10 +546,10 @@ func _deplacer_par_etat(cible: Node, nombre: int, repousser: bool) -> void:
 	if sol == null or nombre <= 0:
 		return
 	var lanceur: Node2D = null
-	if cible == _ennemi:
-		lanceur = _joueur as Node2D
+	if cible == _joueur:
+		lanceur = ennemi_proche() as Node2D
 	else:
-		lanceur = _ennemi as Node2D
+		lanceur = _joueur as Node2D
 	if lanceur == null or not is_instance_valid(lanceur):
 		return
 	var depart := sol.local_to_map(sol.to_local(entite.global_position))
@@ -453,7 +566,12 @@ func _deplacer_par_etat(cible: Node, nombre: int, repousser: bool) -> void:
 		var suivante := destination + axe
 		if sol.get_cell_source_id(suivante) == -1 or not dans_zone_combat(suivante) or (obstacles != null and obstacles.get_cell_source_id(suivante) != -1):
 			break
-		if (cible == _joueur and _ennemi != null and suivante == sol.local_to_map(sol.to_local(_ennemi.global_position))) or (cible == _ennemi and suivante == sol.local_to_map(sol.to_local(_joueur.global_position))):
+		var occupee_par_groupe := false
+		for ennemi in ennemis_actifs():
+			if suivante == sol.local_to_map(sol.to_local((ennemi as Node2D).global_position)):
+				occupee_par_groupe = true
+				break
+		if occupee_par_groupe or (cible != _joueur and suivante == sol.local_to_map(sol.to_local((_joueur as Node2D).global_position))):
 			break
 		destination = suivante
 	entite.global_position = sol.to_global(sol.map_to_local(destination))
