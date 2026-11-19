@@ -1,0 +1,859 @@
+{
+ "frames": [
+  {
+   "filename": "tog-plasma-beam 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 1.png",
+   "frame": {
+    "x": 297,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 2.png",
+   "frame": {
+    "x": 594,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 3.png",
+   "frame": {
+    "x": 891,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 4.png",
+   "frame": {
+    "x": 1188,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 5.png",
+   "frame": {
+    "x": 1485,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 6.png",
+   "frame": {
+    "x": 0,
+    "y": 84,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 7.png",
+   "frame": {
+    "x": 297,
+    "y": 84,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 8.png",
+   "frame": {
+    "x": 594,
+    "y": 84,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 9.png",
+   "frame": {
+    "x": 891,
+    "y": 84,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 10.png",
+   "frame": {
+    "x": 1188,
+    "y": 84,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 11.png",
+   "frame": {
+    "x": 1485,
+    "y": 84,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 12.png",
+   "frame": {
+    "x": 0,
+    "y": 168,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 13.png",
+   "frame": {
+    "x": 297,
+    "y": 168,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 14.png",
+   "frame": {
+    "x": 594,
+    "y": 168,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 15.png",
+   "frame": {
+    "x": 891,
+    "y": 168,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 16.png",
+   "frame": {
+    "x": 1188,
+    "y": 168,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 17.png",
+   "frame": {
+    "x": 1485,
+    "y": 168,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 18.png",
+   "frame": {
+    "x": 0,
+    "y": 252,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 19.png",
+   "frame": {
+    "x": 297,
+    "y": 252,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 20.png",
+   "frame": {
+    "x": 594,
+    "y": 252,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 21.png",
+   "frame": {
+    "x": 891,
+    "y": 252,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 22.png",
+   "frame": {
+    "x": 1188,
+    "y": 252,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 23.png",
+   "frame": {
+    "x": 1485,
+    "y": 252,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 24.png",
+   "frame": {
+    "x": 0,
+    "y": 336,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 25.png",
+   "frame": {
+    "x": 297,
+    "y": 336,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 26.png",
+   "frame": {
+    "x": 594,
+    "y": 336,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 27.png",
+   "frame": {
+    "x": 891,
+    "y": 336,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 28.png",
+   "frame": {
+    "x": 1188,
+    "y": 336,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 29.png",
+   "frame": {
+    "x": 1485,
+    "y": 336,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 30.png",
+   "frame": {
+    "x": 0,
+    "y": 420,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  },
+  {
+   "filename": "tog-plasma-beam 31.png",
+   "frame": {
+    "x": 297,
+    "y": 420,
+    "w": 297,
+    "h": 84
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 297,
+    "h": 84
+   },
+   "sourceSize": {
+    "w": 297,
+    "h": 84
+   },
+   "pivot": {
+    "x": 0.13468013468013468,
+    "y": 0.5
+   },
+   "duration": 67
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-plasma-beam.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 1782,
+   "h": 504
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 40,
+   "y": 42
+  },
+  "frameTags": [
+   {
+    "name": "tog-plasma-beam",
+    "from": 0,
+    "to": 31,
+    "direction": "forward"
+   }
+  ]
+ }
+}

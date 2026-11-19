@@ -1,6 +1,8 @@
 # base_donnees.gd — autoload : accès à la base SQLite glo.db
 # res:// est en lecture seule une fois le jeu exporté : on copie la base vers
 # user:// au premier lancement, puis on ouvre cette copie en lecture/écriture.
+# @tool : rend la base accessible dans l'éditeur (sprites des mobs en tool, etc.)
+@tool
 extends Node
 
 const CHEMIN_SOURCE := "res://donnees/glo.db"

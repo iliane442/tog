@@ -17,8 +17,10 @@ var points_statistique: int = 0
 # répartition déjà effectuée (cle -> points dépensés), conservée par recalculer_stats
 var points_depenses: Dictionary = {}
 # objets équipés (emplacement -> id d'item) : un par emplacement porté
+# arme = arme principale (en accord avec la classe), arme2 = arme
+# secondaire (sans restriction)
 var equipement: Dictionary = {
-	"arme": "", "corps": "", "tête": "", "visage": "", "cou": "",
+	"arme": "", "arme2": "", "corps": "", "tête": "", "visage": "", "cou": "",
 	"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
 	"anneau1": "", "anneau2": "",
 }
@@ -29,7 +31,18 @@ const POINTS_PAR_NIVEAU := 5
 
 # Race et classe (ids des tables character_races / character_classes)
 var race_id: String = "1"
-var classe_id: String = "1"
+var classe_id: String = "12"
+# remplacement des classes supprimées du jeu (seeds_classes_nettoyage) :
+# une sauvegarde antérieure qui les portait bascule sur la classe la
+# plus proche ; défaut : Sabreur
+const CLASSES_REMPLACEMENT := {
+	"1": "12",  # Épéiste -> Sabreur
+	"2": "13",  # Archer -> Tireur
+	"3": "14",  # Canonnier -> Combattant
+	"4": "12",  # Samouraï -> Sabreur
+	"6": "5",   # Infirmière -> Médecin
+	"8": "14",  # Timonier -> Combattant
+}
 # sexe ("M" ou "F") — seul élément de personnalisation choisi à la création,
 # l'apparence dépend ensuite de l'équipement porté
 var sexe: String = "M"
@@ -52,6 +65,25 @@ var caracteristiques: Dictionary = {
 const TAILLE_BARRE_SORTS := 10
 var barre_sorts: Array[String] = []
 
+# Fruit du démon mangé (id de l'item, table `items`) ; "" si aucun.
+# Manger un fruit est définitif : un seul fruit par personnage.
+var fruit_id := ""
+
+# Expérience du fruit mangé : un pouvoir du fruit lancé avec succès en
+# combat vaut 1 point. Le niveau du fruit suit (XP_FRUIT_PAR_PALIER x
+# n x (n+1) / 2 points pour atteindre le niveau n) : niveau 1 à 100
+# lancements, 2 à 300, 3 à 600, 4 (éveil) à 1000 — les pouvoirs se
+# débloquent par niveau de fruit, pas par niveau de personnage.
+var fruit_xp := 0
+# multiplicateur du seuil d'expérience du fruit, ajustable pour la
+# progression voulue (100 -> éveil après 1000 lancements)
+const XP_FRUIT_PAR_PALIER := 100
+
+# Buffs temporaires des consommables utilisés : [{id: str, effets: {},
+# expire: float}] ; expire = temps unix ; les buffs échus sont purgés
+# à chaque recalcul de stats.
+var buffs: Array = []
+
 # Sorts connus (id -> infos) — remplis depuis la table `skills`
 var sorts: Dictionary = {
 	"tir_puissant": {"nom": "Tir puissant", "type": "attack", "degats": 12, "portee": 5, "recharge": 1, "description": "Inflige de gros dégâts à distance."},
@@ -64,7 +96,7 @@ var races: Dictionary = {
 	"1": {"nom": "Humain", "description": "Race polyvalente sans bonus ni malus particuliers", "vie": 0},
 }
 var classes: Dictionary = {
-	"1": {"nom": "Épéiste", "categorie": "combat", "description": "Maître de l'épée.", "vie": 0, "attaque": 0, "defense": 0, "sorts_initiaux": []},
+	"12": {"nom": "Sabreur", "categorie": "combat", "description": "Bretteur au sabre.", "vie": 0, "attaque": 0, "defense": 0, "sorts_initiaux": []},
 }
 
 signal caracteristiques_modifiees
@@ -179,12 +211,93 @@ func nom_race() -> String:
 func nom_classe() -> String:
 	return classes.get(classe_id, {}).get("nom", classe_id)
 
-# ids des sorts de la classe du personnage (uniquement ceux connus)
+# ids des sorts de la classe du personnage (uniquement ceux connus) :
+# les sorts de base (starting_skills_json) plus ceux débloqués au niveau
+# actuel (table class_skills)
 func sorts_de_classe() -> Array[String]:
 	var ids: Array[String] = []
 	for id_sort in classes.get(classe_id, {}).get("sorts_initiaux", []):
 		var id := str(id_sort)
+		if sorts.has(id) and not ids.has(id):
+			ids.append(id)
+	# sorts de classe débloqués par le niveau, du plus tôt au plus tard
+	if BaseDonnees.disponible and classe_id.is_valid_int():
+		for ligne in BaseDonnees.lire(
+			("SELECT skill_id FROM class_skills"
+			+ " WHERE class_id = %d AND unlock_level <= %d"
+			+ " ORDER BY unlock_level;") % [classe_id.to_int(), niveau]):
+			var sort_debloque := str(ligne["skill_id"])
+			if sorts.has(sort_debloque) and not ids.has(sort_debloque):
+				ids.append(sort_debloque)
+	return ids
+
+# niveau actuel du fruit mangé (0 tant qu'il n'a pas été utilisé)
+func niveau_fruit() -> int:
+	var niveau := 0
+	while fruit_xp >= XP_FRUIT_PAR_PALIER * (niveau + 1) * (niveau + 2) / 2:
+		niveau += 1
+	return niveau
+
+# ids des pouvoirs du fruit du démon mangé (table `fruit_skills`)
+# débloqués au niveau de fruit donné
+func _sorts_fruit_niveau(niveau: int) -> Array[String]:
+	var ids: Array[String] = []
+	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
+		return ids
+	for ligne in BaseDonnees.lire(
+		("SELECT skill_id FROM fruit_skills"
+		+ " WHERE fruit_item_id = %d AND unlock_level <= %d"
+		+ " ORDER BY unlock_level;") % [fruit_id.to_int(), niveau]):
+		var id := str(ligne["skill_id"])
 		if sorts.has(id):
+			ids.append(id)
+	return ids
+
+# pouvoirs du fruit débloqués à son niveau actuel (4 sorts + 1 éveil)
+func sorts_fruit() -> Array[String]:
+	return _sorts_fruit_niveau(niveau_fruit())
+
+# true si ce sort est l'un des pouvoirs du fruit mangé (peu importe
+# s'il est déjà débloqué)
+func sort_est_du_fruit(id_sort: String) -> bool:
+	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
+		return false
+	if not id_sort.is_valid_int():
+		return false
+	return not BaseDonnees.lire(
+		"SELECT skill_id FROM fruit_skills WHERE fruit_item_id = %d AND skill_id = %d;"
+		% [fruit_id.to_int(), id_sort.to_int()]).is_empty()
+
+# Un pouvoir du fruit vient d'être lancé en combat : le fruit gagne de
+# l'expérience et franchit parfois un niveau — les pouvoirs fraîchement
+# débloqués sont auto-placés dans la barre s'il reste de la place.
+# Renvoie la liste des sorts débloqués par ce lancement.
+func utiliser_pouvoir_fruit(id_sort: String) -> Array[String]:
+	var debloques: Array[String] = []
+	if not sort_est_du_fruit(id_sort):
+		return debloques
+	var niveau_avant := niveau_fruit()
+	fruit_xp += 1
+	var niveau_apres := niveau_fruit()
+	if niveau_apres > niveau_avant:
+		var connus := {}
+		for id in _sorts_fruit_niveau(niveau_avant):
+			connus[id] = true
+		for id in _sorts_fruit_niveau(niveau_apres):
+			if not connus.has(id):
+				debloques.append(id)
+				if not sort_dans_barre(id) and not barre_sorts_pleine():
+					barre_sorts.append(id)
+		caracteristiques_modifiees.emit()
+	sauvegarder()
+	return debloques
+
+# sorts plaçables dans la barre de combat : ceux de la classe, plus
+# les pouvoirs du fruit mangé
+func sorts_disponibles() -> Array[String]:
+	var ids := sorts_de_classe()
+	for id in sorts_fruit():
+		if not ids.has(id):
 			ids.append(id)
 	return ids
 
@@ -194,10 +307,11 @@ func sort_dans_barre(id: String) -> bool:
 func barre_sorts_pleine() -> bool:
 	return barre_sorts.size() >= TAILLE_BARRE_SORTS
 
-# place un sort connu dans le premier emplacement libre de la barre de
-# combat ; les sorts d'état et sorts obtenus hors classe sont acceptés.
+# place un sort disponible (classe ou fruit mangé) dans le premier
+# emplacement libre de la barre de combat ; renvoie false si le sort
+# n'est pas disponible ou si la barre est déjà pleine
 func ajouter_sort_barre(id: String) -> bool:
-	if not sorts.has(id) or sort_dans_barre(id) or barre_sorts_pleine():
+	if not sorts_disponibles().has(id) or sort_dans_barre(id) or barre_sorts_pleine():
 		return false
 	barre_sorts.append(id)
 	sauvegarder()
@@ -212,11 +326,98 @@ func retirer_sort_barre(id: String) -> void:
 		sauvegarder()
 		barre_sorts_modifiee.emit()
 
-# garde en barre uniquement les sorts qui existent toujours en base.
+# garde en barre uniquement les sorts disponibles (classe + fruit mangé)
 func _filtrer_barre_sorts() -> void:
 	for id_sort in barre_sorts.duplicate():
-		if not sorts.has(id_sort):
+		if not sorts_disponibles().has(id_sort):
 			barre_sorts.erase(id_sort)
+
+# Mange un fruit du démon de l'inventaire : ses pouvoirs sont débloqués
+# définitivement, ses bonus passifs s'appliquent et le fruit ne peut plus
+# être trouvé dans le monde (unique_items). Renvoie "" si réussi, sinon
+# un message d'erreur expliquant le refus.
+func manger_fruit(id_fruit: String) -> String:
+	if fruit_id != "":
+		return "Un second fruit serait mortel — tu en as déjà mangé un."
+	if not Inventaire.objets.has(id_fruit):
+		return "Tu ne possèdes pas ce fruit."
+	var details := Inventaire.details_objet(id_fruit)
+	if str(details.get("type", "")) != "fruit_demon":
+		return "Cet objet n'est pas un fruit du démon."
+	if not sorts_fruit_disponibles_pour(id_fruit):
+		return "Aucun pouvoir n'est rattaché à ce fruit (table fruit_skills)."
+	Inventaire.retirer_objet(id_fruit, 1)
+	fruit_id = id_fruit
+	fruit_xp = 0
+	if BaseDonnees.disponible and id_fruit.is_valid_int():
+		BaseDonnees.lire(
+			"UPDATE unique_items SET is_consumed = 1 WHERE item_id = %d;" % id_fruit.to_int())
+	# les pouvoirs du fruit déjà débloqués rejoignent la barre s'il reste
+	# de la place ; les suivants suivront au fil des niveaux (gagner_xp)
+	for id in sorts_fruit():
+		if sorts.has(id) and not sort_dans_barre(id) and not barre_sorts_pleine():
+			barre_sorts.append(id)
+	recalculer_stats()
+	sauvegarder()
+	return ""
+
+# ids des sorts de ce fruit en base (sans dépendre du fruit mangé)
+func _pouvoirs_fruit(id_fruit: String) -> Array[String]:
+	var ids: Array[String] = []
+	if not BaseDonnees.disponible or not id_fruit.is_valid_int():
+		return ids
+	for ligne in BaseDonnees.lire(
+		"SELECT skill_id FROM fruit_skills WHERE fruit_item_id = %d;" % id_fruit.to_int()):
+		ids.append(str(ligne["skill_id"]))
+	return ids
+
+func sorts_fruit_disponibles_pour(id_fruit: String) -> bool:
+	return not _pouvoirs_fruit(id_fruit).is_empty()
+
+# Utilise un consommable de l'inventaire : les points de vie sont
+# restaurés immédiatement, les autres bonus (attaque, défense...) sont
+# actifs pendant `duration` minutes, puis l'objet est retiré. Boire la
+# même potion rafraîchit son buff au lieu de le cumuler. Renvoie ""
+# si réussi, sinon un message d'erreur expliquant le refus.
+func utiliser_objet(id_objet: String) -> String:
+	if not Inventaire.objets.has(id_objet):
+		return "Tu ne possèdes pas cet objet."
+	var details := Inventaire.details_objet(id_objet)
+	if str(details.get("type", "")) != "consumable":
+		return "Cet objet ne se consomme pas."
+	var effets: Dictionary = details.get("effets", {})
+	# carte au trésor : elle se déchiffre et plante une croix sur la
+	# carte du monde (aucun soin ni buff)
+	if str(details.get("sous_type", "")) == "carte_tresor":
+		var niveau := clampi(int(effets.get("tresor", 1)), 1, 4)
+		if not CartesTresor.creer_croix(niveau):
+			return "Aucun emplacement exploitable sur la carte."
+		Inventaire.retirer_objet(id_objet, 1)
+		sauvegarder()
+		return ""
+	var soin := int(effets.get("heal", 0))
+	# clés de bonus durable (hors soin et durée de l'effet)
+	var bonus := {}
+	for cle in effets:
+		if str(cle) != "heal" and str(cle) != "health" and str(cle) != "duration":
+			bonus[str(cle)] = int(effets[cle])
+	if soin == 0 and bonus.is_empty():
+		return "Cet objet n'a aucun effet."
+	Inventaire.retirer_objet(id_objet, 1)
+	if soin > 0:
+		soigner(soin)
+	if not bonus.is_empty():
+		var duree_minutes := maxi(int(effets.get("duration", 30)), 1)
+		var expire := Time.get_unix_time_from_system() + 60.0 * duree_minutes
+		# un même consommable ne se cumule pas : il rafraîchit son buff
+		for i in range(buffs.size()):
+			if str(buffs[i].get("id", "")) == id_objet:
+				buffs.remove_at(i)
+				break
+		buffs.append({"id": id_objet, "effets": bonus, "expire": expire})
+	recalculer_stats()
+	sauvegarder()
+	return ""
 
 # Applique les bonus de la race et de la classe sur les stats de base,
 # puis réapplique les points de caractéristiques dépensés
@@ -249,27 +450,43 @@ func recalculer_stats() -> void:
 		var id_equipe: String = str(equipement[emplacement])
 		if id_equipe == "":
 			continue
-		var effets: Dictionary = Inventaire.details_objet(id_equipe).get("effets", {})
-		for cle in effets:
-			var valeur := int(effets[cle])
-			match cle:
-				"attack":
-					attaque += valeur
-				"defense":
-					defense += valeur
-				"speed":
-					vitesse += valeur
-				"vie", "health":
-					vie_max += valeur
-				"vitalite":
-					caracteristiques[cle] += valeur
-					vie_max += 5 * valeur
-				_:
-					if caracteristiques.has(cle):
-						caracteristiques[cle] += valeur
+		_appliquer_effets_objet(Inventaire.details_objet(id_equipe).get("effets", {}))
+	# bonus passifs du fruit du démon mangé (effects_json de l'item fruit)
+	if fruit_id != "":
+		_appliquer_effets_objet(Inventaire.details_objet(fruit_id).get("effets", {}))
+	# bonus temporaires des consommables utilisés (buffs non échus)
+	var maintenant := Time.get_unix_time_from_system()
+	var actifs: Array = []
+	for buff in buffs:
+		if buff is Dictionary and float(buff.get("expire", 0.0)) > maintenant:
+			actifs.append(buff)
+	buffs = actifs
+	for buff in actifs:
+		_appliquer_effets_objet(buff.get("effets", {}))
 	vie_max = maxi(vie_max, 1)
 	vie = vie_max
 	caracteristiques_modifiees.emit()
+
+# applique les effets d'un objet (paires clé -> valeur de effects_json)
+# sur les stats du personnage
+func _appliquer_effets_objet(effets: Dictionary) -> void:
+	for cle in effets:
+		var valeur := int(effets[cle])
+		match cle:
+			"attack":
+				attaque += valeur
+			"defense":
+				defense += valeur
+			"speed":
+				vitesse += valeur
+			"vie", "health":
+				vie_max += valeur
+			"vitalite":
+				caracteristiques[cle] += valeur
+				vie_max += 5 * valeur
+			_:
+				if caracteristiques.has(cle):
+					caracteristiques[cle] += valeur
 
 # emplacement d'équipement d'un objet selon son type et son sous-type
 # ("" si non équipable ; "anneau" est virtuel : résolu en anneau1/anneau2)
@@ -287,7 +504,7 @@ func emplacement_equipement(type: String, sous_type: String = "") -> String:
 					return "pantalon"
 				"chaussures", "pieds":
 					return "pieds"
-				"gants", "mains", "main":
+				"gants", "mains", "main", "protège-bras", "bracelet", "bouclier":
 					return "main"
 				_:
 					return "corps"
@@ -295,13 +512,17 @@ func emplacement_equipement(type: String, sous_type: String = "") -> String:
 			match sous_type.to_lower():
 				"tête":
 					return "tête"
-				"visage":
+				"visage", "monocle":
 					return "visage"
 				"cou":
 					return "cou"
 				"anneau":
 					return "anneau"
-				"gants", "mains", "main":
+				"ceinture":
+					return "ceinture"
+				"pieds", "chaussures":
+					return "pieds"
+				"gants", "mains", "main", "bracelet", "boussole", "longue-vue", "sextant", "dial", "instrument":
 					return "main"
 	return ""
 
@@ -315,7 +536,26 @@ func _resoudre_emplacement(details: Dictionary) -> String:
 		if equipement.get("anneau2", "") == "":
 			return "anneau2"
 		return "anneau1"
+	if emplacement == "arme":
+		# l'arme principale est obligatoirement en accord avec la classe :
+		# une arme à classe requise qui n'est pas la vôtre ne peut aller
+		# qu'en arme secondaire ; une arme accordée prend la place
+		# principale si elle est libre
+		if not arme_accordee(details):
+			return "arme2"
+		if equipement.get("arme", "") == "":
+			return "arme"
+		return "arme2"
 	return emplacement
+
+# true si l'arme peut occuper l'emplacement d'arme principale : pas de
+# classe requise (libre à tous), ou classe requise = classe du perso
+func arme_accordee(details: Dictionary) -> bool:
+	var cr: Variant = details.get("classe_requise", "")
+	var classe_requise := ("" if cr == null else str(cr)).strip_edges()
+	if classe_requise == "" or classe_requise == "<null>":
+		return true
+	return classe_requise.to_lower() == nom_classe().to_lower()
 
 # emplacement où l'objet est équipé ("" si non porté)
 func est_equipe(id: String) -> String:
@@ -365,13 +605,21 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	berry = 0
 	points_statistique = 0
 	barre_sorts = []
+	fruit_id = ""
+	fruit_xp = 0
+	buffs = []
+	# sorts de base de la classe : placés d'office dans la barre de combat
+	for id_sort in classes.get(nouvelle_classe, {}).get("sorts_initiaux", []):
+		var id := str(id_sort)
+		if sorts.has(id) and not barre_sorts.has(id):
+			barre_sorts.append(id)
 	metiers = {}
 	# métier unique, choisi à la création
 	if id_profession != "" and _professions.has(id_profession):
 		metiers[id_profession] = {"niveau": 1, "xp": 0}
 	points_depenses = {}
 	equipement = {
-		"arme": "", "corps": "", "tête": "", "visage": "", "cou": "",
+		"arme": "", "arme2": "", "corps": "", "tête": "", "visage": "", "cou": "",
 		"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
 		"anneau1": "", "anneau2": "",
 	}
@@ -402,6 +650,9 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "equipement", equipement)
 	cfg.set_value("perso", "metiers", metiers)
 	cfg.set_value("perso", "barre_sorts", barre_sorts)
+	cfg.set_value("perso", "fruit", fruit_id)
+	cfg.set_value("perso", "fruit_xp", fruit_xp)
+	cfg.set_value("perso", "buffs", buffs)
 	perso_cree = cfg.save(CHEMIN_PERSO) == OK
 
 func charger_perso() -> void:
@@ -410,7 +661,12 @@ func charger_perso() -> void:
 		return
 	nom = str(cfg.get_value("perso", "nom", "Héros"))
 	race_id = str(cfg.get_value("perso", "race", "1"))
-	classe_id = str(cfg.get_value("perso", "classe", "1"))
+	classe_id = str(cfg.get_value("perso", "classe", "12"))
+	# classe supprimée du jeu : bascule sur la classe de remplacement
+	var classe_remplacee := false
+	if not classes.has(classe_id):
+		classe_id = CLASSES_REMPLACEMENT.get(classe_id, "12")
+		classe_remplacee = true
 	var sexe_lu := str(cfg.get_value("perso", "sexe", "M"))
 	sexe = sexe_lu if VALEURS_SEXES_VALIDES.has(sexe_lu) else "M"
 	berry = int(cfg.get_value("perso", "berry", 0))
@@ -428,6 +684,14 @@ func charger_perso() -> void:
 			var id := str(id_sort)
 			if not barre_sorts.has(id):
 				barre_sorts.append(id)
+	fruit_id = str(cfg.get_value("perso", "fruit", ""))
+	fruit_xp = maxi(int(cfg.get_value("perso", "fruit_xp", 0)), 0)
+	buffs = []
+	var buffs_lus = cfg.get_value("perso", "buffs", [])
+	if buffs_lus is Array:
+		for buff in buffs_lus:
+			if buff is Dictionary:
+				buffs.append(buff)
 	_filtrer_barre_sorts()
 	var equip = cfg.get_value("perso", "equipement", {})
 	if equip is Dictionary:
@@ -445,6 +709,14 @@ func charger_perso() -> void:
 				equipement[cible] = id_equipe
 	niveau = int(cfg.get_value("perso", "niveau", 1))
 	xp = int(cfg.get_value("perso", "xp", 0))
+	# classe remappée : les sorts de l'ancienne classe ont quitté la
+	# barre (_filtrer_barre_sorts), ceux de la nouvelle la remplissent
+	# s'il reste de la place — ici le niveau est chargé, les déblocages
+	# s'appliquent
+	if classe_remplacee:
+		for id_sort in sorts_de_classe():
+			if not sort_dans_barre(id_sort) and not barre_sorts_pleine():
+				barre_sorts.append(id_sort)
 	recalculer_stats()
 	vie = clampi(int(cfg.get_value("perso", "vie", vie_max)), 0, vie_max)
 	# un seul métier par personnage — les sauvegardes à plusieurs métiers
@@ -461,10 +733,13 @@ func supprimer_perso() -> void:
 	berry = 0
 	points_statistique = 0
 	barre_sorts = []
+	fruit_id = ""
+	fruit_xp = 0
+	buffs = []
 	metiers = {}
 	points_depenses = {}
 	equipement = {
-		"arme": "", "corps": "", "tête": "", "visage": "", "cou": "",
+		"arme": "", "arme2": "", "corps": "", "tête": "", "visage": "", "cou": "",
 		"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
 		"anneau1": "", "anneau2": "",
 	}
@@ -476,12 +751,20 @@ func xp_prochain_niveau() -> int:
 
 func gagner_xp(montant: int) -> void:
 	xp += montant
+	var niveau_avant := niveau
 	while xp >= xp_prochain_niveau():
 		xp -= xp_prochain_niveau()
 		niveau += 1
 		vie_max += 5
 		vie = vie_max
 		points_statistique += POINTS_PAR_NIVEAU
+	# un nouveau sort de classe s'est débloqué -> placé dans la barre
+	# s'il reste de la place ; les pouvoirs du fruit suivent une autre
+	# progression : le niveau du fruit (utiliser_pouvoir_fruit)
+	if niveau > niveau_avant:
+		for id_sort in sorts_de_classe():
+			if not sort_dans_barre(id_sort) and not barre_sorts_pleine():
+				barre_sorts.append(id_sort)
 	caracteristiques_modifiees.emit()
 
 # Dépense un point de caractéristique ; renvoie true si réussi

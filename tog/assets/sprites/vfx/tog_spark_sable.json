@@ -1,0 +1,833 @@
+{
+ "frames": [
+  {
+   "filename": "tog-spark-sable 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 1.png",
+   "frame": {
+    "x": 75,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 2.png",
+   "frame": {
+    "x": 150,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 3.png",
+   "frame": {
+    "x": 225,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 4.png",
+   "frame": {
+    "x": 300,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 5.png",
+   "frame": {
+    "x": 375,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 6.png",
+   "frame": {
+    "x": 0,
+    "y": 51,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 7.png",
+   "frame": {
+    "x": 75,
+    "y": 51,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 8.png",
+   "frame": {
+    "x": 150,
+    "y": 51,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 9.png",
+   "frame": {
+    "x": 225,
+    "y": 51,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 10.png",
+   "frame": {
+    "x": 300,
+    "y": 51,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 11.png",
+   "frame": {
+    "x": 375,
+    "y": 51,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 12.png",
+   "frame": {
+    "x": 0,
+    "y": 102,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 13.png",
+   "frame": {
+    "x": 75,
+    "y": 102,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 14.png",
+   "frame": {
+    "x": 150,
+    "y": 102,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 15.png",
+   "frame": {
+    "x": 225,
+    "y": 102,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 16.png",
+   "frame": {
+    "x": 300,
+    "y": 102,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 17.png",
+   "frame": {
+    "x": 375,
+    "y": 102,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 18.png",
+   "frame": {
+    "x": 0,
+    "y": 153,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 19.png",
+   "frame": {
+    "x": 75,
+    "y": 153,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 20.png",
+   "frame": {
+    "x": 150,
+    "y": 153,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 21.png",
+   "frame": {
+    "x": 225,
+    "y": 153,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 22.png",
+   "frame": {
+    "x": 300,
+    "y": 153,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 23.png",
+   "frame": {
+    "x": 375,
+    "y": 153,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 24.png",
+   "frame": {
+    "x": 0,
+    "y": 204,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 25.png",
+   "frame": {
+    "x": 75,
+    "y": 204,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 26.png",
+   "frame": {
+    "x": 150,
+    "y": 204,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 27.png",
+   "frame": {
+    "x": 225,
+    "y": 204,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 28.png",
+   "frame": {
+    "x": 300,
+    "y": 204,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 29.png",
+   "frame": {
+    "x": 375,
+    "y": 204,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-spark-sable 30.png",
+   "frame": {
+    "x": 0,
+    "y": 255,
+    "w": 75,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 75,
+    "h": 51
+   },
+   "sourceSize": {
+    "w": 75,
+    "h": 51
+   },
+   "pivot": {
+    "x": 0.88,
+    "y": 0.47058823529411764
+   },
+   "duration": 33
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-spark-sable.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 450,
+   "h": 306
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 66,
+   "y": 24
+  },
+  "frameTags": [
+   {
+    "name": "tog-spark-sable",
+    "from": 0,
+    "to": 30,
+    "direction": "forward"
+   }
+  ]
+ }
+}

@@ -709,6 +709,18 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
+[node name="LigneFiltreInventaire" type="HBoxContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LabelTypeInventaire" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire"]
+layout_mode = 2
+text = "Type"
+
+[node name="OptionTypeInventaire" type="OptionButton" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire"]
+layout_mode = 2
+size_flags_horizontal = 3
+
 [node name="DefilementInventaire" type="ScrollContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -767,6 +779,10 @@ theme_override_font_sizes/font_size = 20
 [node name="BtnEquip" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
 layout_mode = 2
 text = "Équiper"
+
+[node name="BtnMangerFruit" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
+layout_mode = 2
+text = "Manger le fruit"
 
 [node name="BtnOuvrirCoffre" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail"]
 layout_mode = 2

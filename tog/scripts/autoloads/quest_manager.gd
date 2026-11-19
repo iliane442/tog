@@ -2,6 +2,7 @@
 extends Node
 
 const CHEMIN_QUETES := "user://quetes.cfg"
+const QUETES_FUSHIA := preload("res://scripts/world/quetes_fushia.gd")
 
 var quetes: Dictionary = {
 	"chasse_loups": {
@@ -13,6 +14,7 @@ var quetes: Dictionary = {
 
 var quetes_actives: Dictionary = {}    # id -> progression (persisté)
 var quetes_terminees: Dictionary = {}  # id -> true (persisté, impossible de refaire)
+var _sources_actives: Dictionary = {}  # id de quête -> objectifs uniques déjà visités
 
 signal quete_acceptee(quest_id: String)
 signal quete_progressee(quest_id: String)
@@ -24,6 +26,7 @@ func _ready() -> void:
 	# de repli si la base est indisponible
 	if BaseDonnees.disponible:
 		charger_depuis_base()
+	quetes.merge(QUETES_FUSHIA.DEFINITIONS)
 	charger_quetes()
 
 func charger_depuis_base() -> void:
@@ -65,13 +68,20 @@ func accepter_quete(id: String) -> void:
 	quete_acceptee.emit(id)
 	sauvegarder_quetes()
 
-func progresser(id: String) -> void:
+func progresser(id: String, source: String = "") -> void:
 	if quetes_actives.has(id) and quetes_actives[id] < quetes[id].objectif:
+		if source != "":
+			var sources: Array = _sources_actives.get(id, [])
+			if source in sources:
+				return
+			sources.append(source)
+			_sources_actives[id] = sources
 		quetes_actives[id] += 1
 		quete_progressee.emit(id)
-		sauvegarder_quetes()  # la progression en cours survit aux relances
 		if est_terminee(id):
 			_terminer(id)
+		else:
+			sauvegarder_quetes()
 
 # termine instantanément une quête (pour le debug)
 func terminer_quete(id: String) -> void:
@@ -84,6 +94,7 @@ func terminer_quete(id: String) -> void:
 func _terminer(id: String) -> void:
 	_distribuer_recompenses(id)
 	quetes_actives.erase(id)
+	_sources_actives.erase(id)
 	quetes_terminees[id] = true
 	quete_terminee.emit(id)
 	sauvegarder_quetes()
@@ -104,6 +115,7 @@ func _distribuer_recompenses(id: String) -> void:
 func abandonner_quete(id: String) -> void:
 	if quetes_actives.has(id):
 		quetes_actives.erase(id)
+		_sources_actives.erase(id)
 		quete_abandonnee.emit(id)
 		sauvegarder_quetes()
 
@@ -111,6 +123,7 @@ func abandonner_quete(id: String) -> void:
 func reinitialiser() -> void:
 	quetes_actives.clear()
 	quetes_terminees.clear()
+	_sources_actives.clear()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(CHEMIN_QUETES))
 
 func est_terminee(id: String) -> bool:
@@ -124,12 +137,14 @@ func sauvegarder_quetes() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("quetes", "actives", quetes_actives)
 	cfg.set_value("quetes", "terminees", quetes_terminees.keys())
+	cfg.set_value("quetes", "sources", _sources_actives)
 	cfg.save(CHEMIN_QUETES)
 
 func charger_quetes() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(CHEMIN_QUETES) != OK:
 		return
+	_sources_actives = cfg.get_value("quetes", "sources", {})
 	var actives = cfg.get_value("quetes", "actives", {})
 	if actives is Dictionary:
 		for id in actives:

@@ -1,0 +1,859 @@
+{
+ "frames": [
+  {
+   "filename": "tog-crystal-bloom 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 1.png",
+   "frame": {
+    "x": 144,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 2.png",
+   "frame": {
+    "x": 288,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 3.png",
+   "frame": {
+    "x": 432,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 4.png",
+   "frame": {
+    "x": 576,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 5.png",
+   "frame": {
+    "x": 720,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 6.png",
+   "frame": {
+    "x": 0,
+    "y": 72,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 7.png",
+   "frame": {
+    "x": 144,
+    "y": 72,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 8.png",
+   "frame": {
+    "x": 288,
+    "y": 72,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 9.png",
+   "frame": {
+    "x": 432,
+    "y": 72,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 10.png",
+   "frame": {
+    "x": 576,
+    "y": 72,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 11.png",
+   "frame": {
+    "x": 720,
+    "y": 72,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 12.png",
+   "frame": {
+    "x": 0,
+    "y": 144,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 13.png",
+   "frame": {
+    "x": 144,
+    "y": 144,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 14.png",
+   "frame": {
+    "x": 288,
+    "y": 144,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 15.png",
+   "frame": {
+    "x": 432,
+    "y": 144,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 16.png",
+   "frame": {
+    "x": 576,
+    "y": 144,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 17.png",
+   "frame": {
+    "x": 720,
+    "y": 144,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 18.png",
+   "frame": {
+    "x": 0,
+    "y": 216,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 19.png",
+   "frame": {
+    "x": 144,
+    "y": 216,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 20.png",
+   "frame": {
+    "x": 288,
+    "y": 216,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 21.png",
+   "frame": {
+    "x": 432,
+    "y": 216,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 22.png",
+   "frame": {
+    "x": 576,
+    "y": 216,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 23.png",
+   "frame": {
+    "x": 720,
+    "y": 216,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 24.png",
+   "frame": {
+    "x": 0,
+    "y": 288,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 25.png",
+   "frame": {
+    "x": 144,
+    "y": 288,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 26.png",
+   "frame": {
+    "x": 288,
+    "y": 288,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 27.png",
+   "frame": {
+    "x": 432,
+    "y": 288,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 28.png",
+   "frame": {
+    "x": 576,
+    "y": 288,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 29.png",
+   "frame": {
+    "x": 720,
+    "y": 288,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 30.png",
+   "frame": {
+    "x": 0,
+    "y": 360,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-crystal-bloom 31.png",
+   "frame": {
+    "x": 144,
+    "y": 360,
+    "w": 144,
+    "h": 72
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 72
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 72
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7777777777777778
+   },
+   "duration": 111
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-crystal-bloom.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 864,
+   "h": 432
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 72,
+   "y": 56
+  },
+  "frameTags": [
+   {
+    "name": "tog-crystal-bloom",
+    "from": 0,
+    "to": 31,
+    "direction": "forward"
+   }
+  ]
+ }
+}

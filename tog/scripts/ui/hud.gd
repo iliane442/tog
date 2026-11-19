@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 const ICONE_DEFAUT_SORT := "res://addons/pixel_ui_fantasy/icons/scroll.png"
+const SCRIPT_PARAMETRES_TOUCHES := preload("res://scripts/ui/parametres_touches.gd")
 const ICONES_SORTS := {
 	"attack": "res://addons/pixel_ui_fantasy/icons/sword.png",
 	"heal": "res://addons/pixel_ui_fantasy/icons/potion_red.png",
@@ -33,10 +34,12 @@ const ICONES_SORTS := {
 @onready var panneau_quete: PanelContainer = $QuestPanel
 @onready var panneau_berry: PanelContainer = $BerryPanel
 @onready var navigation_haute: HBoxContainer = $NavTop
+@onready var bouton_touches: Button = $NavTop/Touches
 
 var _joueur: Node
 var _gestionnaire_combat: Node
 var _menu: Node
+var _parametres_touches: CanvasLayer
 var _tween_vie: Tween
 var _tween_xp: Tween
 var _tween_sorts: Tween
@@ -56,6 +59,7 @@ func _ready() -> void:
 		_menu.connect("menu_ouvert", _masquer_hud_menu)
 		_menu.connect("menu_ferme", _retour_menu)
 		_connecter_navigation(_menu)
+	bouton_touches.pressed.connect(_basculer_parametres_touches)
 	for index in range(barre_sorts.get_child_count()):
 		var bouton: Button = barre_sorts.get_child(index) as Button
 		bouton.pressed.connect(_on_emplacement_sort_clique.bind(index))
@@ -63,6 +67,7 @@ func _ready() -> void:
 		bouton.mouse_exited.connect(_animer_case.bind(bouton, Vector2.ONE))
 	Personnage.caracteristiques_modifiees.connect(maj)
 	Personnage.barre_sorts_modifiee.connect(maj_barre_sorts)
+	Touches.touches_modifiees.connect(maj_barre_sorts)
 	QuestManager.quete_acceptee.connect(maj_quete)
 	QuestManager.quete_progressee.connect(maj_quete)
 	QuestManager.quete_abandonnee.connect(maj_quete)
@@ -168,7 +173,7 @@ func _animer_case(bouton: Control, echelle: Vector2) -> void:
 	tween.tween_property(bouton, "scale", echelle, 0.12)
 
 func _raccourci(index: int) -> String:
-	return "0" if index == 9 else str(index + 1)
+	return Touches.libelle_action("sort_%d" % (index + 1))
 
 func _on_emplacement_sort_clique(index: int) -> void:
 	if index < Personnage.barre_sorts.size():
@@ -203,7 +208,12 @@ func _on_combat_commence() -> void:
 	_afficher_stats_combat(true)
 	bouton_placement.hide()
 	bouton_fin_tour.show()
-	label_action.text = "Touches 1-0 ou clic pour choisir un sort."
+	label_action.text = "Sorts : %s | cible : %s / %s | fin du tour : %s" % [
+		Touches.libelle_action("sort_1"),
+		Touches.libelle_action("cible_suivante"),
+		Touches.libelle_action("cible_precedente"),
+		Touches.libelle_action("fin_tour"),
+	]
 	_animer_visibilite_sorts(true)
 
 func maj_ressources_combat(pa: int, pa_max: int, pm: int, pm_max: int) -> void:
@@ -266,6 +276,19 @@ func _retour_menu() -> void:
 		_afficher_stats_combat(false)
 		_animer_visibilite_sorts(true)
 
+# ouvre/ferme le panneau de réassignation des touches
+func _basculer_parametres_touches() -> void:
+	if _parametres_touches != null and is_instance_valid(_parametres_touches):
+		_parametres_touches.queue_free()
+		_parametres_touches = null
+		return
+	_parametres_touches = SCRIPT_PARAMETRES_TOUCHES.new()
+	_parametres_touches.fermee.connect(_on_parametres_touches_ferme)
+	add_child(_parametres_touches)
+
+func _on_parametres_touches_ferme() -> void:
+	_parametres_touches = null
+
 func _animer_visibilite_sorts(afficher: bool) -> void:
 	if _tween_sorts != null and _tween_sorts.is_running():
 		_tween_sorts.kill()
@@ -283,20 +306,31 @@ func _animer_visibilite_sorts(afficher: bool) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
-	if not panneau_sorts.visible or get_tree().paused:
+	if get_tree().paused or (_parametres_touches != null and is_instance_valid(_parametres_touches)):
 		return
-	var index: int = -1
-	match event.keycode:
-		KEY_1: index = 0
-		KEY_2: index = 1
-		KEY_3: index = 2
-		KEY_4: index = 3
-		KEY_5: index = 4
-		KEY_6: index = 5
-		KEY_7: index = 6
-		KEY_8: index = 7
-		KEY_9: index = 8
-		KEY_0: index = 9
-		_: return
-	_on_emplacement_sort_clique(index)
-	get_viewport().set_input_as_handled()
+	var action: String = Touches.action_de_evenement(event)
+	if action == "":
+		return
+	if action.begins_with("sort_"):
+		if not panneau_sorts.visible:
+			return
+		_on_emplacement_sort_clique(int(action.substr(5)) - 1)
+		get_viewport().set_input_as_handled()
+		return
+	if _gestionnaire_combat == null or not _gestionnaire_combat.en_combat:
+		return
+	match action:
+		"valider_placement":
+			if _gestionnaire_combat.en_placement:
+				_gestionnaire_combat.demander_validation_placement()
+				get_viewport().set_input_as_handled()
+		"fin_tour":
+			if not _gestionnaire_combat.en_placement:
+				_gestionnaire_combat.demander_fin_tour()
+				get_viewport().set_input_as_handled()
+		"cible_suivante":
+			_gestionnaire_combat.cible_suivante()
+			get_viewport().set_input_as_handled()
+		"cible_precedente":
+			_gestionnaire_combat.cible_precedente()
+			get_viewport().set_input_as_handled()

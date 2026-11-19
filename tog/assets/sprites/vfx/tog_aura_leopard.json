@@ -1,0 +1,235 @@
+{
+ "frames": [
+  {
+   "filename": "tog-aura-leopard 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "sourceSize": {
+    "w": 96,
+    "h": 112
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.875
+   },
+   "duration": 83
+  },
+  {
+   "filename": "tog-aura-leopard 1.png",
+   "frame": {
+    "x": 96,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "sourceSize": {
+    "w": 96,
+    "h": 112
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.875
+   },
+   "duration": 83
+  },
+  {
+   "filename": "tog-aura-leopard 2.png",
+   "frame": {
+    "x": 192,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "sourceSize": {
+    "w": 96,
+    "h": 112
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.875
+   },
+   "duration": 83
+  },
+  {
+   "filename": "tog-aura-leopard 3.png",
+   "frame": {
+    "x": 0,
+    "y": 112,
+    "w": 96,
+    "h": 112
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "sourceSize": {
+    "w": 96,
+    "h": 112
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.875
+   },
+   "duration": 83
+  },
+  {
+   "filename": "tog-aura-leopard 4.png",
+   "frame": {
+    "x": 96,
+    "y": 112,
+    "w": 96,
+    "h": 112
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "sourceSize": {
+    "w": 96,
+    "h": 112
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.875
+   },
+   "duration": 83
+  },
+  {
+   "filename": "tog-aura-leopard 5.png",
+   "frame": {
+    "x": 192,
+    "y": 112,
+    "w": 96,
+    "h": 112
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "sourceSize": {
+    "w": 96,
+    "h": 112
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.875
+   },
+   "duration": 83
+  },
+  {
+   "filename": "tog-aura-leopard 6.png",
+   "frame": {
+    "x": 0,
+    "y": 224,
+    "w": 96,
+    "h": 112
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "sourceSize": {
+    "w": 96,
+    "h": 112
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.875
+   },
+   "duration": 83
+  },
+  {
+   "filename": "tog-aura-leopard 7.png",
+   "frame": {
+    "x": 96,
+    "y": 224,
+    "w": 96,
+    "h": 112
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 96,
+    "h": 112
+   },
+   "sourceSize": {
+    "w": 96,
+    "h": 112
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.875
+   },
+   "duration": 83
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-aura-leopard.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 288,
+   "h": 336
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 48,
+   "y": 98
+  },
+  "frameTags": [
+   {
+    "name": "tog-aura-leopard",
+    "from": 0,
+    "to": 7,
+    "direction": "forward"
+   }
+  ]
+ }
+}

@@ -13,11 +13,24 @@ var points_en_attente: Dictionary = {}
 var _tween_fenetre: Tween
 const SCENE_CASE_INVENTAIRE := preload("res://scenes/case_inventaire.tscn")
 const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
+const LIBELLES_TYPES_INVENTAIRE := {
+	"": "Sans type",
+	"accessoire": "Accessoires",
+	"arme": "Armes",
+	"armure": "Armures",
+	"coffre": "Coffres",
+	"consumable": "Consommables",
+	"fruit_demon": "Fruits du démon",
+	"outil": "Outils",
+	"ressource": "Ressources",
+}
 
 @onready var fenetre: Panel = $Fenetre
 @onready var btn_menu: Button = $BoutonMenu
 @onready var titre: Label = $Fenetre/Entete/Titre
-@onready var grille: GridContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DefilementInventaire/Grille
+@onready var option_type_inventaire: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire/OptionTypeInventaire
+@onready var defilement_inventaire: ScrollContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DefilementInventaire
+@onready var grille: GridContainer = defilement_inventaire.get_node("Grille")
 @onready var label_vide: Label = $Fenetre/Corps/ContenuInventaire/Vide
 @onready var liste_quetes: VBoxContainer = $Fenetre/Corps/ContenuQuetes/DefilementQuetes/ListeQuetes
 @onready var label_aucune_quete: Label = $Fenetre/Corps/ContenuQuetes/Aucune
@@ -67,6 +80,7 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var titre_recettes: Label = $Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/TitreRecettes
 @onready var liste_recettes: VBoxContainer = $Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/DefilementRecettes/ListeRecettes
 @onready var btn_equiper: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnEquip
+@onready var btn_manger_fruit: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnMangerFruit
 @onready var btn_ouvrir_coffre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnOuvrirCoffre
 @onready var btn_ouvrir_tous: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnOuvrirTous
 @onready var btn_debug_berry: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnDebugBerry
@@ -109,8 +123,13 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 var emplacements_ui := {}
 var detail_id_courant := ""
 
+# bouton d'utilisation des consommables (créé dans _ready : la scène ne
+# contient que les boutons Équiper, Fruit et Coffres)
+var btn_utiliser: Button
+
 const TEXTES_EMPLACEMENTS := {
 	"arme": "Arme",
+	"arme2": "Arme secondaire",
 	"corps": "Manteau",
 	"tête": "Chapeau",
 	"visage": "Visage",
@@ -129,6 +148,7 @@ const LABELS_COURTS_EMPLACEMENTS := {
 }
 const NOMS_NODES_EMPLACEMENTS := {
 	"arme": "EquipementArme",
+	"arme2": "EquipementArme2",
 	"corps": "EquipementCorps",
 	"tête": "EquipementTete",
 	"visage": "EquipementVisage",
@@ -143,6 +163,7 @@ const NOMS_NODES_EMPLACEMENTS := {
 }
 const POSITIONS_REPLI_EMPLACEMENTS := {
 	"tête": Vector2(14, 70),
+	"arme2": Vector2(200, 298),
 	"visage": Vector2(298, 70),
 	"cou": Vector2(298, 146),
 	"corps": Vector2(14, 146),
@@ -157,6 +178,7 @@ const POSITIONS_REPLI_EMPLACEMENTS := {
 }
 const ICONES_EMPLACEMENTS := {
 	"arme": "res://addons/pixel_ui_fantasy/icons/sword.png",
+	"arme2": "res://addons/pixel_ui_fantasy/icons/sword.png",
 	"corps": "res://addons/pixel_ui_fantasy/icons/shield.png",
 	"tête": "res://addons/pixel_ui_fantasy/icons/helmet.png",
 	"visage": "res://addons/pixel_ui_fantasy/icons/scroll.png",
@@ -196,9 +218,16 @@ func _ready() -> void:
 	_ajuster_fenetre()
 	_creer_emplacements()
 	btn_equiper.pressed.connect(_on_bouton_equiper)
+	btn_manger_fruit.pressed.connect(_on_bouton_manger_fruit)
+	btn_manger_fruit.visible = false
 	btn_ouvrir_coffre.pressed.connect(_on_bouton_ouvrir_coffre)
 	btn_ouvrir_tous.pressed.connect(_on_bouton_ouvrir_tous)
 	btn_debug_berry.pressed.connect(_on_debug_berry)
+	btn_utiliser = Button.new()
+	btn_utiliser.text = "Utiliser"
+	btn_utiliser.visible = false
+	btn_equiper.get_parent().add_child(btn_utiliser)
+	btn_utiliser.pressed.connect(_on_bouton_utiliser)
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
@@ -220,7 +249,9 @@ func _ready() -> void:
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Metiers.pressed.connect(ouvrir.bind("metiers"))
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Hotel.pressed.connect(ouvrir.bind("hotel"))
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Equipage.pressed.connect(ouvrir.bind("equipage"))
+	option_type_inventaire.item_selected.connect(_on_type_inventaire_selectionne)
 	Inventaire.inventaire_modifie.connect(maj_grille)
+	Inventaire.inventaire_modifie.connect(_maj_filtre_types_wiki)
 	QuestManager.quete_acceptee.connect(maj_quetes)
 	QuestManager.quete_progressee.connect(maj_quetes)
 	QuestManager.quete_abandonnee.connect(maj_quetes)
@@ -402,23 +433,21 @@ func _icone_sort(sort: Dictionary) -> Texture2D:
 	var chemin: String = ICONES_SORTS.get(str(sort.get("type", "")).to_lower(), ICONE_SORT_DEFAUT)
 	return load(chemin)
 
-# onglet Sorts : barre de combat puis tous les sorts connus, répartis
-# entre sorts de classe et autres sorts/états équipables.
+# onglet Sorts : barre de combat en haut (cliquer un sort placé pour le
+# retirer), puis la liste des sorts de la classe et des pouvoirs du fruit
+# mangé débloqués, avec un bouton pour placer chacun dans la barre
 func maj_sorts() -> void:
 	for enfant in liste_sorts.get_children():
 		enfant.queue_free()
 	_construire_barre_sorts()
 	var ids_classe: Array[String] = Personnage.sorts_de_classe()
 	var ids_combat: Array[String] = []
-	var ids_connus: Array[String] = []
-	for cle: Variant in Personnage.sorts.keys():
-		var id_sort: String = str(cle)
-		ids_connus.append(id_sort)
-	ids_connus.sort()
-	for id_sort in ids_connus:
+	# seuls les sorts disponibles hors classe (pouvoirs du fruit mangé
+	# débloqués par son niveau d'utilisation) apparaissent ici
+	for id_sort in Personnage.sorts_disponibles():
 		if not ids_classe.has(id_sort):
 			ids_combat.append(id_sort)
-	if ids_connus.is_empty():
+	if ids_classe.is_empty() and ids_combat.is_empty():
 		var vide := Label.new()
 		vide.text = "Aucun sort n'est disponible pour le moment."
 		liste_sorts.add_child(vide)
@@ -429,7 +458,7 @@ func maj_sorts() -> void:
 			if Personnage.sorts.has(id_classe):
 				_construire_carte_sort(id_classe)
 	if not ids_combat.is_empty():
-		_ajouter_titre_section_sorts("Sorts de combat et états")
+		_ajouter_titre_section_sorts("Pouvoirs du fruit du démon")
 		for id_combat in ids_combat:
 			_construire_carte_sort(id_combat)
 func _ajouter_titre_section_sorts(texte: String) -> void:
@@ -581,28 +610,70 @@ func _on_abandonner_quete(id: String) -> void:
 
 func maj_grille() -> void:
 	for enfant in grille.get_children():
+		grille.remove_child(enfant)
 		enfant.queue_free()
-	var inventaire_vide := Inventaire.objets.is_empty()
-	label_vide.visible = inventaire_vide
+
+	var ids_par_type := {}
+	for id: String in Inventaire.objets:
+		var type_item := str(Inventaire.details_objet(id).get("type", ""))
+		if not ids_par_type.has(type_item):
+			ids_par_type[type_item] = []
+		ids_par_type[type_item].append(id)
+	var types := ids_par_type.keys()
+	types.sort_custom(func(a: String, b: String) -> bool:
+		return _libelle_type_inventaire(a).naturalnocasecmp_to(_libelle_type_inventaire(b)) < 0)
+	var type_choisi: Variant = _maj_types_inventaire(types)
+	var types_affiches := types if type_choisi == null else [type_choisi]
+
+	label_vide.visible = Inventaire.objets.is_empty()
 	maj_detail_aucun()
-	if inventaire_vide:
+	for type_item in types_affiches:
+		var ids: Array = ids_par_type[type_item]
+		ids.sort_custom(func(a: String, b: String) -> bool:
+			return Inventaire.nom_objet(a).naturalnocasecmp_to(Inventaire.nom_objet(b)) < 0)
+		for id: String in ids:
+			_ajouter_case_inventaire(id)
+
+func _libelle_type_inventaire(type_item: String) -> String:
+	return LIBELLES_TYPES_INVENTAIRE.get(type_item, type_item.capitalize())
+
+func _maj_types_inventaire(types: Array) -> Variant:
+	var type_courant: Variant = null
+	if option_type_inventaire.selected >= 0:
+		type_courant = option_type_inventaire.get_item_metadata(option_type_inventaire.selected)
+	option_type_inventaire.clear()
+	option_type_inventaire.add_item("Tous les types")
+	var selection := 0
+	for type_item: String in types:
+		option_type_inventaire.add_item(_libelle_type_inventaire(type_item))
+		var index := option_type_inventaire.item_count - 1
+		option_type_inventaire.set_item_metadata(index, type_item)
+		if type_item == type_courant:
+			selection = index
+	option_type_inventaire.select(selection)
+	option_type_inventaire.disabled = types.is_empty()
+	return option_type_inventaire.get_item_metadata(selection)
+
+func _on_type_inventaire_selectionne(_index: int) -> void:
+	defilement_inventaire.scroll_vertical = 0
+	maj_grille()
+
+func _ajouter_case_inventaire(id: String) -> void:
+	var details := Inventaire.details_objet(id)
+	var quantite_objet := int(Inventaire.objets[id])
+	var slot := SCENE_CASE_INVENTAIRE.instantiate() as PanelContainer
+	if slot == null:
+		push_warning("Impossible de charger la case d'inventaire.")
 		return
-	for id in Inventaire.objets:
-		var details := Inventaire.details_objet(id)
-		var quantite_objet: int = int(Inventaire.objets[id])
-		var slot := SCENE_CASE_INVENTAIRE.instantiate() as PanelContainer
-		if slot == null:
-			push_warning("Impossible de charger la case d'inventaire.")
-			continue
-		slot.theme_type_variation = _variation_rarete(int(details.get("id_rarete", 1)))
-		slot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		slot.gui_input.connect(_on_slot_clique.bind(id))
-		slot.tooltip_text = "%s x%d\n%s" % [Inventaire.nom_objet(id), quantite_objet, str(details.get("description", ""))]
-		var icone: TextureRect = slot.get_node("Boite/Icone")
-		icone.texture = _icone_objet(details)
-		var quantite: Label = slot.get_node("Boite/Quantite")
-		quantite.text = "x%d" % quantite_objet
-		grille.add_child(slot)
+	slot.theme_type_variation = _variation_rarete(int(details.get("id_rarete", 1)))
+	slot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	slot.gui_input.connect(_on_slot_clique.bind(id))
+	slot.tooltip_text = "%s x%d\n%s" % [Inventaire.nom_objet(id), quantite_objet, str(details.get("description", ""))]
+	var icone: TextureRect = slot.get_node("Boite/Icone")
+	icone.texture = _icone_objet(details)
+	var quantite: Label = slot.get_node("Boite/Quantite")
+	quantite.text = "x%d" % quantite_objet
+	grille.add_child(slot)
 
 func _on_slot_clique(evenement: InputEvent, id: String) -> void:
 	if evenement is InputEventMouseButton and evenement.pressed and evenement.button_index == MOUSE_BUTTON_LEFT:
@@ -627,6 +698,7 @@ func maj_detail_item(id: String) -> void:
 	stats_detail.visible = texte_stats != ""
 	prix_detail.text = "Prix : %d Berry" % int(details.get("prix", 0))
 	_maj_bouton_equiper(details, id)
+	_maj_bouton_utiliser(details)
 
 func maj_detail_aucun() -> void:
 	detail_id_courant = ""
@@ -638,8 +710,11 @@ func maj_detail_aucun() -> void:
 	stats_detail.text = ""
 	prix_detail.text = ""
 	btn_equiper.visible = false
+	btn_manger_fruit.visible = false
 	btn_ouvrir_coffre.visible = false
 	btn_ouvrir_tous.visible = false
+	if btn_utiliser != null:
+		btn_utiliser.visible = false
 
 # construit le paperdoll : portrait du personnage au centre, un slot
 # cliquable par emplacement positionné sur le corps
@@ -662,11 +737,21 @@ func _creer_emplacements() -> void:
 		libelle.text = LABELS_COURTS_EMPLACEMENTS.get(emplacement, TEXTES_EMPLACEMENTS[emplacement])
 		emplacements_ui[emplacement] = {"slot": slot, "icone": icone}
 
-# met à jour le bouton Équiper/Déséquiper selon l'objet affiché dans le détail
+# met à jour les boutons d'action selon l'objet affiché dans le détail :
+# Équiper/Déséquiper, Ouvrir les coffres, Manger les fruits du démon
 func _maj_bouton_equiper(details: Dictionary, id: String) -> void:
 	var est_coffre := str(details.get("type", "")) == "coffre"
 	btn_ouvrir_coffre.visible = est_coffre
 	btn_ouvrir_tous.visible = est_coffre and int(Inventaire.objets.get(id, 0)) >= 2
+	var est_fruit := str(details.get("type", "")) == "fruit_demon"
+	btn_manger_fruit.visible = est_fruit
+	if est_fruit:
+		if Personnage.fruit_id != "":
+			btn_manger_fruit.text = "Fruit déjà mangé"
+			btn_manger_fruit.disabled = true
+		else:
+			btn_manger_fruit.text = "Manger le fruit"
+			btn_manger_fruit.disabled = false
 	var equipable := Personnage.emplacement_equipement(str(details.get("type", "")), str(details.get("sous_type", ""))) != ""
 	btn_equiper.visible = equipable
 	if not equipable:
@@ -687,6 +772,102 @@ func _on_bouton_equiper() -> void:
 	maj_equipement()
 	maj_grille()
 	maj_detail_item(detail_id_courant)
+
+# met à jour le bouton Utiliser selon l'objet affiché dans le détail :
+# visible pour les consommables, désactivé s'il n'a aucun effet
+func _maj_bouton_utiliser(details: Dictionary) -> void:
+	if btn_utiliser == null:
+		return
+	var consommable := str(details.get("type", "")) == "consumable"
+	btn_utiliser.visible = consommable
+	if not consommable:
+		return
+	btn_utiliser.text = "Utiliser"
+	btn_utiliser.disabled = (details.get("effets", {}) as Dictionary).is_empty()
+
+# utilise le consommable sélectionné dans le détail : applique ses effets
+# (points de vie restaurés, bonus temporaires) et le retire de
+# l'inventaire
+func _on_bouton_utiliser() -> void:
+	if detail_id_courant == "":
+		return
+	var nom := Inventaire.nom_objet(detail_id_courant)
+	var details := Inventaire.details_objet(detail_id_courant)
+	var effets: Dictionary = details.get("effets", {})
+	var soin := int(effets.get("heal", 0))
+	var message := Personnage.utiliser_objet(detail_id_courant)
+	maj_grille()
+	if Inventaire.objets.has(detail_id_courant):
+		maj_detail_item(detail_id_courant)
+	else:
+		maj_detail_aucun()
+	if message != "":
+		avertir(message)
+		return
+	var info := AcceptDialog.new()
+	info.title = "%s consommé !" % nom
+	var texte := "Ses bonus sont actifs temporairement."
+	if soin > 0:
+		texte = "Tu récupères %d points de vie." % soin
+	# carte au trésor : la croix est plantée, la chasse commence
+	if str(details.get("sous_type", "")) == "carte_tresor":
+		texte = "Une croix marque un trésor sur la carte du monde. File la déterrer !"
+	info.dialog_text = texte
+	add_child(info)
+	info.popup_centered()
+	info.visibility_changed.connect(func() -> void:
+		if not info.visible:
+			info.queue_free())
+
+# mange le fruit du démon sélectionné dans le détail — action définitive
+# (un seul fruit par personnage), d'où l'écran de confirmation ; les
+# pouvoirs débloqués apparaissent dans la barre et l'onglet Sorts
+func _on_bouton_manger_fruit() -> void:
+	if detail_id_courant == "" or Personnage.fruit_id != "":
+		return
+	var details := Inventaire.details_objet(detail_id_courant)
+	if str(details.get("type", "")) != "fruit_demon":
+		return
+	var id_fruit := detail_id_courant
+	var dialogue := ConfirmationDialog.new()
+	dialogue.title = "Manger le fruit"
+	dialogue.dialog_text = "Manger %s est définitif : ses pouvoirs deviendront les tiens, mais aucun autre fruit du démon ne pourra jamais être mangé.\n\nSes pouvoirs rejoignent ta barre de sorts." % Inventaire.nom_objet(id_fruit)
+	dialogue.ok_button_text = "Manger"
+	dialogue.cancel_button_text = "Attendre"
+	dialogue.confirmed.connect(_confirmer_manger_fruit.bind(id_fruit))
+	add_child(dialogue)
+	dialogue.popup_centered()
+	dialogue.visibility_changed.connect(func() -> void:
+		if not dialogue.visible:
+			dialogue.queue_free())
+
+func _confirmer_manger_fruit(id_fruit: String) -> void:
+	var message := Personnage.manger_fruit(id_fruit)
+	if message != "":
+		avertir(message)
+		return
+	maj_grille()
+	maj_detail_aucun()
+	maj_sorts()
+	var info := AcceptDialog.new()
+	info.title = "Fruit mangé !"
+	info.dialog_text = "Le fruit a été absorbé : ses pouvoirs sont débloqués (onglet Sorts) et son aura t'a transformé pour toujours."
+	add_child(info)
+	info.popup_centered()
+	info.visibility_changed.connect(func() -> void:
+		if not info.visible:
+			info.queue_free())
+
+# petite fenêtre d'information bloquante
+func avertir(texte: String) -> void:
+	var info := AcceptDialog.new()
+	info.title = "Attention"
+	info.dialog_text = texte
+	add_child(info)
+	info.popup_centered()
+	info.visibility_changed.connect(func() -> void:
+		if not info.visible:
+			info.queue_free())
 
 # ouvre un coffre-objet de l'inventaire : le consomme, tire le loot via Coffres
 # et l'affiche dans la fenêtre de loot ; le reliquat est emporté à la fermeture
@@ -824,31 +1005,55 @@ func _icone_objet(details: Dictionary) -> Texture2D:
 const COULEUR_INCONNU := Color(0.55, 0.5, 0.45)
 const ICONE_CADENAS := "res://addons/pixel_ui_fantasy/icons/lock.png"
 
+# Encyclopédie des fruits du démon (item 950 de la base) : craftée par
+# l'Archéologue, elle révèle les fruits du démon dans le wiki
+const ID_ENCYCLOPEDIE_FRUITS := "950"
+
+# l'encyclopédie des fruits du démon est-elle dans l'inventaire ?
+func _encyclopedie_fruits_possedee() -> bool:
+	return Inventaire.objets.has(ID_ENCYCLOPEDIE_FRUITS)
+
 # types proposés par le filtre du wiki ; "" = tous les types
 var types_wiki: Array = [""]
 # objet affiché dans la fiche du wiki (cible du bouton debug "Donner x5")
 var id_wiki_courant := ""
 
-# remplit le filtre de types avec les types réellement présents en base
+# remplit le filtre de types avec les types réellement présents en base ;
+# les fruits du démon sont volontairement absents du wiki (objets secrets),
+# sauf si l'encyclopédie des fruits du démon est possédée
 func _peupler_types_wiki() -> void:
 	option_type_wiki.clear()
 	types_wiki = [""]
 	option_type_wiki.add_item("Tous")
+	var exclure_fruits := "" if _encyclopedie_fruits_possedee() else " AND type != 'fruit_demon'"
 	for ligne in BaseDonnees.lire(
-		"SELECT DISTINCT type FROM items WHERE is_active = 1 ORDER BY type;"):
+		"SELECT DISTINCT type FROM items WHERE is_active = 1" + exclure_fruits + " ORDER BY type;"):
 		var type_item := str(ligne["type"])
 		types_wiki.append(type_item)
 		option_type_wiki.add_item(type_item.capitalize())
 	option_type_wiki.select(0)
+
+# le filtre de types dépend de l'encyclopédie : il est reconstruit à chaque
+# changement d'inventaire, en conservant la sélection si elle reste valide
+func _maj_filtre_types_wiki() -> void:
+	var type_courant := ""
+	if option_type_wiki.selected >= 0 and option_type_wiki.selected < types_wiki.size():
+		type_courant = str(types_wiki[option_type_wiki.selected])
+	_peupler_types_wiki()
+	var index := types_wiki.find(type_courant)
+	option_type_wiki.select(index if index >= 0 else 0)
+	maj_wiki()
 
 func maj_wiki() -> void:
 	for enfant in liste_wiki.get_children():
 		enfant.queue_free()
 	var type_choisi := str(types_wiki[option_type_wiki.selected]) if option_type_wiki.selected >= 0 else ""
 	var condition := "is_active = 1"
+	if not _encyclopedie_fruits_possedee():
+		condition += " AND type != 'fruit_demon'"
 	if type_choisi != "":
 		condition += " AND type = '%s'" % type_choisi
-	var lignes := BaseDonnees.lire("SELECT id, name FROM items WHERE " + condition + " ORDER BY id;")
+	var lignes := BaseDonnees.lire("SELECT id, name, type FROM items WHERE " + condition + " ORDER BY id;")
 	var filtre := champ_recherche.text.strip_edges().to_lower()
 	var connus := 0
 	var affiches := 0
@@ -864,7 +1069,9 @@ func maj_wiki() -> void:
 		# police contenue pour la liste : les noms de plus de 50 caractères
 		# doivent tenir dans la colonne sans défilement horizontal
 		bouton.add_theme_font_size_override("font_size", 20)
-		if Inventaire.est_connu(id):
+		# l'encyclopédie révèle les fruits du démon sans les avoir trouvés
+		var est_fruit := str(ligne["type"]) == "fruit_demon"
+		if Inventaire.est_connu(id) or (est_fruit and _encyclopedie_fruits_possedee()):
 			connus += 1
 		else:
 			bouton.add_theme_color_override("font_color", COULEUR_INCONNU)
@@ -886,14 +1093,16 @@ func maj_detail_wiki(id: String) -> void:
 	id_wiki_courant = id
 	btn_donner_item_wiki.visible = true
 	nom_wiki.text = Inventaire.nom_objet(id)
-	if not Inventaire.est_connu(id):
+	var details := Inventaire.details_objet(id)
+	# l'encyclopédie des fruits du démon révèle leur fiche sans rencontre
+	var fruit_revele := str(details.get("type", "")) == "fruit_demon" and _encyclopedie_fruits_possedee()
+	if not Inventaire.est_connu(id) and not fruit_revele:
 		icone_wiki.texture = load(ICONE_CADENAS)
 		type_wiki.text = ""
 		description_wiki.text = "Objet non encore rencontré. Ses caractéristiques apparaîtront quand vous le trouverez."
 		stats_wiki.text = ""
 		prix_wiki.text = ""
 		return
-	var details := Inventaire.details_objet(id)
 	icone_wiki.texture = _icone_objet(details)
 	nom_wiki.add_theme_color_override("font_color", details["couleur_rarete"])
 	var type_texte: String = details.get("type", "").capitalize()
@@ -905,9 +1114,27 @@ func maj_detail_wiki(id: String) -> void:
 	type_wiki.add_theme_color_override("font_color", details["couleur_rarete"])
 	description_wiki.text = details.get("description", "")
 	var texte_stats := _texte_stats(details)
+	# l'encyclopédie dresse aussi la liste des pouvoirs du fruit
+	if fruit_revele:
+		var pouvoirs := _pouvoirs_fruit(id)
+		if not pouvoirs.is_empty():
+			var texte_pouvoirs := "Pouvoirs : %s" % " ; ".join(pouvoirs)
+			texte_stats = (texte_pouvoirs + "\n" + texte_stats) if texte_stats != "" else texte_pouvoirs
 	stats_wiki.text = texte_stats
 	stats_wiki.visible = texte_stats != ""
 	prix_wiki.text = "Prix : %d Berry" % int(details.get("prix", 0))
+
+# pouvoirs d'un fruit du démon (tables `fruit_skills` + `skills`),
+# au format "Nom (coût PA)" ; vide si le fruit n'a aucun pouvoir rattaché
+func _pouvoirs_fruit(id_fruit: String) -> Array[String]:
+	var pouvoirs: Array[String] = []
+	if not BaseDonnees.disponible or not id_fruit.is_valid_int():
+		return pouvoirs
+	for ligne in BaseDonnees.lire(
+		"SELECT s.name, s.base_cooldown FROM fruit_skills fs"
+		+ " JOIN skills s ON s.id = fs.skill_id WHERE fs.fruit_item_id = %d ORDER BY fs.skill_id;" % id_fruit.to_int()):
+		pouvoirs.append("%s (%d PA)" % [str(ligne["name"]), maxi(int(ligne["base_cooldown"]), 1)])
+	return pouvoirs
 
 func maj_detail_aucun_wiki() -> void:
 	icone_wiki.texture = null

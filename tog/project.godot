@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="tog"
-run/main_scene="uid://c36j2e8st7r56"
+run/main_scene="res://scenes/fushia.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -24,6 +24,9 @@ Personnage="*res://scripts/autoloads/personnage.gd"
 HotelVentes="*res://scripts/autoloads/hotel_ventes.gd"
 Equipages="*res://scripts/autoloads/equipages.gd"
 Coffres="*res://scripts/autoloads/coffres.gd"
+CartesTresor="*res://scripts/autoloads/cartes_tresor.gd"
+Touches="*res://scripts/autoloads/touches.gd"
+Reseau="*res://scripts/autoloads/reseau.gd"
 
 [display]
 

@@ -1,0 +1,859 @@
+{
+ "frames": [
+  {
+   "filename": "tog-smg-burst 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 1.png",
+   "frame": {
+    "x": 112,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 2.png",
+   "frame": {
+    "x": 224,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 3.png",
+   "frame": {
+    "x": 336,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 4.png",
+   "frame": {
+    "x": 448,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 5.png",
+   "frame": {
+    "x": 560,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 6.png",
+   "frame": {
+    "x": 0,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 7.png",
+   "frame": {
+    "x": 112,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 8.png",
+   "frame": {
+    "x": 224,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 9.png",
+   "frame": {
+    "x": 336,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 10.png",
+   "frame": {
+    "x": 448,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 11.png",
+   "frame": {
+    "x": 560,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 12.png",
+   "frame": {
+    "x": 0,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 13.png",
+   "frame": {
+    "x": 112,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 14.png",
+   "frame": {
+    "x": 224,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 15.png",
+   "frame": {
+    "x": 336,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 16.png",
+   "frame": {
+    "x": 448,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 17.png",
+   "frame": {
+    "x": 560,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 18.png",
+   "frame": {
+    "x": 0,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 19.png",
+   "frame": {
+    "x": 112,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 20.png",
+   "frame": {
+    "x": 224,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 21.png",
+   "frame": {
+    "x": 336,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 22.png",
+   "frame": {
+    "x": 448,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 23.png",
+   "frame": {
+    "x": 560,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 24.png",
+   "frame": {
+    "x": 0,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 25.png",
+   "frame": {
+    "x": 112,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 26.png",
+   "frame": {
+    "x": 224,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 27.png",
+   "frame": {
+    "x": 336,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 28.png",
+   "frame": {
+    "x": 448,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 29.png",
+   "frame": {
+    "x": 560,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 30.png",
+   "frame": {
+    "x": 0,
+    "y": 300,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-burst 31.png",
+   "frame": {
+    "x": 112,
+    "y": 300,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-smg-burst.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 672,
+   "h": 360
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 44,
+   "y": 30
+  },
+  "frameTags": [
+   {
+    "name": "tog-smg-burst",
+    "from": 0,
+    "to": 31,
+    "direction": "forward"
+   }
+  ]
+ }
+}

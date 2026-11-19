@@ -14,10 +14,23 @@ const PLAFOND_COFFRE := {1: 1, 2: 3, 3: 4, 4: 5}
 const NOMBRE_OBJETS := {1: [2, 2], 2: [3, 3], 3: [3, 4], 4: [4, 4]}
 # chance de tirer un objet d'un cran au-dessus du plafond (jackpot)
 const PROBA_JACKPOT := 0.10
+# chance qu'un coffre contienne un fruit du démon : tirage dédié, à part
+# du système de raretés (les fruits sont is_droppable = 0 et ne figurent
+# donc pas dans le tirage normal) et réservé aux coffres légendaires.
+# Une variable pour pouvoir être ajustée/testée en cours de partie.
+var proba_fruit := 1.0 / 10000.0
+# chance qu'un coffre légendaire contienne une lame unique : tirage dédié,
+# à part du système de raretés (les lames sont is_droppable = 0 et ne
+# figurent donc pas dans le tirage normal). Une lame déjà détenue par le
+# joueur ou déjà présente dans un autre coffre ne peut plus sortir : il
+# n'existe qu'un exemplaire de chaque par monde.
+var proba_lame := 1.0 / 2000.0
 # sous-type des items-coffres (table `items`, type "coffre") -> rareté du coffre
 const SOUS_TYPES_COFFRE := {
 	"commun": 1, "rare": 2, "épique": 3, "légendaire": 4,
 }
+# rareté du coffre qui peut contenir un fruit du démon
+const RARETE_COFFRE_LEGENDAIRE := 4
 # types d'objets tirés en plusieurs exemplaires
 const TYPES_EMPILABLES := ["consumable", "ressource"]
 
@@ -27,7 +40,7 @@ var _etat := {}  # coffre_id -> {"ouvert": bool, "contenu": Array[{"id": String,
 
 func _ready() -> void:
 	var cfg := ConfigFile.new()
-	if cfg.load(CHEMIN_ETAT) == OK:
+	if cfg.load(CHEMIN_ETAT) == OK and cfg.has_section("coffres"):
 		for id in cfg.get_section_keys("coffres"):
 			_etat[str(id)] = cfg.get_value("coffres", id)
 
@@ -90,6 +103,16 @@ func vider(coffre_id: String) -> Array:
 	coffre_modifie.emit(coffre_id)
 	return prises
 
+# ids des objets encore enfermés dans les coffres non vidés : sert aux
+# autres systèmes (cartes au trésor) à respecter l'exemplarité des
+# objets uniques
+func ids_en_coffres() -> Dictionary:
+	var pris := {}
+	for id_coffre in _etat:
+		for prise in _etat[id_coffre].get("contenu", []):
+			pris[str(prise.get("id", ""))] = true
+	return pris
+
 # remet tous les coffres à zéro (réinitialisation debug du perso)
 func reinitialiser() -> void:
 	_etat.clear()
@@ -107,10 +130,84 @@ func _tirer_contenu(rarete_coffre: int) -> Array:
 	var n := randi_range(int(bornes[0]), int(bornes[1]))
 	var objets_tires := []
 	for _i in n:
-		var prise := _tirer_objet(rarete_coffre)
-		if not prise.is_empty():
-			objets_tires.append(prise)
+			var prise := _tirer_objet(rarete_coffre)
+			if not prise.is_empty():
+				objets_tires.append(prise)
+	# uniques (fruits du démon, lames) : uniquement dans les coffres
+	# légendaires (rareté 4)
+	if rarete_coffre == RARETE_COFFRE_LEGENDAIRE:
+		var fruit := _tirer_fruit()
+		if not fruit.is_empty():
+			objets_tires.append(fruit)
+		var lame := _tirer_lame_unique()
+		if not lame.is_empty():
+			objets_tires.append(lame)
 	return objets_tires
+
+# fruit du démon : avec une chance de proba_fruit par ouverture de coffre
+# légendaire (voir _tirer_contenu), un exemplaire d'un fruit disponible
+# est ajouté au contenu. Un fruit
+# déjà consommé (registre unique_items), déjà détenu par le joueur ou
+# déjà présent dans un autre coffre ne peut plus sortir : il n'existe
+# qu'un exemplaire de chaque par monde.
+func _tirer_fruit() -> Dictionary:
+	if not BaseDonnees.disponible:
+		return {}
+	if randf() >= proba_fruit:
+		return {}
+	# ids déjà attribués : contenu non ramassé des autres coffres
+	var pris := {}
+	for id_coffre in _etat:
+		for prise in _etat[id_coffre].get("contenu", []):
+			var id_item := str(prise.get("id", ""))
+			if id_item != "":
+				pris[id_item] = true
+	var ids: Array[String] = []
+	for ligne in BaseDonnees.lire(
+		"SELECT id FROM items"
+		+ " WHERE type = 'fruit_demon' AND is_active = 1"
+		+ " AND id NOT IN (SELECT item_id FROM unique_items WHERE is_consumed = 1);"):
+		var id := str(ligne["id"])
+		# fruit mangé : il n'existe plus qu'un exemplaire par monde
+		if id == Personnage.fruit_id:
+			continue
+		if not Inventaire.objets.has(id) and not pris.has(id):
+			ids.append(id)
+	if ids.is_empty():
+		return {}
+	return {"id": ids[randi() % ids.size()], "qte": 1}
+
+# lame unique : avec une chance de proba_lame par ouverture de coffre
+# légendaire, un exemplaire d'une lame disponible est ajouté au contenu
+# (voir _tirer_contenu). Une lame déjà détenue par le joueur ou déjà
+# présente dans un autre coffre ne peut plus sortir : il n'existe qu'un
+# exemplaire de chaque par monde. Contrairement aux fruits, une lame
+# n'est jamais consommée : l'exemplarité passe par la possession.
+func _tirer_lame_unique() -> Dictionary:
+	if not BaseDonnees.disponible:
+		return {}
+	if randf() >= proba_lame:
+		return {}
+	# ids déjà attribués : contenu non ramassé des autres coffres
+	var pris := {}
+	for id_coffre in _etat:
+		for prise in _etat[id_coffre].get("contenu", []):
+			var id_item := str(prise.get("id", ""))
+			if id_item != "":
+				pris[id_item] = true
+	var ids: Array[String] = []
+	for ligne in BaseDonnees.lire(
+		"SELECT id FROM items"
+		+ " WHERE type = 'arme' AND rarity_id = 6 AND is_active = 1"
+		+ " AND is_droppable = 0"
+		+ " AND id IN (SELECT item_id FROM unique_items WHERE is_consumed = 0);"):
+		var id := str(ligne["id"])
+		# lame déjà trouvée : il n'existe plus qu'un exemplaire par monde
+		if not Inventaire.objets.has(id) and not pris.has(id):
+			ids.append(id)
+	if ids.is_empty():
+		return {}
+	return {"id": ids[randi() % ids.size()], "qte": 1}
 
 func _tirer_objet(rarete_coffre: int) -> Dictionary:
 	if not BaseDonnees.disponible:

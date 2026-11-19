@@ -1,0 +1,859 @@
+{
+ "frames": [
+  {
+   "filename": "tog-ground-blast 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 1.png",
+   "frame": {
+    "x": 224,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 2.png",
+   "frame": {
+    "x": 448,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 3.png",
+   "frame": {
+    "x": 672,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 4.png",
+   "frame": {
+    "x": 896,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 5.png",
+   "frame": {
+    "x": 1120,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 6.png",
+   "frame": {
+    "x": 0,
+    "y": 216,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 7.png",
+   "frame": {
+    "x": 224,
+    "y": 216,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 8.png",
+   "frame": {
+    "x": 448,
+    "y": 216,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 9.png",
+   "frame": {
+    "x": 672,
+    "y": 216,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 10.png",
+   "frame": {
+    "x": 896,
+    "y": 216,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 11.png",
+   "frame": {
+    "x": 1120,
+    "y": 216,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 12.png",
+   "frame": {
+    "x": 0,
+    "y": 432,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 13.png",
+   "frame": {
+    "x": 224,
+    "y": 432,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 14.png",
+   "frame": {
+    "x": 448,
+    "y": 432,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 15.png",
+   "frame": {
+    "x": 672,
+    "y": 432,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 16.png",
+   "frame": {
+    "x": 896,
+    "y": 432,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 17.png",
+   "frame": {
+    "x": 1120,
+    "y": 432,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 18.png",
+   "frame": {
+    "x": 0,
+    "y": 648,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 19.png",
+   "frame": {
+    "x": 224,
+    "y": 648,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 20.png",
+   "frame": {
+    "x": 448,
+    "y": 648,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 21.png",
+   "frame": {
+    "x": 672,
+    "y": 648,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 22.png",
+   "frame": {
+    "x": 896,
+    "y": 648,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 23.png",
+   "frame": {
+    "x": 1120,
+    "y": 648,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 24.png",
+   "frame": {
+    "x": 0,
+    "y": 864,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 25.png",
+   "frame": {
+    "x": 224,
+    "y": 864,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 26.png",
+   "frame": {
+    "x": 448,
+    "y": 864,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 27.png",
+   "frame": {
+    "x": 672,
+    "y": 864,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 28.png",
+   "frame": {
+    "x": 896,
+    "y": 864,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 29.png",
+   "frame": {
+    "x": 1120,
+    "y": 864,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 30.png",
+   "frame": {
+    "x": 0,
+    "y": 1080,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-ground-blast 31.png",
+   "frame": {
+    "x": 224,
+    "y": 1080,
+    "w": 224,
+    "h": 216
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 224,
+    "h": 216
+   },
+   "sourceSize": {
+    "w": 224,
+    "h": 216
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.7962962962962963
+   },
+   "duration": 100
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-ground-blast.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 1344,
+   "h": 1296
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 112,
+   "y": 172
+  },
+  "frameTags": [
+   {
+    "name": "tog-ground-blast",
+    "from": 0,
+    "to": 31,
+    "direction": "forward"
+   }
+  ]
+ }
+}

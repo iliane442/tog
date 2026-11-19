@@ -1,0 +1,859 @@
+{
+ "frames": [
+  {
+   "filename": "tog-slam-pillar 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 1.png",
+   "frame": {
+    "x": 216,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 2.png",
+   "frame": {
+    "x": 432,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 3.png",
+   "frame": {
+    "x": 648,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 4.png",
+   "frame": {
+    "x": 864,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 5.png",
+   "frame": {
+    "x": 1080,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 6.png",
+   "frame": {
+    "x": 0,
+    "y": 204,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 7.png",
+   "frame": {
+    "x": 216,
+    "y": 204,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 8.png",
+   "frame": {
+    "x": 432,
+    "y": 204,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 9.png",
+   "frame": {
+    "x": 648,
+    "y": 204,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 10.png",
+   "frame": {
+    "x": 864,
+    "y": 204,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 11.png",
+   "frame": {
+    "x": 1080,
+    "y": 204,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 12.png",
+   "frame": {
+    "x": 0,
+    "y": 408,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 13.png",
+   "frame": {
+    "x": 216,
+    "y": 408,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 14.png",
+   "frame": {
+    "x": 432,
+    "y": 408,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 15.png",
+   "frame": {
+    "x": 648,
+    "y": 408,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 16.png",
+   "frame": {
+    "x": 864,
+    "y": 408,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 17.png",
+   "frame": {
+    "x": 1080,
+    "y": 408,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 18.png",
+   "frame": {
+    "x": 0,
+    "y": 612,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 19.png",
+   "frame": {
+    "x": 216,
+    "y": 612,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 20.png",
+   "frame": {
+    "x": 432,
+    "y": 612,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 21.png",
+   "frame": {
+    "x": 648,
+    "y": 612,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 22.png",
+   "frame": {
+    "x": 864,
+    "y": 612,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 23.png",
+   "frame": {
+    "x": 1080,
+    "y": 612,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 24.png",
+   "frame": {
+    "x": 0,
+    "y": 816,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 25.png",
+   "frame": {
+    "x": 216,
+    "y": 816,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 26.png",
+   "frame": {
+    "x": 432,
+    "y": 816,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 27.png",
+   "frame": {
+    "x": 648,
+    "y": 816,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 28.png",
+   "frame": {
+    "x": 864,
+    "y": 816,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 29.png",
+   "frame": {
+    "x": 1080,
+    "y": 816,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 30.png",
+   "frame": {
+    "x": 0,
+    "y": 1020,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  },
+  {
+   "filename": "tog-slam-pillar 31.png",
+   "frame": {
+    "x": 216,
+    "y": 1020,
+    "w": 216,
+    "h": 204
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 216,
+    "h": 204
+   },
+   "sourceSize": {
+    "w": 216,
+    "h": 204
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.9117647058823529
+   },
+   "duration": 111
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-slam-pillar.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 1296,
+   "h": 1224
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 108,
+   "y": 186
+  },
+  "frameTags": [
+   {
+    "name": "tog-slam-pillar",
+    "from": 0,
+    "to": 31,
+    "direction": "forward"
+   }
+  ]
+ }
+}

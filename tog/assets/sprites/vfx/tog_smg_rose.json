@@ -1,0 +1,859 @@
+{
+ "frames": [
+  {
+   "filename": "tog-smg-rose 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 1.png",
+   "frame": {
+    "x": 112,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 2.png",
+   "frame": {
+    "x": 224,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 3.png",
+   "frame": {
+    "x": 336,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 4.png",
+   "frame": {
+    "x": 448,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 5.png",
+   "frame": {
+    "x": 560,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 6.png",
+   "frame": {
+    "x": 0,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 7.png",
+   "frame": {
+    "x": 112,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 8.png",
+   "frame": {
+    "x": 224,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 9.png",
+   "frame": {
+    "x": 336,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 10.png",
+   "frame": {
+    "x": 448,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 11.png",
+   "frame": {
+    "x": 560,
+    "y": 60,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 12.png",
+   "frame": {
+    "x": 0,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 13.png",
+   "frame": {
+    "x": 112,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 14.png",
+   "frame": {
+    "x": 224,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 15.png",
+   "frame": {
+    "x": 336,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 16.png",
+   "frame": {
+    "x": 448,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 17.png",
+   "frame": {
+    "x": 560,
+    "y": 120,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 18.png",
+   "frame": {
+    "x": 0,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 19.png",
+   "frame": {
+    "x": 112,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 20.png",
+   "frame": {
+    "x": 224,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 21.png",
+   "frame": {
+    "x": 336,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 22.png",
+   "frame": {
+    "x": 448,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 23.png",
+   "frame": {
+    "x": 560,
+    "y": 180,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 24.png",
+   "frame": {
+    "x": 0,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 25.png",
+   "frame": {
+    "x": 112,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 26.png",
+   "frame": {
+    "x": 224,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 27.png",
+   "frame": {
+    "x": 336,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 28.png",
+   "frame": {
+    "x": 448,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 29.png",
+   "frame": {
+    "x": 560,
+    "y": 240,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 30.png",
+   "frame": {
+    "x": 0,
+    "y": 300,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  },
+  {
+   "filename": "tog-smg-rose 31.png",
+   "frame": {
+    "x": 112,
+    "y": 300,
+    "w": 112,
+    "h": 60
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 112,
+    "h": 60
+   },
+   "sourceSize": {
+    "w": 112,
+    "h": 60
+   },
+   "pivot": {
+    "x": 0.39285714285714285,
+    "y": 0.5
+   },
+   "duration": 33
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-smg-rose.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 672,
+   "h": 360
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 44,
+   "y": 30
+  },
+  "frameTags": [
+   {
+    "name": "tog-smg-rose",
+    "from": 0,
+    "to": 31,
+    "direction": "forward"
+   }
+  ]
+ }
+}

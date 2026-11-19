@@ -5,8 +5,11 @@ var cases_sort: Array[Vector2i] = []
 var _sol: TileMapLayer
 
 func _ready() -> void:
-	_sol = get_parent().get_node_or_null("ground") as TileMapLayer
 	z_index = 10
+
+func definir_sol(sol: TileMapLayer) -> void:
+	_sol = sol
+	queue_redraw()
 
 func afficher(cases: Array[Vector2i]) -> void:
 	cases_deplacement = cases.duplicate()
@@ -29,9 +32,9 @@ func _draw() -> void:
 	_dessiner_cases(cases_deplacement, Color(0.2, 0.5, 1.0, 0.4), Color(0.5, 0.8, 1.0, 0.85), taille)
 	_dessiner_cases(cases_sort, Color(1.0, 0.1, 0.1, 0.4), Color(1.0, 0.4, 0.4, 0.9), taille)
 
-func _dessiner_cases(cases: Array[Vector2i], remplissage: Color, bordure: Color, taille: Vector2) -> void:
+func _dessiner_cases(cases: Array[Vector2i], remplissage: Color, bordure: Color, taille: Vector2, epaisseur: float = 2.0) -> void:
 	for case in cases:
 		var centre := to_local(_sol.to_global(_sol.map_to_local(case)))
 		var rectangle := Rect2(centre - taille / 2.0, taille)
 		draw_rect(rectangle, remplissage)
-		draw_rect(rectangle, bordure, false, 2.0)
+		draw_rect(rectangle, bordure, false, epaisseur)

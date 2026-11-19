@@ -1,0 +1,859 @@
+{
+ "frames": [
+  {
+   "filename": "tog-black-hole 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 1.png",
+   "frame": {
+    "x": 232,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 2.png",
+   "frame": {
+    "x": 464,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 3.png",
+   "frame": {
+    "x": 696,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 4.png",
+   "frame": {
+    "x": 928,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 5.png",
+   "frame": {
+    "x": 1160,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 6.png",
+   "frame": {
+    "x": 0,
+    "y": 212,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 7.png",
+   "frame": {
+    "x": 232,
+    "y": 212,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 8.png",
+   "frame": {
+    "x": 464,
+    "y": 212,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 9.png",
+   "frame": {
+    "x": 696,
+    "y": 212,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 10.png",
+   "frame": {
+    "x": 928,
+    "y": 212,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 11.png",
+   "frame": {
+    "x": 1160,
+    "y": 212,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 12.png",
+   "frame": {
+    "x": 0,
+    "y": 424,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 13.png",
+   "frame": {
+    "x": 232,
+    "y": 424,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 14.png",
+   "frame": {
+    "x": 464,
+    "y": 424,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 15.png",
+   "frame": {
+    "x": 696,
+    "y": 424,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 16.png",
+   "frame": {
+    "x": 928,
+    "y": 424,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 17.png",
+   "frame": {
+    "x": 1160,
+    "y": 424,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 18.png",
+   "frame": {
+    "x": 0,
+    "y": 636,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 19.png",
+   "frame": {
+    "x": 232,
+    "y": 636,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 20.png",
+   "frame": {
+    "x": 464,
+    "y": 636,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 21.png",
+   "frame": {
+    "x": 696,
+    "y": 636,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 22.png",
+   "frame": {
+    "x": 928,
+    "y": 636,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 23.png",
+   "frame": {
+    "x": 1160,
+    "y": 636,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 24.png",
+   "frame": {
+    "x": 0,
+    "y": 848,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 25.png",
+   "frame": {
+    "x": 232,
+    "y": 848,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 26.png",
+   "frame": {
+    "x": 464,
+    "y": 848,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 27.png",
+   "frame": {
+    "x": 696,
+    "y": 848,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 28.png",
+   "frame": {
+    "x": 928,
+    "y": 848,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 29.png",
+   "frame": {
+    "x": 1160,
+    "y": 848,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 30.png",
+   "frame": {
+    "x": 0,
+    "y": 1060,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  },
+  {
+   "filename": "tog-black-hole 31.png",
+   "frame": {
+    "x": 232,
+    "y": 1060,
+    "w": 232,
+    "h": 212
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 232,
+    "h": 212
+   },
+   "sourceSize": {
+    "w": 232,
+    "h": 212
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 100
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "tog-black-hole.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 1392,
+   "h": 1272
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 116,
+   "y": 106
+  },
+  "frameTags": [
+   {
+    "name": "tog-black-hole",
+    "from": 0,
+    "to": 31,
+    "direction": "forward"
+   }
+  ]
+ }
+}

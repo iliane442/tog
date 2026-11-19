@@ -4,6 +4,7 @@
 [ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="2_theme"]
 
 [node name="CoffreUI" type="CanvasLayer" groups=["coffres_ui"]]
+layer = 30
 script = ExtResource("1_coffreui")
 
 [node name="Fenetre" type="PanelContainer" parent="."]

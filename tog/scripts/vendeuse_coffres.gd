@@ -42,6 +42,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if not _clic_sur_pnj(get_global_mouse_position()):
 			return
+		var joueur := get_tree().get_first_node_in_group("player")
+		if joueur != null and joueur.has_method("rejoindre_interaction"):
+			joueur.rejoindre_interaction(global_position, ouvrir_boutique)
+			get_viewport().set_input_as_handled()
+			return
 		if player_near:
 			ouvrir_boutique()
 			get_viewport().set_input_as_handled()
