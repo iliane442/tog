@@ -35,6 +35,9 @@ var _cible_fiche: Node
 var _cible_selectionnee: Node
 # monde partagé : étiquette du groupe combattu ("" si aucun)
 var groupe_combat := ""
+var pvp_actif := false        # un duel contre un joueur distant est en cours
+var pvp_premier := false      # le duel a commencé par notre tour
+var _pvp_adversaire: SCRIPT_ADVERSAIRE_PVP   # miroir du joueur distant dans notre arène
 var _ui: CanvasLayer
 var _fiche_ennemi: PanelContainer
 var _barre_vie_ennemi: ProgressBar
@@ -47,6 +50,7 @@ var _bouton_combattre: Button
 var _etats_actifs: Dictionary = {}
 var _hasard := RandomNumberGenerator.new()
 const SCENE_COMBAT_UI := preload("res://scenes/combat_ui.tscn")
+const SCRIPT_ADVERSAIRE_PVP := preload("res://scripts/combat/adversaire_pvp.gd")
 
 func _ready() -> void:
 	_hasard.randomize()
@@ -440,6 +444,121 @@ func lancer_combat(groupe = null) -> void:
 		if reseau != null:
 			reseau.call("debut_combat_local", groupe_combat)
 
+# duel contre un joueur distant : l'arène utilise le même plan des deux
+# côtés (grilles identiques), l'adversaire est un miroir dont les
+# actions nous parviennent par le réseau, et l'issue est annoncée par le
+# serveur quand l'un des deux tombe
+func lancer_duel(adversaire: SCRIPT_ADVERSAIRE_PVP, premier: bool) -> void:
+	if en_combat or adversaire == null or not is_instance_valid(adversaire):
+		return
+	_bouton_combattre.hide()
+	_propositions.clear()
+	if _joueur == null or not is_instance_valid(_joueur):
+		push_warning("Duel impossible : joueur introuvable.")
+		return
+	_camera_exploration = get_viewport().get_camera_2d()
+	_arene = ARENE_COMBAT.new()
+	_arene.index_plan = 0
+	_arene.position = POSITION_ARENE
+	add_child(_arene)
+	pvp_actif = true
+	pvp_premier = premier
+	_pvp_adversaire = adversaire
+	_ennemis = [adversaire]
+	_etats_actifs.clear()
+	numero_combat += 1
+	en_combat = true
+	en_placement = true
+	_placer_dans_arene(_joueur, _arene.case_joueur())
+	_connecter_survol_ennemi(adversaire)
+	_placer_dans_arene(adversaire, _arene.cases_ennemis()[0])
+	_arene.activer_camera()
+	_maj_ennemi_principal()
+	_mettre_a_jour_etiquette_etats()
+	_actualiser_fiche_ennemi()
+	placement_commence.emit()
+
+# une action de l'adversaire distant, relayée par le serveur, rejouée
+# sur notre grille : profil, déplacements, sorts résolus chez lui
+# (dégâts, soins, états) et fin de son tour
+func pvp_action_recue(evenement: Dictionary) -> void:
+	if not pvp_actif:
+		return
+	var type := str(evenement.get("t", ""))
+	var adversaire := _adversaire_valide()
+	match type:
+		"profil":
+			if adversaire != null:
+				adversaire.appliquer_profil(evenement.get("profil", {}))
+		"deplacement":
+			var sol := sol_combat()
+			if adversaire != null and sol != null:
+				adversaire.rejouer_trajet(evenement.get("trajet", []), sol)
+		"manque":
+			afficher_message("%s rate son sort." % _nom_adversaire())
+		"sort":
+			_rejouer_sort_distant(evenement)
+		"fin_tour":
+			if adversaire != null:
+				adversaire.terminer_tour_distant()
+	_mettre_a_jour_etiquette_etats()
+
+func _adversaire_valide() -> SCRIPT_ADVERSAIRE_PVP:
+	if _pvp_adversaire != null and is_instance_valid(_pvp_adversaire):
+		return _pvp_adversaire
+	return null
+
+func _nom_adversaire() -> String:
+	var adversaire := _adversaire_valide()
+	if adversaire == null:
+		return "L'adversaire"
+	return str(adversaire.get("nom"))
+
+# le sort a été entièrement résolu côté lanceur : on applique ici les
+# conséquences sur la victime locale (nous ou notre miroir de lui)
+func _rejouer_sort_distant(evenement: Dictionary) -> void:
+	var cible_moi := str(evenement.get("cible", "adv")) == "adv"
+	var cible: Node = _joueur if cible_moi else _adversaire_valide()
+	if cible == null or not is_instance_valid(cible):
+		return
+	if _joueur != null and str(evenement.get("id", "")) != "":
+		_joueur.call("_jouer_effet_sort", str(evenement.get("id", "")), cible)
+	var soin := int(evenement.get("soin", 0))
+	if soin > 0:
+		if cible == _joueur:
+			Personnage.soigner(soin)
+			_joueur.call("_maj_affichage")
+		elif cible.has_method("soigner"):
+			cible.soigner(soin)
+	var degats := int(evenement.get("degats", 0))
+	if degats > 0 and cible == _joueur:
+		_joueur.recevoir_degats(degats)   # gère aussi notre mort locale
+	var etats: Array = evenement.get("etats", [])
+	if not etats.is_empty():
+		pvp_appliquer_etats(cible, etats)
+	var nom_sort := str(evenement.get("nom", "un sort"))
+	afficher_message("%s lance %s." % [_nom_adversaire(), nom_sort])
+
+# états appliqués chez le lanceur, rejoués ici à l'identique (pas de
+# nouveaux jets de dés : les valeurs font foi)
+func pvp_appliquer_etats(cible: Node, etats: Array) -> void:
+	if cible == null or not is_instance_valid(cible) or etats.is_empty():
+		return
+	var par_cible: Dictionary = _etats_actifs.get(cible.get_instance_id(), {})
+	for etat in etats:
+		var id_etat := int(etat.get("id", 0))
+		if id_etat <= 0:
+			continue
+		par_cible[str(id_etat)] = {
+			"duree": maxi(int(etat.get("duree", 1)), 1),
+			"valeur": float(etat.get("valeur", 0.0)),
+			"piles": maxi(int(etat.get("piles", 1)), 1),
+			"frais": cible == _joueur,
+		}
+		if id_etat == 8 or id_etat == 9:
+			_deplacer_par_etat(cible, int(float(etat.get("valeur", 1.0))), id_etat == 8)
+	_etats_actifs[cible.get_instance_id()] = par_cible
+
 # un ennemi du groupe est vaincu : le combat continue tant qu'il en
 # reste un debout
 func ennemi_vaincu(ennemi: Node) -> void:
@@ -488,6 +607,17 @@ func terminer_combat(victoire: bool) -> void:
 		return
 	en_combat = false
 	en_placement = false
+	if pvp_actif:
+		# notre défaite est annoncée au serveur, qui préviendra le
+		# vainqueur ; une victoire locale n'est que l'echo du réseau
+		if not victoire:
+			var reseau_defaite := get_tree().root.get_node_or_null("/root/Reseau")
+			if reseau_defaite != null:
+				reseau_defaite.call("declarer_defaite_duel")
+		pvp_actif = false
+		if is_instance_valid(_pvp_adversaire):
+			_pvp_adversaire.queue_free()
+		_pvp_adversaire = null
 	if groupe_combat != "":
 		var reseau := get_tree().root.get_node_or_null("/root/Reseau")
 		if reseau != null:
@@ -536,9 +666,10 @@ func demander_fin_tour() -> void:
 func est_allie(sort: Dictionary) -> bool:
 	return str(sort.get("type", "")) in ["buff", "defense", "heal", "healing"]
 
-func appliquer_effets_sort(cible: Node, sort: Dictionary) -> void:
+func appliquer_effets_sort(cible: Node, sort: Dictionary) -> Array:
+	var appliques: Array = []
 	if cible == null or not is_instance_valid(cible):
-		return
+		return appliques
 	var effets: Array = sort.get("effets", [])
 	for effet in effets:
 		if _hasard.randf() > float(effet.get("chance", 1.0)):
@@ -557,9 +688,14 @@ func appliquer_effets_sort(cible: Node, sort: Dictionary) -> void:
 			piles = mini(piles + 1, int(etat.get("max_stacks", 1)))
 		par_cible[cle] = {"duree": maxi(int(effet.get("duree", 1)), 1), "valeur": float(effet.get("valeur", 0.0)), "piles": piles, "frais": cible == _joueur}
 		_etats_actifs[cible.get_instance_id()] = par_cible
+		appliques.append({"id": id_etat,
+			"duree": maxi(int(effet.get("duree", 1)), 1),
+			"valeur": float(effet.get("valeur", 0.0)),
+			"piles": piles})
 		if id_etat == 8 or id_etat == 9:
 			_deplacer_par_etat(cible, int(effet.get("valeur", 1.0)), id_etat == 8)
 	_mettre_a_jour_etiquette_etats()
+	return appliques
 
 func a_etat(cible: Node, id_etat: int) -> bool:
 	if cible == null or not is_instance_valid(cible):
@@ -631,6 +767,8 @@ func calculer_degats(lanceur: Node, cible: Node, degats_base: int) -> int:
 		degats *= 1.0 + float(_valeur_etat(cible, 17)) * _piles_etat(cible, 17)
 	if cible == _joueur:
 		degats -= float(Personnage.defense)
+	elif _pvp_adversaire != null and is_instance_valid(_pvp_adversaire) and cible == _pvp_adversaire:
+		degats -= float(_pvp_adversaire.defense_pvp)
 	return maxi(int(round(degats)), 0)
 
 func precision_reussie(lanceur: Node) -> bool:

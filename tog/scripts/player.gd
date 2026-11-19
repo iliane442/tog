@@ -338,6 +338,12 @@ func _valider_placement() -> void:
 	_combat_manager.valider_placement()
 
 func _on_combat_commence() -> void:
+	if _combat_manager.pvp_actif and not _combat_manager.pvp_premier:
+		# duel : l'adversaire ouvre, on attend son tour complet
+		_tour_joueur = false
+		_maj_affichage()
+		_attendre_tour_adverse_pvp()
+		return
 	_tour_joueur = true
 	_pa = pa_max
 	_pm = _combat_manager.points_mouvement(self, pm_max)
@@ -426,15 +432,31 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 	if not _combat_manager.precision_reussie(self):
 		_pa -= cout
 		_combat_manager.afficher_message("Le sort rate sa cible.")
+		_emettre_action_duel({"t": "manque"})
 	else:
 		_jouer_effet_sort(_id_sort, cible)
-		if str(sort.get("type", "")) == "heal":
-			Personnage.soigner(absi(int(sort.get("degats", 0))))
+		var soin := absi(int(sort.get("degats", 0))) if str(sort.get("type", "")) == "heal" else 0
+		if soin > 0:
+			Personnage.soigner(soin)
 			_maj_affichage()
-		elif int(sort.get("degats", 0)) > 0:
-			cible.recevoir_degats(_combat_manager.calculer_degats(self, cible, int(sort.get("degats", 0))))
+		var degats := 0
+		if soin <= 0 and int(sort.get("degats", 0)) > 0:
+			degats = _combat_manager.calculer_degats(self, cible, int(sort.get("degats", 0)))
+			cible.recevoir_degats(degats)
+		var etats_appliques: Array = []
 		if _combat_manager.en_combat:
-			_combat_manager.appliquer_effets_sort(cible, sort)
+			etats_appliques = _combat_manager.appliquer_effets_sort(cible, sort)
+		if _combat_manager.pvp_actif:
+			var evenement := {"t": "sort", "id": _id_sort,
+				"nom": str(sort.get("nom", "Sort")),
+				"etats": etats_appliques}
+			if cible == self:
+				evenement["cible"] = "soi"
+				evenement["soin"] = soin
+			else:
+				evenement["cible"] = "adv"
+				evenement["degats"] = degats
+			_emettre_action_duel(evenement)
 		_pa -= cout
 		_combat_manager.afficher_message("%s lancé." % str(sort.get("nom", "Sort")))
 		# le fruit mangé progresse à chaque pouvoir utilisé : ses sorts
@@ -515,16 +537,28 @@ func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 	_pa -= _sort_boule_de_feu.cout_pa
 	if _combat_manager.precision_reussie(self):
 		_jouer_effet_sort("boule_de_feu", cible)
-		cible.recevoir_degats(_combat_manager.calculer_degats(self, cible, _sort_boule_de_feu.degats))
+		var degats: int = _combat_manager.calculer_degats(self, cible, int(_sort_boule_de_feu.degats))
+		cible.recevoir_degats(degats)
+		_emettre_action_duel({"t": "sort", "id": "boule_de_feu",
+			"nom": "Boule de feu", "cible": "adv", "degats": degats})
 		_combat_manager.effacer_message()
 	else:
 		_combat_manager.afficher_message("La boule de feu rate sa cible.")
+		_emettre_action_duel({"t": "manque"})
 	_sort_selectionne = false
 	if _overlay != null:
 		_overlay.effacer()
 	_maj_affichage()
 	_afficher_cases()
 	return true
+
+# en duel, une action résolue part au joueur distant pour être rejouée
+func _emettre_action_duel(evenement: Dictionary) -> void:
+	if _combat_manager == null or not _combat_manager.pvp_actif:
+		return
+	var reseau := get_tree().root.get_node_or_null("/root/Reseau")
+	if reseau != null:
+		reseau.call("emettre_action_duel", evenement)
 
 func _deplacer_case_par_case(destination: Vector2i, cout: int) -> void:
 	if _occupe or cout <= 0 or cout > _pm:
@@ -541,6 +575,11 @@ func _deplacer_case_par_case(destination: Vector2i, cout: int) -> void:
 		case = parents[case]
 	_occupe = true
 	_pm -= cout
+	if _combat_manager.pvp_actif:
+		var trajet_reseau: Array = []
+		for etape in trajet:
+			trajet_reseau.append([etape.x, etape.y])
+		_emettre_action_duel({"t": "deplacement", "trajet": trajet_reseau})
 	_combat_manager.effacer_message()
 	if _overlay != null:
 		_overlay.effacer()
@@ -570,13 +609,30 @@ func _fin_du_tour() -> void:
 	if _overlay != null:
 		_overlay.effacer()
 	_combat_manager.terminer_tour(self)
+	# duel : notre tour fini part au distant avant d'attendre le sien
+	if _combat_manager.pvp_actif:
+		_emettre_action_duel({"t": "fin_tour"})
 	# le tour de chaque ennemi engagé, l'un après l'autre
 	for ennemi in _combat_manager.ennemis_actifs():
 		if not is_inside_tree() or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
 			return
 		await (ennemi as Node2D).jouer_tour(self, _sol)
 	await get_tree().create_timer(0.5).timeout
-	if not is_inside_tree() or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
+	_commencer_mon_tour(numero)
+
+# en duel, quand c'est l'adversaire qui ouvre : son tour complet nous
+# parvient par le réseau, joué sur notre miroir de lui
+func _attendre_tour_adverse_pvp() -> void:
+	var numero: int = _combat_manager.numero_combat
+	for ennemi in _combat_manager.ennemis_actifs():
+		if not is_inside_tree() or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
+			return
+		await (ennemi as Node2D).jouer_tour(self, _sol)
+	await get_tree().create_timer(0.3).timeout
+	_commencer_mon_tour(numero)
+
+func _commencer_mon_tour(numero: int) -> void:
+	if not is_inside_tree() or _combat_manager == null or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
 		return
 	var tour_bloque: bool = _combat_manager.preparer_tour(self)
 	if tour_bloque:

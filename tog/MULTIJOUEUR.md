@@ -81,6 +81,33 @@ distance sont retirés proprement des combats locaux).
 L'invitation tombe d'elle-même quand le combat initial se termine.
 Un joueur déjà en combat n'est pas sollicité.
 
+## Duels entre joueurs (PvP)
+
+Écris **`/defier Pseudo`** dans le chat (T) pour lancer un défi à un
+joueur en ligne. Il reçoit un popup « X te défie en duel ! » avec
+Accepter / Refuser. S'il accepte, le duel démarre des deux côtés :
+
+- Chacun combat dans sa propre arène, contre un **miroir** de
+  l'autre : ses déplacements, sorts et dégâts sont rejoués en direct
+  par le réseau. Les grilles des deux côtés sont identiques (même
+  plan d'arène), les positions restent approximatives mais les
+  portées et lignes de vue se calculent toujours localement.
+- Les valeurs font foi : les dégâts, soins et états sont **résolus
+  chez le lanceur** puis envoyés tels quels — pas de second jet de
+  dés chez la victime. Les pv restent détenus par leur propriétaire,
+  qui annonce sa défaite lui-même.
+- Celui qui a défié joue en premier, puis les tours alternent
+  (fin de tour, sorts, déplacement : tout le moteur habituel).
+- Le perdant tombe à zéro pv et le serveur annonce la victoire à
+  l'autre (« X est à terre — tu remportes le duel ! »). Se
+  déconnecter en plein duel équivaut à fuir : l'adversaire gagne.
+- Le vainqueur ne remporte pas de récompense pour l'instant (ni
+  Berry ni XP).
+
+Un joueur en duel porte le badge « (en combat) » et ne peut pas
+recevoir d'invitation de combat de groupe tant que le duel dure —
+et réciproquement.
+
 ## Indicateurs sociaux
 
 - **Arrivées et départs** : le chat annonce « X a embarqué ! » quand un

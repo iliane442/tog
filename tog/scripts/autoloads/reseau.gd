@@ -15,6 +15,7 @@ const PORT_DEFAUT := 7777
 const JOUEURS_MAX := 64
 const THEME := preload("res://themes/theme_pirate.tres")
 const SCRIPT_AVATAR := preload("res://scripts/serveur/joueur_distant.gd")
+const SCRIPT_ADVERSAIRE_PVP := preload("res://scripts/combat/adversaire_pvp.gd")
 const CHEMIN_PREF := "user://serveur.cfg"
 # les données MMO vivent dans leur propre base : la base du jeu
 # (glo.db) est recopiée à chaque lancement depuis l'éditeur et
@@ -84,6 +85,10 @@ var _combats_actifs := {}           # peer_id -> {pseudo, position, annonce}
 var _positions_a_relais := {}  # peer_id -> Vector2
 var _temps_relais := 0.0
 var _limiteurs := {}          # peer_id -> {position: ms, chat: ms}
+# duels en cours : peer_id -> peer_id de l'adversaire
+var _duels := {}
+# invitations de duel en attente : peer_cible -> peer_demandeur
+var _invites_duel := {}
 
 func _ready() -> void:
 	# l'écran de connexion met le jeu en pause : le réseau et l'interface
@@ -514,6 +519,90 @@ func _liberer_combats(peer_id: int) -> void:
 	if combats_scene.is_empty():
 		_combats_actifs.erase(nom_scene)
 
+# ============================================================
+#  DUELS ENTRE JOUEURS
+# ============================================================
+
+# peer d'un pseudo en ligne (0 si introuvable, insensible à la casse)
+func _peer_du_pseudo(pseudo: String) -> int:
+	var cherche := pseudo.to_lower()
+	for peer_id in _sessions:
+		if str(_sessions[peer_id]["pseudo"]).to_lower() == cherche:
+			return int(peer_id)
+	return 0
+
+# le badge « en combat » d'un pair est propagé aux joueurs de sa map
+func _annoncer_etat_combat(peer_id: int, actif: bool) -> void:
+	if not _sessions.has(peer_id):
+		return
+	var nom_scene := str(_sessions[peer_id]["scene"])
+	for autre in _pairs_sur_scene(nom_scene):
+		if int(autre) != peer_id:
+			rpc_id(int(autre), "etre_en_combat", peer_id, actif)
+
+# le duel entre les deux pairs est clos, badges retirés
+func _fin_duel(peer_id: int) -> void:
+	var adversaire := int(_duels.get(peer_id, 0))
+	for pair in [peer_id, adversaire]:
+		if _sessions.has(pair):
+			_sessions[pair]["en_combat"] = false
+			_annoncer_etat_combat(pair, false)
+		_duels.erase(pair)
+		_invites_duel.erase(pair)
+
+# RPC serveur : réponse à une invitation de duel
+@rpc("any_peer", "call_remote", "reliable")
+func reponse_duel(accepte: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _invites_duel.has(peer_id):
+		return
+	var demandeur := int(_invites_duel[peer_id])
+	_invites_duel.erase(peer_id)
+	if not _sessions.has(demandeur) or not _sessions.has(peer_id):
+		return
+	var pseudo_demandeur := str(_sessions[demandeur]["pseudo"])
+	var pseudo_cible := str(_sessions[peer_id]["pseudo"])
+	if not accepte:
+		rpc_id(demandeur, "recoit_message_chat", "Serveur", "%s refuse le duel." % pseudo_cible)
+		return
+	if _duels.has(demandeur) or _duels.has(peer_id):
+		return
+	_duels[demandeur] = peer_id
+	_duels[peer_id] = demandeur
+	_sessions[demandeur]["en_combat"] = true
+	_sessions[peer_id]["en_combat"] = true
+	_annoncer_etat_combat(demandeur, true)
+	_annoncer_etat_combat(peer_id, true)
+	print("Duel : %s contre %s" % [pseudo_demandeur, pseudo_cible])
+	# celui qui a défié ouvre le bal
+	rpc_id(demandeur, "debut_duel", pseudo_cible, peer_id, true)
+	rpc_id(peer_id, "debut_duel", pseudo_demandeur, demandeur, false)
+
+# RPC serveur : action de duel à relayer à l'adversaire
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_action_duel(json: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _duels.has(peer_id):
+		return
+	rpc_id(int(_duels[peer_id]), "action_duel", json)
+
+# RPC serveur : le client déclare forfait (ses pv sont tombés à zéro)
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_defaite_duel() -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _duels.has(peer_id):
+		return
+	var adversaire := int(_duels[peer_id])
+	var pseudo := str(_sessions[peer_id]["pseudo"])
+	_fin_duel(peer_id)
+	rpc_id(adversaire, "victoire_duel", pseudo, false)
+
 # RPC serveur : message de chat global
 @rpc("any_peer", "call_remote", "reliable")
 func envoie_message_chat(texte: String) -> void:
@@ -526,6 +615,32 @@ func envoie_message_chat(texte: String) -> void:
 	if texte == "":
 		return
 	var nom_envoyeur: String = _sessions[peer_id]["pseudo"]
+	# commande /defier : lancer un défi à un autre joueur
+	if texte.begins_with("/defier"):
+		var cible := texte.substr(7).strip_edges()
+		if cible == "":
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Utilisation : /defier Pseudo")
+			return
+		var peer_cible := _peer_du_pseudo(cible)
+		if peer_cible == 0:
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Aucun joueur en ligne ne s'appelle %s." % cible)
+			return
+		if peer_cible == peer_id:
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Se défier soi-même, vraiment ?")
+			return
+		if _duels.has(peer_id) or _duels.has(peer_cible):
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Un des deux joueurs est déjà en duel.")
+			return
+		if bool(_sessions[peer_cible].get("en_combat", false)) or bool(_sessions[peer_id].get("en_combat", false)):
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Un des deux joueurs est en plein combat.")
+			return
+		if _invites_duel.has(peer_cible):
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "%s a déjà une invitation en attente." % cible)
+			return
+		_invites_duel[peer_cible] = peer_id
+		rpc_id(peer_id, "recoit_message_chat", "Serveur", "Tu défies %s en duel..." % cible)
+		rpc_id(peer_cible, "invite_duel", nom_envoyeur)
+		return
 	# commande /joueurs : la liste revient en privé
 	if texte == "/joueurs":
 		var pseudos: Array = []
@@ -542,6 +657,12 @@ func envoie_message_chat(texte: String) -> void:
 func _nettoyer_session(peer_id: int) -> void:
 	if not _sessions.has(peer_id):
 		return
+	# un duel en cours se solde par forfait du fuyard
+	if _duels.has(peer_id):
+		var adversaire := int(_duels[peer_id])
+		var pseudo_fuyard := str(_sessions[peer_id]["pseudo"])
+		_fin_duel(peer_id)
+		rpc_id(adversaire, "victoire_duel", pseudo_fuyard, true)
 	_liberer_combats(peer_id)
 	var pseudo_quittant: String = _sessions[peer_id]["pseudo"]
 	_sessions.erase(peer_id)
@@ -882,6 +1003,154 @@ func rejoindre_combat(groupe: String) -> void:
 	if meme_groupe.is_empty():
 		return
 	cm.call("lancer_combat", meme_groupe)
+
+# --- duels entre joueurs (côté client) ---
+
+# RPC client : un joueur nous défie en duel
+@rpc("any_peer", "call_remote", "reliable")
+func invite_duel(pseudo: String) -> void:
+	if multiplayer.is_server():
+		return
+	_montrer_invite_duel(pseudo)
+
+# RPC client : le duel démarre, notre miroir de l'adversaire apparaît
+@rpc("any_peer", "call_remote", "reliable")
+func debut_duel(pseudo_adv: String, adversaire_id: int, premier: bool) -> void:
+	if multiplayer.is_server():
+		return
+	_demarrer_duel_local(pseudo_adv, adversaire_id, premier)
+
+# RPC client : une action de l'adversaire, rejouée sur notre grille
+@rpc("any_peer", "call_remote", "reliable")
+func action_duel(json: String) -> void:
+	if multiplayer.is_server():
+		return
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var cm := scene.get_node_or_null("CombatManager")
+	if cm == null or not bool(cm.get("pvp_actif")):
+		return
+	cm.call("pvp_action_recue", JSON.parse_string(json))
+
+# RPC client : l'adversaire est à terre (ou a fui) : victoire
+@rpc("any_peer", "call_remote", "reliable")
+func victoire_duel(pseudo_adv: String, par_fuite: bool) -> void:
+	if multiplayer.is_server():
+		return
+	var texte := ""
+	var scene := get_tree().current_scene
+	if scene != null:
+		var cm := scene.get_node_or_null("CombatManager")
+		if cm != null and bool(cm.get("pvp_actif")):
+			cm.call("terminer_combat", true)
+	if par_fuite:
+		texte = "%s a fui le duel — victoire !" % pseudo_adv
+	else:
+		texte = "%s est à terre — tu remportes le duel !" % pseudo_adv
+	call("recoit_message_chat", "Serveur", texte)
+
+# API appelée par player.gd : envoie une action résolue à l'adversaire
+func emettre_action_duel(evenement: Dictionary) -> void:
+	if pseudo == "":
+		return
+	rpc_id(1, "envoie_action_duel", JSON.stringify(evenement))
+
+# API appelée par combat_manager : nos pv sont tombés à zéro
+func declarer_defaite_duel() -> void:
+	if pseudo == "":
+		return
+	rpc_id(1, "envoie_defaite_duel")
+
+func _demarrer_duel_local(pseudo_adv: String, _adversaire_id: int, premier: bool) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var cm := scene.get_node_or_null("CombatManager")
+	if cm == null or bool(cm.get("en_combat")):
+		return
+	var adversaire := SCRIPT_ADVERSAIRE_PVP.new()
+	adversaire.nom = pseudo_adv
+	scene.add_child(adversaire)
+	cm.call("lancer_duel", adversaire, premier)
+	# le profil part juste après : le miroir distant existe déjà, la
+	# grille identique est prête à recevoir nos stats réelles
+	var joueur := scene.find_child("player", true, false)
+	var pa_max_joueur := 6
+	var pm_max_joueur := 3
+	if joueur != null:
+		pa_max_joueur = int(joueur.get("pa_max"))
+		pm_max_joueur = int(joueur.get("pm_max"))
+	var noms_sorts: Array = []
+	for id_sort in Personnage.sorts:
+		noms_sorts.append(str(Personnage.sorts[id_sort].get("nom", id_sort)))
+	emettre_action_duel({
+		"t": "profil", "profil": {
+			"pseudo": pseudo,
+			"pv": int(Personnage.vie),
+			"pv_max": int(Personnage.vie_max),
+			"attaque": int(Personnage.attaque),
+			"defense": int(Personnage.defense),
+			"pa_max": pa_max_joueur,
+			"pm_max": pm_max_joueur,
+			"sorts": noms_sorts,
+		},
+	})
+
+# popup d'invitation au duel (Accepter / Refuser)
+var _panneau_duel: PanelContainer
+
+func _montrer_invite_duel(pseudo: String) -> void:
+	if _panneau_duel == null:
+		_construire_invite_duel()
+	var etiquette: Label = _panneau_duel.get_meta("etiquette")
+	etiquette.text = "%s te défie en duel !" % pseudo
+	_panneau_duel.show()
+
+func _cacher_invite_duel() -> void:
+	if _panneau_duel != null:
+		_panneau_duel.hide()
+
+func _construire_invite_duel() -> void:
+	_panneau_duel = PanelContainer.new()
+	_panneau_duel.theme = THEME
+	_panneau_duel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_panneau_duel.offset_top = 150.0
+	_chat.add_child(_panneau_duel)
+	var marges := MarginContainer.new()
+	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		marges.add_theme_constant_override(marge, 16)
+	_panneau_duel.add_child(marges)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 10)
+	marges.add_child(colonne)
+	var etiquette := Label.new()
+	etiquette.add_theme_font_size_override("font_size", 17)
+	colonne.add_child(etiquette)
+	_panneau_duel.set_meta("etiquette", etiquette)
+	var boutons := HBoxContainer.new()
+	boutons.alignment = BoxContainer.ALIGNMENT_CENTER
+	boutons.add_theme_constant_override("separation", 14)
+	colonne.add_child(boutons)
+	var accepter := Button.new()
+	accepter.text = "Accepter le duel"
+	accepter.custom_minimum_size = Vector2(0, 42)
+	accepter.pressed.connect(_on_duel_accepte)
+	boutons.add_child(accepter)
+	var refuser := Button.new()
+	refuser.text = "Refuser"
+	refuser.custom_minimum_size = Vector2(0, 42)
+	refuser.pressed.connect(_on_duel_refuse)
+	boutons.add_child(refuser)
+	_panneau_duel.hide()
+
+func _on_duel_accepte() -> void:
+	_cacher_invite_duel()
+	rpc_id(1, "reponse_duel", true)
+
+func _on_duel_refuse() -> void:
+	_cacher_invite_duel()
+	rpc_id(1, "reponse_duel", false)
 
 func cacher_rencontre(cle: String) -> void:
 	var scene := get_tree().current_scene
