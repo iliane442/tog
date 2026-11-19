@@ -20,9 +20,18 @@ func ouvrir(quest_id: String, pnj: Node2D) -> void:
 	pnj_actuel = pnj
 	quest_id_actuel = quest_id
 	var quest = QuestManager.get_quest(quest_id)
+	_afficher(quest.titre, quest.description)
+
+func ouvrir_texte(titre: String, description: String) -> void:
+	pnj_actuel = null
+	quest_id_actuel = ""
+	_afficher(titre, description)
+
+func _afficher(titre: String, description: String) -> void:
+	btn_accepter.visible = quest_id_actuel != ""
+	btn_refuser.text = "Refuser" if btn_accepter.visible else "Fermer"
 	panel.visible = true
-	texte.text = quest.titre + "\n\n" + quest.description
-	
+	texte.text = titre + "\n\n" + description
 	get_tree().paused = true
 
 func _unhandled_input(event: InputEvent) -> void:

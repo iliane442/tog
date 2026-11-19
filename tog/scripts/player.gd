@@ -1,7 +1,6 @@
 extends CharacterBody2D
 
 @export var speed: float = 300.0
-@export var distance_placement: int = 5
 @export var rayon_placement: int = 2
 @export var pa_max: int = 6
 @export var pm_max: int = 3
@@ -48,7 +47,7 @@ var _sort_boule_de_feu
 var _cache_effets := {}  # id_sort -> ligne de la table `animations` (ou {})
 
 var _sol: TileMapLayer
-var _obstacles: TileMapLayer
+var _deplacement_combat: Tween
 var _ennemi
 var _overlay
 var _combat_manager
@@ -61,7 +60,6 @@ func _ready() -> void:
 	target = global_position
 	_maj_visuels_race(_prefixe_visuel_race())
 	_sol = get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
-	_obstacles = get_tree().current_scene.get_node_or_null("cliffs") as TileMapLayer
 	_preparer_navigation()
 	_ennemi = get_tree().current_scene.find_child("ennemy", true, false)
 	_overlay = get_tree().current_scene.find_child("Overlay", true, false)
@@ -284,7 +282,7 @@ func _case_libre(case: Vector2i) -> bool:
 			return false
 	return true
 
-func _calculer_portee() -> Dictionary:
+func _calculer_portee(parents: Dictionary = {}) -> Dictionary:
 	var distances := {ma_case(): 0}
 	var file: Array[Vector2i] = [ma_case()]
 	var voisins: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
@@ -299,6 +297,7 @@ func _calculer_portee() -> Dictionary:
 			if _combat_manager != null and not _combat_manager.dans_zone_combat(suivante):
 				continue
 			distances[suivante] = int(distances[courante]) + 1
+			parents[suivante] = courante
 			file.append(suivante)
 	return distances
 
@@ -310,68 +309,24 @@ func _cases_du_sort(portee_max: int = -1, portee_min: int = 1) -> Array[Vector2i
 		for y in range(-portee, portee + 1):
 			var distance := absi(x) + absi(y)
 			var case := depart + Vector2i(x, y)
-			if distance >= portee_min and distance <= portee and _sol.get_cell_source_id(case) != -1 and (_combat_manager == null or _combat_manager.dans_zone_combat(case)):
+			if distance >= portee_min and distance <= portee and _sol.get_cell_source_id(case) != -1 and _combat_manager.ligne_de_vue_libre(depart, case):
 				cases.append(case)
 	return cases
-
-func _ligne_de_vue_libre(depart: Vector2i, arrivee: Vector2i) -> bool:
-	if _sol == null:
-		return true
-	var x := depart.x
-	var y := depart.y
-	var dx := absi(arrivee.x - x)
-	var dy := absi(arrivee.y - y)
-	var sx := 1 if x < arrivee.x else -1
-	var sy := 1 if y < arrivee.y else -1
-	var erreur := dx - dy
-	while x != arrivee.x or y != arrivee.y:
-		var double_erreur := 2 * erreur
-		if double_erreur > -dy:
-			erreur -= dy
-			x += sx
-		if double_erreur < dx:
-			erreur += dx
-			y += sy
-		if x == arrivee.x and y == arrivee.y:
-			break
-		var case_intermediaire := Vector2i(x, y)
-		if _sol.get_cell_source_id(case_intermediaire) == -1:
-			return false
-		if _obstacles != null and _obstacles.get_cell_source_id(case_intermediaire) != -1:
-			return false
-	return true
 
 func _on_placement_commence() -> void:
 	_tour_joueur = false
 	_sort_selectionne = false
 	_arreter_exploration()
+	_sol = _combat_manager.sol_combat()
 	_cases_placement.clear()
-	if _combat_manager != null:
-		_ennemi = _combat_manager.ennemi_actuel()
-	if _sol == null or _ennemi == null or not is_instance_valid(_ennemi):
-		_combat_manager.valider_placement()
-		return
-	var case_ennemi := _case_de(_ennemi.global_position)
 	var depart := ma_case()
-	var meilleure_case := depart
-	var meilleure_difference := 1_000_000
-	for x in range(-distance_placement, distance_placement + 1):
-		for y in range(-distance_placement, distance_placement + 1):
-			var candidate := case_ennemi + Vector2i(x, y)
-			if not _case_libre(candidate):
-				continue
-			var difference := absi(x) + absi(y) - distance_placement
-			if absi(difference) < meilleure_difference:
-				meilleure_difference = absi(difference)
-				meilleure_case = candidate
-	global_position = _sol.to_global(_sol.map_to_local(meilleure_case))
 	for x in range(-rayon_placement, rayon_placement + 1):
 		for y in range(-rayon_placement, rayon_placement + 1):
-			var candidate := meilleure_case + Vector2i(x, y)
+			var candidate := depart + Vector2i(x, y)
 			if absi(x) + absi(y) <= rayon_placement and _case_libre(candidate):
 				_cases_placement.append(candidate)
-	_afficher_grille()
 	if _overlay != null:
+		_overlay.definir_sol(_sol)
 		_overlay.afficher(_cases_placement)
 
 func _valider_placement() -> void:
@@ -386,7 +341,6 @@ func _on_combat_commence() -> void:
 	_tour_joueur = true
 	_pa = pa_max
 	_pm = _combat_manager.points_mouvement(self, pm_max)
-	_afficher_grille()
 	_maj_affichage()
 	_afficher_cases()
 	if _sort_preselectionne_combat != "":
@@ -398,22 +352,12 @@ func _on_combat_termine(_victoire: bool) -> void:
 	_tour_joueur = false
 	_sort_selectionne = false
 	_cases_placement.clear()
+	_sol = get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
+	target = global_position
 	if _overlay != null:
 		_overlay.effacer()
-		_overlay.masquer_grille()
+		_overlay.definir_sol(null)
 	_maj_affichage()
-
-func _afficher_grille() -> void:
-	if _overlay == null or _sol == null:
-		return
-	var cases: Array[Vector2i] = []
-	for case in _sol.get_used_cells():
-		if _obstacles != null and _obstacles.get_cell_source_id(case) != -1:
-			continue
-		if _combat_manager != null and not _combat_manager.dans_zone_combat(case):
-			continue
-		cases.append(case)
-	_overlay.afficher_grille(cases)
 
 func _afficher_cases() -> void:
 	if _overlay == null or _sol == null or _combat_manager == null or not _combat_manager.en_combat:
@@ -460,7 +404,7 @@ func _selectionner_sort(id_sort: String) -> void:
 		_combat_manager.afficher_message("Aucune cible disponible pour ce sort.")
 	elif distance > portee:
 		_combat_manager.afficher_message("Cible hors portée : déplace-toi sur une case bleue, puis clique sur la cible.")
-	elif cible != self and not _ligne_de_vue_libre(ma_case(), _case_de(cible.global_position)):
+	elif cible != self and not _combat_manager.ligne_de_vue_libre(ma_case(), _case_de(cible.global_position)):
 		_combat_manager.afficher_message("Ligne de vue bloquée. Déplace-toi sur une case bleue pour changer d’angle.")
 	elif _combat_manager.cible_verrouillee() == cible and cible != null:
 		# cible verrouillée via les touches de sélection : le sort part
@@ -476,7 +420,7 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 	var cout: int = int(sort.get("cout_pa", 2))
 	var portee: int = int(sort.get("portee", 1))
 	var distance := 0 if cible == self else _distance_depuis(cible)
-	if _pa < cout or distance > portee or (cible != self and not _ligne_de_vue_libre(ma_case(), _case_de(cible.global_position))):
+	if _pa < cout or distance > portee or (cible != self and not _combat_manager.ligne_de_vue_libre(ma_case(), _case_de(cible.global_position))):
 		_combat_manager.afficher_message("Cible hors portée ou ligne de vue bloquée.")
 		return false
 	if not _combat_manager.precision_reussie(self):
@@ -565,7 +509,7 @@ func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 	if distance < _sort_boule_de_feu.portee_min or distance > _sort_boule_de_feu.portee_max:
 		_combat_manager.afficher_message("Ennemi hors portée : déplace-toi sur une case bleue.")
 		return false
-	if not _ligne_de_vue_libre(depart, case_ennemi):
+	if not _combat_manager.ligne_de_vue_libre(depart, case_ennemi):
 		_combat_manager.afficher_message("La ligne de vue vers l’ennemi est bloquée.")
 		return false
 	_pa -= _sort_boule_de_feu.cout_pa
@@ -583,24 +527,44 @@ func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 	return true
 
 func _deplacer_case_par_case(destination: Vector2i, cout: int) -> void:
-	if cout <= 0 or cout > _pm:
+	if _occupe or cout <= 0 or cout > _pm:
 		return
+	var parents := {}
+	var portee := _calculer_portee(parents)
+	if int(portee.get(destination, 0)) != cout:
+		return
+	var trajet: Array[Vector2i] = []
+	var case := destination
+	var depart := ma_case()
+	while case != depart:
+		trajet.push_front(case)
+		case = parents[case]
 	_occupe = true
 	_pm -= cout
 	_combat_manager.effacer_message()
 	if _overlay != null:
 		_overlay.effacer()
 	_maj_affichage()
-	var position_cible := _sol.to_global(_sol.map_to_local(destination))
-	var tween := create_tween()
-	tween.tween_property(self, "global_position", position_cible, 0.12 * cout)
-	await tween.finished
+	_deplacement_combat = create_tween()
+	for etape in trajet:
+		_deplacement_combat.tween_property(self, "global_position", _sol.to_global(_sol.map_to_local(etape)), 0.12)
+	_deplacement_combat.finished.connect(_fin_deplacement_combat)
+
+func _fin_deplacement_combat() -> void:
+	_deplacement_combat = null
 	_occupe = false
 	_afficher_cases()
+
+func arreter_deplacement_combat() -> void:
+	if _deplacement_combat != null:
+		_deplacement_combat.kill()
+		_deplacement_combat = null
+	_occupe = false
 
 func _fin_du_tour() -> void:
 	if _combat_manager == null or not _combat_manager.en_combat or not _tour_joueur or _occupe:
 		return
+	var numero: int = _combat_manager.numero_combat
 	_tour_joueur = false
 	_sort_selectionne = false
 	if _overlay != null:
@@ -608,11 +572,11 @@ func _fin_du_tour() -> void:
 	_combat_manager.terminer_tour(self)
 	# le tour de chaque ennemi engagé, l'un après l'autre
 	for ennemi in _combat_manager.ennemis_actifs():
-		if not is_inside_tree() or not _combat_manager.en_combat:
+		if not is_inside_tree() or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
 			return
 		await (ennemi as Node2D).jouer_tour(self, _sol)
 	await get_tree().create_timer(0.5).timeout
-	if not is_inside_tree() or not _combat_manager.en_combat:
+	if not is_inside_tree() or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
 		return
 	var tour_bloque: bool = _combat_manager.preparer_tour(self)
 	if tour_bloque:
@@ -620,7 +584,8 @@ func _fin_du_tour() -> void:
 		_combat_manager.afficher_message("Tu es immobilisé et perds ton tour.")
 		_tour_joueur = true
 		await get_tree().create_timer(0.3).timeout
-		_fin_du_tour()
+		if _combat_manager.en_combat and numero == _combat_manager.numero_combat:
+			_fin_du_tour()
 		return
 	_tour_joueur = true
 	_pa = pa_max

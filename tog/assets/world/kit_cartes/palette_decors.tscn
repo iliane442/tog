@@ -1,0 +1,126 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/chene_ancien.png" id="chene_ancien"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/pin_de_montagne.png" id="pin_de_montagne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/palmier.png" id="palmier"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/roncier.png" id="roncier"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/fleurs_medicinales.png" id="fleurs_medicinales"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="rochers_moussus"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/maison_de_pierre.png" id="maison_de_pierre"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/cabane_de_peche.png" id="cabane_de_peche"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/etal_de_marche.png" id="etal_de_marche"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="borne_amarrage"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="barque_de_peche"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="lanterne_de_quai"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/arche_de_pierre.png" id="arche_de_pierre"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/colonne_brisee.png" id="colonne_brisee"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/stele_de_la_vague.png" id="stele_de_la_vague"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/filon_de_cristaux.png" id="filon_de_cristaux"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/entree_de_mine.png" id="entree_de_mine"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/monument_a_l_ancre.png" id="monument_a_l_ancre"]
+
+[node name="PaletteDecors" type="Node2D"]
+texture_filter = 1
+y_sort_enabled = true
+
+[node name="Nature" type="Node2D" parent="."]
+position = Vector2(0, 230)
+y_sort_enabled = true
+
+[node name="CheneAncien" type="Sprite2D" parent="Nature"]
+position = Vector2(128, 0)
+texture = ExtResource("chene_ancien")
+offset = Vector2(27.5, -96)
+
+[node name="PinDeMontagne" type="Sprite2D" parent="Nature"]
+position = Vector2(384, 0)
+texture = ExtResource("pin_de_montagne")
+offset = Vector2(-1.5, -103)
+
+[node name="Palmier" type="Sprite2D" parent="Nature"]
+position = Vector2(640, 0)
+texture = ExtResource("palmier")
+offset = Vector2(20.5, -94)
+
+[node name="Roncier" type="Sprite2D" parent="Nature"]
+position = Vector2(896, 0)
+texture = ExtResource("roncier")
+offset = Vector2(4.5, -39)
+
+[node name="FleursMedicinales" type="Sprite2D" parent="Nature"]
+position = Vector2(1152, 0)
+texture = ExtResource("fleurs_medicinales")
+offset = Vector2(2.5, -33)
+
+[node name="RochersMoussus" type="Sprite2D" parent="Nature"]
+position = Vector2(1408, 0)
+texture = ExtResource("rochers_moussus")
+offset = Vector2(-9.5, -44)
+
+[node name="BourgEtPort" type="Node2D" parent="."]
+position = Vector2(0, 480)
+y_sort_enabled = true
+
+[node name="MaisonDePierre" type="Sprite2D" parent="BourgEtPort"]
+position = Vector2(128, 0)
+texture = ExtResource("maison_de_pierre")
+offset = Vector2(1.5, -105.5)
+
+[node name="CabaneDePeche" type="Sprite2D" parent="BourgEtPort"]
+position = Vector2(384, 0)
+texture = ExtResource("cabane_de_peche")
+offset = Vector2(13, -79)
+
+[node name="EtalDeMarche" type="Sprite2D" parent="BourgEtPort"]
+position = Vector2(640, 0)
+texture = ExtResource("etal_de_marche")
+offset = Vector2(-10, -72.5)
+
+[node name="BorneAmarrage" type="Sprite2D" parent="BourgEtPort"]
+position = Vector2(896, 0)
+texture = ExtResource("borne_amarrage")
+offset = Vector2(-7, -28.5)
+
+[node name="BarqueDePeche" type="Sprite2D" parent="BourgEtPort"]
+position = Vector2(1152, 0)
+texture = ExtResource("barque_de_peche")
+offset = Vector2(2, -42)
+
+[node name="LanterneDeQuai" type="Sprite2D" parent="BourgEtPort"]
+position = Vector2(1408, 0)
+texture = ExtResource("lanterne_de_quai")
+offset = Vector2(16, -64)
+
+[node name="RuinesEtMine" type="Node2D" parent="."]
+position = Vector2(0, 730)
+y_sort_enabled = true
+
+[node name="ArcheDePierre" type="Sprite2D" parent="RuinesEtMine"]
+position = Vector2(128, 0)
+texture = ExtResource("arche_de_pierre")
+offset = Vector2(0, -86.5)
+
+[node name="ColonneBrisee" type="Sprite2D" parent="RuinesEtMine"]
+position = Vector2(384, 0)
+texture = ExtResource("colonne_brisee")
+offset = Vector2(2.5, -57.5)
+
+[node name="SteleDeLaVague" type="Sprite2D" parent="RuinesEtMine"]
+position = Vector2(640, 0)
+texture = ExtResource("stele_de_la_vague")
+offset = Vector2(3, -48.5)
+
+[node name="FilonDeCristaux" type="Sprite2D" parent="RuinesEtMine"]
+position = Vector2(896, 0)
+texture = ExtResource("filon_de_cristaux")
+offset = Vector2(3.5, -49)
+
+[node name="EntreeDeMine" type="Sprite2D" parent="RuinesEtMine"]
+position = Vector2(1152, 0)
+texture = ExtResource("entree_de_mine")
+offset = Vector2(0, -84.5)
+
+[node name="MonumentALAncre" type="Sprite2D" parent="RuinesEtMine"]
+position = Vector2(1408, 0)
+texture = ExtResource("monument_a_l_ancre")
+offset = Vector2(1, -61)

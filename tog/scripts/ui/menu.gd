@@ -13,11 +13,24 @@ var points_en_attente: Dictionary = {}
 var _tween_fenetre: Tween
 const SCENE_CASE_INVENTAIRE := preload("res://scenes/case_inventaire.tscn")
 const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
+const LIBELLES_TYPES_INVENTAIRE := {
+	"": "Sans type",
+	"accessoire": "Accessoires",
+	"arme": "Armes",
+	"armure": "Armures",
+	"coffre": "Coffres",
+	"consumable": "Consommables",
+	"fruit_demon": "Fruits du démon",
+	"outil": "Outils",
+	"ressource": "Ressources",
+}
 
 @onready var fenetre: Panel = $Fenetre
 @onready var btn_menu: Button = $BoutonMenu
 @onready var titre: Label = $Fenetre/Entete/Titre
-@onready var grille: GridContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DefilementInventaire/Grille
+@onready var option_type_inventaire: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire/OptionTypeInventaire
+@onready var defilement_inventaire: ScrollContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DefilementInventaire
+@onready var grille: GridContainer = defilement_inventaire.get_node("Grille")
 @onready var label_vide: Label = $Fenetre/Corps/ContenuInventaire/Vide
 @onready var liste_quetes: VBoxContainer = $Fenetre/Corps/ContenuQuetes/DefilementQuetes/ListeQuetes
 @onready var label_aucune_quete: Label = $Fenetre/Corps/ContenuQuetes/Aucune
@@ -236,6 +249,7 @@ func _ready() -> void:
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Metiers.pressed.connect(ouvrir.bind("metiers"))
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Hotel.pressed.connect(ouvrir.bind("hotel"))
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Equipage.pressed.connect(ouvrir.bind("equipage"))
+	option_type_inventaire.item_selected.connect(_on_type_inventaire_selectionne)
 	Inventaire.inventaire_modifie.connect(maj_grille)
 	Inventaire.inventaire_modifie.connect(_maj_filtre_types_wiki)
 	QuestManager.quete_acceptee.connect(maj_quetes)
@@ -596,28 +610,70 @@ func _on_abandonner_quete(id: String) -> void:
 
 func maj_grille() -> void:
 	for enfant in grille.get_children():
+		grille.remove_child(enfant)
 		enfant.queue_free()
-	var inventaire_vide := Inventaire.objets.is_empty()
-	label_vide.visible = inventaire_vide
+
+	var ids_par_type := {}
+	for id: String in Inventaire.objets:
+		var type_item := str(Inventaire.details_objet(id).get("type", ""))
+		if not ids_par_type.has(type_item):
+			ids_par_type[type_item] = []
+		ids_par_type[type_item].append(id)
+	var types := ids_par_type.keys()
+	types.sort_custom(func(a: String, b: String) -> bool:
+		return _libelle_type_inventaire(a).naturalnocasecmp_to(_libelle_type_inventaire(b)) < 0)
+	var type_choisi: Variant = _maj_types_inventaire(types)
+	var types_affiches := types if type_choisi == null else [type_choisi]
+
+	label_vide.visible = Inventaire.objets.is_empty()
 	maj_detail_aucun()
-	if inventaire_vide:
+	for type_item in types_affiches:
+		var ids: Array = ids_par_type[type_item]
+		ids.sort_custom(func(a: String, b: String) -> bool:
+			return Inventaire.nom_objet(a).naturalnocasecmp_to(Inventaire.nom_objet(b)) < 0)
+		for id: String in ids:
+			_ajouter_case_inventaire(id)
+
+func _libelle_type_inventaire(type_item: String) -> String:
+	return LIBELLES_TYPES_INVENTAIRE.get(type_item, type_item.capitalize())
+
+func _maj_types_inventaire(types: Array) -> Variant:
+	var type_courant: Variant = null
+	if option_type_inventaire.selected >= 0:
+		type_courant = option_type_inventaire.get_item_metadata(option_type_inventaire.selected)
+	option_type_inventaire.clear()
+	option_type_inventaire.add_item("Tous les types")
+	var selection := 0
+	for type_item: String in types:
+		option_type_inventaire.add_item(_libelle_type_inventaire(type_item))
+		var index := option_type_inventaire.item_count - 1
+		option_type_inventaire.set_item_metadata(index, type_item)
+		if type_item == type_courant:
+			selection = index
+	option_type_inventaire.select(selection)
+	option_type_inventaire.disabled = types.is_empty()
+	return option_type_inventaire.get_item_metadata(selection)
+
+func _on_type_inventaire_selectionne(_index: int) -> void:
+	defilement_inventaire.scroll_vertical = 0
+	maj_grille()
+
+func _ajouter_case_inventaire(id: String) -> void:
+	var details := Inventaire.details_objet(id)
+	var quantite_objet := int(Inventaire.objets[id])
+	var slot := SCENE_CASE_INVENTAIRE.instantiate() as PanelContainer
+	if slot == null:
+		push_warning("Impossible de charger la case d'inventaire.")
 		return
-	for id in Inventaire.objets:
-		var details := Inventaire.details_objet(id)
-		var quantite_objet: int = int(Inventaire.objets[id])
-		var slot := SCENE_CASE_INVENTAIRE.instantiate() as PanelContainer
-		if slot == null:
-			push_warning("Impossible de charger la case d'inventaire.")
-			continue
-		slot.theme_type_variation = _variation_rarete(int(details.get("id_rarete", 1)))
-		slot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		slot.gui_input.connect(_on_slot_clique.bind(id))
-		slot.tooltip_text = "%s x%d\n%s" % [Inventaire.nom_objet(id), quantite_objet, str(details.get("description", ""))]
-		var icone: TextureRect = slot.get_node("Boite/Icone")
-		icone.texture = _icone_objet(details)
-		var quantite: Label = slot.get_node("Boite/Quantite")
-		quantite.text = "x%d" % quantite_objet
-		grille.add_child(slot)
+	slot.theme_type_variation = _variation_rarete(int(details.get("id_rarete", 1)))
+	slot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	slot.gui_input.connect(_on_slot_clique.bind(id))
+	slot.tooltip_text = "%s x%d\n%s" % [Inventaire.nom_objet(id), quantite_objet, str(details.get("description", ""))]
+	var icone: TextureRect = slot.get_node("Boite/Icone")
+	icone.texture = _icone_objet(details)
+	var quantite: Label = slot.get_node("Boite/Quantite")
+	quantite.text = "x%d" % quantite_objet
+	grille.add_child(slot)
 
 func _on_slot_clique(evenement: InputEvent, id: String) -> void:
 	if evenement is InputEventMouseButton and evenement.pressed and evenement.button_index == MOUSE_BUTTON_LEFT:

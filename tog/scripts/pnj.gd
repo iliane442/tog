@@ -8,6 +8,8 @@ extends Node2D
 # chaîne des quêtes proposées par ce PNJ, dans l'ordre ; la première non
 # terminée et non déjà en cours est proposée à chaque dialogue
 @export var chain_quetes: Array[String] = ["1"]
+@export var nom_affiche: String
+@export_multiline var paroles: String
 
 @onready var area: Area2D = $Area2D
 @onready var sprite: Sprite2D = $Sprite2D
@@ -48,6 +50,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if not _clic_sur_pnj(get_global_mouse_position()):
 			return
+		var joueur := get_tree().get_first_node_in_group("player")
+		if joueur != null and joueur.has_method("rejoindre_interaction"):
+			joueur.rejoindre_interaction(global_position, ouvrir_dialogue)
+			get_viewport().set_input_as_handled()
+			return
 		if player_near:
 			ouvrir_dialogue()
 			# le clic n'envoie pas le joueur ailleurs
@@ -80,3 +87,5 @@ func ouvrir_dialogue() -> void:
 	var quest := quest_suivante()
 	if quest != "":
 		dialogue_opened.emit(quest, self)
+	elif paroles != "":
+		get_tree().current_scene.get_node("DialogueUI").ouvrir_texte(nom_affiche, paroles)

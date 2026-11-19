@@ -51,8 +51,7 @@ func _ready() -> void:
 	_clamp_rarete()
 	if coffre_id == "":
 		coffre_id = "coffre_" + str(get_path())
-	if Coffres.est_ouvert(coffre_id):
-		_maj_sprite(true)
+	_maj_sprite(Coffres.est_ouvert(coffre_id))
 	_configurer_particules()
 
 func _clamp_rarete() -> void:
@@ -66,8 +65,10 @@ func _input_event(_viewport: Viewport, event: InputEvent, _shape_idx: int) -> vo
 	var joueur := get_tree().get_first_node_in_group("player")
 	if joueur == null:
 		return
-	# trop loin : on laisse le clic au joueur pour qu'il s'y déplace
+	# Hors de portée, le joueur rejoint le coffre avant de l'ouvrir.
 	if joueur.global_position.distance_to(global_position) > PORTEE:
+		if joueur.has_method("rejoindre_interaction") and not get_tree().paused:
+			joueur.rejoindre_interaction(global_position, ouvrir)
 		return
 	_viewport.set_input_as_handled()
 	ouvrir()

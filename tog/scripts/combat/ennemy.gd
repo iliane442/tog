@@ -24,6 +24,7 @@ const DUREE_ETAT_TEST := 2
 
 var pv := 100
 var _combat_manager
+var _deplacement_combat: Tween
 
 @onready var zone_detection: Area2D = $ZoneDetection
 @onready var sprite: Sprite2D = $Sprite2D
@@ -146,29 +147,39 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 		return
 	if not is_inside_tree():
 		return
+	var numero: int = _combat_manager.numero_combat if _combat_manager != null else 0
 	var depart := _case_de(sol, global_position)
 	var cible := _case_de(sol, joueur.global_position)
-	var distance := absi(depart.x - cible.x) + absi(depart.y - cible.y)
-	if distance > portee_attaque:
+	if not _peut_attaquer(depart, cible):
 		var chemin := _calculer_chemin(sol, depart, cible)
 		var pm: int = int(_combat_manager.points_mouvement(self, pm_max)) if _combat_manager != null else pm_max
 		var pas := mini(pm, chemin.size())
 		for index in range(pas):
 			var position_cible := sol.to_global(sol.map_to_local(chemin[index]))
-			var tween := create_tween()
-			tween.tween_property(self, "global_position", position_cible, 0.2)
-			await tween.finished
-			if not is_inside_tree():
+			_deplacement_combat = create_tween()
+			_deplacement_combat.tween_property(self, "global_position", position_cible, 0.2)
+			await get_tree().create_timer(0.2, false).timeout
+			if not is_inside_tree() or (_combat_manager != null and (not _combat_manager.en_combat or _combat_manager.numero_combat != numero)):
 				return
+			arreter_deplacement_combat()
+			global_position = position_cible
 		depart = _case_de(sol, global_position)
-		distance = absi(depart.x - cible.x) + absi(depart.y - cible.y)
-	if distance <= portee_attaque:
+	if _peut_attaquer(depart, cible):
 		_appliquer_ralentissement_test(joueur)
 		if _combat_manager == null or _combat_manager.precision_reussie(self):
 			var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque)) if _combat_manager != null else degats_attaque
 			joueur.recevoir_degats(degats)
-	if _combat_manager != null and is_inside_tree():
+	if _combat_manager != null and _combat_manager.en_combat and is_inside_tree():
 		_combat_manager.terminer_tour(self)
+
+func arreter_deplacement_combat() -> void:
+	if _deplacement_combat != null:
+		_deplacement_combat.kill()
+		_deplacement_combat = null
+
+func _peut_attaquer(depart: Vector2i, cible: Vector2i) -> bool:
+	var distance := absi(depart.x - cible.x) + absi(depart.y - cible.y)
+	return distance <= portee_attaque and (_combat_manager == null or _combat_manager.ligne_de_vue_libre(depart, cible))
 
 func _appliquer_ralentissement_test(joueur: Node) -> void:
 	if _combat_manager == null:
@@ -257,14 +268,14 @@ func _calculer_chemin(sol: TileMapLayer, depart: Vector2i, cible: Vector2i) -> A
 		if distance < meilleure_distance:
 			meilleure_distance = distance
 			destination = courante
-		if distance <= portee_attaque:
+		if _peut_attaquer(courante, cible):
 			destination = courante
 			break
 		for voisin in voisins:
 			var suivante := courante + voisin
 			if parents.has(suivante) or sol.get_cell_source_id(suivante) == -1 or suivante == cible:
 				continue
-			if _combat_manager != null and not _combat_manager.dans_zone_combat(suivante):
+			if _combat_manager != null and _combat_manager.ennemi_sur_case(suivante) != null:
 				continue
 			parents[suivante] = courante
 			file.append(suivante)
