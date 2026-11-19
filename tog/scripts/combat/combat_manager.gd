@@ -33,6 +33,8 @@ var _ennemi
 var _cible_fiche: Node
 # cible verrouillée via les touches de sélection (null = plus proche)
 var _cible_selectionnee: Node
+# monde partagé : étiquette du groupe combattu ("" si aucun)
+var groupe_combat := ""
 var _ui: CanvasLayer
 var _fiche_ennemi: PanelContainer
 var _barre_vie_ennemi: ProgressBar
@@ -425,6 +427,18 @@ func lancer_combat(groupe = null) -> void:
 	if _souris_sur_ennemi:
 		_survol_ennemi()
 	placement_commence.emit()
+	# monde partagé : annoncer le combat contre ce groupe (lookup au
+	# runtime : Reseau n'est pas chargé dans l'éditeur)
+	groupe_combat = ""
+	for ennemi in _ennemis:
+		var etiquette := _etiquette_de(ennemi)
+		if etiquette != "":
+			groupe_combat = etiquette
+			break
+	if groupe_combat != "":
+		var reseau := get_tree().root.get_node_or_null("/root/Reseau")
+		if reseau != null:
+			reseau.call("debut_combat_local", groupe_combat)
 
 # un ennemi du groupe est vaincu : le combat continue tant qu'il en
 # reste un debout
@@ -474,6 +488,11 @@ func terminer_combat(victoire: bool) -> void:
 		return
 	en_combat = false
 	en_placement = false
+	if groupe_combat != "":
+		var reseau := get_tree().root.get_node_or_null("/root/Reseau")
+		if reseau != null:
+			reseau.call("fin_combat_local", groupe_combat)
+		groupe_combat = ""
 	_quitter_arene()
 	_etats_actifs.clear()
 	_ennemis.clear()

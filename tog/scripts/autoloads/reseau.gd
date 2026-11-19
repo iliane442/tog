@@ -62,6 +62,12 @@ var _chat_ouvert := false
 var _scene_locale := ""
 var etat_rencontres_recu: Array = []
 
+# --- client : combats miroir (phase 3) ---
+# étiquette du groupe que JE combats ("" si aucun combat en cours)
+var combat_groupe_local := ""
+# invitation en attente : [chef, groupe]
+var invitation_en_attente: Array = []
+
 # --- client : avatars des autres joueurs ---
 var _avatars := {}
 
@@ -70,7 +76,10 @@ var _db_mmo: SQLite
 var _sessions := {}          # peer_id -> {pseudo, scene, ...}
 # rencontres vaincues, temporaires : scene -> {cle: ticks d'expiration}
 var _rencontres_vaincues := {}
-var _temps_nettoyage_rencontres := 0.0           # peer_id -> {pseudo, position, annonce}
+var _temps_nettoyage_rencontres := 0.0
+# combats en cours agrégés par le serveur :
+# scene -> {groupe: peer_id du combatteur}
+var _combats_actifs := {}           # peer_id -> {pseudo, position, annonce}
 var _positions_a_relais := {}  # peer_id -> Vector2
 var _temps_relais := 0.0
 var _limiteurs := {}          # peer_id -> {position: ms, chat: ms}
@@ -427,6 +436,66 @@ func _serveur_purger_rencontres(delta: float) -> void:
 		if vaincues.is_empty():
 			_rencontres_vaincues.erase(str(nom_scene))
 
+# RPC serveur : un joueur engage un groupe étiqueté
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_debut_combat(groupe: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _sessions.has(peer_id):
+		return
+	var session: Dictionary = _sessions[peer_id]
+	var nom_scene := str(session["scene"])
+	groupe = groupe.strip_edges().substr(0, 64)
+	if nom_scene == "" or groupe == "":
+		return
+	session["en_combat"] = true
+	var combats_scene: Dictionary = _combats_actifs.get(nom_scene, {})
+	combats_scene[groupe] = peer_id
+	_combats_actifs[nom_scene] = combats_scene
+	print("Combat : %s engage [%s] sur %s" % [session["pseudo"], groupe, nom_scene])
+	# invitation pour les autres joueurs de la map pas déjà en combat
+	for autre in _pairs_sur_scene(nom_scene):
+		if int(autre) == peer_id or bool(_sessions[int(autre)].get("en_combat", false)):
+			continue
+		rpc_id(int(autre), "invitation_combat", str(session["pseudo"]), groupe)
+
+# RPC serveur : le combat du joueur est terminé
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_fin_combat(groupe: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _sessions.has(peer_id):
+		return
+	var session: Dictionary = _sessions[peer_id]
+	session["en_combat"] = false
+	var nom_scene := str(session["scene"])
+	groupe = groupe.strip_edges().substr(0, 64)
+	var combats_scene: Dictionary = _combats_actifs.get(nom_scene, {})
+	if not combats_scene.has(groupe):
+		return
+	# un autre joueur a-t-il repris ce combat ?
+	if int(combats_scene[groupe]) != peer_id:
+		return
+	combats_scene.erase(groupe)
+	if combats_scene.is_empty():
+		_combats_actifs.erase(nom_scene)
+	for autre in _pairs_sur_scene(nom_scene):
+		rpc_id(int(autre), "fin_combat_distante", str(session["pseudo"]), groupe)
+
+# nettoyage : un joueur parti ne garde pas la main sur un combat
+func _liberer_combats(peer_id: int) -> void:
+	if not _sessions.has(peer_id):
+		return
+	var nom_scene := str(_sessions[peer_id]["scene"])
+	var combats_scene: Dictionary = _combats_actifs.get(nom_scene, {})
+	for groupe in combats_scene.keys():
+		if int(combats_scene[groupe]) == peer_id:
+			combats_scene.erase(groupe)
+	if combats_scene.is_empty():
+		_combats_actifs.erase(nom_scene)
+
 # RPC serveur : message de chat global
 @rpc("any_peer", "call_remote", "reliable")
 func envoie_message_chat(texte: String) -> void:
@@ -447,6 +516,7 @@ func envoie_message_chat(texte: String) -> void:
 func _nettoyer_session(peer_id: int) -> void:
 	if not _sessions.has(peer_id):
 		return
+	_liberer_combats(peer_id)
 	var pseudo_quittant: String = _sessions[peer_id]["pseudo"]
 	_sessions.erase(peer_id)
 	_limiteurs.erase(peer_id)
@@ -693,6 +763,72 @@ func signaler_rencontre_vaincue(ennemi: Node) -> void:
 
 # masque l'ennemi correspondant a la cle : vaincu pour tout le monde
 # sur cette map, jusqu'a ce que le serveur le fasse reapparaitre
+# API appelée par combat_manager quand le joueur engage un groupe
+func debut_combat_local(groupe: String) -> void:
+	if mode != Mode.CLIENT or pseudo == "" or groupe == "":
+		return
+	combat_groupe_local = groupe
+	rpc_id(1, "envoie_debut_combat", groupe)
+
+# API appelée par combat_manager à la fin du combat
+func fin_combat_local(groupe: String) -> void:
+	if mode != Mode.CLIENT or pseudo == "" or groupe == "":
+		return
+	combat_groupe_local = ""
+	rpc_id(1, "envoie_fin_combat", groupe)
+
+# RPC client : un joueur de la map engage un groupe étiqueté
+@rpc("any_peer", "call_remote", "reliable")
+func invitation_combat(chef: String, groupe: String) -> void:
+	if multiplayer.is_server():
+		return
+	if combat_groupe_local != "" or not _combat_joinable():
+		return
+	invitation_en_attente = [chef, groupe]
+	_montrer_invitation(chef, groupe)
+
+# RPC client : le combat du chef est terminé, l'invitation tombe
+@rpc("any_peer", "call_remote", "reliable")
+func fin_combat_distante(chef: String, groupe: String) -> void:
+	if multiplayer.is_server():
+		return
+	if not invitation_en_attente.is_empty() and str(invitation_en_attente[0]) == chef:
+		invitation_en_attente = []
+		_cacher_invitation()
+
+# un CombatManager opérationnel et hors combat est nécessaire pour
+# rejoindre un combat
+func _combat_joinable() -> bool:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return false
+	var cm := scene.get_node_or_null("CombatManager")
+	return cm != null and not bool(cm.get("en_combat"))
+
+# rejoins le combat du groupe étiqueté : engage notre instance locale
+# de la même rencontre (combat miroir : chacun sa grille, son tour,
+# contre le même camp)
+func rejoindre_combat(groupe: String) -> void:
+	invitation_en_attente = []
+	_cacher_invitation()
+	var scene := get_tree().current_scene
+	var cm: Node = null
+	if scene != null:
+		cm = scene.get_node_or_null("CombatManager")
+	if cm == null or bool(cm.get("en_combat")):
+		return
+	var rencontres := scene.get_node_or_null("Rencontres")
+	if rencontres == null:
+		return
+	var meme_groupe: Array = []
+	for ennemi in rencontres.get_children():
+		if int(ennemi.get("pv")) <= 0 or str(ennemi.get("groupe")) != groupe:
+			continue
+		meme_groupe.append(ennemi)
+	if meme_groupe.is_empty():
+		return
+	cm.call("lancer_combat", meme_groupe)
+
 func cacher_rencontre(cle: String) -> void:
 	var scene := get_tree().current_scene
 	if scene == null:
@@ -972,6 +1108,58 @@ func _construire_chat() -> void:
 	_chat_saisie.visible = false
 	_chat_saisie.text_submitted.connect(_on_chat_envoye)
 	colonne.add_child(_chat_saisie)
+
+# popup d'invitation au combat, en haut de l'écran
+var _panneau_invitation: PanelContainer
+
+func _montrer_invitation(chef: String, groupe: String) -> void:
+	if _panneau_invitation == null:
+		_construire_invitation()
+	var etiquette: Label = _panneau_invitation.get_meta("etiquette")
+	etiquette.text = "%s engage le groupe [%s]" % [chef, groupe]
+	_panneau_invitation.show()
+
+func _cacher_invitation() -> void:
+	if _panneau_invitation != null:
+		_panneau_invitation.hide()
+
+func _construire_invitation() -> void:
+	_panneau_invitation = PanelContainer.new()
+	_panneau_invitation.theme = THEME
+	_panneau_invitation.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_panneau_invitation.offset_top = 96.0
+	# le popup vit dans la couche du chat, au-dessus du HUD
+	_chat.add_child(_panneau_invitation)
+	var marges := MarginContainer.new()
+	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		marges.add_theme_constant_override(marge, 16)
+	_panneau_invitation.add_child(marges)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 10)
+	marges.add_child(colonne)
+	var etiquette := Label.new()
+	etiquette.add_theme_font_size_override("font_size", 17)
+	colonne.add_child(etiquette)
+	_panneau_invitation.set_meta("etiquette", etiquette)
+	var boutons := HBoxContainer.new()
+	boutons.alignment = BoxContainer.ALIGNMENT_CENTER
+	boutons.add_theme_constant_override("separation", 14)
+	colonne.add_child(boutons)
+	var rejoindre := Button.new()
+	rejoindre.text = "Rejoindre le combat"
+	rejoindre.custom_minimum_size = Vector2(0, 42)
+	rejoindre.pressed.connect(_on_invitation_rejoint)
+	boutons.add_child(rejoindre)
+	var ignorer := Button.new()
+	ignorer.text = "Ignorer"
+	ignorer.custom_minimum_size = Vector2(0, 42)
+	ignorer.pressed.connect(_cacher_invitation)
+	boutons.add_child(ignorer)
+	_panneau_invitation.hide()
+
+func _on_invitation_rejoint() -> void:
+	if not invitation_en_attente.is_empty():
+		rejoindre_combat(str(invitation_en_attente[1]))
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):

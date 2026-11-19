@@ -68,7 +68,21 @@ Le serveur doit être joignable depuis Internet. Trois options :
   que le jeu se stabilise ; les deux premières suffisent pour jouer
   entre amis dès maintenant.
 
-## Limites connues de la phase 1
+## Combats ensemble (phase 3, première passe)
+
+Quand un joueur engage une rencontre (groupe d'ennemis étiqueté),
+les autres joueurs de la même map reçoivent une invitation :
+**« Pseudo engage le groupe [camp] — Rejoindre le combat ? »**. En
+rejoignant, chacun combat le même camp dans sa propre instance
+miroir : même groupe, même map, chacun sa grille, son tour et son
+loot. Le monde reste cohérent grâce aux rencontres partagées (le camp
+vaincu par l'un disparaît pour les autres, les ennemis tombés à
+distance sont retirés proprement des combats locaux).
+
+L'invitation tombe d'elle-même quand le combat initial se termine.
+Un joueur déjà en combat n'est pas sollicité.
+
+## Limites connues
 
 - Les combats ne sont pas partagés : chaque joueur combat dans sa
   propre instance, les autres te voient juste te déplacer.
