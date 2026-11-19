@@ -70,6 +70,7 @@ var invitation_en_attente: Array = []
 
 # --- client : avatars des autres joueurs ---
 var _avatars := {}
+var _annonces_en_attente: Array = []   # joueurs connus avant que la scene locale existe
 
 # --- serveur : sessions et relais ---
 var _db_mmo: SQLite
@@ -101,6 +102,7 @@ func _process(delta: float) -> void:
 		_client_envoyer_position(delta)
 		_client_sauvegarde_periodique(delta)
 		_client_annoncer_scene()
+		_client_appliquer_annonces_attente()
 	elif mode == Mode.CLIENT and _action_en_attente != "":
 		_client_piloter_auth(delta)
 	elif mode == Mode.SERVEUR:
@@ -222,6 +224,11 @@ func _ouvrir_session(peer_id: int, nom_pseudo: String) -> void:
 	}
 	_limiteurs[peer_id] = {"position": 0, "chat": 0}
 	print("Connexion : %s (id %d, %d joueur(s) en ligne)" % [nom_pseudo, peer_id, _sessions.size()])
+	# les joueurs déjà annoncés apprennent l'arrivée
+	for autre in _sessions:
+		if int(autre) == peer_id or not bool(_sessions[int(autre)]["annonce"]):
+			continue
+		rpc_id(int(autre), "recoit_message_chat", "Serveur", "%s a embarqué !" % nom_pseudo)
 
 # le nouveau est annoncé aux autres quand on connaît enfin sa
 # position (premier paquet), pas dès le login (sinon avatar en 0,0)
@@ -235,7 +242,7 @@ func _annoncer_si_premiere_position(peer_id: int, position: Vector2) -> void:
 		if int(autre) == peer_id:
 			continue
 		rpc_id(int(autre), "joueur_rejoint", peer_id, str(session["pseudo"]),
-			float(position.x), float(position.y))
+			float(position.x), float(position.y), bool(session.get("en_combat", false)))
 
 # limiteur par paire : true si le paquet arrive trop tôt
 func _trop_tot(peer_id: int, cle: String, intervalle_ms: int) -> bool:
@@ -293,6 +300,7 @@ func demande_inscription(nom_pseudo: String, mdp: String) -> void:
 	print("Nouveau compte : %s" % nom_pseudo)
 	_ouvrir_session(peer_id, nom_pseudo)
 	rpc_id(peer_id, "reponse_authentification", true, "Bienvenue %s !" % nom_pseudo, "")
+	_annoncer_presents_au_nouveau(peer_id)
 	# première connexion : le perso du client devient la référence serveur
 	rpc_id(peer_id, "demande_import_perso")
 
@@ -310,13 +318,17 @@ func demande_connexion(nom_pseudo: String, mdp: String) -> void:
 	_ouvrir_session(peer_id, pseudo_final)
 	rpc_id(peer_id, "reponse_authentification", true, "Bienvenue %s !" % pseudo_final,
 		_perso_du_serveur(int(compte["id"])))
-	# les joueurs déjà annoncé partent vers le nouveau ; le nouveau ne
-	# sera annoncé aux autres qu'à sa première position connue
+	_annoncer_presents_au_nouveau(peer_id)
+
+# les joueurs déjà annoncés partent vers le nouveau ; le nouveau ne
+# sera annoncé aux autres qu'à sa première position connue
+func _annoncer_presents_au_nouveau(peer_id: int) -> void:
 	for autre in _sessions:
 		if int(autre) == peer_id or not bool(_sessions[autre]["annonce"]):
 			continue
 		rpc_id(peer_id, "joueur_rejoint", int(autre), str(_sessions[autre]["pseudo"]),
-			float(_sessions[autre]["position"].x), float(_sessions[autre]["position"].y))
+			float(_sessions[autre]["position"].x), float(_sessions[autre]["position"].y),
+			bool(_sessions[autre].get("en_combat", false)))
 
 func _valider_identifiants(nom_pseudo: String, mdp: String) -> String:
 	if nom_pseudo.length() < 3 or nom_pseudo.length() > 16:
@@ -454,6 +466,9 @@ func envoie_debut_combat(groupe: String) -> void:
 	combats_scene[groupe] = peer_id
 	_combats_actifs[nom_scene] = combats_scene
 	print("Combat : %s engage [%s] sur %s" % [session["pseudo"], groupe, nom_scene])
+	for autre in _pairs_sur_scene(nom_scene):
+		if int(autre) != peer_id:
+			rpc_id(int(autre), "etre_en_combat", peer_id, true)
 	# invitation pour les autres joueurs de la map pas déjà en combat
 	for autre in _pairs_sur_scene(nom_scene):
 		if int(autre) == peer_id or bool(_sessions[int(autre)].get("en_combat", false)):
@@ -472,6 +487,9 @@ func envoie_fin_combat(groupe: String) -> void:
 	session["en_combat"] = false
 	var nom_scene := str(session["scene"])
 	groupe = groupe.strip_edges().substr(0, 64)
+	for autre in _pairs_sur_scene(nom_scene):
+		if int(autre) != peer_id:
+			rpc_id(int(autre), "etre_en_combat", peer_id, false)
 	var combats_scene: Dictionary = _combats_actifs.get(nom_scene, {})
 	if not combats_scene.has(groupe):
 		return
@@ -508,6 +526,14 @@ func envoie_message_chat(texte: String) -> void:
 	if texte == "":
 		return
 	var nom_envoyeur: String = _sessions[peer_id]["pseudo"]
+	# commande /joueurs : la liste revient en privé
+	if texte == "/joueurs":
+		var pseudos: Array = []
+		for autre in _sessions:
+			pseudos.append(str(_sessions[int(autre)]["pseudo"]))
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"En ligne (%d) : %s" % [pseudos.size(), ", ".join(pseudos)])
+		return
 	print("Chat <%s> %s" % [nom_envoyeur, texte])
 	for autre in _sessions:
 		rpc_id(int(autre), "recoit_message_chat", nom_envoyeur, texte)
@@ -524,6 +550,7 @@ func _nettoyer_session(peer_id: int) -> void:
 	print("Déconnexion : %s (%d joueur(s) en ligne)" % [pseudo_quittant, _sessions.size()])
 	for autre in _sessions:
 		rpc_id(int(autre), "joueur_quitte", peer_id)
+		rpc_id(int(autre), "recoit_message_chat", "Serveur", "%s a débarqué." % pseudo_quittant)
 
 # ============================================================
 #  CLIENT
@@ -656,10 +683,37 @@ func demande_import_perso() -> void:
 
 # RPC client : un joueur arrive (avatar visible)
 @rpc("any_peer", "call_remote", "reliable")
-func joueur_rejoint(peer_id: int, nom_recu: String, x: float, y: float) -> void:
+func joueur_rejoint(peer_id: int, nom_recu: String, x: float, y: float, en_combat: bool) -> void:
 	if multiplayer.is_server():
 		return
+	if get_tree().current_scene == null:
+		_annonces_en_attente.append(
+			{"id": peer_id, "nom": nom_recu, "x": x, "y": y, "combat": en_combat})
+		return
 	_maj_avatar(peer_id, nom_recu, Vector2(x, y))
+	if _avatars.has(peer_id):
+		(_avatars[peer_id] as Node2D).maj_combat(en_combat)
+
+# des joueurs ont ete annonces pendant que la scene locale etait
+# indisponible (login, chargement) : les afficher desormais
+func _client_appliquer_annonces_attente() -> void:
+	if _annonces_en_attente.is_empty() or get_tree().current_scene == null:
+		return
+	var attente := _annonces_en_attente
+	_annonces_en_attente = []
+	for entree in attente:
+		_maj_avatar(int(entree["id"]), str(entree["nom"]),
+			Vector2(float(entree["x"]), float(entree["y"])))
+		if _avatars.has(int(entree["id"])):
+			(_avatars[int(entree["id"])] as Node2D).maj_combat(bool(entree["combat"]))
+
+# RPC client : l'etat de combat d'un joueur change
+@rpc("any_peer", "call_remote", "reliable")
+func etre_en_combat(peer_id: int, actif: bool) -> void:
+	if multiplayer.is_server():
+		return
+	if _avatars.has(peer_id):
+		(_avatars[peer_id] as Node2D).maj_combat(actif)
 
 # RPC client : un joueur part
 @rpc("any_peer", "call_remote", "reliable")

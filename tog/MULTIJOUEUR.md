@@ -1,9 +1,8 @@
-# Multijoueur — guide de test avec des amis (phase 1)
+# Multijoueur — guide de test avec des amis
 
-Le jeu a désormais un serveur persistant : comptes, persos sauvegardés
-côté serveur, joueurs visibles sur la map, chat global. Les combats
-restent pour l'instant locaux à chaque joueur (la synchronisation des
-combats à plusieurs est la phase 3).
+Le jeu a un serveur persistant : comptes, persos sauvegardés côté
+serveur, joueurs visibles sur la map, chat global, rencontres partagées
+et invitations de combat entre joueurs de la même map.
 
 ## Lancer le serveur
 
@@ -82,10 +81,61 @@ distance sont retirés proprement des combats locaux).
 L'invitation tombe d'elle-même quand le combat initial se termine.
 Un joueur déjà en combat n'est pas sollicité.
 
+## Indicateurs sociaux
+
+- **Arrivées et départs** : le chat annonce « X a embarqué ! » quand un
+  joueur se connecte et « X a débarqué. » quand il part.
+- **Commande `/joueurs`** : écris `/joueurs` dans le chat pour recevoir
+  la liste des joueurs en ligne (réponse visible par toi seul).
+- **Badge « en combat »** : l'avatar d'un joueur engagé dans un combat
+  affiche « (en combat) » à côté de son pseudo, en jaune. Le badge
+  disparaît à la fin de son combat (les avatars marqués ne sont pas
+  sollicités par les invitations).
+
+## Déployer sur un VPS
+
+Pour héberger le serveur sur une machine allumée 24 h/24 :
+
+1. **Exporter le serveur dédié** : dans Godot, Projet → Exporter,
+   ajoute une cible *Linux Server* (ou `godot --headless --export-release
+   "Linux Server" serveur.x86_64`), ce qui produit un binaire sans
+   interface.
+2. **Machine** : un petit VPS suffit (2 vCPU / 2 Go pour une
+   cinquantaine de joueurs). Ubuntu LTS, par exemple.
+3. **Ouvrir le port** : `7777/UDP` uniquement. UFW :
+   `sudo ufw allow 7777/udp`.
+4. **Lancer** : `./serveur.x86_64 --headless --path .` dans le dossier
+   du projet (avec tous les fichiers du jeu, pas seulement le binaire).
+   `mmo.db` est créé automatiquement au premier démarrage ; garde-le
+   entre les mises à jour (c'est là que vivent les comptes).
+5. **Service persistant** : tmux suffit pour tester (`tmux new -s serveur`,
+   lancer, `Ctrl+B D` pour détacher). Pour du long terme, un service
+   systemd le relance en cas de crash :
+   ```ini
+   # /etc/systemd/system/tog-serveur.service
+   [Unit]
+   Description=Serveur ToG
+   After=network.target
+
+   [Service]
+   WorkingDirectory=/opt/tog
+   ExecStart=/opt/tog/serveur.x86_64 --headless --path .
+   Restart=always
+   User=tog
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+   puis `sudo systemctl enable --now tog-serveur`.
+6. **Sauvegardes** : copie `mmo.db` régulièrement (c'est l'unique état
+   persistant). Les joueurs entrent `ip.du.vps:7777` dans l'écran de
+   connexion.
+
 ## Limites connues
 
-- Les combats ne sont pas partagés : chaque joueur combat dans sa
-  propre instance, les autres te voient juste te déplacer.
+- Les combats restent des instances miroir : chaque joueur combat le
+  même camp dans sa propre grille, il n'y a pas encore de tour partagé
+  ni de dégâts croisés.
 - Les mots de passe transitent en clair sur le réseau local : attends
   un vrai serveur (VPS + TLS/WSS) avant d'ouvrir le jeu à des
   inconnus.

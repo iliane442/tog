@@ -5,6 +5,7 @@ extends Node2D
 const TEXTURE := preload("res://assets/sprites/humain_pirate/humain_pirate_idle.png")
 
 var pseudo := ""
+var en_combat := false
 
 var _etiquette: Label
 var _tween: Tween
@@ -15,7 +16,7 @@ func _ready() -> void:
 	sprite.texture = TEXTURE
 	add_child(sprite)
 	_etiquette = Label.new()
-	_etiquette.text = pseudo
+	maj_combat(en_combat)
 	_etiquette.position = Vector2(-40, -58)
 	_etiquette.custom_minimum_size = Vector2(128, 0)
 	_etiquette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -24,6 +25,18 @@ func _ready() -> void:
 	_etiquette.add_theme_constant_override("shadow_offset_x", 1)
 	_etiquette.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_etiquette)
+
+# affiche l'état de combat du joueur distant sur son pseudo
+func maj_combat(actif: bool) -> void:
+	en_combat = actif
+	if _etiquette == null:
+		return
+	if actif:
+		_etiquette.text = "%s  (en combat)" % pseudo
+		_etiquette.add_theme_color_override("font_color", Color("#ffd166"))
+	else:
+		_etiquette.text = pseudo
+		_etiquette.remove_theme_color_override("font_color")
 
 # glisse vers la dernière position publiée (~10 Hz)
 func viser(position_cible: Vector2) -> void:
