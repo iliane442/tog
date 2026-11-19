@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="2_theme"]
@@ -12,6 +12,7 @@
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/key.png" id="10_equipage"]
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/heart.png" id="11_vie"]
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/xp.png" id="12_xp"]
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/key.png" id="13_touches"]
 
 [node name="HUD" type="CanvasLayer"]
 layer = 10
@@ -140,6 +141,15 @@ theme_type_variation = "CompassButton"
 icon = ExtResource("10_equipage")
 expand_icon = true
 tooltip_text = "Équipage"
+
+[node name="Touches" type="Button" parent="NavTop"]
+custom_minimum_size = Vector2(54, 54)
+layout_mode = 2
+theme = ExtResource("2_theme")
+theme_type_variation = "CompassButton"
+icon = ExtResource("13_touches")
+expand_icon = true
+tooltip_text = "Raccourcis clavier"
 
 [node name="Menu" type="Button" parent="NavTop"]
 custom_minimum_size = Vector2(100, 54)

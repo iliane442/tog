@@ -8,11 +8,15 @@ signal fin_tour_demandee
 signal placement_valide
 signal ressources_joueur_modifiees(pa: int, pa_max: int, pm: int, pm_max: int)
 
-@export var taille_zone_combat := 40
+const ARENE_COMBAT := preload("res://scripts/combat/arene_combat.gd")
+const POSITION_ARENE := Vector2(-16384, -16384)
 
 var en_combat := false
 var en_placement := false
-var zone_combat := Rect2i()
+var numero_combat := 0
+var _arene: ARENE_COMBAT
+var _camera_exploration: Camera2D
+var _positions_exploration := {}
 var _joueur: Node
 # ennemis engagés dans le combat en cours (le plus proche du joueur
 # reste disponible via _ennemi / ennemi_actuel pour l'interface)
@@ -27,6 +31,8 @@ var _propositions: Array = []
 var _detecteurs: Array = []
 var _ennemi
 var _cible_fiche: Node
+# cible verrouillée via les touches de sélection (null = plus proche)
+var _cible_selectionnee: Node
 var _ui: CanvasLayer
 var _fiche_ennemi: PanelContainer
 var _barre_vie_ennemi: ProgressBar
@@ -57,7 +63,7 @@ func initialiser(joueur: Node, ennemi: Node) -> void:
 # tout ennemi présent sur la carte est connu : il participe aux combats
 # de groupe (détection, ciblage au clic) même hors de son voisinage
 func enregistrer_ennemi(ennemi: Node) -> void:
-	if en_combat or ennemi == null or not is_instance_valid(ennemi):
+	if ennemi == null or not is_instance_valid(ennemi):
 		return
 	if not _ennemis_connus.has(ennemi):
 		_ennemis_connus.append(ennemi)
@@ -86,7 +92,7 @@ func ennemis_actifs() -> Array:
 
 # l'ennemi engagé qui occupe cette case (null si aucun)
 func ennemi_sur_case(case_sol: Vector2i) -> Node:
-	var sol := get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
+	var sol := sol_combat()
 	if sol == null:
 		return null
 	for ennemi in ennemis_actifs():
@@ -97,9 +103,6 @@ func ennemi_sur_case(case_sol: Vector2i) -> Node:
 # l'ennemi le plus proche du joueur (engagés d'abord, connus sinon)
 func ennemi_proche() -> Node:
 	if _joueur == null or not is_instance_valid(_joueur):
-		return null
-	var sol := get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
-	if sol == null:
 		return null
 	var meilleure: Node = null
 	var meilleure_distance := -1
@@ -113,31 +116,71 @@ func ennemi_proche() -> Node:
 			meilleure_distance = distance
 	return meilleure
 
-func _calculer_zone_combat() -> void:
-	zone_combat = Rect2i()
-	var groupe := ennemis_actifs()
-	if taille_zone_combat <= 0 or _joueur == null or groupe.is_empty():
+# la cible par défaut des sorts : la cible verrouillée au clavier si
+# elle est encore valide, l'ennemi le plus proche sinon
+func cible_courante() -> Node:
+	if _cible_selectionnee != null and is_instance_valid(_cible_selectionnee) and int(_cible_selectionnee.get("pv")) > 0:
+		return _cible_selectionnee
+	return ennemi_proche()
+
+# la cible explicitement verrouillée (null si le joueur n'en a pas
+# choisi une via les touches)
+func cible_verrouillee() -> Node:
+	if _cible_selectionnee != null and is_instance_valid(_cible_selectionnee) and int(_cible_selectionnee.get("pv")) > 0:
+		return _cible_selectionnee
+	return null
+
+# fait tourner la sélection de cible parmi les ennemis engagés
+func cible_suivante() -> void:
+	_cycle_cible(1)
+
+func cible_precedente() -> void:
+	_cycle_cible(-1)
+
+func _cycle_cible(sens: int) -> void:
+	if not en_combat or en_placement:
 		return
-	var sol := get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
-	if sol == null:
+	var actifs := ennemis_actifs()
+	if actifs.size() < 2:
 		return
-	# plus petite zone carrée couvrant le joueur et l'ensemble du
-	# groupe d'ennemis (au moins taille_zone_combat de côté)
-	var min_case := sol.local_to_map(sol.to_local(_joueur.global_position))
-	var max_case := min_case
-	for ennemi in groupe:
-		var case_ennemi := sol.local_to_map(sol.to_local((ennemi as Node2D).global_position))
-		min_case = min_case.min(case_ennemi)
-		max_case = max_case.max(case_ennemi)
-	var etendue := maxi(maxi(max_case.x - min_case.x, max_case.y - min_case.y) + 4, taille_zone_combat)
-	var centre := (min_case + max_case) / 2
-	var demi := etendue / 2
-	zone_combat = Rect2i(centre - Vector2i(demi, demi), Vector2i(etendue, etendue))
+	var cible := cible_courante()
+	var index := 0
+	if cible != null:
+		index = maxi(actifs.find(cible), 0)
+	index = int(fposmod(float(index + sens), float(actifs.size())))
+	_cible_selectionnee = actifs[index]
+	# la fiche de l'ennemi survolé suit la sélection
+	_survol_ennemi(_cible_selectionnee)
+	_actualiser_fiche_ennemi()
+
+func sol_combat() -> TileMapLayer:
+	return _arene.sol if _arene != null else null
 
 func dans_zone_combat(case: Vector2i) -> bool:
-	if zone_combat.size.x <= 0:
-		return true
-	return zone_combat.has_point(case)
+	return _arene != null and Rect2i(Vector2i.ZERO, _arene.dimensions).has_point(case)
+
+func ligne_de_vue_libre(depart: Vector2i, arrivee: Vector2i) -> bool:
+	var sol := sol_combat()
+	if sol == null:
+		return false
+	var x := depart.x
+	var y := depart.y
+	var dx := absi(arrivee.x - x)
+	var dy := absi(arrivee.y - y)
+	var sx := 1 if x < arrivee.x else -1
+	var sy := 1 if y < arrivee.y else -1
+	var erreur := dx - dy
+	while x != arrivee.x or y != arrivee.y:
+		var double_erreur := 2 * erreur
+		if double_erreur > -dy:
+			erreur -= dy
+			x += sx
+		if double_erreur < dx:
+			erreur += dx
+			y += sy
+		if sol.get_cell_source_id(Vector2i(x, y)) == -1:
+			return false
+	return true
 
 func _construire_interface() -> void:
 	var ui_existante := get_node_or_null("CombatUI")
@@ -342,9 +385,9 @@ func lancer_combat(groupe = null) -> void:
 	var ennemis: Array = []
 	if groupe is Array:
 		for ennemi in groupe:
-			if ennemi != null and is_instance_valid(ennemi) and int(ennemi.get("pv")) > 0:
+			if is_instance_valid(ennemi) and int(ennemi.get("pv")) > 0 and not ennemis.has(ennemi):
 				ennemis.append(ennemi)
-	elif groupe != null:
+	elif groupe is Node2D and is_instance_valid(groupe) and int(groupe.get("pv")) > 0:
 		ennemis.append(groupe)
 	if ennemis.is_empty():
 		var proche := ennemi_proche()
@@ -355,16 +398,28 @@ func lancer_combat(groupe = null) -> void:
 	if _joueur == null:
 		push_warning("Combat impossible : joueur introuvable.")
 		return
+	_camera_exploration = get_viewport().get_camera_2d()
+	_arene = ARENE_COMBAT.new()
+	_arene.index_plan = _hasard.randi_range(0, ARENE_COMBAT.PLANS.size() - 1)
+	_arene.position = POSITION_ARENE
+	add_child(_arene)
+	var places := _arene.cases_ennemis()
+	if ennemis.size() > places.size():
+		_quitter_arene()
+		afficher_message("Il n’y a pas assez de place dans l’arène pour cette rencontre.")
+		return
 	_ennemis = ennemis
-	_maj_ennemi_principal()
-	for ennemi in _ennemis:
-		_connecter_survol_ennemi(ennemi)
-		_aligner_sur_grille(ennemi)
-	_aligner_sur_grille(_joueur)
-	_calculer_zone_combat()
 	_etats_actifs.clear()
+	numero_combat += 1
 	en_combat = true
 	en_placement = true
+	_placer_dans_arene(_joueur, _arene.case_joueur())
+	for i in _ennemis.size():
+		var ennemi: Node2D = _ennemis[i]
+		_connecter_survol_ennemi(ennemi)
+		_placer_dans_arene(ennemi, places[i])
+	_arene.activer_camera()
+	_maj_ennemi_principal()
 	_mettre_a_jour_etiquette_etats()
 	_actualiser_fiche_ennemi()
 	if _souris_sur_ennemi:
@@ -377,6 +432,8 @@ func ennemi_vaincu(ennemi: Node) -> void:
 	_ennemis.erase(ennemi)
 	_ennemis_connus.erase(ennemi)
 	_detecteurs.erase(ennemi)
+	if ennemi == _cible_selectionnee:
+		_cible_selectionnee = null
 	if ennemi == _ennemi:
 		_maj_ennemi_principal()
 	if _propositions.has(ennemi):
@@ -386,14 +443,25 @@ func ennemi_vaincu(ennemi: Node) -> void:
 	if en_combat and ennemis_actifs().is_empty():
 		terminer_combat(true)
 
-func _aligner_sur_grille(entite: Node2D) -> void:
-	var sol := get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
-	if sol == null or sol.tile_set == null:
-		return
-	var case := sol.local_to_map(sol.to_local(entite.global_position))
-	if sol.get_cell_source_id(case) == -1:
-		return
+func _placer_dans_arene(entite: Node2D, case: Vector2i) -> void:
+	_positions_exploration[entite] = entite.global_position
+	var sol := sol_combat()
 	entite.global_position = sol.to_global(sol.map_to_local(case))
+
+func _quitter_arene() -> void:
+	for entite in _positions_exploration:
+		if is_instance_valid(entite):
+			entite.arreter_deplacement_combat()
+			entite.global_position = _positions_exploration[entite]
+	_positions_exploration.clear()
+	if is_instance_valid(_camera_exploration):
+		_camera_exploration.make_current()
+		_camera_exploration.reset_smoothing()
+		_camera_exploration.force_update_scroll()
+	_camera_exploration = null
+	_arene.hide()
+	_arene.queue_free()
+	_arene = null
 
 func valider_placement() -> void:
 	if not en_combat or not en_placement:
@@ -406,11 +474,12 @@ func terminer_combat(victoire: bool) -> void:
 		return
 	en_combat = false
 	en_placement = false
-	zone_combat = Rect2i()
+	_quitter_arene()
 	_etats_actifs.clear()
 	_ennemis.clear()
 	_propositions.clear()
 	_detecteurs.clear()
+	_cible_selectionnee = null
 	_bouton_combattre.hide()
 	_mettre_a_jour_etiquette_etats()
 	if _fiche_ennemi != null:
@@ -431,7 +500,7 @@ func afficher_message(message: String) -> void:
 func effacer_message() -> void:
 	var interface_hud: Node = get_tree().current_scene.find_child("HUD", true, false)
 	if interface_hud != null and interface_hud.has_method("afficher_message_sort"):
-		interface_hud.call("afficher_message_sort", "Touches 1-0 : sort | clic : cible ou deplacement")
+		interface_hud.call("afficher_message_sort", "Sorts au clavier | clic : cible ou deplacement")
 
 func demander_sort(id_sort: String) -> void:
 	if en_combat and not en_placement:
@@ -585,7 +654,7 @@ func _deplacer_par_etat(cible: Node, nombre: int, repousser: bool) -> void:
 	var entite := cible as Node2D
 	if entite == null:
 		return
-	var sol := get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
+	var sol := sol_combat()
 	if sol == null or nombre <= 0:
 		return
 	var lanceur: Node2D = null
@@ -603,11 +672,10 @@ func _deplacer_par_etat(cible: Node, nombre: int, repousser: bool) -> void:
 		axe = -axe
 	if not repousser:
 		axe = -axe
-	var obstacles := get_tree().current_scene.get_node_or_null("cliffs") as TileMapLayer
 	var destination := depart
 	for _i in range(nombre):
 		var suivante := destination + axe
-		if sol.get_cell_source_id(suivante) == -1 or not dans_zone_combat(suivante) or (obstacles != null and obstacles.get_cell_source_id(suivante) != -1):
+		if sol.get_cell_source_id(suivante) == -1 or not dans_zone_combat(suivante):
 			break
 		var occupee_par_groupe := false
 		for ennemi in ennemis_actifs():

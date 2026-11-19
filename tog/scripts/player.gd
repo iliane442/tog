@@ -253,7 +253,7 @@ func _gerer_clic_combat() -> void:
 			# le clic vise l'ennemi qui occupe la case (sinon le plus proche)
 			cible = _combat_manager.ennemi_sur_case(case_cliquee)
 			if cible == null:
-				cible = _combat_manager.ennemi_proche()
+				cible = _combat_manager.cible_courante()
 		if cible != null and is_instance_valid(cible) and case_cliquee == _case_de(cible.global_position):
 			if _sort_selectionne_id == "boule_de_feu":
 				_lancer_boule_de_feu(cible)
@@ -452,7 +452,7 @@ func _selectionner_sort(id_sort: String) -> void:
 		return
 	_sort_selectionne_id = id_sort
 	_sort_selectionne = true
-	var cible: Node2D = self if id_sort != "boule_de_feu" and _combat_manager.est_allie(sort) else _combat_manager.ennemi_proche()
+	var cible: Node2D = self if id_sort != "boule_de_feu" and _combat_manager.est_allie(sort) else _combat_manager.cible_courante()
 	if _overlay != null:
 		_overlay.afficher_sort(_cases_du_sort(portee, 0 if cible == self else 1))
 	var distance := 0 if cible == self else _distance_ennemi()
@@ -462,6 +462,13 @@ func _selectionner_sort(id_sort: String) -> void:
 		_combat_manager.afficher_message("Cible hors portée : déplace-toi sur une case bleue, puis clique sur la cible.")
 	elif cible != self and not _ligne_de_vue_libre(ma_case(), _case_de(cible.global_position)):
 		_combat_manager.afficher_message("Ligne de vue bloquée. Déplace-toi sur une case bleue pour changer d’angle.")
+	elif _combat_manager.cible_verrouillee() == cible and cible != null:
+		# cible verrouillée via les touches de sélection : le sort part
+		# directement, sans attendre un clic de confirmation
+		if id_sort == "boule_de_feu":
+			_lancer_boule_de_feu(cible)
+		else:
+			_lancer_sort_etat(id_sort, sort, cible)
 	else:
 		_combat_manager.afficher_message("Sort sélectionné : clique sur %s pour le lancer." % ("toi-même" if cible == self else "l’ennemi"))
 
@@ -507,7 +514,7 @@ func _distance_depuis(cible: Node2D) -> int:
 
 # distance jusqu'à l'ennemi engagé le plus proche
 func _distance_ennemi() -> int:
-	var cible: Node2D = _combat_manager.ennemi_proche() if _combat_manager != null else null
+	var cible: Node2D = _combat_manager.cible_courante() if _combat_manager != null else null
 	if cible == null:
 		return 1_000_000
 	return _distance_depuis(cible)
@@ -548,7 +555,7 @@ func _jouer_effet_sort(id_sort: String, cible: Node2D) -> void:
 func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 	var cible: Node2D = cible_visée
 	if cible == null or not is_instance_valid(cible):
-		cible = _combat_manager.ennemi_proche()
+		cible = _combat_manager.cible_courante()
 	if cible == null or not is_instance_valid(cible) or _pa < _sort_boule_de_feu.cout_pa:
 		_combat_manager.afficher_message("Le sort ne peut pas être lancé pour le moment.")
 		return false
