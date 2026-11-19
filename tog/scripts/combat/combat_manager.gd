@@ -19,9 +19,12 @@ var _joueur: Node
 var _ennemis: Array = []
 # ennemis rencontrés sur la carte hors combat
 var _ennemis_connus: Array = []
-# ennemis dont la zone de détection chevauche le joueur : le bouton
-# « Combattre » les engage tous
+# ennemis étiquetés par groupe (voir ennemy.gd) : détecter un membre
+# propose sa rencontre entière ; « Combattre » engage l'union des
+# propositions
 var _propositions: Array = []
+# ennemis dont la zone de détection chevauche actuellement le joueur
+var _detecteurs: Array = []
 var _ennemi
 var _cible_fiche: Node
 var _ui: CanvasLayer
@@ -266,26 +269,62 @@ func _process(_delta: float) -> void:
 	if _fiche_ennemi != null and _fiche_ennemi.visible:
 		_positionner_fiche_ennemi()
 
-# un ennemi détecte le joueur : il rejoint les proposition ; le bouton
-# « Combattre » engage tous les ennemis qui le proposent
+# un ennemi détecte le joueur : sa rencontre entière rejoint les
+# propositions — y compris les membres placés hors des zones de
+# détection (le combat est contre un groupe, pas un voisinage)
 func proposer_combat(ennemi: Node) -> void:
 	if en_combat or ennemi == null or not is_instance_valid(ennemi):
 		return
-	if ennemi.get("pv") != null and int(ennemi.get("pv")) <= 0:
+	if int(ennemi.get("pv")) <= 0:
 		return
-	if not _propositions.has(ennemi):
-		_propositions.append(ennemi)
-	_bouton_combattre.text = "Combattre" if _propositions.size() == 1 else "Combattre (x%d)" % _propositions.size()
-	_bouton_combattre.show()
+	if not _detecteurs.has(ennemi):
+		_detecteurs.append(ennemi)
+	_maj_propositions()
 
 func annuler_proposition_combat(ennemi: Node) -> void:
-	if not _propositions.has(ennemi):
+	if not _detecteurs.has(ennemi):
 		return
-	_propositions.erase(ennemi)
-	if not en_combat and _propositions.is_empty():
+	_detecteurs.erase(ennemi)
+	_maj_propositions()
+
+# propositions = union des rencontres des ennemis qui détectent le
+# joueur ; le bouton annonce l'effectif réel du combat
+func _maj_propositions() -> void:
+	_propositions = []
+	for detecteur in _detecteurs:
+		for membre in _groupe_de(detecteur):
+			if int(membre.get("pv")) > 0 and not _propositions.has(membre):
+				_propositions.append(membre)
+	if en_combat:
+		return
+	if _propositions.is_empty():
 		_bouton_combattre.hide()
 	else:
 		_bouton_combattre.text = "Combattre" if _propositions.size() == 1 else "Combattre (x%d)" % _propositions.size()
+		_bouton_combattre.show()
+
+# la rencontre d'un ennemi : lui seul si son groupe n'est pas étiqueté
+# (comportement historique), tous les ennemis connus de même étiquette
+# sinon
+func _groupe_de(ennemi: Node) -> Array:
+	var etiquette := _etiquette_de(ennemi)
+	if etiquette.is_empty():
+		return [ennemi]
+	var membres := []
+	for connu in _ennemis_connus:
+		if connu == null or not is_instance_valid(connu) or int(connu.get("pv")) <= 0:
+			continue
+		if _etiquette_de(connu) == etiquette:
+			membres.append(connu)
+	return membres
+
+func _etiquette_de(entite: Node) -> String:
+	if entite == null or not is_instance_valid(entite):
+		return ""
+	var etiquette = entite.get("groupe")
+	if etiquette == null:
+		return ""
+	return str(etiquette)
 
 func _on_bouton_combattre_presse() -> void:
 	var groupe := _propositions.duplicate()
@@ -337,10 +376,13 @@ func lancer_combat(groupe = null) -> void:
 func ennemi_vaincu(ennemi: Node) -> void:
 	_ennemis.erase(ennemi)
 	_ennemis_connus.erase(ennemi)
+	_detecteurs.erase(ennemi)
 	if ennemi == _ennemi:
 		_maj_ennemi_principal()
 	if _propositions.has(ennemi):
 		_propositions.erase(ennemi)
+	if not en_combat:
+		_maj_propositions()
 	if en_combat and ennemis_actifs().is_empty():
 		terminer_combat(true)
 
@@ -368,6 +410,7 @@ func terminer_combat(victoire: bool) -> void:
 	_etats_actifs.clear()
 	_ennemis.clear()
 	_propositions.clear()
+	_detecteurs.clear()
 	_bouton_combattre.hide()
 	_mettre_a_jour_etiquette_etats()
 	if _fiche_ennemi != null:

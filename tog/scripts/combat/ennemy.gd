@@ -15,6 +15,9 @@ signal vaincu
 @export var quetes_a_progresser: Array[String] = ["1"]
 @export var texture_personnalisee: Texture2D
 @export var niveau_personnalise := 1
+# étiquette de rencontre : vide = combat individuel, sinon détecter
+# n'importe quel membre engage tous les ennemis de même étiquette
+@export var groupe := ""
 
 const ID_ETAT_TEST := 5 # Ralentissement
 const DUREE_ETAT_TEST := 2
