@@ -39,6 +39,11 @@ dernier pseudo/adresse utilisés sont retenus.
 Sur la map : appuie sur **T** pour écrire dans le chat global, Entrée
 envoie, Échap annule. Les autres joueurs apparaissent avec leur pseudo.
 
+**Rencontres partagées** : quand quelqu'un vainc une rencontre (un
+groupe d'ennemis étiqueté), elle disparaît pour tous les joueurs de
+la même map jusqu'à ce que le serveur la fasse réapparaître (5
+minutes). Un joueur qui arrive sur une map reçoit son état courant.
+
 ## Tester en local
 
 1. Lance le serveur (ci-dessus).

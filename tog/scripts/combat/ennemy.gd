@@ -124,6 +124,13 @@ func recevoir_degats(degats: int) -> void:
 	if _combat_manager != null:
 		_combat_manager.ennemi_vaincu(self)
 	vaincu.emit()
+	# monde partagé : la rencontre disparaît aussi pour les autres
+	# joueurs de la même map jusqu'à ce que le serveur la fasse
+	# réapparaître (résolu au runtime : Reseau n'existe pas dans
+	# l'éditeur et ennemy.gd est @tool)
+	var reseau := get_tree().root.get_node_or_null("/root/Reseau")
+	if reseau != null:
+		reseau.call("signaler_rencontre_vaincue", self)
 	queue_free()
 
 func soigner(montant: int) -> void:

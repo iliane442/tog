@@ -22,6 +22,8 @@ const CHEMIN_PREF := "user://serveur.cfg"
 const CHEMIN_DB_MMO := "user://mmo.db"
 const FREQUENCE_POSITION := 0.1
 const INTERVALLE_SAUVEGARDE := 30.0
+# délai avant qu'une rencontre vaincue réapparaisse pour tous
+const RESPAWN_RENCONTRES_S := 300.0
 const ITERATIONS_HASH := 24000
 # lettres/decorations autorisées dans les pseudos
 const CARACTERES_PSEUDO := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ éèêëàâäîïôöùûüçÉÈÊËÀÂÄÎÏÔÖÙÛÜÇ"
@@ -47,6 +49,8 @@ var _champ_pseudo: LineEdit
 var _champ_mdp: LineEdit
 var _label_message: Label
 var _action_en_attente := ""
+var _attente_auth := 0.0
+var _tentatives_auth := 0
 
 # --- client : chat ---
 var _chat: CanvasLayer
@@ -54,12 +58,19 @@ var _chat_log: RichTextLabel
 var _chat_saisie: LineEdit
 var _chat_ouvert := false
 
+# --- client : monde partagé ---
+var _scene_locale := ""
+var etat_rencontres_recu: Array = []
+
 # --- client : avatars des autres joueurs ---
 var _avatars := {}
 
 # --- serveur : sessions et relais ---
 var _db_mmo: SQLite
-var _sessions := {}           # peer_id -> {pseudo, position, annonce}
+var _sessions := {}          # peer_id -> {pseudo, scene, ...}
+# rencontres vaincues, temporaires : scene -> {cle: ticks d'expiration}
+var _rencontres_vaincues := {}
+var _temps_nettoyage_rencontres := 0.0           # peer_id -> {pseudo, position, annonce}
 var _positions_a_relais := {}  # peer_id -> Vector2
 var _temps_relais := 0.0
 var _limiteurs := {}          # peer_id -> {position: ms, chat: ms}
@@ -80,8 +91,12 @@ func _process(delta: float) -> void:
 	if mode == Mode.CLIENT and pseudo != "":
 		_client_envoyer_position(delta)
 		_client_sauvegarde_periodique(delta)
+		_client_annoncer_scene()
+	elif mode == Mode.CLIENT and _action_en_attente != "":
+		_client_piloter_auth(delta)
 	elif mode == Mode.SERVEUR:
 		_serveur_diffuser_positions(delta)
+		_serveur_purger_rencontres(delta)
 
 # ============================================================
 #  SERVEUR
@@ -194,6 +209,7 @@ func _ouvrir_session(peer_id: int, nom_pseudo: String) -> void:
 		"pseudo": nom_pseudo,
 		"position": Vector2(INF, INF),
 		"annonce": false,
+		"scene": "",
 	}
 	_limiteurs[peer_id] = {"position": 0, "chat": 0}
 	print("Connexion : %s (id %d, %d joueur(s) en ligne)" % [nom_pseudo, peer_id, _sessions.size()])
@@ -343,6 +359,74 @@ func envoie_position(x: float, y: float) -> void:
 	_annoncer_si_premiere_position(peer_id, Vector2(x, y))
 	_positions_a_relais[peer_id] = Vector2(x, y)
 
+# sessions presentes sur une map donnee
+func _pairs_sur_scene(nom_scene: String) -> Array:
+	var pairs: Array = []
+	for peer_id in _sessions:
+		if str(_sessions[peer_id]["scene"]) == nom_scene:
+			pairs.append(int(peer_id))
+	return pairs
+
+# les rencontres vaincues en cours sur une map (non expirees)
+func _cles_vaincues(nom_scene: String) -> Array:
+	var cles: Array = []
+	var vaincues: Dictionary = _rencontres_vaincues.get(nom_scene, {})
+	for cle in vaincues:
+		cles.append(str(cle))
+	return cles
+
+# RPC serveur : le client annonce la map sur laquelle il joue
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_scene(nom_scene: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _sessions.has(peer_id):
+		return
+	nom_scene = nom_scene.strip_edges().substr(0, 64)
+	_sessions[peer_id]["scene"] = nom_scene
+	# l'etat du monde de cette map part au nouvel arrivant
+	rpc_id(peer_id, "etat_rencontres", _cles_vaincues(nom_scene))
+
+# RPC serveur : un joueur a vaincu une rencontre de sa map
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_rencontre_vaincue(cle: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _sessions.has(peer_id):
+		return
+	var nom_scene := str(_sessions[peer_id]["scene"])
+	if nom_scene == "":
+		return
+	cle = cle.strip_edges().substr(0, 128)
+	var vaincues: Dictionary = _rencontres_vaincues.get(nom_scene, {})
+	vaincues[cle] = Time.get_ticks_msec() + int(RESPAWN_RENCONTRES_S * 1000.0)
+	_rencontres_vaincues[nom_scene] = vaincues
+	# masquee pour tous les joueurs de la meme map (l'echo vers le
+	# tueur est sans effet : son ennemi est deja libere localement)
+	for autre in _pairs_sur_scene(nom_scene):
+		rpc_id(int(autre), "rencontre_vaincue", cle)
+
+# purge periodique : une rencontre vaincue depuis trop longtemps
+# reapparait pour les joueurs presents sur la map
+func _serveur_purger_rencontres(delta: float) -> void:
+	_temps_nettoyage_rencontres += delta
+	if _temps_nettoyage_rencontres < 5.0:
+		return
+	_temps_nettoyage_rencontres = 0.0
+	var maintenant := Time.get_ticks_msec()
+	for nom_scene in _rencontres_vaincues.keys():
+		var vaincues: Dictionary = _rencontres_vaincues[nom_scene]
+		for cle in vaincues.keys():
+			if int(vaincues[cle]) > maintenant:
+				continue
+			vaincues.erase(cle)
+			for autre in _pairs_sur_scene(str(nom_scene)):
+				rpc_id(int(autre), "rencontre_revient", str(cle))
+		if vaincues.is_empty():
+			_rencontres_vaincues.erase(str(nom_scene))
+
 # RPC serveur : message de chat global
 @rpc("any_peer", "call_remote", "reliable")
 func envoie_message_chat(texte: String) -> void:
@@ -388,7 +472,17 @@ func demarrer_client(adresse_recue: String) -> bool:
 		hote = IP.resolve_hostname(adresse, IP.TYPE_IPV6)
 	if hote == "":
 		return false
+	# toujours repartir d'un pair neuf et vider les caches du
+	# SceneMultiplayer : réutiliser un pair refermé désynchronise les
+	# caches de nœuds et le serveur jette ensuite tous nos RPC
+	var pair := multiplayer.multiplayer_peer
+	if pair != null:
+		pair.close()
+	multiplayer.multiplayer_peer = null
+	multiplayer.clear()
 	var peer := ENetMultiplayerPeer.new()
+	# le pair doit d'abord établir la connexion avant d'être confié
+	# au SceneTree (sinon il est rejeté)
 	if peer.create_client(hote, port) != OK:
 		return false
 	multiplayer.multiplayer_peer = peer
@@ -396,10 +490,38 @@ func demarrer_client(adresse_recue: String) -> bool:
 	return true
 
 func _on_connecte_au_serveur() -> void:
+	# la première requête part avec un léger délai : le serveur doit
+	# d'abord mettre notre nœud en cache, sinon le RPC part dans le
+	# vide (course au handshake ENet) ; _process renverra au besoin
+	_attente_auth = 0.0
+	_tentatives_auth = 0
+
+# envoie (ou renvoie) la requête d'authentification au serveur
+func _envoyer_requete_auth() -> void:
 	if _action_en_attente == "inscription":
 		rpc_id(1, "demande_inscription", _champ_pseudo.text.strip_edges(), _champ_mdp.text)
-	else:
+	elif _action_en_attente == "connexion":
 		rpc_id(1, "demande_connexion", _champ_pseudo.text.strip_edges(), _champ_mdp.text)
+	_attente_auth = 0.0
+	_tentatives_auth += 1
+
+# cadence l'envoi : 0,25 s après la connexion puis reprise toutes les
+# 2 s si aucune réponse n'arrive (paquet perdu au handshake)
+func _client_piloter_auth(delta: float) -> void:
+	_attente_auth += delta
+	if _tentatives_auth == 0:
+		if _attente_auth >= 0.25:
+			_envoyer_requete_auth()
+	elif _attente_auth >= 2.0:
+		if _tentatives_auth >= 4:
+			var pair := multiplayer.multiplayer_peer
+			if pair != null:
+				pair.close()
+			mode = Mode.HORS_LIGNE
+			_message_interface("Le serveur ne répond pas.")
+			_action_en_attente = ""
+		else:
+			_envoyer_requete_auth()
 
 # déconnexion volontaire : ferme le pair et remet le client hors ligne
 func fermer_connexion() -> void:
@@ -407,9 +529,11 @@ func fermer_connexion() -> void:
 	if peer != null:
 		peer.close()
 	multiplayer.multiplayer_peer = null
+	multiplayer.clear()
 	pseudo = ""
 	mode = Mode.HORS_LIGNE
 	_action_en_attente = ""
+	_scene_locale = ""
 	_retirer_tous_avatars()
 	get_tree().paused = false
 
@@ -422,6 +546,7 @@ func _on_serveur_perdu() -> void:
 	pseudo = ""
 	mode = Mode.HORS_LIGNE
 	_action_en_attente = ""
+	_scene_locale = ""
 	_retirer_tous_avatars()
 	afficher_interface()
 	_message_interface("Connexion au serveur perdue.")
@@ -432,8 +557,18 @@ func reponse_authentification(ok: bool, message: String, perso_json: String) -> 
 	if multiplayer.is_server():
 		return
 	authentification_resultat.emit(ok, message)
+	_action_en_attente = ""
+	_tentatives_auth = 0
 	if not ok:
 		_message_interface(message)
+		# refusé : la connexion est refermée, la prochaine tentative
+		# repartira d'un pair propre
+		var pair := multiplayer.multiplayer_peer
+		if pair != null:
+			pair.close()
+		multiplayer.multiplayer_peer = null
+		multiplayer.clear()
+		mode = Mode.HORS_LIGNE
 		return
 	pseudo = _champ_pseudo.text.strip_edges()
 	sauvegarder_preferences()
@@ -504,6 +639,95 @@ func _client_envoyer_position(delta: float) -> void:
 		return
 	_derniere_position_envoyee = joueur.global_position
 	rpc_id(1, "envoie_position", float(joueur.global_position.x), float(joueur.global_position.y))
+
+# le joueur change de map : la nouvelle scene part au serveur, qui
+# renvoie l'etat des rencontres vaincues a cet endroit
+func _client_annoncer_scene() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var nom := str(scene.name)
+	if nom == _scene_locale:
+		return
+	_scene_locale = nom
+	rpc_id(1, "envoie_scene", nom)
+
+# RPC client : etat du monde recu (rencontres deja vaincues sur la map)
+@rpc("any_peer", "call_remote", "reliable")
+func etat_rencontres(cles: Array) -> void:
+	if multiplayer.is_server():
+		return
+	etat_rencontres_recu = []
+	for cle in cles:
+		etat_rencontres_recu.append(str(cle))
+		cacher_rencontre(str(cle))
+
+# RPC client : une rencontre vient d'etre vaincue par un joueur de la
+# meme map
+@rpc("any_peer", "call_remote", "reliable")
+func rencontre_vaincue(cle: String) -> void:
+	if multiplayer.is_server():
+		return
+	cacher_rencontre(cle)
+
+# RPC client : une rencontre vaincue reapparait
+@rpc("any_peer", "call_remote", "reliable")
+func rencontre_revient(cle: String) -> void:
+	if multiplayer.is_server():
+		return
+	reviver_rencontre(cle)
+
+# l'identifiant reseau d'une rencontre : "Parent/Noeud" (stable entre
+# les clients : les scenes sont identiques)
+func cle_rencontre(ennemi: Node) -> String:
+	var parent := ennemi.get_parent()
+	if parent == null:
+		return str(ennemi.name)
+	return "%s/%s" % [str(parent.name), str(ennemi.name)]
+
+# appele par ennemy.gd quand le vainqueur LOCAL veut partager sa victoire
+func signaler_rencontre_vaincue(ennemi: Node) -> void:
+	if mode != Mode.CLIENT or pseudo == "":
+		return
+	rpc_id(1, "envoie_rencontre_vaincue", cle_rencontre(ennemi))
+
+# masque l'ennemi correspondant a la cle : vaincu pour tout le monde
+# sur cette map, jusqu'a ce que le serveur le fasse reapparaitre
+func cacher_rencontre(cle: String) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var ennemi := scene.get_node_or_null(cle)
+	if ennemi == null or not is_instance_valid(ennemi):
+		return
+	# l'ennemi est engage dans NOTRE combat : on le retire proprement
+	# (les recompenses restent au joueur qui l'a vaincu)
+	var cm := scene.get_node_or_null("CombatManager")
+	if cm != null:
+		var engages = cm.get("_ennemis")
+		if engages is Array and (engages as Array).has(ennemi):
+			cm.call("ennemi_vaincu", ennemi)
+			ennemi.queue_free()
+			return
+	ennemi.set("pv", 0)
+	ennemi.hide()
+	var zone := ennemi.get_node_or_null("ZoneDetection")
+	if zone != null:
+		zone.set_deferred("monitoring", false)
+
+# une rencontre reapparait : l'ennemi redevient actif
+func reviver_rencontre(cle: String) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var ennemi := scene.get_node_or_null(cle)
+	if ennemi == null or not is_instance_valid(ennemi):
+		return
+	ennemi.show()
+	ennemi.set("pv", int(ennemi.get("pv_max")))
+	var zone := ennemi.get_node_or_null("ZoneDetection")
+	if zone != null:
+		zone.set_deferred("monitoring", true)
 
 func _client_sauvegarde_periodique(delta: float) -> void:
 	_temps_sauvegarde += delta
