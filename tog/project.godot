@@ -26,6 +26,7 @@ Equipages="*res://scripts/autoloads/equipages.gd"
 Coffres="*res://scripts/autoloads/coffres.gd"
 CartesTresor="*res://scripts/autoloads/cartes_tresor.gd"
 Touches="*res://scripts/autoloads/touches.gd"
+Reseau="*res://scripts/autoloads/reseau.gd"
 
 [display]
 
