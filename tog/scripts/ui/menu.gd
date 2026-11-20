@@ -29,6 +29,7 @@ const LIBELLES_TYPES_INVENTAIRE := {
 @onready var btn_menu: Button = $BoutonMenu
 @onready var titre: Label = $Fenetre/Entete/Titre
 @onready var option_type_inventaire: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire/OptionTypeInventaire
+@onready var case_portables: CheckBox = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire/CasePortables
 @onready var defilement_inventaire: ScrollContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DefilementInventaire
 @onready var grille: GridContainer = defilement_inventaire.get_node("Grille")
 @onready var label_vide: Label = $Fenetre/Corps/ContenuInventaire/Vide
@@ -122,6 +123,9 @@ const LIBELLES_TYPES_INVENTAIRE := {
 # positions des emplacements sur le visuel du personnage (paperdoll)
 var emplacements_ui := {}
 var detail_id_courant := ""
+# filtre « Portables uniquement » de l'inventaire : équipements dont le
+# niveau minimum est atteint (aucune restriction de classe)
+var filtre_portables := false
 
 # bouton d'utilisation des consommables (créé dans _ready : la scène ne
 # contient que les boutons Équiper, Fruit et Coffres)
@@ -250,6 +254,7 @@ func _ready() -> void:
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Hotel.pressed.connect(ouvrir.bind("hotel"))
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Equipage.pressed.connect(ouvrir.bind("equipage"))
 	option_type_inventaire.item_selected.connect(_on_type_inventaire_selectionne)
+	case_portables.toggled.connect(_on_portables_toggle)
 	Inventaire.inventaire_modifie.connect(maj_grille)
 	Inventaire.inventaire_modifie.connect(_maj_filtre_types_wiki)
 	QuestManager.quete_acceptee.connect(maj_quetes)
@@ -631,6 +636,8 @@ func maj_grille() -> void:
 
 	var ids_par_type := {}
 	for id: String in Inventaire.objets:
+		if filtre_portables and not _est_portable(id):
+			continue
 		var type_item := str(Inventaire.details_objet(id).get("type", ""))
 		if not ids_par_type.has(type_item):
 			ids_par_type[type_item] = []
@@ -641,7 +648,12 @@ func maj_grille() -> void:
 	var type_choisi: Variant = _maj_types_inventaire(types)
 	var types_affiches := types if type_choisi == null else [type_choisi]
 
-	label_vide.visible = Inventaire.objets.is_empty()
+	if filtre_portables:
+		label_vide.text = "Aucun équipement portable à ton niveau."
+		label_vide.visible = ids_par_type.is_empty()
+	else:
+		label_vide.text = "Inventaire vide"
+		label_vide.visible = Inventaire.objets.is_empty()
 	maj_detail_aucun()
 	for type_item in types_affiches:
 		var ids: Array = ids_par_type[type_item]
@@ -673,6 +685,19 @@ func _maj_types_inventaire(types: Array) -> Variant:
 func _on_type_inventaire_selectionne(_index: int) -> void:
 	defilement_inventaire.scroll_vertical = 0
 	maj_grille()
+
+func _on_portables_toggle(coche: bool) -> void:
+	filtre_portables = coche
+	defilement_inventaire.scroll_vertical = 0
+	maj_grille()
+
+# true si l'objet est un équipement dont le niveau minimum est atteint
+# (restriction de classe ignorée : une autre classe peut le mettre en arme2)
+func _est_portable(id: String) -> bool:
+	var details := Inventaire.details_objet(id)
+	if Personnage.emplacement_equipement(str(details.get("type", "")), str(details.get("sous_type", ""))) == "":
+		return false
+	return int(details.get("niveau_min", 1)) <= Personnage.niveau
 
 func _ajouter_case_inventaire(id: String) -> void:
 	var details := Inventaire.details_objet(id)

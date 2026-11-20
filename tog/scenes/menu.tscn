@@ -721,6 +721,10 @@ text = "Type"
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="CasePortables" type="CheckBox" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire"]
+layout_mode = 2
+text = "Portables uniquement"
+
 [node name="DefilementInventaire" type="ScrollContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit"]
 layout_mode = 2
 size_flags_vertical = 3
