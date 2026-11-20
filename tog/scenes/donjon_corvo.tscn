@@ -1,0 +1,234 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="Script" path="res://scripts/world/passage_zone.gd" id="Passage"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="Texture2D" path="res://assets/sprites/fauna/roi-des-os-statique.png" id="Gardien"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/arche_de_pierre.png" id="Arche"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/filon_de_cristaux.png" id="Cristal"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/colonne_brisee.png" id="Colonne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
+
+[sub_resource type="RectangleShape2D" id="RayonPassage"]
+size = Vector2(154.0, 54.0)
+
+[node name="DonjonCorvo" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"############################################",
+	"############################################",
+	"############################################",
+	"##########################.###..############",
+	"#######################......=.....#########",
+	"######################..#...===.....########",
+	"##################.##...========#...########",
+	"################......==========......######",
+	"##############~~~.....============.....#####",
+	"#############.~~~....=============.....#####",
+	"#############.~~~.....===========.....######",
+	"#############.~~~....===========......######",
+	"#############.~~~....===#====#=......#######",
+	"#############........====...........########",
+	"##############...===.====.===......#########",
+	"###############==========.=====....#########",
+	"#############============.======...#########",
+	"###########=======.======..======..#########",
+	"#########..=====....=====....=====....######",
+	"########~~~===......=====.....=====....#####",
+	"#####..~~~~~==......=====......====~~....###",
+	"#####..~~~~~==......=====##.....===~~~...###",
+	"#####..~~~~~==.....#=====#.......=~~~~~..###",
+	"#####...~~~===......=====........=~~~~~..###",
+	"#####......====.....=====........=~~~~~..###",
+	"#####.......===.....=====.......==~~~~~..###",
+	"#####.......======================~~~~~..###",
+	"#######......======================~~~...###",
+	"########.....======================.~....###",
+	"#############.###...============.......#####",
+	"##################..=====.###.......########",
+	"##################..=====..#####...#########",
+	"#################...=====...################",
+	"##################..=====...################",
+	"##################..=====..#################",
+	"##################..=====..#################",
+	"###################.=====.##################",
+	"#####################===####################"
+)
+souterrain = true
+
+[node name="player" parent="." index="5"]
+position = Vector2(1440, 2144)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Grotte des Os"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1440, 2336): "Sortie vers le mont Corvo", Vector2(800, 1504): "Galerie inondée", Vector2(2208, 1632): "Galerie des cristaux", Vector2(1760, 608): "Sanctuaire du gardien"})
+
+[node name="DepuisCorvo" type="Marker2D" parent="Arrivees"]
+position = Vector2(1440, 2144)
+
+[node name="VersMontCorvo" type="Area2D" parent="."]
+position = Vector2(1440, 2336)
+collision_layer = 0
+script = ExtResource("Passage")
+destination = "res://scenes/mont_corvo.tscn"
+arrivee = &"DepuisDonjon"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VersMontCorvo"]
+shape = SubResource("RayonPassage")
+
+[node name="Etiquette" type="Label" parent="VersMontCorvo"]
+z_index = 18
+offset_left = -180.0
+offset_top = -112.0
+offset_right = 180.0
+offset_bottom = -78.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.64, 1)
+theme_override_colors/font_outline_color = Color(0.11, 0.15, 0.13, 1)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 26
+text = "Retour au mont Corvo"
+horizontal_alignment = 1
+
+[node name="ArcheEntree" type="Sprite2D" parent="Paysage"]
+position = Vector2(1440, 2336)
+scale = Vector2(1.06, 1.06)
+texture = ExtResource("Arche")
+offset = Vector2(0, -90.5)
+
+[node name="ArcheSanctuaire" type="Sprite2D" parent="Paysage"]
+position = Vector2(1504, 800)
+scale = Vector2(1.17, 1.17)
+texture = ExtResource("Arche")
+offset = Vector2(0, -90.5)
+
+[node name="GemmeOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(608, 1184)
+scale = Vector2(1.0, 1.0)
+texture = ExtResource("Cristal")
+offset = Vector2(0, -52.0)
+
+[node name="GemmeEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(2400, 1312)
+scale = Vector2(1.32, 1.32)
+texture = ExtResource("Cristal")
+offset = Vector2(0, -52.0)
+
+[node name="GemmeEntree" type="Sprite2D" parent="Paysage"]
+position = Vector2(1696, 2016)
+scale = Vector2(0.82, 0.82)
+texture = ExtResource("Cristal")
+offset = Vector2(0, -52.0)
+
+[node name="GemmeSanctuaire" type="Sprite2D" parent="Paysage"]
+position = Vector2(2144, 480)
+scale = Vector2(1.2, 1.2)
+texture = ExtResource("Cristal")
+offset = Vector2(0, -52.0)
+
+[node name="PilierOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(1248, 1440)
+scale = Vector2(1.18, 1.18)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -60.5)
+
+[node name="PilierEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1632, 1440)
+scale = Vector2(1.18, 1.18)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -60.5)
+
+[node name="PilierSanctuaire" type="Sprite2D" parent="Paysage"]
+position = Vector2(2016, 800)
+scale = Vector2(1.18, 1.18)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -60.5)
+
+[node name="LueurOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(928, 1312)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+
+[node name="LueurEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(2080, 1312)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+
+[node name="LueurDuGouffre" type="Sprite2D" parent="Paysage"]
+position = Vector2(1440, 1056)
+scale = Vector2(0.95, 0.95)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+
+[node name="LueurDuVestibule" type="Sprite2D" parent="Paysage"]
+position = Vector2(1632, 2080)
+scale = Vector2(0.95, 0.95)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+
+[node name="SqueletteVestibule" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1440, 1760)
+collision_layer = 2
+nom = "Pirate squelette"
+pv_max = 70
+degats_attaque = 8
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+mob_id = 13
+
+[node name="SqueletteDeLOuest" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(864, 1568)
+collision_layer = 2
+nom = "Pirate squelette"
+pv_max = 78
+degats_attaque = 9
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+mob_id = 13
+
+[node name="SqueletteDeLEst" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2144, 1632)
+collision_layer = 2
+nom = "Pirate squelette"
+pv_max = 78
+degats_attaque = 9
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+mob_id = 13
+
+[node name="MomieDuGouffre" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1824, 1120)
+collision_layer = 2
+nom = "Momie"
+pv_max = 110
+degats_attaque = 12
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+mob_id = 14
+
+[node name="MomieDuReliquaire" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1248, 864)
+collision_layer = 2
+nom = "Momie"
+pv_max = 116
+degats_attaque = 12
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+mob_id = 14
+
+[node name="GardienDesOs" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1760, 608)
+collision_layer = 2
+nom = "Gardien de la grotte"
+pv_max = 160
+degats_attaque = 15
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+mob_id = 15
+texture_personnalisee = ExtResource("Gardien")
+niveau_personnalise = 9

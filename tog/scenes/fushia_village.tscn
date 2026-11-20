@@ -46,3 +46,24 @@ offset = Vector2(0, -81)
 
 [node name="Brick17" parent="." index="16"]
 visible = false
+
+[node name="Chene153" parent="." index="152"]
+position = Vector2(3816, 2880)
+
+[node name="Frondaison251" parent="." index="248"]
+position = Vector2(3712, 2448)
+
+[node name="Frondaison256" parent="." index="253"]
+position = Vector2(4232, 2660)
+
+[node name="Frondaison259" parent="." index="256"]
+position = Vector2(4264, 2416)
+
+[node name="Rocher3505" parent="." index="497"]
+position = Vector2(4595, 2272)
+
+[node name="Rocher4509" parent="." index="501"]
+position = Vector2(4574, 2152)
+
+[node name="ArbreGrandFushia035" parent="." index="640"]
+position = Vector2(3630, 2688)

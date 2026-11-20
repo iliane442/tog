@@ -109,9 +109,9 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if mode == Mode.CLIENT and pseudo != "":
+		_client_annoncer_scene()
 		_client_envoyer_position(delta)
 		_client_sauvegarde_periodique(delta)
-		_client_annoncer_scene()
 		_client_appliquer_annonces_attente()
 	elif mode == Mode.CLIENT and _action_en_attente != "":
 		_client_piloter_auth(delta)
@@ -248,7 +248,7 @@ func _annoncer_si_premiere_position(peer_id: int, position: Vector2) -> void:
 		return
 	session["annonce"] = true
 	session["position"] = position
-	for autre in _sessions:
+	for autre in _pairs_sur_scene(str(session["scene"])):
 		if int(autre) == peer_id:
 			continue
 		rpc_id(int(autre), "joueur_rejoint", peer_id, str(session["pseudo"]),
@@ -280,15 +280,16 @@ func _serveur_diffuser_positions(delta: float) -> void:
 	_temps_relais = 0.0
 	if _positions_a_relais.is_empty():
 		return
-	var paquet: Array = []
-	for peer_id in _positions_a_relais.keys():
+	var par_scene := {}
+	for peer_id in _positions_a_relais:
 		var position: Vector2 = _positions_a_relais[peer_id]
+		var nom_scene: String = _sessions[peer_id]["scene"]
+		var paquet: Array = par_scene.get_or_add(nom_scene, [])
 		paquet.append({"id": peer_id, "x": position.x, "y": position.y})
-		_positions_a_relais.erase(peer_id)
-	for autre in _sessions:
-		if not bool(_sessions[autre]["annonce"]):
-			continue
-		rpc_id(int(autre), "maj_positions", paquet)
+	_positions_a_relais.clear()
+	for nom_scene in par_scene:
+		for autre in _pairs_sur_scene(nom_scene):
+			rpc_id(int(autre), "maj_positions", par_scene[nom_scene])
 
 # RPC serveur : inscription (crée le compte et connecte)
 @rpc("any_peer", "call_remote", "reliable")
@@ -310,7 +311,6 @@ func demande_inscription(nom_pseudo: String, mdp: String) -> void:
 	print("Nouveau compte : %s" % nom_pseudo)
 	_ouvrir_session(peer_id, nom_pseudo)
 	rpc_id(peer_id, "reponse_authentification", true, "Bienvenue %s !" % nom_pseudo, "")
-	_annoncer_presents_au_nouveau(peer_id)
 	# première connexion : le perso du client devient la référence serveur
 	rpc_id(peer_id, "demande_import_perso")
 
@@ -328,12 +328,10 @@ func demande_connexion(nom_pseudo: String, mdp: String) -> void:
 	_ouvrir_session(peer_id, pseudo_final)
 	rpc_id(peer_id, "reponse_authentification", true, "Bienvenue %s !" % pseudo_final,
 		_perso_du_serveur(int(compte["id"])))
-	_annoncer_presents_au_nouveau(peer_id)
 
-# les joueurs déjà annoncés partent vers le nouveau ; le nouveau ne
-# sera annoncé aux autres qu'à sa première position connue
-func _annoncer_presents_au_nouveau(peer_id: int) -> void:
-	for autre in _sessions:
+# Les avatars existent uniquement dans la scène où leurs joueurs se trouvent.
+func _annoncer_presents_sur_scene(peer_id: int, nom_scene: String) -> void:
+	for autre in _pairs_sur_scene(nom_scene):
 		if int(autre) == peer_id or not bool(_sessions[autre]["annonce"]):
 			continue
 		rpc_id(peer_id, "joueur_rejoint", int(autre), str(_sessions[autre]["pseudo"]),
@@ -379,16 +377,23 @@ func envoie_sauvegarde_perso(donnees_json: String) -> void:
 
 # RPC serveur : position d'un joueur
 @rpc("any_peer", "call_remote", "unreliable")
-func envoie_position(x: float, y: float) -> void:
+func envoie_position(x: float, y: float, nom_scene: String = "") -> void:
 	if not multiplayer.is_server():
 		return
 	var peer_id := multiplayer.get_remote_sender_id()
 	if not _sessions.has(peer_id):
 		return
+	var session: Dictionary = _sessions[peer_id]
+	if session["scene"] == "" or (nom_scene != "" and session["scene"] != nom_scene):
+		return
 	if _trop_tot(peer_id, "position", 30):
 		return
-	_annoncer_si_premiere_position(peer_id, Vector2(x, y))
-	_positions_a_relais[peer_id] = Vector2(x, y)
+	var position := Vector2(x, y)
+	if not position.is_finite():
+		return
+	_annoncer_si_premiere_position(peer_id, position)
+	session["position"] = position
+	_positions_a_relais[peer_id] = position
 
 # sessions presentes sur une map donnee
 func _pairs_sur_scene(nom_scene: String) -> Array:
@@ -408,16 +413,29 @@ func _cles_vaincues(nom_scene: String) -> Array:
 
 # RPC serveur : le client annonce la map sur laquelle il joue
 @rpc("any_peer", "call_remote", "reliable")
-func envoie_scene(nom_scene: String) -> void:
+func envoie_scene(nom_scene: String, x: float = INF, y: float = INF) -> void:
 	if not multiplayer.is_server():
 		return
 	var peer_id := multiplayer.get_remote_sender_id()
 	if not _sessions.has(peer_id):
 		return
 	nom_scene = nom_scene.strip_edges().substr(0, 64)
-	_sessions[peer_id]["scene"] = nom_scene
+	var session: Dictionary = _sessions[peer_id]
+	var ancienne_scene: String = session["scene"]
+	if nom_scene == "" or nom_scene == ancienne_scene:
+		return
+	for autre in _pairs_sur_scene(ancienne_scene):
+		if int(autre) != peer_id:
+			rpc_id(int(autre), "joueur_quitte", peer_id)
+	_positions_a_relais.erase(peer_id)
+	session["scene"] = nom_scene
+	session["annonce"] = false
+	var position := Vector2(x, y)
+	if position.is_finite():
+		_annoncer_si_premiere_position(peer_id, position)
+	_annoncer_presents_sur_scene(peer_id, nom_scene)
 	# l'etat du monde de cette map part au nouvel arrivant
-	rpc_id(peer_id, "etat_rencontres", _cles_vaincues(nom_scene))
+	rpc_id(peer_id, "etat_rencontres", _cles_vaincues(nom_scene), nom_scene)
 
 # RPC serveur : un joueur a vaincu une rencontre de sa map
 @rpc("any_peer", "call_remote", "reliable")
@@ -567,6 +585,9 @@ func reponse_duel(accepte: bool) -> void:
 	_invites_duel.erase(peer_id)
 	if not _sessions.has(demandeur) or not _sessions.has(peer_id):
 		return
+	if _sessions[demandeur]["scene"] != _sessions[peer_id]["scene"]:
+		rpc_id(demandeur, "recoit_message_chat", "Serveur", "Ce joueur a changé de zone.")
+		return
 	var pseudo_demandeur := str(_sessions[demandeur]["pseudo"])
 	var pseudo_cible := str(_sessions[peer_id]["pseudo"])
 	if not accepte:
@@ -632,6 +653,9 @@ func envoie_message_chat(texte: String) -> void:
 			return
 		if peer_cible == peer_id:
 			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Se défier soi-même, vraiment ?")
+			return
+		if _sessions[peer_cible]["scene"] != _sessions[peer_id]["scene"]:
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Rejoins ce joueur dans sa zone pour le défier.")
 			return
 		if _duels.has(peer_id) or _duels.has(peer_cible):
 			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Un des deux joueurs est déjà en duel.")
@@ -816,8 +840,10 @@ func joueur_rejoint(peer_id: int, nom_recu: String, x: float, y: float, en_comba
 		_annonces_en_attente.append(
 			{"id": peer_id, "nom": nom_recu, "x": x, "y": y, "combat": en_combat})
 		return
+	if _scene_locale != str(get_tree().current_scene.name):
+		return
 	_maj_avatar(peer_id, nom_recu, Vector2(x, y))
-	if _avatars.has(peer_id):
+	if is_instance_valid(_avatars.get(peer_id)):
 		(_avatars[peer_id] as Node2D).maj_combat(en_combat)
 
 # des joueurs ont ete annonces pendant que la scene locale etait
@@ -830,7 +856,7 @@ func _client_appliquer_annonces_attente() -> void:
 	for entree in attente:
 		_maj_avatar(int(entree["id"]), str(entree["nom"]),
 			Vector2(float(entree["x"]), float(entree["y"])))
-		if _avatars.has(int(entree["id"])):
+		if is_instance_valid(_avatars.get(int(entree["id"]))):
 			(_avatars[int(entree["id"])] as Node2D).maj_combat(bool(entree["combat"]))
 
 # RPC client : l'etat de combat d'un joueur change
@@ -838,7 +864,7 @@ func _client_appliquer_annonces_attente() -> void:
 func etre_en_combat(peer_id: int, actif: bool) -> void:
 	if multiplayer.is_server():
 		return
-	if _avatars.has(peer_id):
+	if is_instance_valid(_avatars.get(peer_id)):
 		(_avatars[peer_id] as Node2D).maj_combat(actif)
 
 # RPC client : un joueur part
@@ -856,7 +882,7 @@ func maj_positions(paquet: Array) -> void:
 	var identifiant := multiplayer.get_unique_id()
 	for entree in paquet:
 		var id_distant := int(entree["id"])
-		if id_distant == identifiant or not _avatars.has(id_distant):
+		if id_distant == identifiant or not is_instance_valid(_avatars.get(id_distant)):
 			continue
 		(_avatars[id_distant] as Node2D).viser(Vector2(float(entree["x"]), float(entree["y"])))
 
@@ -888,24 +914,31 @@ func _client_envoyer_position(delta: float) -> void:
 	if joueur.global_position.distance_to(_derniere_position_envoyee) < 4.0:
 		return
 	_derniere_position_envoyee = joueur.global_position
-	rpc_id(1, "envoie_position", float(joueur.global_position.x), float(joueur.global_position.y))
+	rpc_id(1, "envoie_position", float(joueur.global_position.x), float(joueur.global_position.y), _scene_locale)
 
 # le joueur change de map : la nouvelle scene part au serveur, qui
 # renvoie l'etat des rencontres vaincues a cet endroit
 func _client_annoncer_scene() -> void:
 	var scene := get_tree().current_scene
-	if scene == null:
+	var joueur := _joueur_local()
+	if scene == null or joueur == null:
 		return
 	var nom := str(scene.name)
 	if nom == _scene_locale:
 		return
+	_retirer_tous_avatars()
+	_annonces_en_attente.clear()
+	etat_rencontres_recu.clear()
+	invitation_en_attente.clear()
+	_cacher_invitation()
 	_scene_locale = nom
-	rpc_id(1, "envoie_scene", nom)
+	_derniere_position_envoyee = joueur.global_position
+	rpc_id(1, "envoie_scene", nom, joueur.global_position.x, joueur.global_position.y)
 
 # RPC client : etat du monde recu (rencontres deja vaincues sur la map)
 @rpc("any_peer", "call_remote", "reliable")
-func etat_rencontres(cles: Array) -> void:
-	if multiplayer.is_server():
+func etat_rencontres(cles: Array, nom_scene: String = "") -> void:
+	if multiplayer.is_server() or (nom_scene != "" and nom_scene != _scene_locale):
 		return
 	etat_rencontres_recu = []
 	for cle in cles:
@@ -1224,26 +1257,25 @@ func _conteneur_avatars() -> Node2D:
 func _maj_avatar(peer_id: int, nom_recu: String, position: Vector2, creer_si_absent := true) -> void:
 	if peer_id == multiplayer.get_unique_id():
 		return
-	if not creer_si_absent and not _avatars.has(peer_id):
+	var avatar_existant = _avatars.get(peer_id)
+	if is_instance_valid(avatar_existant):
+		avatar_existant.viser(position)
 		return
-	if not _avatars.has(peer_id):
-		var conteneur := _conteneur_avatars()
-		if conteneur == null:
-			return
-		var avatar := SCRIPT_AVATAR.new()
-		avatar.pseudo = nom_recu
-		avatar.global_position = position
-		conteneur.add_child(avatar)
-		_avatars[peer_id] = avatar
+	if not creer_si_absent:
 		return
-	(_avatars[peer_id] as Node2D).viser(position)
+	var conteneur := _conteneur_avatars()
+	if conteneur == null:
+		return
+	var avatar := SCRIPT_AVATAR.new()
+	avatar.pseudo = nom_recu
+	avatar.position = conteneur.to_local(position)
+	conteneur.add_child(avatar)
+	_avatars[peer_id] = avatar
 
 func _retirer_avatar(peer_id: int) -> void:
-	if not _avatars.has(peer_id):
-		return
-	var avatar: Node = _avatars[peer_id]
+	var avatar = _avatars.get(peer_id)
 	_avatars.erase(peer_id)
-	if avatar != null and is_instance_valid(avatar):
+	if is_instance_valid(avatar):
 		avatar.queue_free()
 
 func _retirer_tous_avatars() -> void:

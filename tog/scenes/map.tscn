@@ -19,11 +19,10 @@
 [ext_resource type="Texture2D" path="res://assets/maps/fushia_nord_est.png" id="terrain_nord_est"]
 [ext_resource type="Texture2D" path="res://assets/maps/fushia_sud_ouest.png" id="terrain_sud_ouest"]
 [ext_resource type="Texture2D" path="res://assets/maps/fushia_sud_est.png" id="terrain_sud_est"]
-[ext_resource type="Shader" path="res://assets/shaders/eau_fushia.gdshader" id="eau"]
+[ext_resource type="Shader" path="res://assets/shaders/terrain_fushia.gdshader" id="terrain_shader"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/sols.png" id="tuile"]
 [ext_resource type="PackedScene" path="res://scenes/fushia_decors.tscn" id="decors"]
 [ext_resource type="PackedScene" path="res://scenes/fushia_moulin.tscn" id="moulin"]
-[ext_resource type="PackedScene" path="res://scenes/coffre.tscn" id="coffre"]
 [ext_resource type="Script" path="res://scripts/pnj.gd" id="pnj"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_shanks.tscn" id="19_shanks"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_kaya.tscn" id="20_kaya"]
@@ -40,8 +39,14 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="lancer"]
 [ext_resource type="Texture2D" path="res://assets/sprites/pnj/iris.png" id="monk"]
 
-[sub_resource type="ShaderMaterial" id="Reflets"]
-shader = ExtResource("eau")
+[sub_resource type="ShaderMaterial" id="ReliefTerrain"]
+shader = ExtResource("terrain_shader")
+shader_parameter/carte_terrain = ExtResource("terrain")
+
+[sub_resource type="ShaderMaterial" id="ReliefMiniCarte"]
+shader = ExtResource("terrain_shader")
+shader_parameter/carte_terrain = ExtResource("terrain")
+shader_parameter/mini_carte = true
 
 [sub_resource type="TileSetAtlasSource" id="AtlasTactique"]
 texture = ExtResource("tuile")
@@ -68,28 +73,28 @@ texture_filter = 1
 
 [node name="NordOuest" type="Sprite2D" parent="TerrainFushia"]
 position = Vector2(0, 0)
-material = SubResource("Reflets")
+material = SubResource("ReliefTerrain")
 texture = ExtResource("terrain_nord_ouest")
 centered = false
 scale = Vector2(2, 2)
 
 [node name="NordEst" type="Sprite2D" parent="TerrainFushia"]
 position = Vector2(5120, 0)
-material = SubResource("Reflets")
+material = SubResource("ReliefTerrain")
 texture = ExtResource("terrain_nord_est")
 centered = false
 scale = Vector2(2, 2)
 
 [node name="SudOuest" type="Sprite2D" parent="TerrainFushia"]
 position = Vector2(0, 4032)
-material = SubResource("Reflets")
+material = SubResource("ReliefTerrain")
 texture = ExtResource("terrain_sud_ouest")
 centered = false
 scale = Vector2(2, 2)
 
 [node name="SudEst" type="Sprite2D" parent="TerrainFushia"]
 position = Vector2(5120, 4032)
-material = SubResource("Reflets")
+material = SubResource("ReliefTerrain")
 texture = ExtResource("terrain_sud_est")
 centered = false
 scale = Vector2(2, 2)
@@ -610,41 +615,6 @@ theme_override_font_sizes/font_size = 16
 text = "Malo du port"
 horizontal_alignment = 1
 
-[node name="CoffreAnse" parent="." instance=ExtResource("coffre")]
-position = Vector2(1056, 5792)
-rarete = 1
-coffre_id = "fushia_anse"
-
-[node name="CoffreBois" parent="." instance=ExtResource("coffre")]
-position = Vector2(2080, 2080)
-rarete = 1
-coffre_id = "fushia_bois"
-
-[node name="CoffreEtang" parent="." instance=ExtResource("coffre")]
-position = Vector2(7072, 3232)
-rarete = 1
-coffre_id = "fushia_etang"
-
-[node name="CoffreCamp" parent="." instance=ExtResource("coffre")]
-position = Vector2(5664, 1248)
-rarete = 2
-coffre_id = "fushia_camp"
-
-[node name="CoffreCap" parent="." instance=ExtResource("coffre")]
-position = Vector2(9056, 2208)
-rarete = 2
-coffre_id = "fushia_cap"
-
-[node name="CoffreCrique" parent="." instance=ExtResource("coffre")]
-position = Vector2(7968, 6624)
-rarete = 1
-coffre_id = "fushia_crique"
-
-[node name="CoffreRuines" parent="." instance=ExtResource("coffre")]
-position = Vector2(8800, 3808)
-rarete = 3
-coffre_id = "fushia_ruines"
-
 [node name="Overlay" type="Node2D" parent="."]
 script = ExtResource("17_overlay")
 
@@ -652,12 +622,13 @@ script = ExtResource("17_overlay")
 layer = 8
 
 [node name="PanneauCarte" type="PanelContainer" parent="CarteFushia"]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = -228.0
-offset_right = 247.0
-offset_bottom = -18.0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -247.0
+offset_top = 162.0
+offset_right = -20.0
+offset_bottom = 372.0
+grow_horizontal = 0
 theme = ExtResource("theme")
 theme_type_variation = &"InsetPanel"
 mouse_filter = 2
@@ -677,11 +648,13 @@ theme_override_constants/separation = 3
 
 [node name="Titre" type="Label" parent="CarteFushia/PanneauCarte/Marges/Colonne"]
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.88, 0.64, 1)
 theme_override_font_sizes/font_size = 21
 text = "Fushia"
 horizontal_alignment = 1
 
 [node name="Carte" type="TextureRect" parent="CarteFushia/PanneauCarte/Marges/Colonne"]
+material = SubResource("ReliefMiniCarte")
 custom_minimum_size = Vector2(200, 155)
 layout_mode = 2
 size_flags_vertical = 3
@@ -753,8 +726,6 @@ text = "Refuser"
 
 [node name="HUD" parent="." instance=ExtResource("10_hud")]
 
-
-[node name="CoffreUI" parent="." instance=ExtResource("13_coffreui")]
 
 
 [node name="BoutiqueUI" parent="." instance=ExtResource("14_boutique")]

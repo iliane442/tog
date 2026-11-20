@@ -9,7 +9,7 @@ const DEFINITIONS := {
 	},
 	"fushia_provisions_dadan": {
 		"titre": "Les provisions du mont Corvo",
-		"description": "Cueille trois fois les herbes des sous-bois signalées en descendant du repaire de Dadan, vers la forêt.",
+		"description": "Prends l’escalier au nord du village pour rejoindre le mont Corvo. Cueille trois herbes dans les clairières de la forêt, à l’est du repaire de Dadan.",
 		"objectif": 3, "recompense_xp": 125, "recompense_berry": 210,
 		"recompenses_objets": [{"item_id": 865, "quantity": 1}],
 	},

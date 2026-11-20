@@ -18,16 +18,15 @@ signal croix_modifiees
 
 const CHEMIN_ETAT := "user://cartes_tresor.cfg"
 const SCRIPT_CROIX := preload("res://scripts/croix_tresor.gd")
+const CARTE_DEPART := "res://scenes/fushia.tscn"
 
 # distance minimale (en cases) entre le joueur et la croix : la chasse
 # demande un peu de marche
 const DISTANCE_MIN_CASES := 6
-# essais de placement avant d'accepter une case proche du joueur
-const ESSAIS_PLACEMENT := 40
 # trésor légendaire : chance d'un objet unique (fruit du démon ou lame)
 const PROBA_UNIQUE := 0.001
 
-# croix actives : { "case_sol": Vector2i, "rarete": int }
+# croix actives par scène : { "scene": String, "case_sol": Vector2i, "rarete": int }
 var _croix: Array = []
 
 func _ready() -> void:
@@ -40,6 +39,7 @@ func _charger() -> void:
 	for donnees in cfg.get_value("cartes", "croix", []):
 		if donnees is Dictionary:
 			_croix.append({
+				"scene": str(donnees.get("scene", CARTE_DEPART)),
 				"case_sol": Vector2i(int(donnees.get("x", 0)), int(donnees.get("y", 0))),
 				"rarete": clampi(int(donnees.get("rarete", 1)), 1, 4),
 			})
@@ -49,6 +49,7 @@ func _sauver() -> void:
 	var lu := []
 	for croix in _croix:
 		lu.append({
+			"scene": croix["scene"],
 			"x": int(croix["case_sol"].x),
 			"y": int(croix["case_sol"].y),
 			"rarete": int(croix["rarete"]),
@@ -66,29 +67,44 @@ func croix_persistantes() -> Array:
 # scène)
 func dessiner_sur_carte() -> void:
 	var scene := get_tree().current_scene
-	if scene == null:
+	var sol := _sol_de_scene(scene)
+	if sol == null:
 		return
+	var deplacee := false
 	for croix in _croix:
+		if croix["scene"] != scene.scene_file_path:
+			continue
+		# Une ancienne sauvegarde peut viser le plateau fermé de Fushia.
+		if sol.get_cell_source_id(croix["case_sol"]) == -1:
+			var nouvelle_case = _case_aleatoire()
+			if nouvelle_case == null:
+				continue
+			croix["case_sol"] = nouvelle_case
+			deplacee = true
 		if _marqueur_depuis_case(croix["case_sol"]) == null:
 			scene.add_child(_creer_marqueur(croix["case_sol"], int(croix["rarete"])))
+	if deplacee:
+		_sauver()
 
 # « Utiliser » d'une carte : choisit une case et plante la croix
 func creer_croix(niveau_tresor: int) -> bool:
+	var scene := get_tree().current_scene
 	var case_sol = _case_aleatoire()
 	if case_sol == null:
 		return false
-	_croix.append({"case_sol": case_sol, "rarete": clampi(niveau_tresor, 1, 4)})
+	var rarete := clampi(niveau_tresor, 1, 4)
+	_croix.append({"scene": scene.scene_file_path, "case_sol": case_sol, "rarete": rarete})
 	_sauver()
-	# la map est peut-être déjà chargée : la croix apparaît immédiatement
-	var scene := get_tree().current_scene
-	if scene != null and _sol_de_scene(scene) != null:
-		scene.add_child(_creer_marqueur(case_sol, int(_croix[_croix.size() - 1]["rarete"])))
+	scene.add_child(_creer_marqueur(case_sol, rarete))
 	return true
 
 # clic sur une croix : le trésor est décerné, la croix disparaît
 func fouiller(case_sol: Vector2i) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
 	for i in range(_croix.size()):
-		if _croix[i]["case_sol"] == case_sol:
+		if _croix[i]["scene"] == scene.scene_file_path and _croix[i]["case_sol"] == case_sol:
 			var rarete := int(_croix[i]["rarete"])
 			_croix.remove_at(i)
 			_sauver()
@@ -256,8 +272,6 @@ func _case_aleatoire():
 	if sol == null:
 		return null
 	var cases := sol.get_used_cells()
-	if cases.is_empty():
-		return null
 	var falaises: TileMapLayer = null
 	if scene != null:
 		falaises = scene.get_node_or_null("cliffs") as TileMapLayer
@@ -267,12 +281,16 @@ func _case_aleatoire():
 	if joueur != null:
 		case_joueur = sol.local_to_map(sol.to_local(joueur.global_position))
 		connait_joueur = true
-	# quelques essais : une case sans falaise et assez loin du joueur ;
-	# à défaut, la dernière candidate sans falaise
-	var candidate: Vector2i = cases[0]
-	for _i in range(ESSAIS_PLACEMENT):
-		var case_essai: Vector2i = cases[randi() % cases.size()]
+	var occupees := {}
+	for croix in _croix:
+		if croix["scene"] == scene.scene_file_path:
+			occupees[croix["case_sol"]] = true
+	cases.shuffle()
+	var candidate = null
+	for case_essai in cases:
 		if falaises != null and falaises.get_cell_source_id(case_essai) != -1:
+			continue
+		if occupees.has(case_essai):
 			continue
 		candidate = case_essai
 		if not connait_joueur or case_essai.distance_to(case_joueur) >= DISTANCE_MIN_CASES:
