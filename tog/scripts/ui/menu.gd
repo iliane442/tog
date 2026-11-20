@@ -29,6 +29,7 @@ const LIBELLES_TYPES_INVENTAIRE := {
 @onready var btn_menu: Button = $BoutonMenu
 @onready var titre: Label = $Fenetre/Entete/Titre
 @onready var option_type_inventaire: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire/OptionTypeInventaire
+@onready var case_portables: CheckBox = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire/CasePortables
 @onready var defilement_inventaire: ScrollContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DefilementInventaire
 @onready var grille: GridContainer = defilement_inventaire.get_node("Grille")
 @onready var label_vide: Label = $Fenetre/Corps/ContenuInventaire/Vide
@@ -122,6 +123,9 @@ const LIBELLES_TYPES_INVENTAIRE := {
 # positions des emplacements sur le visuel du personnage (paperdoll)
 var emplacements_ui := {}
 var detail_id_courant := ""
+# filtre « Portables uniquement » de l'inventaire : équipements dont le
+# niveau minimum est atteint (aucune restriction de classe)
+var filtre_portables := false
 
 # bouton d'utilisation des consommables (créé dans _ready : la scène ne
 # contient que les boutons Équiper, Fruit et Coffres)
@@ -250,6 +254,7 @@ func _ready() -> void:
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Hotel.pressed.connect(ouvrir.bind("hotel"))
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Equipage.pressed.connect(ouvrir.bind("equipage"))
 	option_type_inventaire.item_selected.connect(_on_type_inventaire_selectionne)
+	case_portables.toggled.connect(_on_portables_toggle)
 	Inventaire.inventaire_modifie.connect(maj_grille)
 	Inventaire.inventaire_modifie.connect(_maj_filtre_types_wiki)
 	QuestManager.quete_acceptee.connect(maj_quetes)
@@ -435,32 +440,39 @@ func _icone_sort(sort: Dictionary) -> Texture2D:
 
 # onglet Sorts : barre de combat en haut (cliquer un sort placé pour le
 # retirer), puis la liste des sorts de la classe et des pouvoirs du fruit
-# mangé débloqués, avec un bouton pour placer chacun dans la barre
+# mangé, avec un bouton pour placer chacun dans la barre de combat ; les
+# sorts pas encore débloqués apparaissent grisés avec leur niveau requis
 func maj_sorts() -> void:
 	for enfant in liste_sorts.get_children():
 		enfant.queue_free()
 	_construire_barre_sorts()
 	var ids_classe: Array[String] = Personnage.sorts_de_classe()
 	var ids_combat: Array[String] = []
-	# seuls les sorts disponibles hors classe (pouvoirs du fruit mangé
-	# débloqués par son niveau d'utilisation) apparaissent ici
+	# sorts disponibles hors classe (pouvoirs du fruit mangé débloqués
+	# par son niveau d'utilisation)
 	for id_sort in Personnage.sorts_disponibles():
 		if not ids_classe.has(id_sort):
 			ids_combat.append(id_sort)
-	if ids_classe.is_empty() and ids_combat.is_empty():
+	var verrous_classe := Personnage.sorts_de_classe_verrouilles()
+	var verrous_fruit := Personnage.sorts_fruit_verrouilles()
+	if ids_classe.is_empty() and ids_combat.is_empty() and verrous_classe.is_empty() and verrous_fruit.is_empty():
 		var vide := Label.new()
 		vide.text = "Aucun sort n'est disponible pour le moment."
 		liste_sorts.add_child(vide)
 		return
-	if not ids_classe.is_empty():
+	if not ids_classe.is_empty() or not verrous_classe.is_empty():
 		_ajouter_titre_section_sorts("Sorts de classe")
 		for id_classe in ids_classe:
 			if Personnage.sorts.has(id_classe):
 				_construire_carte_sort(id_classe)
-	if not ids_combat.is_empty():
+		for verrou in verrous_classe:
+			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du personnage." % int(verrou["niveau"]))
+	if not ids_combat.is_empty() or not verrous_fruit.is_empty():
 		_ajouter_titre_section_sorts("Pouvoirs du fruit du démon")
 		for id_combat in ids_combat:
 			_construire_carte_sort(id_combat)
+		for verrou in verrous_fruit:
+			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du fruit du démon." % int(verrou["niveau"]))
 func _ajouter_titre_section_sorts(texte: String) -> void:
 	var titre_section := Label.new()
 	titre_section.text = texte
@@ -497,9 +509,11 @@ func _construire_barre_sorts() -> void:
 	encadre.add_child(colonne)
 	liste_sorts.add_child(encadre)
 
-# carte d'un sort de la classe : nom, icône, infos, description et
-# bouton de placement dans la barre de combat
-func _construire_carte_sort(id: String) -> void:
+# carte d'un sort : nom, icône, infos, description et bouton de
+# placement dans la barre de combat ; si texte_verrou n'est pas vide,
+# le sort est verrouillé (grisé, non plaçable, condition affichée)
+func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
+	var verrouille := texte_verrou != ""
 	var sort: Dictionary = Personnage.sorts[id]
 	var encadre := PanelContainer.new()
 	var boite := VBoxContainer.new()
@@ -510,12 +524,17 @@ func _construire_carte_sort(id: String) -> void:
 	icone.custom_minimum_size = Vector2(32, 32)
 	icone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	if verrouille:
+		icone.modulate = Color(0.5, 0.5, 0.5)
 	var nom := Label.new()
 	nom.text = str(sort.get("nom", "Sort"))
 	nom.add_theme_font_size_override("font_size", 26)
 	nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var btn_barre := Button.new()
-	if Personnage.sort_dans_barre(id):
+	if verrouille:
+		btn_barre.text = "Verrouillé"
+		btn_barre.disabled = true
+	elif Personnage.sort_dans_barre(id):
 		btn_barre.text = "Retirer de la barre"
 		btn_barre.pressed.connect(_on_retirer_sort_barre.bind(id))
 	else:
@@ -531,6 +550,8 @@ func _construire_carte_sort(id: String) -> void:
 	]
 	if int(sort.get("degats", 0)) > 0:
 		texte_infos += " | Dégâts : %d" % int(sort["degats"])
+	if verrouille:
+		texte_infos += " | " + texte_verrou
 	infos.text = texte_infos
 	var description := Label.new()
 	var texte_description: String = str(sort.get("description", ""))
@@ -615,6 +636,8 @@ func maj_grille() -> void:
 
 	var ids_par_type := {}
 	for id: String in Inventaire.objets:
+		if filtre_portables and not _est_portable(id):
+			continue
 		var type_item := str(Inventaire.details_objet(id).get("type", ""))
 		if not ids_par_type.has(type_item):
 			ids_par_type[type_item] = []
@@ -625,7 +648,12 @@ func maj_grille() -> void:
 	var type_choisi: Variant = _maj_types_inventaire(types)
 	var types_affiches := types if type_choisi == null else [type_choisi]
 
-	label_vide.visible = Inventaire.objets.is_empty()
+	if filtre_portables:
+		label_vide.text = "Aucun équipement portable à ton niveau."
+		label_vide.visible = ids_par_type.is_empty()
+	else:
+		label_vide.text = "Inventaire vide"
+		label_vide.visible = Inventaire.objets.is_empty()
 	maj_detail_aucun()
 	for type_item in types_affiches:
 		var ids: Array = ids_par_type[type_item]
@@ -657,6 +685,19 @@ func _maj_types_inventaire(types: Array) -> Variant:
 func _on_type_inventaire_selectionne(_index: int) -> void:
 	defilement_inventaire.scroll_vertical = 0
 	maj_grille()
+
+func _on_portables_toggle(coche: bool) -> void:
+	filtre_portables = coche
+	defilement_inventaire.scroll_vertical = 0
+	maj_grille()
+
+# true si l'objet est un équipement dont le niveau minimum est atteint
+# (restriction de classe ignorée : une autre classe peut le mettre en arme2)
+func _est_portable(id: String) -> bool:
+	var details := Inventaire.details_objet(id)
+	if Personnage.emplacement_equipement(str(details.get("type", "")), str(details.get("sous_type", ""))) == "":
+		return false
+	return int(details.get("niveau_min", 1)) <= Personnage.niveau
 
 func _ajouter_case_inventaire(id: String) -> void:
 	var details := Inventaire.details_objet(id)
@@ -954,8 +995,8 @@ func maj_equipement() -> void:
 const LIBELLES_EFFETS := {
 	"attack": "Attaque", "defense": "Défense", "speed": "Vitesse", "heal": "Soin",
 	"vie": "Vie", "health": "Vie", "vitalite": "Vitalité", "sagesse": "Sagesse",
-	"force": "Force", "intelligence": "Intelligence", "chance": "Chance",
-	"agilite": "Agilité",
+	"force": "Force", "intelligence": "Intelligence", "chance": "Précision",
+	"agilite": "Vitesse",
 }
 
 func _texte_stats(details: Dictionary) -> String:

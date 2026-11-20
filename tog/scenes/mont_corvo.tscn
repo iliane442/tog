@@ -1,0 +1,498 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="Script" path="res://scripts/world/passage_zone.gd" id="Passage"]
+[ext_resource type="Script" path="res://scripts/world/escalier_corvo.gd" id="Escalier"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="pnj"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="PointFushia"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/fleurs_medicinales.png" id="Fleurs"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/repaire.png" id="art_repaire"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/foyer.png" id="art_foyer"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/singe.png" id="art_singe"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/dadan.png" id="art_dadan"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/dogra.png" id="art_dogra"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/magra.png" id="art_magra"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/tigre.png" id="art_tigre"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/sanglier.png" id="art_sanglier"]
+[ext_resource type="Texture2D" path="res://assets/sprites/wolf.png" id="Loup"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/entree_de_mine.png" id="Mine"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="Rochers"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
+
+[sub_resource type="RectangleShape2D" id="RayonPassage"]
+size = Vector2(150.0, 54.0)
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[node name="MontCorvo" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"####################################################################",
+	"####################################################################",
+	"####################################################################",
+	"####################################################################",
+	"####################################################################",
+	"####################################################################",
+	"####################################################################",
+	"################################################...#################",
+	"###############################################..,,,################",
+	"##############################################..,===,###############",
+	"##############################################.,=====,##############",
+	"########################################FFFFF..,=====,##############",
+	"##########################,,,######FFFFFFFFFF..======,##FF##########",
+	"#########################,:::,#####FFFFFFFFF...,=====,FFFFFF########",
+	"#######################..,:::,.###FFFFFFFFFF...,====:,FFFFFFF#######",
+	"######################...,:::,...FFFFFFFFFFF...,:===:,FFFFFFFF######",
+	"#####################....,:::,....FFFFFFFFFFF..,:===:,FFFFFFFF######",
+	"#####################....,:::,...FFFFFFFFFFFF,,,:::::,FFFFFFFF######",
+	"######################...,:::,,..FFFFFFFFFFF,::::::::,,FFFFFFF######",
+	"######################...,::::,,,,,,FFFFFFFF,::::::::,,FFFFFFFF#####",
+	"#############,,########.,,::::::::::,,FFFFFF,:::::::::,,FFFFFFF#####",
+	"###########,,,,,#######,,::::::::::::,,FFFFF,:::,:::::,FFFFFFF######",
+	"##########,,:::,,#####,::::::::::::::::,,,,F,::::::::::,FFFFFF######",
+	"##########,,::::,,.##,::::::::::::::::::::,,,::::::::::,FFFFFF######",
+	"##########,,::::,,...,::::::,,,,,::::::::::::::::::::::,FFFFFFFFF###",
+	"##########,,,::::,,.,::::::,,,,,,,,:::::::::::::::::::::,FFFFFFF####",
+	"##########,,,,::::,,,:::::,,FFFFFFF,,:::::::::::::::::::,,FFFFFF####",
+	"#########.,,,,::::###=::::,FFFFFFFFF,,::::::::::::,,:::::,FFFFFF####",
+	"########.....,,===###=====FFFFFFFFFFFF,,,,:::::::::,,:::::,FFFFF####",
+	"########......============FFFFFF,,,FFF,,,:::::::::::,:::::,FFFF#####",
+	"########......=============FFFF,,:,,,,,:::::::,,:::::,:::::,FFF#####",
+	"#######......===============F,,::::::::::::::,,,,::::,,::::,FFFFFF##",
+	"#######.......==============,,:::::::::::::::::,,,::::,::::,,FFFF###",
+	"#########......============:::::::::::::::::::::,,,:::,::::,,FFF####",
+	"#########.......=========:::::::::::::::,,,::::::,,:::::::::,FFF####",
+	"########.........,:===:::::::::::,,,,:,,,~,,:::::::::::::::,,,FF####",
+	"########.........,,:::::::::::::,,FF,,,~~~~~,::::::::::::::,,FF#####",
+	"###########.......,:::::::::::,,FFFFFF~~~~~~,,::::::::::::,,FF######",
+	"###########........,:::::,,,,,,FFFFFF~~~~~~~,,,::::::::::,,FFF######",
+	"###########........,,::::,,.F...FFFFF~~~~~~~~,,,:::::::::,FFF#######",
+	"###############.....,:::::,,....FFFF~~~~~~~~~~,,,,,:::::,,FF########",
+	"####################,,::::::,,,.,..FF~~~~~~~~~FF,FF,,,:,,FF#########",
+	"####################.,::::::::,,,,,FF~~~~~~~~~FFFFFFFF,FFFF#########",
+	"###################..,,::::::::,,,,,,~~~~~~~~~FFFFFFFFFFFF##########",
+	"###################...,,::::::::,,,,,.~~~~~~~~FFFFFFFFFFF###########",
+	"####################...,,,:::::::,,,...~~~~~FFFFFFFFF###############",
+	"#####################.....,,:::::,,........#FF###FF#################",
+	"#####################.......,:::::,........F####F###################",
+	"#####################.......,:::::,.......##########################",
+	"######################......,:::::,.....############################",
+	"########################....,:::::,....#############################",
+	"########################....,:::::,...##############################",
+	"############################,,:::,,#################################",
+	"#############################,,:,,##################################"
+)
+
+[node name="player" parent="." index="5"]
+position = Vector2(2016, 3104)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Mont Corvo"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(2016, 3296): "Retour à Fushia", Vector2(1312, 2016): "Repaire de Dadan", Vector2(2976, 2144): "Forêt de Corvo", Vector2(3232, 736): "Grotte des Os", Vector2(1760, 992): "Col des Pins"})
+
+[node name="DepuisFushia" type="Marker2D" parent="Arrivees"]
+position = Vector2(2016, 3104)
+
+[node name="DepuisDonjon" type="Marker2D" parent="Arrivees"]
+position = Vector2(3232, 992)
+
+[node name="EscalierVersFushia" type="Node2D" parent="."]
+position = Vector2(2016, 3152)
+z_index = -6
+script = ExtResource("Escalier")
+largeur = 160.0
+nombre_marches = 4
+
+[node name="VersFushia" type="Area2D" parent="."]
+position = Vector2(2016, 3296)
+collision_layer = 0
+script = ExtResource("Passage")
+destination = "res://scenes/fushia.tscn"
+arrivee = &"DepuisCorvo"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VersFushia"]
+shape = SubResource("RayonPassage")
+
+[node name="Etiquette" type="Label" parent="VersFushia"]
+z_index = 18
+offset_left = -180.0
+offset_top = -112.0
+offset_right = 180.0
+offset_bottom = -78.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.64, 1)
+theme_override_colors/font_outline_color = Color(0.11, 0.15, 0.13, 1)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 26
+text = "Retour à Fushia"
+horizontal_alignment = 1
+
+[node name="VersDonjon" type="Area2D" parent="."]
+position = Vector2(3232, 736)
+collision_layer = 0
+script = ExtResource("Passage")
+destination = "res://scenes/donjon_corvo.tscn"
+arrivee = &"DepuisCorvo"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VersDonjon"]
+shape = SubResource("RayonPassage")
+
+[node name="Etiquette" type="Label" parent="VersDonjon"]
+z_index = 18
+offset_left = -180.0
+offset_top = -112.0
+offset_right = 180.0
+offset_bottom = -78.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.64, 1)
+theme_override_colors/font_outline_color = Color(0.11, 0.15, 0.13, 1)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 26
+text = "Grotte des Os"
+horizontal_alignment = 1
+
+[node name="MaisonDeDadan" type="Sprite2D" parent="Paysage"]
+position = Vector2(1248, 1888)
+scale = Vector2(1.34, 1.34)
+texture = ExtResource("art_repaire")
+offset = Vector2(0, -152.0)
+
+[node name="FoyerDesBrigands" type="Sprite2D" parent="Paysage"]
+position = Vector2(1248, 2144)
+scale = Vector2(1.0, 1.0)
+texture = ExtResource("art_foyer")
+offset = Vector2(0, -46.0)
+
+[node name="EntreeDeLaGrotte" type="Sprite2D" parent="Paysage"]
+position = Vector2(3232, 672)
+scale = Vector2(1.48, 1.48)
+texture = ExtResource("Mine")
+offset = Vector2(0, -88.5)
+
+[node name="RochersCol" type="Sprite2D" parent="Paysage"]
+position = Vector2(1632, 928)
+scale = Vector2(1.18, 1.18)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+
+[node name="RochersDeLaCour" type="Sprite2D" parent="Paysage"]
+position = Vector2(928, 2080)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+
+[node name="RochersDeLaRavine" type="Sprite2D" parent="Paysage"]
+position = Vector2(2720, 2400)
+scale = Vector2(1.05, 1.05)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+
+[node name="LanterneSudGauche" type="Sprite2D" parent="Paysage"]
+position = Vector2(1888, 3168)
+scale = Vector2(1.0, 1.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+
+[node name="LanterneSudDroite" type="Sprite2D" parent="Paysage"]
+position = Vector2(2144, 3168)
+scale = Vector2(1.0, 1.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+
+[node name="LanterneGrotteGauche" type="Sprite2D" parent="Paysage"]
+position = Vector2(3104, 736)
+scale = Vector2(1.0, 1.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+
+[node name="LanterneGrotteDroite" type="Sprite2D" parent="Paysage"]
+position = Vector2(3360, 736)
+scale = Vector2(1.0, 1.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+
+[node name="Dadan" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1376, 2080)
+script = ExtResource("pnj")
+largeur_zone_clic = 93.0
+hauteur_zone_clic = 128.0
+chain_quetes = Array[String](["fushia_provisions_dadan"])
+nom_affiche = "Dadan"
+paroles = "Tu vois le foyer ? Laisse-y les provisions. Les herbes poussent dans les clairières de la forêt. Prends garde aux tigres."
+
+[node name="Sprite2D" type="Sprite2D" parent="Dadan"]
+position = Vector2(0, -55)
+texture = ExtResource("art_dadan")
+
+[node name="Area2D" type="Area2D" parent="Dadan"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Dadan/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Dadan"]
+z_index = 16
+offset_left = -140.0
+offset_top = -139.0
+offset_right = 140.0
+offset_bottom = -113.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = "Dadan"
+horizontal_alignment = 1
+
+[node name="Dogra" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1056, 2144)
+script = ExtResource("pnj")
+largeur_zone_clic = 78.0
+hauteur_zone_clic = 98.0
+chain_quetes = Array[String]([])
+nom_affiche = "Dogra"
+paroles = "Le sentier du sud redescend à Fushia. Traverse la forêt vers le nord pour rejoindre la grotte des Os."
+
+[node name="Sprite2D" type="Sprite2D" parent="Dogra"]
+position = Vector2(0, -40)
+texture = ExtResource("art_dogra")
+
+[node name="Area2D" type="Area2D" parent="Dogra"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Dogra/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Dogra"]
+z_index = 16
+offset_left = -140.0
+offset_top = -109.0
+offset_right = 140.0
+offset_bottom = -83.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = "Dogra"
+horizontal_alignment = 1
+
+[node name="Magra" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1632, 2016)
+script = ExtResource("pnj")
+largeur_zone_clic = 61.0
+hauteur_zone_clic = 118.0
+chain_quetes = Array[String]([])
+nom_affiche = "Magra"
+paroles = "J’ai laissé deux lanternes devant la grotte des Os. Les bruits qu’on entend là-bas ne viennent pas de la forêt."
+
+[node name="Sprite2D" type="Sprite2D" parent="Magra"]
+position = Vector2(0, -50)
+texture = ExtResource("art_magra")
+
+[node name="Area2D" type="Area2D" parent="Magra"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Magra/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Magra"]
+z_index = 16
+offset_left = -140.0
+offset_top = -129.0
+offset_right = 140.0
+offset_bottom = -103.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = "Magra"
+horizontal_alignment = 1
+
+[node name="CueillirCorvoOuest" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1888, 2272)
+script = ExtResource("PointFushia")
+titre = "Herbes de Corvo"
+description = ""
+quete = "fushia_provisions_dadan"
+objet = "135"
+
+[node name="Sprite2D" type="Sprite2D" parent="CueillirCorvoOuest"]
+texture = ExtResource("Fleurs")
+offset = Vector2(0, -34)
+scale = Vector2(0.85, 0.85)
+
+[node name="Etiquette" type="Label" parent="CueillirCorvoOuest"]
+z_index = 16
+offset_left = -140.0
+offset_top = -89.0
+offset_right = 140.0
+offset_bottom = -63.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = ""
+horizontal_alignment = 1
+
+[node name="CueillirCorvoCentre" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2976, 2080)
+script = ExtResource("PointFushia")
+titre = "Herbes de Corvo"
+description = ""
+quete = "fushia_provisions_dadan"
+objet = "135"
+
+[node name="Sprite2D" type="Sprite2D" parent="CueillirCorvoCentre"]
+texture = ExtResource("Fleurs")
+offset = Vector2(0, -34)
+scale = Vector2(0.88, 0.88)
+
+[node name="Etiquette" type="Label" parent="CueillirCorvoCentre"]
+z_index = 16
+offset_left = -140.0
+offset_top = -91.0
+offset_right = 140.0
+offset_bottom = -65.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = ""
+horizontal_alignment = 1
+
+[node name="CueillirCorvoEst" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(3488, 1504)
+script = ExtResource("PointFushia")
+titre = "Herbes de Corvo"
+description = ""
+quete = "fushia_provisions_dadan"
+objet = "135"
+
+[node name="Sprite2D" type="Sprite2D" parent="CueillirCorvoEst"]
+texture = ExtResource("Fleurs")
+offset = Vector2(0, -34)
+scale = Vector2(0.92, 0.92)
+
+[node name="Etiquette" type="Label" parent="CueillirCorvoEst"]
+z_index = 16
+offset_left = -140.0
+offset_top = -94.0
+offset_right = 140.0
+offset_bottom = -68.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = ""
+horizontal_alignment = 1
+
+[node name="SingeDeLaClairiere" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2976, 1568)
+script = ExtResource("PointFushia")
+titre = "Singe de la forêt"
+description = "Il a volé une noix au port. Il s’installe sur un rocher pour la manger, un œil sur le sentier."
+quete = ""
+objet = ""
+
+[node name="Sprite2D" type="Sprite2D" parent="SingeDeLaClairiere"]
+texture = ExtResource("art_singe")
+offset = Vector2(0, -30.5)
+scale = Vector2(1, 1)
+
+[node name="Etiquette" type="Label" parent="SingeDeLaClairiere"]
+z_index = 16
+offset_left = -140.0
+offset_top = -93.0
+offset_right = 140.0
+offset_bottom = -67.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = ""
+horizontal_alignment = 1
+
+[node name="TigreCrete" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2016, 1440)
+collision_layer = 2
+nom = "Tigre de Corvo"
+pv_max = 120
+degats_attaque = 11
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("art_tigre")
+niveau_personnalise = 5
+
+[node name="SanglierBasseVallee" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2208, 2912)
+collision_layer = 2
+nom = "Sanglier des sous-bois"
+pv_max = 65
+degats_attaque = 7
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("art_sanglier")
+niveau_personnalise = 2
+
+[node name="SanglierClairiere" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2976, 2272)
+collision_layer = 2
+nom = "Sanglier des sous-bois"
+pv_max = 72
+degats_attaque = 8
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("art_sanglier")
+niveau_personnalise = 3
+
+[node name="LoupDesPins" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2400, 2080)
+collision_layer = 2
+nom = "Loup des pins"
+pv_max = 84
+degats_attaque = 9
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("Loup")
+niveau_personnalise = 4
+
+[node name="LoupDeLaRavine" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(3488, 2464)
+collision_layer = 2
+nom = "Loup de la ravine"
+pv_max = 87
+degats_attaque = 9
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("Loup")
+niveau_personnalise = 4
+
+[node name="TigreForet" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(3616, 2016)
+collision_layer = 2
+nom = "Tigre de la forêt"
+pv_max = 128
+degats_attaque = 12
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("art_tigre")
+niveau_personnalise = 6
+
+[node name="LoupDuCol" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(3104, 1312)
+collision_layer = 2
+nom = "Loup du col"
+pv_max = 94
+degats_attaque = 10
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("Loup")
+niveau_personnalise = 5

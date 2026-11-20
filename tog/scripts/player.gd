@@ -104,6 +104,7 @@ func utiliser_sort_hors_combat(id_sort: String) -> void:
 			if interface_hud != null:
 				interface_hud.afficher_message_sort("Ce sort ne peut pas être lancé hors combat.")
 			return
+		soin += roundi(Personnage.bonus_soin_sort())
 		Personnage.soigner(soin)
 		if interface_hud != null:
 			interface_hud.afficher_message_sort("%s : +%d PV" % [str(sort.get("nom", "Soin")), soin])
@@ -344,9 +345,19 @@ func _on_combat_commence() -> void:
 		_maj_affichage()
 		_attendre_tour_adverse_pvp()
 		return
+	if randf() >= Personnage.chance_initiative():
+		# initiative perdue (Vitesse) : les ennemis ouvrent le combat
+		_combat_manager.afficher_message("L’ennemi prend l’initiative !")
+		_tour_joueur = false
+		_maj_affichage()
+		_jouer_tours_ennemis(_combat_manager.numero_combat, 0.8)
+		return
 	_tour_joueur = true
 	_pa = pa_max
 	_pm = _combat_manager.points_mouvement(self, pm_max)
+	if randf() < Personnage.chance_pm_supplementaire():
+		_pm += 1
+		_combat_manager.afficher_message("Ta vitesse te donne +1 PM.")
 	_maj_affichage()
 	_afficher_cases()
 	if _sort_preselectionne_combat != "":
@@ -437,11 +448,12 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		_jouer_effet_sort(_id_sort, cible)
 		var soin := absi(int(sort.get("degats", 0))) if str(sort.get("type", "")) == "heal" else 0
 		if soin > 0:
+			soin += roundi(Personnage.bonus_soin_sort())
 			Personnage.soigner(soin)
 			_maj_affichage()
 		var degats := 0
 		if soin <= 0 and int(sort.get("degats", 0)) > 0:
-			degats = _combat_manager.calculer_degats(self, cible, int(sort.get("degats", 0)))
+			degats = _combat_manager.calculer_degats(self, cible, int(sort.get("degats", 0)), str(sort.get("type", "")), int(sort.get("portee", 1)))
 			cible.recevoir_degats(degats)
 		var etats_appliques: Array = []
 		if _combat_manager.en_combat:
@@ -537,7 +549,7 @@ func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 	_pa -= _sort_boule_de_feu.cout_pa
 	if _combat_manager.precision_reussie(self):
 		_jouer_effet_sort("boule_de_feu", cible)
-		var degats: int = _combat_manager.calculer_degats(self, cible, int(_sort_boule_de_feu.degats))
+		var degats: int = _combat_manager.calculer_degats(self, cible, int(_sort_boule_de_feu.degats), "attack", int(_sort_boule_de_feu.portee_max))
 		cible.recevoir_degats(degats)
 		_emettre_action_duel({"t": "sort", "id": "boule_de_feu",
 			"nom": "Boule de feu", "cible": "adv", "degats": degats})
@@ -612,24 +624,22 @@ func _fin_du_tour() -> void:
 	# duel : notre tour fini part au distant avant d'attendre le sien
 	if _combat_manager.pvp_actif:
 		_emettre_action_duel({"t": "fin_tour"})
-	# le tour de chaque ennemi engagé, l'un après l'autre
+	_jouer_tours_ennemis(numero, 0.5)
+
+# sequence : le tour de chaque ennemi engagé, l'un après l'autre, puis
+# le tour du joueur (pause avant sa reprise)
+func _jouer_tours_ennemis(numero: int, pause: float) -> void:
 	for ennemi in _combat_manager.ennemis_actifs():
 		if not is_inside_tree() or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
 			return
 		await (ennemi as Node2D).jouer_tour(self, _sol)
-	await get_tree().create_timer(0.5).timeout
+	await get_tree().create_timer(pause, false).timeout
 	_commencer_mon_tour(numero)
 
 # en duel, quand c'est l'adversaire qui ouvre : son tour complet nous
 # parvient par le réseau, joué sur notre miroir de lui
 func _attendre_tour_adverse_pvp() -> void:
-	var numero: int = _combat_manager.numero_combat
-	for ennemi in _combat_manager.ennemis_actifs():
-		if not is_inside_tree() or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
-			return
-		await (ennemi as Node2D).jouer_tour(self, _sol)
-	await get_tree().create_timer(0.3).timeout
-	_commencer_mon_tour(numero)
+	_jouer_tours_ennemis(_combat_manager.numero_combat, 0.3)
 
 func _commencer_mon_tour(numero: int) -> void:
 	if not is_inside_tree() or _combat_manager == null or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
@@ -646,6 +656,9 @@ func _commencer_mon_tour(numero: int) -> void:
 	_tour_joueur = true
 	_pa = pa_max
 	_pm = _combat_manager.points_mouvement(self, pm_max)
+	if randf() < Personnage.chance_pm_supplementaire():
+		_pm += 1
+		_combat_manager.afficher_message("Ta vitesse te donne +1 PM.")
 	_maj_affichage()
 	_afficher_cases()
 

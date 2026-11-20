@@ -78,8 +78,8 @@ func _classe_selectionnee() -> Dictionary:
 func _texte_bonus(donnees: Dictionary) -> String:
 	var libelles: Dictionary = {
 		"vie": "Vie", "attaque": "Attaque", "defense": "Défense", "vitesse": "Vitesse",
-		"force": "Force", "intelligence": "Intelligence", "agilite": "Agilité",
-		"vitalite": "Vitalité", "sagesse": "Sagesse", "chance": "Chance",
+		"force": "Force", "intelligence": "Intelligence", "agilite": "Vitesse",
+		"vitalite": "Vitalité", "sagesse": "Sagesse", "chance": "Précision",
 	}
 	var fragments: Array[String] = []
 	for cle in libelles:

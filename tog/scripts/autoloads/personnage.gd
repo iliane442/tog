@@ -29,6 +29,20 @@ var metiers: Dictionary = {}
 
 const POINTS_PAR_NIVEAU := 5
 
+# impacts des points de caractéristiques (la vitalité donne +5 PV par
+# point, cf. recalculer_stats / depenser_point) ; la caractéristique
+# « chance » s'affiche « Précision » et « agilite » s'affiche « Vitesse »
+# (les clés restent celles de la base et du fichier de sauvegarde)
+const DEGATS_PAR_FORCE := 1.0  # sort d'attaque de portée 1 (corps à corps)
+const DEGATS_PAR_INTELLIGENCE := 1.0  # sort d'attaque de portée >= 2
+const SOIN_PAR_INTELLIGENCE := 1.0  # sorts de type heal
+const BONUS_XP_PAR_SAGESSE := 0.02  # +2% d'XP par point de sagesse
+const PRECISION_PAR_CHANCE := 0.01  # +1% de toucher par point de « Précision »
+const ESQUIVE_PAR_AGILITE := 0.01  # -1% de précision aux attaques ennemies
+const CHANCE_PM_PAR_AGILITE := 0.01  # chance de +1 PM au début du tour (max 50%)
+const INITIATIVE_BASE := 0.5  # probabilité de base de commencer le combat
+const INITIATIVE_PAR_AGILITE := 0.01  # +1% par point de « Vitesse »
+
 # Race et classe (ids des tables character_races / character_classes)
 var race_id: String = "1"
 var classe_id: String = "12"
@@ -231,6 +245,23 @@ func sorts_de_classe() -> Array[String]:
 				ids.append(sort_debloque)
 	return ids
 
+# sorts de la classe pas encore débloqués (table class_skills), du plus
+# tôt au plus tard : [{"id": String, "niveau": int}]
+func sorts_de_classe_verrouilles() -> Array[Dictionary]:
+	var verrouilles: Array[Dictionary] = []
+	var connus := sorts_de_classe()
+	if not BaseDonnees.disponible or not classe_id.is_valid_int():
+		return verrouilles
+	for ligne in BaseDonnees.lire(
+		("SELECT skill_id, unlock_level FROM class_skills"
+		+ " WHERE class_id = %d AND unlock_level > %d"
+		+ " ORDER BY unlock_level;") % [classe_id.to_int(), niveau]):
+		var id := str(ligne["skill_id"])
+		if sorts.has(id) and not connus.has(id):
+			connus.append(id)
+			verrouilles.append({"id": id, "niveau": int(ligne["unlock_level"])})
+	return verrouilles
+
 # niveau actuel du fruit mangé (0 tant qu'il n'a pas été utilisé)
 func niveau_fruit() -> int:
 	var niveau := 0
@@ -256,6 +287,21 @@ func _sorts_fruit_niveau(niveau: int) -> Array[String]:
 # pouvoirs du fruit débloqués à son niveau actuel (4 sorts + 1 éveil)
 func sorts_fruit() -> Array[String]:
 	return _sorts_fruit_niveau(niveau_fruit())
+
+# pouvoirs du fruit mangé pas encore débloqués, du plus tôt au plus
+# tard : [{"id": String, "niveau": int}]
+func sorts_fruit_verrouilles() -> Array[Dictionary]:
+	var verrouilles: Array[Dictionary] = []
+	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
+		return verrouilles
+	for ligne in BaseDonnees.lire(
+		("SELECT skill_id, unlock_level FROM fruit_skills"
+		+ " WHERE fruit_item_id = %d AND unlock_level > %d"
+		+ " ORDER BY unlock_level;") % [fruit_id.to_int(), niveau_fruit()]):
+		var id := str(ligne["skill_id"])
+		if sorts.has(id):
+			verrouilles.append({"id": id, "niveau": int(ligne["unlock_level"])})
+	return verrouilles
 
 # true si ce sort est l'un des pouvoirs du fruit mangé (peu importe
 # s'il est déjà débloqué)
@@ -749,8 +795,47 @@ func supprimer_perso() -> void:
 func xp_prochain_niveau() -> int:
 	return niveau * 100
 
+# --- bonus de caractéristiques au gameplay ---
+
+# dégâts ajoutés à un sort selon son profil : force pour le corps à
+# corps (portée 1), intelligence pour la distance (portée >= 2)
+func bonus_degats_sort(type_sort: String, portee_sort: int) -> float:
+	if type_sort.to_lower() != "attack":
+		return 0.0
+	if portee_sort <= 1:
+		return float(caracteristiques.get("force", 0)) * DEGATS_PAR_FORCE
+	return float(caracteristiques.get("intelligence", 0)) * DEGATS_PAR_INTELLIGENCE
+
+# soin ajouté aux sorts de type heal (intelligence)
+func bonus_soin_sort() -> float:
+	return float(caracteristiques.get("intelligence", 0)) * SOIN_PAR_INTELLIGENCE
+
+# récompense d'XP avec le bonus de sagesse appliqué (pour gagner_xp
+# et l'affichage des récompenses de victoire)
+func xp_effectif(montant: int) -> int:
+	return roundi(float(montant) * (1.0 + float(caracteristiques.get("sagesse", 0)) * BONUS_XP_PAR_SAGESSE))
+
+# précision ajoutée aux attaques du personnage (caractéristique
+# « chance », affichée « Précision »)
+func bonus_precision() -> float:
+	return float(caracteristiques.get("chance", 0)) * PRECISION_PAR_CHANCE
+
+# esquive du personnage : retranchée à la précision des attaques
+# ennemies qui le ciblent (caractéristique « agilite », « Vitesse »)
+func bonus_esquive() -> float:
+	return float(caracteristiques.get("agilite", 0)) * ESQUIVE_PAR_AGILITE
+
+# chance de gagner un PM supplémentaire au début de son tour
+func chance_pm_supplementaire() -> float:
+	return clampf(float(caracteristiques.get("agilite", 0)) * CHANCE_PM_PAR_AGILITE, 0.0, 0.5)
+
+# probabilité de prendre l'initiative à l'ouverture du combat
+# (jouer avant les ennemis)
+func chance_initiative() -> float:
+	return clampf(INITIATIVE_BASE + float(caracteristiques.get("agilite", 0)) * INITIATIVE_PAR_AGILITE, 0.0, 0.95)
+
 func gagner_xp(montant: int) -> void:
-	xp += montant
+	xp += xp_effectif(montant)
 	var niveau_avant := niveau
 	while xp >= xp_prochain_niveau():
 		xp -= xp_prochain_niveau()

@@ -166,7 +166,7 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 		depart = _case_de(sol, global_position)
 	if _peut_attaquer(depart, cible):
 		_appliquer_ralentissement_test(joueur)
-		if _combat_manager == null or _combat_manager.precision_reussie(self):
+		if _combat_manager == null or _combat_manager.precision_reussie(self, joueur):
 			var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque)) if _combat_manager != null else degats_attaque
 			joueur.recevoir_degats(degats)
 	if _combat_manager != null and _combat_manager.en_combat and is_inside_tree():
@@ -231,7 +231,7 @@ func recompenser_victoire() -> void:
 	var berry := randi_range(berry_min, maxi(berry_max, berry_min))
 	Personnage.gagner_xp(xp)
 	Personnage.ajouter_berry(berry)
-	_afficher_recompenses(xp, berry, objets_gagnes)
+	_afficher_recompenses(Personnage.xp_effectif(xp), berry, objets_gagnes)
 
 # récapitulatif de fin de combat : les objets vont directement à l'inventaire
 func _afficher_recompenses(xp: int, berry: int, objets: Array) -> void:
