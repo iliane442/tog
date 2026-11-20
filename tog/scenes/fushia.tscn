@@ -1309,6 +1309,9 @@ text = "Refuser"
 
 
 
+[node name="CoffreUI" parent="." instance=ExtResource("13_coffreui")]
+
+
 [node name="BoutiqueUI" parent="." instance=ExtResource("14_boutique")]
 
 
