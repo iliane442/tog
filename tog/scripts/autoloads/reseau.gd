@@ -18,6 +18,8 @@ const THEME := preload("res://themes/theme_pirate.tres")
 const SCRIPT_AVATAR := preload("res://scripts/serveur/joueur_distant.gd")
 const SCRIPT_ADVERSAIRE_PVP := preload("res://scripts/combat/adversaire_pvp.gd")
 const CHEMIN_PREF := "user://serveur.cfg"
+const CHEMIN_ACCUEIL := "res://scenes/accueil.tscn"
+const DELAI_CONNEXION := 9.0
 # les données MMO vivent dans leur propre base : la base du jeu
 # (glo.db) est recopiée à chaque lancement depuis l'éditeur et
 # écraserait les comptes du serveur
@@ -44,12 +46,13 @@ var _derniere_position_envoyee := Vector2(INF, INF)
 var _temps_position := 0.0
 var _temps_sauvegarde := 0.0
 
-# --- client : interface de connexion ---
-var _ui: CanvasLayer
-var _champ_adresse: LineEdit
-var _champ_pseudo: LineEdit
-var _champ_mdp: LineEdit
-var _label_message: Label
+# --- client : authentification ---
+var adresse_preferee := "127.0.0.1:%d" % PORT_DEFAUT
+var pseudo_prefere := ""
+var message_accueil := ""
+var _adresse_auth := ""
+var _pseudo_auth := ""
+var _mot_de_passe_auth := ""
 var _action_en_attente := ""
 var _attente_auth := 0.0
 var _tentatives_auth := 0
@@ -69,6 +72,11 @@ var etat_rencontres_recu: Array = []
 var combat_groupe_local := ""
 # invitation en attente : [chef, groupe]
 var invitation_en_attente: Array = []
+# notre groupe de joueurs (distinct des équipages) :
+# [{peer: int, pseudo: String, chef: bool}, ...]
+var groupe_local: Array = []
+# panneau des membres du groupe (construit avec le chat)
+var _panneau_groupe: PanelContainer
 
 # --- client : avatars des autres joueurs ---
 var _avatars := {}
@@ -92,23 +100,24 @@ var _limiteurs := {}          # peer_id -> {position: ms, chat: ms}
 var _duels := {}
 # invitations de duel en attente : peer_cible -> peer_demandeur
 var _invites_duel := {}
+# groupes de joueurs (rien à voir avec les équipages : un groupe se
+# forme à la volée pour jouer ensemble quand son équipage n'est pas
+# connecté) : peer du chef -> {peer_id: pseudo} — le chef est membre
+var _groupes := {}
+# invitations de groupe en attente : peer_cible -> peer_demandeur
+var _invites_groupe := {}
+# taille maximale d'un groupe de joueurs
+const GROUPE_TAILLE_MAX := 5
 
 func _ready() -> void:
-	# l'écran de connexion met le jeu en pause : le réseau et l'interface
-	# continuent de tourner pendant que le monde attend derrière
+	# Le réseau continue de tourner pendant les dialogues et la création.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	multiplayer.connected_to_server.connect(_on_connecte_au_serveur)
 	multiplayer.connection_failed.connect(_on_echec_connexion)
 	multiplayer.server_disconnected.connect(_on_serveur_perdu)
-	_construire_interface()
-	_construire_chat()
 	charger_preferences()
-	afficher_interface()
-	# la barre de sorts part immédiatement au serveur : la sauvegarde
-	# périodique (30 s) ne serait pas forcément passée avant un arrêt
-	# du jeu, et la version serveur écrase alors la barre locale à la
-	# reconnexion
-	Personnage.barre_sorts_modifiee.connect(_sauvegarder_perso_serveur)
+	_construire_chat()
+	_chat.hide()
 
 func _process(delta: float) -> void:
 	if mode == Mode.CLIENT and pseudo != "":
@@ -138,7 +147,6 @@ func demarrer_serveur(port := PORT_DEFAUT) -> bool:
 	multiplayer.peer_disconnected.connect(_on_peer_deconnecte)
 	_ouvrir_base_mmo()
 	creer_tables_mmo()
-	masquer_interface()
 	print("Serveur en écoute sur le port %d (%d joueurs max)." % [port, JOUEURS_MAX])
 	return true
 
@@ -178,6 +186,12 @@ func creer_tables_mmo() -> void:
 		+ "compte_id INTEGER PRIMARY KEY,"
 		+ "donnees TEXT NOT NULL,"
 		+ "maj_le TEXT DEFAULT (datetime('now')));")
+	# coffres du monde partagés : une clé par scène et coffre ; une ligne
+	# existe dès que le coffre a été ouvert une fois, contenu = restant
+	_sql(
+		"CREATE TABLE IF NOT EXISTS mmo_coffres ("
+		+ "cle TEXT PRIMARY KEY,"
+		+ "contenu TEXT NOT NULL DEFAULT '[]');")
 
 func _hacher_mdp(mdp: String, sel: String) -> String:
 	# itérations de SHA-256 salé : petit mais dissuasif pour un jeu
@@ -315,9 +329,9 @@ func demande_inscription(nom_pseudo: String, mdp: String) -> void:
 		_echapper_texte(nom_pseudo), sel, _hacher_mdp(mdp, sel), ITERATIONS_HASH])
 	print("Nouveau compte : %s" % nom_pseudo)
 	_ouvrir_session(peer_id, nom_pseudo)
-	rpc_id(peer_id, "reponse_authentification", true, "Bienvenue %s !" % nom_pseudo, "")
-	# première connexion : le perso du client devient la référence serveur
-	rpc_id(peer_id, "demande_import_perso")
+	# nouveau compte : aucun perso n'existe encore, le client doit en
+	# créer un avant de jouer (le perso local n'est jamais importé)
+	rpc_id(peer_id, "reponse_authentification", true, "Bienvenue %s ! Crée ton personnage." % nom_pseudo, "")
 
 # RPC serveur : connexion à un compte existant
 @rpc("any_peer", "call_remote", "reliable")
@@ -353,20 +367,6 @@ func _valider_identifiants(nom_pseudo: String, mdp: String) -> String:
 		if not CARACTERES_PSEUDO.contains(caractere):
 			return "Pseudo : lettres, chiffres, - _ et espaces seulement."
 	return ""
-
-# RPC serveur : le client fournit son perso (première connexion)
-@rpc("any_peer", "call_remote", "reliable")
-func envoie_import_perso(donnees_json: String) -> void:
-	if not multiplayer.is_server():
-		return
-	var session := _pair_authentifie()
-	if session.is_empty() or JSON.parse_string(donnees_json) == null:
-		return
-	var compte := _compte(str(session["pseudo"]))
-	if compte.is_empty():
-		return
-	_ecrire_perso_serveur(int(compte["id"]), donnees_json)
-	print("Perso importé pour %s" % session["pseudo"])
 
 # RPC serveur : sauvegarde périodique du perso d'un joueur
 @rpc("any_peer", "call_remote", "reliable")
@@ -443,6 +443,9 @@ func envoie_scene(nom_scene: String, x: float = INF, y: float = INF) -> void:
 	_annoncer_presents_sur_scene(peer_id, nom_scene)
 	# l'etat du monde de cette map part au nouvel arrivant
 	rpc_id(peer_id, "etat_rencontres", _cles_vaincues(nom_scene), nom_scene)
+	# ressources partagées de cette map : les coffres du monde (les
+	# croix au trésor sont personnelles, elles suivent chaque perso)
+	rpc_id(peer_id, "etat_coffres", _json_coffres_scene(nom_scene))
 
 # RPC serveur : le client annonce l'apparence de son perso (préfixe de
 # planche de sprites, ex. humain_pirate, mink_pirate)
@@ -495,6 +498,106 @@ func _serveur_purger_rencontres(delta: float) -> void:
 				rpc_id(int(autre), "rencontre_revient", str(cle))
 		if vaincues.is_empty():
 			_rencontres_vaincues.erase(str(nom_scene))
+
+# ============================================================
+#  COFFRES DU MONDE PARTAGÉS (le serveur fait foi)
+# ============================================================
+
+# clé d'un coffre du monde dans la base : scène + identifiant du coffre
+func _cle_coffre(nom_scene: String, coffre_id: String) -> String:
+	return "%s|%s" % [nom_scene, coffre_id]
+
+# contenu restant d'un coffre du monde (null si jamais ouvert)
+func _contenu_coffre_monde(cle: String) -> Variant:
+	var lignes := _lire("SELECT contenu FROM mmo_coffres WHERE cle = '%s';" % _echapper_texte(cle))
+	if lignes.is_empty():
+		return null
+	return JSON.parse_string(str(lignes[0]["contenu"]))
+
+# RPC serveur : un joueur ouvre (ou rouvre) un coffre du monde ; le
+# tirage du butin n'a lieu qu'ici — le même contenu fait foi pour tous
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_ouvrir_coffre(coffre_id: String, rarete: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _sessions.has(peer_id):
+		return
+	var nom_scene := str(_sessions[peer_id]["scene"])
+	if nom_scene == "":
+		return
+	coffre_id = coffre_id.strip_edges().substr(0, 160)
+	if coffre_id == "" or not coffre_id.begins_with("coffre_"):
+		return
+	var cle := _cle_coffre(nom_scene, coffre_id)
+	var contenu: Variant = _contenu_coffre_monde(cle)
+	if contenu == null or not contenu is Array:
+		# première ouverture : tirage serveur, une seule fois
+		contenu = Coffres.tirage_de_coffre(clampi(int(rarete), 1, 4))
+		_sql("INSERT OR REPLACE INTO mmo_coffres (cle, contenu) VALUES ('%s', '%s');" % [
+			_echapper_texte(cle), _echapper_texte(JSON.stringify(contenu))])
+	var contenu_json := JSON.stringify(contenu)
+	for autre in _pairs_sur_scene(nom_scene):
+		rpc_id(int(autre), "coffre_etat", coffre_id, contenu_json)
+
+# RPC serveur : un joueur veut prendre l'objet n° index d'un coffre ;
+# le serveur arbitre — si l'objet y est encore, la prise est confirmée à
+# son demandeuse, l'état restant part à toute la map
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_prendre_objet_coffre(coffre_id: String, index: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _sessions.has(peer_id):
+		return
+	var nom_scene := str(_sessions[peer_id]["scene"])
+	if nom_scene == "":
+		return
+	var cle := _cle_coffre(nom_scene, coffre_id)
+	var contenu: Variant = _contenu_coffre_monde(cle)
+	if contenu == null or not contenu is Array:
+		return
+	if index < 0 or index >= (contenu as Array).size():
+		return
+	var prise: Variant = contenu[index]
+	(contenu as Array).remove_at(index)
+	_sql("UPDATE mmo_coffres SET contenu = '%s' WHERE cle = '%s';" % [
+		_echapper_texte(JSON.stringify(contenu)), _echapper_texte(cle)])
+	rpc_id(peer_id, "coffre_prise", JSON.stringify(prise))
+	var contenu_json := JSON.stringify(contenu)
+	for autre in _pairs_sur_scene(nom_scene):
+		rpc_id(int(autre), "coffre_etat", coffre_id, contenu_json)
+
+# RPC serveur : un joueur vide un coffre du monde entier
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_vider_coffre(coffre_id: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _sessions.has(peer_id):
+		return
+	var nom_scene := str(_sessions[peer_id]["scene"])
+	if nom_scene == "":
+		return
+	var cle := _cle_coffre(nom_scene, coffre_id)
+	var contenu: Variant = _contenu_coffre_monde(cle)
+	if contenu == null or not contenu is Array:
+		return
+	_sql("UPDATE mmo_coffres SET contenu = '[]' WHERE cle = '%s';" % _echapper_texte(cle))
+	rpc_id(peer_id, "coffre_prise", JSON.stringify(contenu))
+	for autre in _pairs_sur_scene(nom_scene):
+		rpc_id(int(autre), "coffre_etat", coffre_id, "[]")
+
+# état des coffres du monde d'une scène (nouvel arrivant sur la map) :
+# {coffre_id: contenu restant, ...} en JSON
+func _json_coffres_scene(nom_scene: String) -> String:
+	var prefixe := nom_scene + "|"
+	var lignes := _lire("SELECT cle, contenu FROM mmo_coffres WHERE cle LIKE '%s%%';" % _echapper_texte(prefixe))
+	var etat := {}
+	for ligne in lignes:
+		var cle := str(ligne["cle"])
+		etat[cle.substr(prefixe.length())] = JSON.parse_string(str(ligne["contenu"]))
+	return JSON.stringify(etat)
 
 # RPC serveur : un joueur engage un groupe étiqueté
 @rpc("any_peer", "call_remote", "reliable")
@@ -741,9 +844,165 @@ func envoie_message_chat(texte: String) -> void:
 		rpc_id(peer_id, "recoit_message_chat", "Serveur",
 			"En ligne (%d) : %s" % [pseudos.size(), ", ".join(pseudos)])
 		return
+	# commande /groupe : groupes de joueurs (sans rapport avec les
+	# équipages — rejoindre ses amis quand l'équipage n'est pas co)
+	# /groupe Pseudo -> inviter, /groupe -> liste, /groupe quitter
+	if texte.begins_with("/groupe"):
+		var argument := texte.substr(7).strip_edges()
+		if argument == "":
+			_repondre_liste_groupe(peer_id)
+		elif argument.to_lower() == "quitter":
+			_sortir_du_groupe(peer_id, true)
+		else:
+			_inviter_au_groupe(peer_id, argument)
+		return
 	print("Chat <%s> %s" % [nom_envoyeur, texte])
 	for autre in _sessions:
 		rpc_id(int(autre), "recoit_message_chat", nom_envoyeur, texte)
+
+# ============================================================
+#  GROUPES DE JOUEURS (distinct des équipages)
+# ============================================================
+
+# le groupe du joueur : {id: peer du chef, membres: {peer: pseudo}},
+# {} s'il n'est dans aucun groupe
+func _trouver_groupe(peer_id: int) -> Dictionary:
+	for id_chef in _groupes:
+		if (_groupes[id_chef] as Dictionary).has(peer_id):
+			return {"id": int(id_chef), "membres": _groupes[id_chef]}
+	return {}
+
+# invite à rejoindre le groupe du demandeur (il en devient le chef
+# s'il n'en a pas)
+func _inviter_au_groupe(demandeur: int, cible_pseudo: String) -> void:
+	var peer_cible := _peer_du_pseudo(cible_pseudo)
+	if peer_cible == 0:
+		rpc_id(demandeur, "recoit_message_chat", "Serveur",
+			"Aucun joueur en ligne ne s'appelle %s." % cible_pseudo)
+		return
+	if peer_cible == demandeur:
+		rpc_id(demandeur, "recoit_message_chat", "Serveur",
+			"Un groupe, c'est à plusieurs — invite quelqu'un d'autre.")
+		return
+	if not _trouver_groupe(peer_cible).is_empty():
+		rpc_id(demandeur, "recoit_message_chat", "Serveur",
+			"%s est déjà dans un groupe." % cible_pseudo)
+		return
+	if _invites_groupe.has(peer_cible):
+		rpc_id(demandeur, "recoit_message_chat", "Serveur",
+			"%s a déjà une invitation en attente." % cible_pseudo)
+		return
+	var groupe_demandeur := _trouver_groupe(demandeur)
+	if not groupe_demandeur.is_empty() and groupe_demandeur["id"] != demandeur:
+		rpc_id(demandeur, "recoit_message_chat", "Serveur",
+			"Seul le chef du groupe peut inviter.")
+		return
+	if not groupe_demandeur.is_empty() and (groupe_demandeur["membres"] as Dictionary).size() >= GROUPE_TAILLE_MAX:
+		rpc_id(demandeur, "recoit_message_chat", "Serveur",
+			"Le groupe est plein (%d joueurs max)." % GROUPE_TAILLE_MAX)
+		return
+	_invites_groupe[peer_cible] = demandeur
+	rpc_id(demandeur, "recoit_message_chat", "Serveur",
+		"Tu invites %s dans ton groupe..." % cible_pseudo)
+	rpc_id(peer_cible, "invite_groupe", str(_sessions[demandeur]["pseudo"]))
+
+# RPC serveur : réponse à une invitation de groupe
+@rpc("any_peer", "call_remote", "reliable")
+func reponse_groupe(accepte: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	var demandeur := int(_invites_groupe.get(peer_id, 0))
+	_invites_groupe.erase(peer_id)
+	if demandeur == 0 or not _sessions.has(peer_id) or not _sessions.has(demandeur):
+		return
+	var pseudo_cible := str(_sessions[peer_id]["pseudo"])
+	var pseudo_demandeur := str(_sessions[demandeur]["pseudo"])
+	if not accepte:
+		rpc_id(demandeur, "recoit_message_chat", "Serveur",
+			"%s refuse de rejoindre le groupe." % pseudo_cible)
+		return
+	if not _trouver_groupe(peer_id).is_empty():
+		rpc_id(demandeur, "recoit_message_chat", "Serveur",
+			"%s vient de rejoindre un autre groupe." % pseudo_cible)
+		return
+	# le demandeur fonde son groupe s'il n'en a pas (il en est le chef)
+	if not _groupes.has(demandeur):
+		_groupes[demandeur] = {demandeur: pseudo_demandeur}
+	var membres: Dictionary = _groupes[demandeur]
+	if membres.size() >= GROUPE_TAILLE_MAX:
+		rpc_id(peer_id, "recoit_message_chat", "Serveur", "Le groupe est plein.")
+		return
+	membres[peer_id] = pseudo_cible
+	for membre in membres:
+		rpc_id(int(membre), "recoit_message_chat", "Serveur",
+			"%s a rejoint le groupe." % pseudo_cible)
+	_annoncer_groupe(demandeur)
+	print("Groupe de %s : %d membre(s)" % [pseudo_demandeur, membres.size()])
+
+# le groupe de ce joueur, en texte, revient en privé
+func _repondre_liste_groupe(peer_id: int) -> void:
+	var groupe := _trouver_groupe(peer_id)
+	if groupe.is_empty():
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"Tu n'es dans aucun groupe. Utilise /groupe Pseudo pour inviter un joueur.")
+		return
+	var membres: Dictionary = groupe["membres"]
+	var noms: Array[String] = []
+	for membre in membres:
+		var nom_membre := str(membres[membre])
+		if int(membre) == groupe["id"]:
+			nom_membre += " (chef)"
+		noms.append(nom_membre)
+	rpc_id(peer_id, "recoit_message_chat", "Serveur",
+		"Groupe (%d/%d) : %s" % [noms.size(), GROUPE_TAILLE_MAX, ", ".join(PackedStringArray(noms))])
+
+# retire un joueur de son groupe (volontairement ou à sa déconnexion) ;
+# le chef partant laisse la tête au premier membre restant, un groupe
+# vide se dissout
+func _sortir_du_groupe(peer_id: int, volontaire: bool) -> void:
+	var groupe := _trouver_groupe(peer_id)
+	if groupe.is_empty():
+		if _sessions.has(peer_id):
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Tu n'es dans aucun groupe.")
+		return
+	var id_chef: int = groupe["id"]
+	var membres: Dictionary = _groupes[id_chef]
+	var pseudo_partant := str(membres.get(peer_id, "?"))
+	membres.erase(peer_id)
+	if _sessions.has(peer_id):
+		rpc_id(peer_id, "maj_groupe", [])
+	if membres.is_empty():
+		_groupes.erase(id_chef)
+		if _sessions.has(peer_id) and volontaire:
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Le groupe est dissous.")
+		return
+	# le chef part : le premier membre restant prend la tête
+	var nouveau_chef := int(membres.keys()[0])
+	if id_chef == peer_id:
+		_groupes.erase(id_chef)
+		_groupes[nouveau_chef] = membres
+		for membre in membres:
+			rpc_id(int(membre), "recoit_message_chat", "Serveur",
+				"%s mène désormais le groupe." % str(membres[nouveau_chef]))
+	for membre in membres:
+		rpc_id(int(membre), "recoit_message_chat", "Serveur",
+			"%s %s le groupe." % [pseudo_partant, "a quitté" if volontaire else "a quitté (déconnexion)"])
+	_annoncer_groupe(nouveau_chef)
+	# le chef parti volontairement apprend la passation
+	if _sessions.has(peer_id) and volontaire and id_chef == peer_id:
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"%s prend la tête du groupe." % str(membres[nouveau_chef]))
+
+# diffuse la composition du groupe à ses membres (interface + couleur)
+func _annoncer_groupe(id_chef: int) -> void:
+	var membres: Dictionary = _groupes.get(id_chef, {})
+	var liste: Array = []
+	for membre in membres:
+		liste.append({"peer": int(membre), "pseudo": str(membres[membre]),
+			"chef": int(membre) == id_chef})
+	for membre in membres:
+		rpc_id(int(membre), "maj_groupe", liste)
 
 # NETTOYAGE : un pair se déconnecte
 func _nettoyer_session(peer_id: int) -> void:
@@ -755,7 +1014,10 @@ func _nettoyer_session(peer_id: int) -> void:
 		var pseudo_fuyard := str(_sessions[peer_id]["pseudo"])
 		_fin_duel(peer_id)
 		rpc_id(adversaire, "victoire_duel", pseudo_fuyard, true)
+	# son groupe de joueurs l'oublie (partance de tête si nécessaire)
+	_sortir_du_groupe(peer_id, false)
 	_liberer_combats(peer_id)
+	_invites_groupe.erase(peer_id)
 	var pseudo_quittant: String = _sessions[peer_id]["pseudo"]
 	_sessions.erase(peer_id)
 	_limiteurs.erase(peer_id)
@@ -775,8 +1037,12 @@ func demarrer_client(adresse_recue: String) -> bool:
 	var port := PORT_DEFAUT
 	if adresse.contains(":"):
 		var morceaux := adresse.split(":")
-		adresse = morceaux[0]
+		if morceaux.size() != 2 or not morceaux[1].is_valid_int():
+			return false
+		adresse = morceaux[0].strip_edges()
 		port = int(morceaux[1])
+	if adresse.is_empty() or port <= 0 or port > 65535:
+		return false
 	var hote := IP.resolve_hostname(adresse, IP.TYPE_IPV4)
 	if hote == "":
 		hote = IP.resolve_hostname(adresse, IP.TYPE_IPV6)
@@ -806,35 +1072,40 @@ func _on_connecte_au_serveur() -> void:
 	_attente_auth = 0.0
 	_tentatives_auth = 0
 
-# envoie (ou renvoie) la requête d'authentification au serveur
+# Envoie la requête après la connexion ENet et la renvoie si nécessaire.
 func _envoyer_requete_auth() -> void:
-	if _action_en_attente == "inscription":
-		rpc_id(1, "demande_inscription", _champ_pseudo.text.strip_edges(), _champ_mdp.text)
-	elif _action_en_attente == "connexion":
-		rpc_id(1, "demande_connexion", _champ_pseudo.text.strip_edges(), _champ_mdp.text)
+	var requete := "demande_inscription" if _action_en_attente == "inscription" else "demande_connexion"
+	rpc_id(1, requete, _pseudo_auth, _mot_de_passe_auth)
 	_attente_auth = 0.0
 	_tentatives_auth += 1
 
-# cadence l'envoi : 0,25 s après la connexion puis reprise toutes les
-# 2 s si aucune réponse n'arrive (paquet perdu au handshake)
 func _client_piloter_auth(delta: float) -> void:
 	_attente_auth += delta
+	var pair := multiplayer.multiplayer_peer
+	if pair == null or pair.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		if _attente_auth >= DELAI_CONNEXION:
+			_echouer_authentification("Le serveur est injoignable. Vérifie son adresse.")
+		return
 	if _tentatives_auth == 0:
 		if _attente_auth >= 0.25:
 			_envoyer_requete_auth()
 	elif _attente_auth >= 2.0:
 		if _tentatives_auth >= 4:
-			var pair := multiplayer.multiplayer_peer
-			if pair != null:
-				pair.close()
-			mode = Mode.HORS_LIGNE
-			_message_interface("Le serveur ne répond pas.")
-			_action_en_attente = ""
+			_echouer_authentification("Le serveur ne répond pas.")
 		else:
 			_envoyer_requete_auth()
 
-# déconnexion volontaire : ferme le pair et remet le client hors ligne
+func _effacer_tentative_auth() -> void:
+	_action_en_attente = ""
+	_adresse_auth = ""
+	_pseudo_auth = ""
+	_mot_de_passe_auth = ""
+	_attente_auth = 0.0
+	_tentatives_auth = 0
+
+# Déconnecte le compte et restaure le personnage solo s’il était chargé.
 func fermer_connexion() -> void:
+	_effacer_tentative_auth()
 	var peer := multiplayer.multiplayer_peer
 	if peer != null:
 		peer.close()
@@ -842,57 +1113,77 @@ func fermer_connexion() -> void:
 	multiplayer.clear()
 	pseudo = ""
 	mode = Mode.HORS_LIGNE
-	_action_en_attente = ""
 	_scene_locale = ""
+	_annonces_en_attente.clear()
+	etat_rencontres_recu.clear()
+	combat_groupe_local = ""
+	invitation_en_attente.clear()
+	# le groupe de joueurs ne survit pas à la déconnexion
+	groupe_local = []
+	_maj_panneau_groupe()
+	_cacher_invite_groupe()
 	_retirer_tous_avatars()
+	_cacher_invitation()
+	_cacher_invite_duel()
+	_fermer_chat(false)
+	_chat.hide()
+	_chat_log.clear()
+	if Personnage.en_ligne:
+		_retablir_perso_local()
+	if Coffres.en_ligne or CartesTresor.en_ligne:
+		_retablir_ressources_partagees()
 	get_tree().paused = false
 
 func _on_echec_connexion() -> void:
-	mode = Mode.HORS_LIGNE
-	_action_en_attente = ""
-	_message_interface("Impossible de joindre le serveur.")
+	if not _action_en_attente.is_empty():
+		_echouer_authentification("Impossible de joindre le serveur.")
 
 func _on_serveur_perdu() -> void:
-	pseudo = ""
-	mode = Mode.HORS_LIGNE
-	_action_en_attente = ""
-	_scene_locale = ""
-	_retirer_tous_avatars()
-	afficher_interface()
-	_message_interface("Connexion au serveur perdue.")
+	if not _action_en_attente.is_empty():
+		_echouer_authentification("Connexion au serveur perdue.")
+	elif mode == Mode.CLIENT:
+		revenir_accueil("Connexion au serveur perdue.")
+
+func _echouer_authentification(message: String) -> void:
+	fermer_connexion()
+	authentification_resultat.emit(false, message)
+
+# Le personnage solo reprend sa place en mémoire au départ du compte.
+func _retablir_perso_local() -> void:
+	Personnage.en_ligne = false
+	Personnage.reinitialiser()
+	Personnage.charger_perso()
+
+# Les coffres du monde et les croix en ligne quittent la mémoire : la
+# sauvegarde locale redevient la référence, comme hors ligne.
+func _retablir_ressources_partagees() -> void:
+	Coffres.recharger_etat_local()
+	CartesTresor.recharger_etat_local()
 
 # RPC client : réponse d'inscription/connexion (le perso suit si connu)
 @rpc("any_peer", "call_remote", "reliable")
 func reponse_authentification(ok: bool, message: String, perso_json: String) -> void:
-	if multiplayer.is_server():
+	if multiplayer.is_server() or _action_en_attente.is_empty():
 		return
-	authentification_resultat.emit(ok, message)
-	_action_en_attente = ""
-	_tentatives_auth = 0
 	if not ok:
-		_message_interface(message)
-		# refusé : la connexion est refermée, la prochaine tentative
-		# repartira d'un pair propre
-		var pair := multiplayer.multiplayer_peer
-		if pair != null:
-			pair.close()
-		multiplayer.multiplayer_peer = null
-		multiplayer.clear()
-		mode = Mode.HORS_LIGNE
+		_echouer_authentification(message)
 		return
-	pseudo = _champ_pseudo.text.strip_edges()
+	pseudo = _pseudo_auth
+	pseudo_prefere = pseudo
+	adresse_preferee = _adresse_auth
+	_effacer_tentative_auth()
 	sauvegarder_preferences()
+	Personnage.en_ligne = true
+	# ressources partagées : coffres du monde et croix au trésor
+	# vivent sur le serveur pendant la session
+	Coffres.basculer_en_ligne()
+	CartesTresor.basculer_en_ligne()
 	if perso_json != "":
 		_appliquer_perso(perso_json)
-	masquer_interface()
+	else:
+		Personnage.reinitialiser()
+	authentification_resultat.emit(true, message)
 	print("Connecté en tant que %s." % pseudo)
-
-# RPC client : le serveur demande le perso local (première fois)
-@rpc("any_peer", "call_remote", "reliable")
-func demande_import_perso() -> void:
-	if multiplayer.is_server():
-		return
-	rpc_id(1, "envoie_import_perso", JSON.stringify(serialiser_perso()))
 
 # RPC client : un joueur arrive (avatar visible)
 @rpc("any_peer", "call_remote", "reliable")
@@ -975,6 +1266,15 @@ func _client_envoyer_position(delta: float) -> void:
 	var joueur := _joueur_local()
 	if joueur == null or not is_instance_valid(joueur):
 		return
+	# en combat, le joueur vit dans l'arène : ses coordonnées ne sont
+	# plus celles de la map — les envoyer téléporterait son avatar chez
+	# les autres au milieu de leur arène (le même joueur y apparaissait
+	# deux fois : son avatar de map et son miroir de combat)
+	var scene := get_tree().current_scene
+	if scene != null:
+		var combat: Node = scene.get_node_or_null("CombatManager")
+		if combat != null and bool(combat.get("en_combat")):
+			return
 	if joueur.global_position.distance_to(_derniere_position_envoyee) < 4.0:
 		return
 	_derniere_position_envoyee = joueur.global_position
@@ -985,7 +1285,7 @@ func _client_envoyer_position(delta: float) -> void:
 func _client_annoncer_scene() -> void:
 	var scene := get_tree().current_scene
 	var joueur := _joueur_local()
-	if scene == null or joueur == null:
+	if scene == null or joueur == null or not Personnage.perso_cree:
 		return
 	var nom := str(scene.name)
 	if nom == _scene_locale:
@@ -996,6 +1296,7 @@ func _client_annoncer_scene() -> void:
 	invitation_en_attente.clear()
 	_cacher_invitation()
 	_scene_locale = nom
+	_chat.show()
 	_derniere_position_envoyee = joueur.global_position
 	if joueur.has_method("_prefixe_visuel_race"):
 		rpc_id(1, "annonce_visuel", str(joueur.call("_prefixe_visuel_race")))
@@ -1025,6 +1326,49 @@ func rencontre_revient(cle: String) -> void:
 	if multiplayer.is_server():
 		return
 	reviver_rencontre(cle)
+
+# --- coffres du monde partagés (côté client) ---
+
+# RPC client : le serveur fait foi sur ce coffre — réponse à notre
+# ouverture ou évolution diffusée à toute la map (prise par autrui)
+@rpc("any_peer", "call_remote", "reliable")
+func coffre_etat(coffre_id: String, contenu_json: String) -> void:
+	if multiplayer.is_server():
+		return
+	Coffres.maj_etat_distant(coffre_id, contenu_json)
+
+# RPC client : prise confirmée par le serveur (objet ou vidage que nous
+# avons demandés) — créditée à l'inventaire par l'autoload Coffres
+@rpc("any_peer", "call_remote", "reliable")
+func coffre_prise(prises_json: String) -> void:
+	if multiplayer.is_server():
+		return
+	Coffres.recevoir_prise_distante(prises_json)
+
+# RPC client : état des coffres du monde à l'arrivée sur une map
+@rpc("any_peer", "call_remote", "reliable")
+func etat_coffres(etat_json: String) -> void:
+	if multiplayer.is_server():
+		return
+	Coffres.appliquer_etat_scene(etat_json)
+
+# API appelée par Coffres : demande d'ouverture au serveur
+func demander_ouverture_coffre(coffre_id: String, rarete: int) -> void:
+	if mode != Mode.CLIENT or pseudo == "":
+		return
+	rpc_id(1, "envoie_ouvrir_coffre", coffre_id, clampi(rarete, 1, 4))
+
+# API appelée par Coffres : demande de prise d'un objet
+func demander_prise_coffre(coffre_id: String, index: int) -> void:
+	if mode != Mode.CLIENT or pseudo == "":
+		return
+	rpc_id(1, "envoie_prendre_objet_coffre", coffre_id, index)
+
+# API appelée par Coffres : demande de vidage complet
+func demander_vidage_coffre(coffre_id: String) -> void:
+	if mode != Mode.CLIENT or pseudo == "":
+		return
+	rpc_id(1, "envoie_vider_coffre", coffre_id)
 
 # l'identifiant reseau d'une rencontre : "Parent/Noeud" (stable entre
 # les clients : les scenes sont identiques)
@@ -1340,12 +1684,19 @@ func _client_sauvegarde_periodique(delta: float) -> void:
 	if _temps_sauvegarde < INTERVALLE_SAUVEGARDE:
 		return
 	_temps_sauvegarde = 0.0
+	# pas de perso créé (compte neuf, écran de création ouvert) :
+	# ne rien envoyer, sinon le serveur retiendrait un perso vide
+	if not Personnage.perso_cree:
+		return
 	rpc_id(1, "envoie_sauvegarde_perso", JSON.stringify(serialiser_perso()))
 
-# envoi immédiat du perso au serveur (changement important, hors tick
-# périodique) : sans effet hors ligne
-func _sauvegarder_perso_serveur() -> void:
+# envoi immédiat du perso au serveur : appelé par Personnage.sauvegarder
+# à chaque changement important en ligne (hors tick périodique) ; sans
+# effet hors ligne ou tant que le perso n'est pas créé
+func sauvegarder_perso_immediat() -> void:
 	if mode != Mode.CLIENT or not multiplayer.has_multiplayer_peer():
+		return
+	if not Personnage.perso_cree:
 		return
 	_temps_sauvegarde = 0.0
 	rpc_id(1, "envoie_sauvegarde_perso", JSON.stringify(serialiser_perso()))
@@ -1381,6 +1732,8 @@ func _maj_avatar(peer_id: int, nom_recu: String, position: Vector2, visuel := VI
 	avatar.definir_visuel(visuel)
 	avatar.position = conteneur.to_local(position)
 	conteneur.add_child(avatar)
+	# les compagnons de groupe se repèrent en vert sur la map
+	avatar.marquer_groupe(est_dans_groupe(peer_id))
 	_avatars[peer_id] = avatar
 
 func _retirer_avatar(peer_id: int) -> void:
@@ -1404,6 +1757,9 @@ func serialiser_perso() -> Dictionary:
 		"points_depenses": Personnage.points_depenses, "equipement": Personnage.equipement,
 		"metiers": Personnage.metiers, "barre_sorts": Personnage.barre_sorts,
 		"fruit": Personnage.fruit_id, "fruit_xp": Personnage.fruit_xp, "buffs": Personnage.buffs,
+		# croix au trésor non fouillées : elles sont personnelles, elles
+		# suivent la sauvegarde du perso sur le serveur
+		"croix": CartesTresor.croix_serialisables(),
 	}
 
 # remplace le perso en mémoire par la version sauvegardée sur le serveur
@@ -1444,114 +1800,63 @@ func _appliquer_perso(perso_json: String) -> void:
 		for buff in buffs_lus:
 			if buff is Dictionary:
 				Personnage.buffs.append(buff)
+	# croix au trésor personnelles non fouillées : elles suivent le perso
+	CartesTresor.appliquer_croix_serveur(d.get("croix", []))
 	Personnage.perso_cree = true
 	Personnage.recalculer_stats()
 	Personnage.caracteristiques_modifiees.emit()
+	# la barre de sorts peut différer de la version locale : le HUD suit
+	Personnage.barre_sorts_modifiee.emit()
 
 # ============================================================
-#  INTERFACE DE CONNEXION
+#  ACCUEIL ET PRÉFÉRENCES DU CLIENT
 # ============================================================
 
-func _construire_interface() -> void:
-	_ui = CanvasLayer.new()
-	_ui.layer = 50
-	_ui.process_mode = Node.PROCESS_MODE_ALWAYS
-	add_child(_ui)
-	var fond := ColorRect.new()
-	fond.color = Color(0.05, 0.05, 0.1, 0.96)
-	fond.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_ui.add_child(fond)
-	var panneau := PanelContainer.new()
-	panneau.theme = THEME
-	panneau.custom_minimum_size = Vector2(480, 0)
-	_ui.add_child(panneau)
-	panneau.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	var marges := MarginContainer.new()
-	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
-		marges.add_theme_constant_override(marge, 28)
-	panneau.add_child(marges)
-	var colonne := VBoxContainer.new()
-	colonne.add_theme_constant_override("separation", 12)
-	marges.add_child(colonne)
-	var titre := Label.new()
-	titre.text = "BANDE DE PIRATES EN LIGNE"
-	titre.add_theme_font_size_override("font_size", 22)
-	colonne.add_child(titre)
-	_champ_adresse = _ajouter_saisie(colonne, "Adresse du serveur")
-	_champ_pseudo = _ajouter_saisie(colonne, "Pseudo")
-	_champ_mdp = _ajouter_saisie(colonne, "Mot de passe")
-	_champ_mdp.secret = true
-	_label_message = Label.new()
-	_label_message.text = "Crée un compte ou connecte-toi pour jouer en ligne,"
-	_label_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	colonne.add_child(_label_message)
-	var boutons := HBoxContainer.new()
-	boutons.add_theme_constant_override("separation", 12)
-	colonne.add_child(boutons)
-	boutons.add_child(_bouton_action("Créer un compte", "inscription"))
-	boutons.add_child(_bouton_action("Se connecter", "connexion"))
-	var hors_ligne := Button.new()
-	hors_ligne.text = "Jouer hors ligne"
-	hors_ligne.custom_minimum_size = Vector2(0, 44)
-	hors_ligne.pressed.connect(jouer_hors_ligne)
-	colonne.add_child(hors_ligne)
+func authentifier(adresse: String, nom_pseudo: String, mot_de_passe: String, inscription: bool) -> String:
+	if mode != Mode.HORS_LIGNE:
+		return "Une connexion est déjà en cours."
+	nom_pseudo = nom_pseudo.strip_edges()
+	adresse = adresse.strip_edges()
+	if inscription:
+		var erreur := _valider_identifiants(nom_pseudo, mot_de_passe)
+		if erreur != "":
+			return erreur
+	elif nom_pseudo.is_empty() or mot_de_passe.is_empty():
+		return "Indique ton pseudo et ton mot de passe."
+	if adresse.is_empty():
+		return "Indique l’adresse du serveur."
+	if not demarrer_client(adresse):
+		return "Adresse du serveur invalide ou introuvable."
+	_action_en_attente = "inscription" if inscription else "connexion"
+	_adresse_auth = adresse
+	_pseudo_auth = nom_pseudo
+	_mot_de_passe_auth = mot_de_passe
+	return ""
 
-func _ajouter_saisie(colonne: VBoxContainer, libelle: String) -> LineEdit:
-	var etiquette := Label.new()
-	etiquette.text = libelle
-	colonne.add_child(etiquette)
-	var champ := LineEdit.new()
-	champ.custom_minimum_size = Vector2(0, 40)
-	colonne.add_child(champ)
-	return champ
-
-func _bouton_action(texte: String, action: String) -> Button:
-	var bouton := Button.new()
-	bouton.text = texte
-	bouton.custom_minimum_size = Vector2(0, 44)
-	bouton.pressed.connect(_demarrer_action.bind(action))
-	return bouton
-
-func _demarrer_action(action: String) -> void:
-	if _champ_pseudo.text.strip_edges() == "" or _champ_mdp.text == "":
-		_message_interface("Pseudo et mot de passe requis.")
-		return
-	_action_en_attente = action
-	_message_interface("Connexion au serveur...")
-	if not demarrer_client(_champ_adresse.text):
-		_action_en_attente = ""
-		mode = Mode.HORS_LIGNE
-		_message_interface("Adresse du serveur introuvable.")
-		return
-	# la requête partira dans _on_connecte_au_serveur une fois le pair établi
+func annuler_authentification() -> void:
+	if not _action_en_attente.is_empty():
+		fermer_connexion()
 
 func jouer_hors_ligne() -> void:
-	mode = Mode.HORS_LIGNE
-	masquer_interface()
+	if mode == Mode.CLIENT:
+		fermer_connexion()
 
-# le monde tourne derrière l'écran de connexion : on le met en pause
-func afficher_interface() -> void:
-	_ui.show()
-	get_tree().paused = true
-
-func masquer_interface() -> void:
-	_ui.hide()
-	get_tree().paused = false
-
-func _message_interface(message: String) -> void:
-	_label_message.text = message
+func revenir_accueil(message: String = "") -> void:
+	jouer_hors_ligne()
+	message_accueil = message
+	get_tree().change_scene_to_file.call_deferred(CHEMIN_ACCUEIL)
 
 func charger_preferences() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(CHEMIN_PREF) != OK:
 		return
-	_champ_adresse.text = str(cfg.get_value("serveur", "adresse", "127.0.0.1:%d" % PORT_DEFAUT))
-	_champ_pseudo.text = str(cfg.get_value("serveur", "pseudo", ""))
+	adresse_preferee = str(cfg.get_value("serveur", "adresse", adresse_preferee))
+	pseudo_prefere = str(cfg.get_value("serveur", "pseudo", ""))
 
 func sauvegarder_preferences() -> void:
 	var cfg := ConfigFile.new()
-	cfg.set_value("serveur", "adresse", _champ_adresse.text.strip_edges())
-	cfg.set_value("serveur", "pseudo", _champ_pseudo.text.strip_edges())
+	cfg.set_value("serveur", "adresse", adresse_preferee)
+	cfg.set_value("serveur", "pseudo", pseudo_prefere)
 	cfg.save(CHEMIN_PREF)
 
 # le pair distant se déconnecte (reçu par les deux côtés)
@@ -1587,6 +1892,132 @@ func _construire_chat() -> void:
 	_chat_saisie.visible = false
 	_chat_saisie.text_submitted.connect(_on_chat_envoye)
 	colonne.add_child(_chat_saisie)
+	# panneau des membres de notre groupe de joueurs, au-dessus du chat
+	_panneau_groupe = PanelContainer.new()
+	_panneau_groupe.theme = THEME
+	_panneau_groupe.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_panneau_groupe.offset_left = 18.0
+	_panneau_groupe.offset_top = -372.0
+	_panneau_groupe.offset_right = 258.0
+	_panneau_groupe.offset_bottom = -268.0
+	_panneau_groupe.hide()
+	_chat.add_child(_panneau_groupe)
+
+# --- groupes de joueurs (côté client) : distincts des équipages ---
+
+# RPC client : un joueur nous invite dans son groupe
+@rpc("any_peer", "call_remote", "reliable")
+func invite_groupe(pseudo_inviteur: String) -> void:
+	if multiplayer.is_server():
+		return
+	_montrer_invite_groupe(pseudo_inviteur)
+
+# RPC client : composition de notre groupe — panneau des membres et
+# pseudos des compagnons en vert sur la map
+@rpc("any_peer", "call_remote", "reliable")
+func maj_groupe(membres: Array) -> void:
+	if multiplayer.is_server():
+		return
+	groupe_local = []
+	for membre in membres:
+		if membre is Dictionary:
+			groupe_local.append(membre)
+	_maj_panneau_groupe()
+	for pair in _avatars.keys():
+		var avatar = _avatars[pair]
+		if is_instance_valid(avatar):
+			avatar.marquer_groupe(est_dans_groupe(int(pair)))
+
+# true si ce pair fait partie de notre groupe
+func est_dans_groupe(peer_id: int) -> bool:
+	for membre in groupe_local:
+		if int(membre.get("peer", 0)) == peer_id:
+			return true
+	return false
+
+func _maj_panneau_groupe() -> void:
+	if _panneau_groupe == null:
+		return
+	for enfant in _panneau_groupe.get_children():
+		enfant.queue_free()
+	if groupe_local.is_empty():
+		_panneau_groupe.hide()
+		return
+	var marges := MarginContainer.new()
+	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		marges.add_theme_constant_override(marge, 10)
+	_panneau_groupe.add_child(marges)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 2)
+	marges.add_child(colonne)
+	var titre := Label.new()
+	titre.text = "GROUPE (%d/%d)" % [groupe_local.size(), GROUPE_TAILLE_MAX]
+	titre.add_theme_font_size_override("font_size", 14)
+	titre.add_theme_color_override("font_color", Color("#ffd166"))
+	colonne.add_child(titre)
+	for membre in groupe_local:
+		var ligne := Label.new()
+		ligne.add_theme_font_size_override("font_size", 14)
+		var texte := "• " + str(membre.get("pseudo", "?"))
+		if bool(membre.get("chef", false)):
+			texte += " (chef)"
+			ligne.add_theme_color_override("font_color", Color("#ffd166"))
+		else:
+			ligne.add_theme_color_override("font_color", Color("#7bd88f"))
+		ligne.text = texte
+		colonne.add_child(ligne)
+	_panneau_groupe.show()
+
+# popup d'invitation de groupe
+var _panneau_invite_groupe: PanelContainer
+
+func _montrer_invite_groupe(pseudo_inviteur: String) -> void:
+	if _panneau_invite_groupe == null:
+		_construire_invite_groupe()
+	var etiquette: Label = _panneau_invite_groupe.get_meta("etiquette")
+	etiquette.text = "%s t'invite dans son groupe !" % pseudo_inviteur
+	_panneau_invite_groupe.show()
+
+func _cacher_invite_groupe() -> void:
+	if _panneau_invite_groupe != null:
+		_panneau_invite_groupe.hide()
+
+func _construire_invite_groupe() -> void:
+	_panneau_invite_groupe = PanelContainer.new()
+	_panneau_invite_groupe.theme = THEME
+	_panneau_invite_groupe.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_panneau_invite_groupe.offset_top = 230.0
+	_chat.add_child(_panneau_invite_groupe)
+	var marges := MarginContainer.new()
+	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		marges.add_theme_constant_override(marge, 16)
+	_panneau_invite_groupe.add_child(marges)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 10)
+	marges.add_child(colonne)
+	var etiquette := Label.new()
+	etiquette.add_theme_font_size_override("font_size", 17)
+	colonne.add_child(etiquette)
+	_panneau_invite_groupe.set_meta("etiquette", etiquette)
+	var boutons := HBoxContainer.new()
+	boutons.alignment = BoxContainer.ALIGNMENT_CENTER
+	boutons.add_theme_constant_override("separation", 14)
+	colonne.add_child(boutons)
+	var accepter := Button.new()
+	accepter.text = "Rejoindre"
+	accepter.custom_minimum_size = Vector2(0, 42)
+	accepter.pressed.connect(func() -> void:
+		_cacher_invite_groupe()
+		rpc_id(1, "reponse_groupe", true))
+	boutons.add_child(accepter)
+	var refuser := Button.new()
+	refuser.text = "Refuser"
+	refuser.custom_minimum_size = Vector2(0, 42)
+	refuser.pressed.connect(func() -> void:
+		_cacher_invite_groupe()
+		rpc_id(1, "reponse_groupe", false))
+	boutons.add_child(refuser)
+	_panneau_invite_groupe.hide()
 
 # popup d'invitation au combat, en haut de l'écran
 var _panneau_invitation: PanelContainer
@@ -1643,7 +2074,7 @@ func _on_invitation_rejoint() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
-	if _ui != null and _ui.visible:
+	if not _chat.visible:
 		return
 	if event.keycode == KEY_T and not _chat_ouvert and mode == Mode.CLIENT and pseudo != "":
 		_chat_ouvert = true

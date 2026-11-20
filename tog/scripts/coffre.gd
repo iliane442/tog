@@ -53,6 +53,12 @@ func _ready() -> void:
 		coffre_id = "coffre_" + str(get_path())
 	_maj_sprite(Coffres.est_ouvert(coffre_id))
 	_configurer_particules()
+	# monde partagé : un coffre ouvert ou pillé par autrui change d'aspect ici aussi
+	Coffres.coffre_modifie.connect(_sur_etat_coffre)
+
+func _sur_etat_coffre(id_recu: String) -> void:
+	if id_recu == coffre_id:
+		_maj_sprite(Coffres.est_ouvert(coffre_id))
 
 func _clamp_rarete() -> void:
 	rarete = clampi(rarete, 1, 4)
@@ -73,11 +79,19 @@ func _input_event(_viewport: Viewport, event: InputEvent, _shape_idx: int) -> vo
 	_viewport.set_input_as_handled()
 	ouvrir()
 
-# ouvre le coffre : première fois -> animation puis fenêtre ; sinon fenêtre directe
+# ouvre le coffre : première fois -> animation puis fenêtre ; sinon fenêtre directe ;
+# en ligne (monde partagé), le tirage et le contenu viennent du serveur —
+# la séquence animée part dès la réponse coffre_etat
 func ouvrir() -> void:
 	if _ouverture_en_cours:
 		return
 	if not Coffres.est_ouvert(coffre_id):
+		if Coffres.en_ligne:
+			_ouverture_en_cours = true
+			Coffres.demander_ouverture(coffre_id, rarete, func() -> void:
+				_ouverture_en_cours = false
+				_ouvert_seq_animee())
+			return
 		Coffres.ouvrir(coffre_id, rarete)
 		_ouvert_seq_animee()
 	else:

@@ -34,21 +34,67 @@ const RARETE_COFFRE_LEGENDAIRE := 4
 # types d'objets tirés en plusieurs exemplaires
 const TYPES_EMPILABLES := ["consumable", "ressource"]
 
+# monde partagé : préfixe des coffres posés sur les maps (coffre.gd),
+# par opposition aux coffres-objets ouverts depuis l'inventaire
+const PREFIXE_MONDE := "coffre_"
+
+# vrai quand le compte est connecté : les coffres du monde sont partagés,
+# le serveur fait foi (tirage et contenu) et le fichier local n'est plus
+# lu ni écrit — il redevient la référence en repassant hors ligne
+var en_ligne := false
+
+# ouvertures en ligne en attente de réponse : coffre_id -> rappel appelé
+# avec le contenu du serveur quand coffre_etat arrive
+var _demandes_ouverture := {}
+
+# prises confirmées par le serveur (nous avons demandé un objet ou un
+# vidage) : la fenêtre de loot les annonce si elle est ouverte
+signal prise_distante(prises: Array)
+
 signal coffre_modifie(coffre_id: String)
 
-var _etat := {}  # coffre_id -> {"ouvert": bool, "contenu": Array[{"id": String, "qte": int}]}
+var _etat := {}  # coffre_id -> {"ouvert": bool, "contenu": Array[{id, qte}]}
 
 func _ready() -> void:
+	_charger_etat_local()
+
+func _charger_etat_local() -> void:
+	_etat = {}
 	var cfg := ConfigFile.new()
 	if cfg.load(CHEMIN_ETAT) == OK and cfg.has_section("coffres"):
 		for id in cfg.get_section_keys("coffres"):
 			_etat[str(id)] = cfg.get_value("coffres", id)
 
 func _sauver() -> void:
+	# en ligne, le monde partagé vit sur le serveur : ne jamais polluer
+	# la sauvegarde locale (celle du mode hors ligne) avec son état
+	if en_ligne:
+		return
 	var cfg := ConfigFile.new()
 	for id in _etat:
 		cfg.set_value("coffres", id, _etat[id])
 	cfg.save(CHEMIN_ETAT)
+
+# compte connecté : l'état serveur remplace la vue locale des coffres
+# du monde (les coffres-objets d'inventaire restent personnels)
+func basculer_en_ligne() -> void:
+	en_ligne = true
+	_demandes_ouverture.clear()
+	for id in _etat.keys():
+		if id.begins_with(PREFIXE_MONDE):
+			_etat.erase(id)
+
+# retour hors ligne : la sauvegarde locale redevient la référence
+func recharger_etat_local() -> void:
+	en_ligne = false
+	_demandes_ouverture.clear()
+	_charger_etat_local()
+	coffre_modifie.emit("")
+
+# un coffre posé sur une map (partagé en ligne), par opposition aux
+# coffres-objets d'inventaire aux ids numériques
+func est_coffre_monde(coffre_id: String) -> bool:
+	return coffre_id.begins_with(PREFIXE_MONDE)
 
 func est_ouvert(coffre_id: String) -> bool:
 	return _etat.has(coffre_id) and _etat[coffre_id].get("ouvert", false)
@@ -59,8 +105,12 @@ func contenu(coffre_id: String) -> Array:
 		return _etat[coffre_id].get("contenu", []).duplicate()
 	return []
 
-# première ouverture : marque le coffre ouvert et tire (une seule fois) son contenu
+# première ouverture : marque le coffre ouvert et tire (une seule fois) son contenu ;
+# en ligne, le tirage fait foi sur le serveur : le contenu revient par coffre_etat
 func ouvrir(coffre_id: String, rarete_coffre: int) -> Array:
+	if en_ligne and est_coffre_monde(coffre_id):
+		Reseau.demander_ouverture_coffre(coffre_id, rarete_coffre)
+		return []
 	if not _etat.has(coffre_id):
 		_etat[coffre_id] = {"ouvert": true, "contenu": _tirer_contenu(rarete_coffre)}
 	else:
@@ -68,6 +118,51 @@ func ouvrir(coffre_id: String, rarete_coffre: int) -> Array:
 	_sauver()
 	coffre_modifie.emit(coffre_id)
 	return contenu(coffre_id)
+
+# ouverture en ligne : le contenu du serveur déclenchera le rappel (l'état
+# local ne change qu'à la réception, cf. maj_etat_distant)
+func demander_ouverture(coffre_id: String, rarete_coffre: int, rappel: Callable) -> void:
+	_demandes_ouverture[coffre_id] = rappel
+	Reseau.demander_ouverture_coffre(coffre_id, rarete_coffre)
+
+# le serveur fait foi sur ce coffre du monde : réponse à notre ouverture
+# ou évolution diffusée aux joueurs de la même map (prise par autrui)
+func maj_etat_distant(coffre_id: String, contenu_json: String) -> void:
+	var analyse: Variant = JSON.parse_string(contenu_json)
+	if not analyse is Array:
+		analyse = []
+	_etat[coffre_id] = {"ouvert": true, "contenu": analyse}
+	var rappel = _demandes_ouverture.get(coffre_id)
+	if rappel != null:
+		_demandes_ouverture.erase(coffre_id)
+		(rappel as Callable).call()
+	coffre_modifie.emit(coffre_id)
+
+# état des coffres du monde de la scène courante, reçu à l'arrivée sur une
+# map (avant toute interaction locale) : appliqué en bloc
+func appliquer_etat_scene(etat_json: String) -> void:
+	var analyse: Variant = JSON.parse_string(etat_json)
+	if not analyse is Dictionary:
+		return
+	for coffre_id in analyse:
+		var contenu_recu: Variant = analyse[coffre_id]
+		_etat[str(coffre_id)] = {"ouvert": true, "contenu": contenu_recu if contenu_recu is Array else []}
+		coffre_modifie.emit(str(coffre_id))
+
+# prises confirmées par le serveur (objet ou vidage demandés par nous) :
+# elles rejoignent l'inventaire et sont annoncées par prise_distante
+func recevoir_prise_distante(prises_json: String) -> void:
+	var analyse: Variant = JSON.parse_string(prises_json)
+	var prises: Array = []
+	if analyse is Dictionary:
+		prises = [analyse]
+	elif analyse is Array:
+		prises = analyse
+	for prise in prises:
+		if prise is Dictionary:
+			Inventaire.ajouter_objet(str(prise.get("id", "")), int(prise.get("qte", 1)))
+	if not prises.is_empty():
+		prise_distante.emit(prises)
 
 # ouvre n exemplaires d'un même coffre (lot acheté, ouverture groupée)
 # sous un même état temporaire : le contenu est la somme des tirages
@@ -80,8 +175,13 @@ func ouvrir_lot(coffre_id: String, rarete_coffre: int, nombre: int) -> Array:
 	coffre_modifie.emit(coffre_id)
 	return contenu_lot.duplicate()
 
-# retire du coffre l'objet à cet index et le renvoie
+# retire du coffre l'objet à cet index et le renvoie ; en ligne, le
+# serveur arbitre : la prise (si l'objet y est encore) reviendra par
+# coffre_prise — l'inventaire n'est crédité qu'à la confirmation
 func prendre_objet(coffre_id: String, index: int) -> Dictionary:
+	if en_ligne and est_coffre_monde(coffre_id):
+		Reseau.demander_prise_coffre(coffre_id, index)
+		return {}
 	if not _etat.has(coffre_id):
 		return {}
 	var restant: Array = _etat[coffre_id]["contenu"]
@@ -93,8 +193,12 @@ func prendre_objet(coffre_id: String, index: int) -> Dictionary:
 	coffre_modifie.emit(coffre_id)
 	return prise
 
-# retire tout le contenu du coffre et le renvoie
+# retire tout le contenu du coffre et le renvoie ; en ligne, le serveur
+# arbitre : les prises reviendront par coffre_prise (vidage)
 func vider(coffre_id: String) -> Array:
+	if en_ligne and est_coffre_monde(coffre_id):
+		Reseau.demander_vidage_coffre(coffre_id)
+		return []
 	if not _etat.has(coffre_id):
 		return []
 	var prises: Array = _etat[coffre_id]["contenu"].duplicate()
@@ -102,6 +206,11 @@ func vider(coffre_id: String) -> Array:
 	_sauver()
 	coffre_modifie.emit(coffre_id)
 	return prises
+
+# tirage d'un coffre du monde, côté serveur uniquement (reseau.gd) :
+# le même butin fait foi pour tous les joueurs, sans toucher l'état local
+func tirage_de_coffre(rarete_coffre: int) -> Array:
+	return _tirer_contenu(rarete_coffre)
 
 # ids des objets encore enfermés dans les coffres non vidés : sert aux
 # autres systèmes (cartes au trésor) à respecter l'exemplarité des

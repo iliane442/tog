@@ -218,9 +218,23 @@ const ICONES_EMPLACEMENTS := {
 	"equipage": "Équipage",
 }
 
+# ce qu'apporte chaque point d'une caractéristique (cf. personnage.gd :
+# constantes de bonus) — sert d'infobulle dans la répartition des points
+const AIDE_STATS := {
+	"vitalite": "Vitalité : +5 points de vie par point.",
+	"sagesse": "Sagesse : +2% d'expérience gagnée par point.",
+	"force": "Force : +1 dégât par point sur les sorts d'attaque au corps à corps (portée 1).",
+	"intelligence": "Intelligence : +1 dégât par point sur les sorts d'attaque à distance (portée 2 et plus), +1 point de soin par point sur les sorts de soin.",
+	"chance": "Précision : +1% de chances de toucher par point.",
+	"agilite": "Vitesse : +1% d'esquive et +1% d'initiative par point, jusqu'à +50% de chances de gagner un PM supplémentaire par tour.",
+}
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	fenetre.visible = false
+	# la barre de sorts peut changer hors du menu (level-up, fruit,
+	# connexion) : l'onglet Sorts ouvert suit en direct
+	Personnage.barre_sorts_modifiee.connect(_sur_barre_sorts_menu)
 	_ajuster_fenetre()
 	_creer_emplacements()
 	btn_equiper.pressed.connect(_on_bouton_equiper)
@@ -235,6 +249,7 @@ func _ready() -> void:
 	btn_equiper.get_parent().add_child(btn_utiliser)
 	btn_utiliser.pressed.connect(_on_bouton_utiliser)
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
+	$Fenetre/Entete/Accueil.pressed.connect(_confirmer_retour_accueil)
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
 	btn_effacer_perso.pressed.connect(_on_effacer_perso)
@@ -242,6 +257,14 @@ func _ready() -> void:
 		var ligne_stat: Dictionary = lignes_stats[cle]
 		var bouton_ajouter: Button = ligne_stat["ajouter"] as Button
 		bouton_ajouter.pressed.connect(_on_augmenter_stat.bind(cle))
+		# ce que chaque point de la stat apporte, pour choisir en
+		# connaissance de cause (sorts compris)
+		var aide_stat: String = str(AIDE_STATS.get(cle, ""))
+		if aide_stat != "":
+			bouton_ajouter.tooltip_text = aide_stat
+			var ligne_controle := bouton_ajouter.get_parent() as Control
+			if ligne_controle != null:
+				ligne_controle.tooltip_text = aide_stat
 	btn_menu.pressed.connect(_on_bouton_menu)
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Personnage.pressed.connect(ouvrir.bind("personnage"))
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Sorts.pressed.connect(ouvrir.bind("sorts"))
@@ -307,6 +330,22 @@ func _on_bouton_menu() -> void:
 	else:
 		ouvrir()
 
+func _confirmer_retour_accueil() -> void:
+	var combat := get_tree().current_scene.get_node_or_null("CombatManager")
+	if combat != null and combat.en_combat:
+		return
+	var dialogue := ConfirmationDialog.new()
+	dialogue.title = "Retour à l’accueil"
+	dialogue.dialog_text = "Ta prochaine partie commencera à Fushia."
+	dialogue.ok_button_text = "Revenir à l’accueil"
+	dialogue.cancel_button_text = "Continuer la partie"
+	dialogue.confirmed.connect(func(): Reseau.revenir_accueil())
+	dialogue.visibility_changed.connect(func():
+		if not dialogue.visible:
+			dialogue.queue_free())
+	add_child(dialogue)
+	dialogue.popup_centered()
+
 func ouvrir(section: String = "") -> void:
 	if get_tree().paused:
 		return
@@ -315,6 +354,8 @@ func ouvrir(section: String = "") -> void:
 	elif section_actuelle == "":
 		section_actuelle = "personnage"
 	var etait_fermee := not fenetre.visible
+	var combat := get_tree().current_scene.get_node_or_null("CombatManager")
+	$Fenetre/Entete/Accueil.disabled = combat != null and combat.en_combat
 	if _tween_fenetre != null and _tween_fenetre.is_running():
 		_tween_fenetre.kill()
 	fenetre.visible = true
@@ -543,6 +584,15 @@ func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
 	]
 	if int(sort.get("degats", 0)) > 0:
 		texte_infos += " | Dégâts : %d" % int(sort["degats"])
+	if str(sort.get("type", "")).to_lower() in ["heal", "healing"]:
+		texte_infos += " | Soin : %d" % absi(int(sort.get("degats", 0)))
+	# quelle caractéristique améliorer pour renforcer ce sort, et de
+	# combien il profite déjà des stats actuelles
+	var stat_boost: String = Personnage.stat_booster_sort(sort)
+	if stat_boost != "" and not verrouille:
+		var effet := "soin" if str(sort.get("type", "")).to_lower() in ["heal", "healing"] else "dégât"
+		texte_infos += " | Boost : %s (+1 %s/pt — actuel : +%d)" % [
+			stat_boost, effet, roundi(Personnage.bonus_sort_actuel(sort))]
 	if verrouille:
 		texte_infos += " | " + texte_verrou
 	infos.text = texte_infos
@@ -574,12 +624,18 @@ func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
 	liste_sorts.add_child(encadre)
 
 func _on_ajouter_sort_barre(id: String) -> void:
+	# le signal barre_sorts_modifiee reconstruit l'onglet (et le HUD)
 	Personnage.ajouter_sort_barre(id)
-	maj_sorts()
+
+# la barre a changé ailleurs (level-up, fruit mangé, connexion) : l'onglet
+# Sorts se reconstruit s'il est affiché
+func _sur_barre_sorts_menu() -> void:
+	if fenetre.visible and section_actuelle == "sorts":
+		maj_sorts()
 
 func _on_retirer_sort_barre(id: String) -> void:
+	# le signal barre_sorts_modifiee reconstruit l'onglet (et le HUD)
 	Personnage.retirer_sort_barre(id)
-	maj_sorts()
 
 func maj_quetes(_quest_id: String = "") -> void:
 	for enfant in liste_quetes.get_children():

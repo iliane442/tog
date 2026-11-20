@@ -351,11 +351,32 @@ func _faire_face_a_la_cible() -> void:
 		_ligne = _ligne_cardinale(cible.global_position - global_position)
 
 func _on_combat_commence() -> void:
-	if _combat_manager.pvp_actif and not _combat_manager.pvp_premier:
-		# duel : l'adversaire ouvre, on attend son tour complet
-		_tour_joueur = false
-		_maj_affichage()
-		_attendre_tour_adverse_pvp()
+	if _combat_manager.pvp_actif:
+		# duel : pas de jet d'initiative — le joueur qui a défié ouvre
+		# toujours (l'autre attend notre fin de tour par le réseau, un
+		# jet perdu des deux côtés figeait le duel)
+		if _combat_manager.pvp_premier:
+			_tour_joueur = true
+			_pa = pa_max
+			_pm = _combat_manager.points_mouvement(self, pm_max)
+			if randf() < Personnage.chance_pm_supplementaire():
+				_pm += 1
+				_combat_manager.afficher_message("Ta vitesse te donne +1 PM.")
+			_maj_affichage()
+			_afficher_cases()
+			_combat_manager.afficher_message("Le duel commence : à toi de jouer !")
+			_combat_manager.definir_combattant_actif(self)
+			if _sort_preselectionne_combat != "":
+				var sort_choisi := _sort_preselectionne_combat
+				_sort_preselectionne_combat = ""
+				_selectionner_sort(sort_choisi)
+		else:
+			# duel : l'adversaire ouvre, on attend son tour complet
+			_tour_joueur = false
+			_maj_affichage()
+			_combat_manager.afficher_message("Le duel commence : %s joue en premier." % _combat_manager._nom_adversaire())
+			_combat_manager.definir_combattant_actif(_combat_manager.adversaire_duel())
+			_attendre_tour_adverse_pvp()
 		return
 	if randf() >= Personnage.chance_initiative():
 		# initiative perdue (Vitesse) : les ennemis ouvrent le combat
@@ -365,6 +386,7 @@ func _on_combat_commence() -> void:
 		_jouer_tours_ennemis(_combat_manager.numero_combat, 0.8)
 		return
 	_tour_joueur = true
+	_combat_manager.definir_combattant_actif(self)
 	_pa = pa_max
 	_pm = _combat_manager.points_mouvement(self, pm_max)
 	if randf() < Personnage.chance_pm_supplementaire():
@@ -648,6 +670,12 @@ func _fin_du_tour() -> void:
 	# duel/groupe : notre tour fini part aux autres avant d'attendre le leur
 	if _combat_manager.pvp_actif or _combat_manager.groupe_actif:
 		_emettre_action_duel({"t": "fin_tour"})
+	# suivi des tours : on sait toujours qui joue
+	if _combat_manager.pvp_actif:
+		_combat_manager.afficher_message("Au tour de %s…" % _combat_manager._nom_adversaire())
+		_combat_manager.definir_combattant_actif(_combat_manager.adversaire_duel())
+	else:
+		_combat_manager.afficher_message("Les ennemis jouent…")
 	_jouer_tours_ennemis(numero, 0.5)
 
 # sequence : le tour de chaque ennemi engagé, l'un après l'autre, puis
@@ -656,6 +684,9 @@ func _jouer_tours_ennemis(numero: int, pause: float) -> void:
 	for ennemi in _combat_manager.ennemis_actifs():
 		if not is_inside_tree() or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
 			return
+		# c'est le tour de cet ennemi (marqueur sur l'arène, ligne
+		# surlignée dans le roster)
+		_combat_manager.definir_combattant_actif(ennemi)
 		await (ennemi as Node2D).jouer_tour(self, _sol)
 	await get_tree().create_timer(pause, false).timeout
 	_commencer_mon_tour(numero)
@@ -685,6 +716,9 @@ func _commencer_mon_tour(numero: int) -> void:
 		_combat_manager.afficher_message("Ta vitesse te donne +1 PM.")
 	_maj_affichage()
 	_afficher_cases()
+	# suivi des tours : les ennemis ont fini, c'est de nouveau à nous
+	_combat_manager.afficher_message("À toi de jouer !")
+	_combat_manager.definir_combattant_actif(self)
 
 func recevoir_degats(degats: int) -> void:
 	Personnage.blesser(maxi(degats, 0))

@@ -64,6 +64,12 @@ offset_right = -84.0
 offset_bottom = 148.0
 theme_override_constants/separation = 16
 
+[node name="Accueil" type="Button" parent="Fenetre/Entete"]
+custom_minimum_size = Vector2(126, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Accueil"
+
 [node name="Titre" type="Label" parent="Fenetre/Entete"]
 layout_mode = 2
 theme_type_variation = "Title"

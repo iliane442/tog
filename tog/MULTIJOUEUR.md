@@ -18,19 +18,22 @@ godot --headless --path . scenes/serveur_monde.tscn -- 8000
 ```
 
 Les données du serveur vivent dans `mmo.db` (comptes `mmo_comptes`,
-persos `mmo_persos`). Pour repartir de zéro : supprime ce fichier.
+persos `mmo_persos`, coffres du monde partagés `mmo_coffres`).
+Pour repartir de zéro : supprime ce fichier.
 
 ## Se connecter
 
-Au lancement du jeu, un écran de connexion propose :
+Depuis le menu principal, ouvre **Multijoueur** pour te connecter ou créer un compte.
 
-- **Créer un compte** : pseudo + mot de passe (4 caractères min.), puis
-  connexion immédiate. À la première connexion, ton perso local actuel
-  est importé comme perso serveur.
-- **Se connecter** : reprend le perso sauvegardé côté serveur (il
-  écrase la version locale en mémoire pendant la session).
-- **Jouer hors ligne** : le jeu d'avant, sauvegardes locales, sans
-  réseau.
+- **Créer un compte** demande un pseudo et un mot de passe de quatre
+  caractères minimum. Une fois connecté, crée le personnage de ton compte.
+- **Se connecter** reprend le personnage sauvegardé sur le serveur. Un compte
+  sans personnage ouvre l’écran de création. La partie en ligne utilise la
+  sauvegarde du serveur, actualisée à chaque changement important et toutes les
+  30 secondes.
+
+**Jouer en solo** ou **Reprendre en solo** ouvre la partie locale et utilise
+`perso.cfg`. Le bouton **Accueil** du menu en jeu permet de changer de mode.
 
 L'adresse du serveur se note `ip:port` (ex. `127.0.0.1:7777`), le
 dernier pseudo/adresse utilisés sont retenus.
@@ -42,6 +45,27 @@ envoie, Échap annule. Les autres joueurs apparaissent avec leur pseudo.
 groupe d'ennemis étiqueté), elle disparaît pour tous les joueurs de
 la même map jusqu'à ce que le serveur la fasse réapparaître (5
 minutes). Un joueur qui arrive sur une map reçoit son état courant.
+
+**Ressources partagées** : les coffres posés sur les maps appartiennent
+au monde partagé — le serveur fait autorité :
+
+- un coffre ouvert par un joueur l'est pour tous (même sprite ouvert,
+  même butin : le tirage a lieu sur le serveur, une seule fois) ;
+- un objet pris (ou un coffre vidé) disparaît de la fenêtre de loot
+  des autres joueurs de la map ; le serveur arbitre les prises
+  simultanées — l'inventaire n'est crédité qu'à sa confirmation ;
+- un joueur qui arrive sur une map reçoit l'état courant de ses
+  coffres ;
+- en ligne, `coffres.cfg` (sauvegarde locale) n'est ni lu ni écrit :
+  il ne sert qu'en solo. Les coffres-objets ouverts depuis
+  l'inventaire restent personnels.
+
+**Cartes au trésor personnelles** : une carte utilisée plante une
+croix qui n'appartient qu'à son chasseur — les autres joueurs ne la
+voient pas et ne peuvent pas en fouiller le trésor. En ligne, les
+croix non fouillées suivent la sauvegarde serveur du perso (elles
+retrouvent leur propriétaire à chaque connexion) ; en solo, elles
+vivent dans `cartes_tresor.cfg`.
 
 ## Tester en local
 
@@ -76,7 +100,10 @@ rejoignant, chacun combat le même camp dans sa propre instance, mais
 les combattants sont maintenant reliés par le serveur :
 
 - les **coéquipiers apparaissent dans ton arène** (miroirs avec leur
-  pseudo, leur vrai sprite et leurs pv) placés à côté de toi ;
+  pseudo, leur vrai sprite et leurs pv) sur des cases autour de toi ;
+  tous les joueurs d'un même combat contre un camp partagent le même
+  plan d'arène : leurs déplacements sont rejoués sur les mêmes cases
+  et ton miroir rejoint leur vraie position dès qu'ils bougent ;
 - leurs **dégâts s'appliquent à tes ennemis** : chaque sort lancé est
   relayé et frappe le même ennemi de ton côté (identification par
   index dans le groupe) — le camp tombe d'autant plus vite à plusieurs ;
@@ -112,8 +139,10 @@ Accepter / Refuser. S'il accepte, le duel démarre des deux côtés :
   chez le lanceur** puis envoyés tels quels — pas de second jet de
   dés chez la victime. Les pv restent détenus par leur propriétaire,
   qui annonce sa défaite lui-même.
-- Celui qui a défié joue en premier, puis les tours alternent
-  (fin de tour, sorts, déplacement : tout le moteur habituel).
+- Celui qui a défié joue en premier (sans jet d'initiative), puis les
+  tours alternent (fin de tour, sorts, déplacement : tout le moteur
+  habituel). Le nom du joueur dont c'est le tour s'affiche à l'écran :
+  « À toi de jouer ! », « Au tour de Pseudo… », « Les ennemis jouent… »
 - Le perdant tombe à zéro pv et le serveur annonce la victoire à
   l'autre (« X est à terre — tu remportes le duel ! »). Se
   déconnecter en plein duel équivaut à fuir : l'adversaire gagne.
@@ -124,16 +153,35 @@ Un joueur en duel porte le badge « (en combat) » et ne peut pas
 recevoir d'invitation de combat de groupe tant que le duel dure —
 et réciproquement.
 
+## Groupes de joueurs
+
+Pour jouer à plusieurs quand ton équipage n'est pas connecté : les
+groupes sont des associations **à la volée**, sans rapport avec les
+équipages. Ils vivent le temps de la session du serveur (pas de
+persistance).
+
+- **Inviter** : `/groupe Pseudo` dans le chat — la cible reçoit un
+  popup « Rejoindre / Refuser ». Seul le chef du groupe peut inviter
+  (le fondateur est chef tant qu'il ne part pas), jusqu'à **5
+  joueurs** par groupe. Un joueur n'appartient qu'à un seul groupe.
+- **Lister** : `/groupe` renvoie les membres (le chef est marqué).
+- **Partir** : `/groupe quitter`. Si le chef part, le premier membre
+  restant prend la tête ; le dernier parti dissout le groupe. Une
+  déconnexion vaut départ.
+- **Repérage** : le panneau au-dessus du chat liste tes compagnons
+  (chef en doré), et leurs pseudos apparaissent en **vert** sur la
+  map. Les annonces du groupe passent dans le chat.
+
 ## Indicateurs sociaux
 
 - **Arrivées et départs** : le chat annonce « X a embarqué ! » quand un
   joueur se connecte et « X a débarqué. » quand il part.
 - **Commande `/joueurs`** : écris `/joueurs` dans le chat pour recevoir
   la liste des joueurs en ligne (réponse visible par toi seul).
-- **Badge « en combat »** : l'avatar d'un joueur engagé dans un combat
-  affiche « (en combat) » à côté de son pseudo, en jaune. Le badge
-  disparaît à la fin de son combat (les avatars marqués ne sont pas
-  sollicités par les invitations).
+- **Joueurs en combat** : l'avatar de map d'un joueur engagé dans un
+  combat disparaît de la carte le temps de son combat (il vit dans les
+  arènes, où les invitations ne le sollicitent pas) et réapparaît à la
+  fin, à sa vraie position.
 
 ## Déployer sur un VPS
 
@@ -183,5 +231,6 @@ Pour héberger le serveur sur une machine allumée 24 h/24 :
   un vrai serveur (VPS + TLS/WSS) avant d'ouvrir le jeu à des
   inconnus.
 - Les joueurs ne se voient que s'ils sont sur la même scène du monde.
-- Sauvegarde serveur : le perso est renvoyé au serveur toutes les
-  30 secondes et à la déconnexion.
+- Sauvegarde serveur : le perso part au serveur immédiatement à chaque
+  changement important (création, sorts, équipement, XP...) puis
+  toutes les 30 secondes ; `perso.cfg` n'est plus touché en ligne.

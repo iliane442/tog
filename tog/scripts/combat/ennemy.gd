@@ -324,30 +324,11 @@ func recompenser_victoire() -> void:
 	var berry := randi_range(berry_min, maxi(berry_max, berry_min))
 	Personnage.gagner_xp(xp)
 	Personnage.ajouter_berry(berry)
-	_afficher_recompenses(Personnage.xp_effectif(xp), berry, objets_gagnes)
-
-# récapitulatif de fin de combat : les objets vont directement à l'inventaire
-func _afficher_recompenses(xp: int, berry: int, objets: Array) -> void:
-	var scene := get_tree().current_scene
-	if scene == null:
-		return
-	var lignes := ["+%d XP" % xp, "+%d Berry" % berry]
-	if objets.is_empty():
-		lignes.append("Aucun objet trouvé.")
-	else:
-		var noms: Array[String] = []
-		for objet in objets:
-			noms.append("%s x%d" % [Inventaire.nom_objet(str(objet["id"])), int(objet["qte"])])
-		lignes.append("Objets : " + ", ".join(noms))
-	var fenetre := AcceptDialog.new()
-	fenetre.title = "Victoire !"
-	fenetre.dialog_text = "\n".join(lignes)
-	fenetre.ok_button_text = "Continuer"
-	scene.add_child(fenetre)
-	fenetre.popup_centered()
-	fenetre.visibility_changed.connect(func() -> void:
-		if not fenetre.visible:
-			fenetre.queue_free())
+	# le récapitulatif n'est plus affiché ici : les récompenses se
+	# cumulent dans le gestionnaire de combat et une seule fenêtre
+	# résume tout à la fin du combat
+	if _combat_manager != null and _combat_manager.has_method("cumuler_recompense"):
+		_combat_manager.cumuler_recompense(Personnage.xp_effectif(xp), berry, objets_gagnes)
 
 func _calculer_chemin(sol: TileMapLayer, depart: Vector2i, cible: Vector2i) -> Array[Vector2i]:
 	var file: Array[Vector2i] = [depart]

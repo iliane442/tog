@@ -148,7 +148,15 @@ func maj_barre_sorts() -> void:
 			var sort: Dictionary = Personnage.sorts[id_sort]
 			bouton.icon = ICONES_SORTS.pour_sort(id_sort, str(sort.get("type", "")))
 			bouton.disabled = false
-			bouton.tooltip_text = "%s\n%s\nTouche %s" % [str(sort.get("nom", "Sort")), str(sort.get("description", "")), _raccourci(index)]
+			# la caractéristique qui renforce ce sort suit son type :
+			# Force au corps à corps, Intelligence à distance et en soin
+			var stat_boost: String = Personnage.stat_booster_sort(sort)
+			var texte_boost := ""
+			if stat_boost != "":
+				texte_boost = "Boost : %s (actuel : +%d)\n" % [stat_boost, roundi(Personnage.bonus_sort_actuel(sort))]
+			bouton.tooltip_text = "%s\n%s\n%sTouche %s" % [
+				str(sort.get("nom", "Sort")), str(sort.get("description", "")),
+				texte_boost, _raccourci(index)]
 		else:
 			bouton.icon = null
 			bouton.disabled = true
