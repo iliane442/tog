@@ -772,10 +772,15 @@ func calculer_degats(lanceur: Node, cible: Node, degats_base: int, type_sort: St
 		degats -= float(_pvp_adversaire.defense_pvp)
 	return maxi(int(round(degats)), 0)
 
-func precision_reussie(lanceur: Node) -> bool:
+# réussite d'une attaque : précision de base, bonus du lanceur s'il est
+# le joueur (caractéristique « Précision »), esquive retranchée si le
+# joueur est la cible (caractéristique « Vitesse »)
+func precision_reussie(lanceur: Node, cible: Node = null) -> bool:
 	var precision := 0.9
 	if lanceur == _joueur:
 		precision += Personnage.bonus_precision()
+	elif cible == _joueur:
+		precision -= Personnage.bonus_esquive()
 	if a_etat(lanceur, 6):
 		precision *= maxf(0.0, 1.0 - float(_valeur_etat(lanceur, 6)) * float(_piles_etat(lanceur, 6)))
 	if a_etat(lanceur, 15):

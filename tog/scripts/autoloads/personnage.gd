@@ -30,13 +30,18 @@ var metiers: Dictionary = {}
 const POINTS_PAR_NIVEAU := 5
 
 # impacts des points de caractéristiques (la vitalité donne +5 PV par
-# point, cf. recalculer_stats / depenser_point)
+# point, cf. recalculer_stats / depenser_point) ; la caractéristique
+# « chance » s'affiche « Précision » et « agilite » s'affiche « Vitesse »
+# (les clés restent celles de la base et du fichier de sauvegarde)
 const DEGATS_PAR_FORCE := 1.0  # sort d'attaque de portée 1 (corps à corps)
 const DEGATS_PAR_INTELLIGENCE := 1.0  # sort d'attaque de portée >= 2
 const SOIN_PAR_INTELLIGENCE := 1.0  # sorts de type heal
 const BONUS_XP_PAR_SAGESSE := 0.02  # +2% d'XP par point de sagesse
-const BONUS_BUTIN_PAR_CHANCE := 0.01  # +1% de butin par point de chance
-const BONUS_PRECISION_PAR_AGILITE := 0.005  # +0,5% de précision par point
+const PRECISION_PAR_CHANCE := 0.01  # +1% de toucher par point de « Précision »
+const ESQUIVE_PAR_AGILITE := 0.01  # -1% de précision aux attaques ennemies
+const CHANCE_PM_PAR_AGILITE := 0.01  # chance de +1 PM au début du tour (max 50%)
+const INITIATIVE_BASE := 0.5  # probabilité de base de commencer le combat
+const INITIATIVE_PAR_AGILITE := 0.01  # +1% par point de « Vitesse »
 
 # Race et classe (ids des tables character_races / character_classes)
 var race_id: String = "1"
@@ -810,13 +815,24 @@ func bonus_soin_sort() -> float:
 func xp_effectif(montant: int) -> int:
 	return roundi(float(montant) * (1.0 + float(caracteristiques.get("sagesse", 0)) * BONUS_XP_PAR_SAGESSE))
 
-# multiplicateur de probabilité de butin par point de chance
-func facteur_butin() -> float:
-	return 1.0 + float(caracteristiques.get("chance", 0)) * BONUS_BUTIN_PAR_CHANCE
-
-# précision ajoutée aux attaques grâce à l'agilité
+# précision ajoutée aux attaques du personnage (caractéristique
+# « chance », affichée « Précision »)
 func bonus_precision() -> float:
-	return float(caracteristiques.get("agilite", 0)) * BONUS_PRECISION_PAR_AGILITE
+	return float(caracteristiques.get("chance", 0)) * PRECISION_PAR_CHANCE
+
+# esquive du personnage : retranchée à la précision des attaques
+# ennemies qui le ciblent (caractéristique « agilite », « Vitesse »)
+func bonus_esquive() -> float:
+	return float(caracteristiques.get("agilite", 0)) * ESQUIVE_PAR_AGILITE
+
+# chance de gagner un PM supplémentaire au début de son tour
+func chance_pm_supplementaire() -> float:
+	return clampf(float(caracteristiques.get("agilite", 0)) * CHANCE_PM_PAR_AGILITE, 0.0, 0.5)
+
+# probabilité de prendre l'initiative à l'ouverture du combat
+# (jouer avant les ennemis)
+func chance_initiative() -> float:
+	return clampf(INITIATIVE_BASE + float(caracteristiques.get("agilite", 0)) * INITIATIVE_PAR_AGILITE, 0.0, 0.95)
 
 func gagner_xp(montant: int) -> void:
 	xp += xp_effectif(montant)

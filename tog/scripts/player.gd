@@ -345,9 +345,19 @@ func _on_combat_commence() -> void:
 		_maj_affichage()
 		_attendre_tour_adverse_pvp()
 		return
+	if randf() >= Personnage.chance_initiative():
+		# initiative perdue (Vitesse) : les ennemis ouvrent le combat
+		_combat_manager.afficher_message("L’ennemi prend l’initiative !")
+		_tour_joueur = false
+		_maj_affichage()
+		_jouer_tours_ennemis(_combat_manager.numero_combat, 0.8)
+		return
 	_tour_joueur = true
 	_pa = pa_max
 	_pm = _combat_manager.points_mouvement(self, pm_max)
+	if randf() < Personnage.chance_pm_supplementaire():
+		_pm += 1
+		_combat_manager.afficher_message("Ta vitesse te donne +1 PM.")
 	_maj_affichage()
 	_afficher_cases()
 	if _sort_preselectionne_combat != "":
@@ -614,24 +624,22 @@ func _fin_du_tour() -> void:
 	# duel : notre tour fini part au distant avant d'attendre le sien
 	if _combat_manager.pvp_actif:
 		_emettre_action_duel({"t": "fin_tour"})
-	# le tour de chaque ennemi engagé, l'un après l'autre
+	_jouer_tours_ennemis(numero, 0.5)
+
+# sequence : le tour de chaque ennemi engagé, l'un après l'autre, puis
+# le tour du joueur (pause avant sa reprise)
+func _jouer_tours_ennemis(numero: int, pause: float) -> void:
 	for ennemi in _combat_manager.ennemis_actifs():
 		if not is_inside_tree() or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
 			return
 		await (ennemi as Node2D).jouer_tour(self, _sol)
-	await get_tree().create_timer(0.5).timeout
+	await get_tree().create_timer(pause, false).timeout
 	_commencer_mon_tour(numero)
 
 # en duel, quand c'est l'adversaire qui ouvre : son tour complet nous
 # parvient par le réseau, joué sur notre miroir de lui
 func _attendre_tour_adverse_pvp() -> void:
-	var numero: int = _combat_manager.numero_combat
-	for ennemi in _combat_manager.ennemis_actifs():
-		if not is_inside_tree() or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
-			return
-		await (ennemi as Node2D).jouer_tour(self, _sol)
-	await get_tree().create_timer(0.3).timeout
-	_commencer_mon_tour(numero)
+	_jouer_tours_ennemis(_combat_manager.numero_combat, 0.3)
 
 func _commencer_mon_tour(numero: int) -> void:
 	if not is_inside_tree() or _combat_manager == null or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
@@ -648,6 +656,9 @@ func _commencer_mon_tour(numero: int) -> void:
 	_tour_joueur = true
 	_pa = pa_max
 	_pm = _combat_manager.points_mouvement(self, pm_max)
+	if randf() < Personnage.chance_pm_supplementaire():
+		_pm += 1
+		_combat_manager.afficher_message("Ta vitesse te donne +1 PM.")
 	_maj_affichage()
 	_afficher_cases()
 

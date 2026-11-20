@@ -166,7 +166,7 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 		depart = _case_de(sol, global_position)
 	if _peut_attaquer(depart, cible):
 		_appliquer_ralentissement_test(joueur)
-		if _combat_manager == null or _combat_manager.precision_reussie(self):
+		if _combat_manager == null or _combat_manager.precision_reussie(self, joueur):
 			var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque)) if _combat_manager != null else degats_attaque
 			joueur.recevoir_degats(degats)
 	if _combat_manager != null and _combat_manager.en_combat and is_inside_tree():
@@ -218,12 +218,10 @@ func recompenser_victoire() -> void:
 			if liste is Array:
 				drops = liste
 	# tirage des objets : chaque entrée {item_id, probability, min/max_quantity}
-	# (les ids arrivent en float depuis le JSON : on les repasse en int) ;
-	# la chance du personnage augmente chaque probabilité
+	# (les ids arrivent en float depuis le JSON : on les repasse en int)
 	var objets_gagnes: Array = []
 	for drop in drops:
-		var probabilite: float = clampf(float(drop.get("probability", 0.0)) * Personnage.facteur_butin(), 0.0, 1.0)
-		if randf() > probabilite:
+		if randf() > float(drop.get("probability", 0.0)):
 			continue
 		var qte := randi_range(int(drop.get("min_quantity", 1)), int(drop.get("max_quantity", 1)))
 		if qte > 0 and drop.get("item_id") != null:

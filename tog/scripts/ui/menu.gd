@@ -995,8 +995,8 @@ func maj_equipement() -> void:
 const LIBELLES_EFFETS := {
 	"attack": "Attaque", "defense": "Défense", "speed": "Vitesse", "heal": "Soin",
 	"vie": "Vie", "health": "Vie", "vitalite": "Vitalité", "sagesse": "Sagesse",
-	"force": "Force", "intelligence": "Intelligence", "chance": "Chance",
-	"agilite": "Agilité",
+	"force": "Force", "intelligence": "Intelligence", "chance": "Précision",
+	"agilite": "Vitesse",
 }
 
 func _texte_stats(details: Dictionary) -> String:
