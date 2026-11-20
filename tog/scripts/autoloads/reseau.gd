@@ -101,6 +101,11 @@ func _ready() -> void:
 	_construire_chat()
 	charger_preferences()
 	afficher_interface()
+	# la barre de sorts part immédiatement au serveur : la sauvegarde
+	# périodique (30 s) ne serait pas forcément passée avant un arrêt
+	# du jeu, et la version serveur écrase alors la barre locale à la
+	# reconnexion
+	Personnage.barre_sorts_modifiee.connect(_sauvegarder_perso_serveur)
 
 func _process(delta: float) -> void:
 	if mode == Mode.CLIENT and pseudo != "":
@@ -1191,6 +1196,14 @@ func reviver_rencontre(cle: String) -> void:
 func _client_sauvegarde_periodique(delta: float) -> void:
 	_temps_sauvegarde += delta
 	if _temps_sauvegarde < INTERVALLE_SAUVEGARDE:
+		return
+	_temps_sauvegarde = 0.0
+	rpc_id(1, "envoie_sauvegarde_perso", JSON.stringify(serialiser_perso()))
+
+# envoi immédiat du perso au serveur (changement important, hors tick
+# périodique) : sans effet hors ligne
+func _sauvegarder_perso_serveur() -> void:
+	if mode != Mode.CLIENT or not multiplayer.has_multiplayer_peer():
 		return
 	_temps_sauvegarde = 0.0
 	rpc_id(1, "envoie_sauvegarde_perso", JSON.stringify(serialiser_perso()))
