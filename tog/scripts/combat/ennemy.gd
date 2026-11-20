@@ -218,10 +218,12 @@ func recompenser_victoire() -> void:
 			if liste is Array:
 				drops = liste
 	# tirage des objets : chaque entrée {item_id, probability, min/max_quantity}
-	# (les ids arrivent en float depuis le JSON : on les repasse en int)
+	# (les ids arrivent en float depuis le JSON : on les repasse en int) ;
+	# la chance du personnage augmente chaque probabilité
 	var objets_gagnes: Array = []
 	for drop in drops:
-		if randf() > float(drop.get("probability", 0.0)):
+		var probabilite: float = clampf(float(drop.get("probability", 0.0)) * Personnage.facteur_butin(), 0.0, 1.0)
+		if randf() > probabilite:
 			continue
 		var qte := randi_range(int(drop.get("min_quantity", 1)), int(drop.get("max_quantity", 1)))
 		if qte > 0 and drop.get("item_id") != null:
@@ -231,7 +233,7 @@ func recompenser_victoire() -> void:
 	var berry := randi_range(berry_min, maxi(berry_max, berry_min))
 	Personnage.gagner_xp(xp)
 	Personnage.ajouter_berry(berry)
-	_afficher_recompenses(xp, berry, objets_gagnes)
+	_afficher_recompenses(Personnage.xp_effectif(xp), berry, objets_gagnes)
 
 # récapitulatif de fin de combat : les objets vont directement à l'inventaire
 func _afficher_recompenses(xp: int, berry: int, objets: Array) -> void:

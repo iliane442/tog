@@ -104,6 +104,7 @@ func utiliser_sort_hors_combat(id_sort: String) -> void:
 			if interface_hud != null:
 				interface_hud.afficher_message_sort("Ce sort ne peut pas être lancé hors combat.")
 			return
+		soin += roundi(Personnage.bonus_soin_sort())
 		Personnage.soigner(soin)
 		if interface_hud != null:
 			interface_hud.afficher_message_sort("%s : +%d PV" % [str(sort.get("nom", "Soin")), soin])
@@ -437,11 +438,12 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		_jouer_effet_sort(_id_sort, cible)
 		var soin := absi(int(sort.get("degats", 0))) if str(sort.get("type", "")) == "heal" else 0
 		if soin > 0:
+			soin += roundi(Personnage.bonus_soin_sort())
 			Personnage.soigner(soin)
 			_maj_affichage()
 		var degats := 0
 		if soin <= 0 and int(sort.get("degats", 0)) > 0:
-			degats = _combat_manager.calculer_degats(self, cible, int(sort.get("degats", 0)))
+			degats = _combat_manager.calculer_degats(self, cible, int(sort.get("degats", 0)), str(sort.get("type", "")), int(sort.get("portee", 1)))
 			cible.recevoir_degats(degats)
 		var etats_appliques: Array = []
 		if _combat_manager.en_combat:
@@ -537,7 +539,7 @@ func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 	_pa -= _sort_boule_de_feu.cout_pa
 	if _combat_manager.precision_reussie(self):
 		_jouer_effet_sort("boule_de_feu", cible)
-		var degats: int = _combat_manager.calculer_degats(self, cible, int(_sort_boule_de_feu.degats))
+		var degats: int = _combat_manager.calculer_degats(self, cible, int(_sort_boule_de_feu.degats), "attack", int(_sort_boule_de_feu.portee_max))
 		cible.recevoir_degats(degats)
 		_emettre_action_duel({"t": "sort", "id": "boule_de_feu",
 			"nom": "Boule de feu", "cible": "adv", "degats": degats})

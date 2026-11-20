@@ -29,6 +29,15 @@ var metiers: Dictionary = {}
 
 const POINTS_PAR_NIVEAU := 5
 
+# impacts des points de caractéristiques (la vitalité donne +5 PV par
+# point, cf. recalculer_stats / depenser_point)
+const DEGATS_PAR_FORCE := 1.0  # sort d'attaque de portée 1 (corps à corps)
+const DEGATS_PAR_INTELLIGENCE := 1.0  # sort d'attaque de portée >= 2
+const SOIN_PAR_INTELLIGENCE := 1.0  # sorts de type heal
+const BONUS_XP_PAR_SAGESSE := 0.02  # +2% d'XP par point de sagesse
+const BONUS_BUTIN_PAR_CHANCE := 0.01  # +1% de butin par point de chance
+const BONUS_PRECISION_PAR_AGILITE := 0.005  # +0,5% de précision par point
+
 # Race et classe (ids des tables character_races / character_classes)
 var race_id: String = "1"
 var classe_id: String = "12"
@@ -781,8 +790,36 @@ func supprimer_perso() -> void:
 func xp_prochain_niveau() -> int:
 	return niveau * 100
 
+# --- bonus de caractéristiques au gameplay ---
+
+# dégâts ajoutés à un sort selon son profil : force pour le corps à
+# corps (portée 1), intelligence pour la distance (portée >= 2)
+func bonus_degats_sort(type_sort: String, portee_sort: int) -> float:
+	if type_sort.to_lower() != "attack":
+		return 0.0
+	if portee_sort <= 1:
+		return float(caracteristiques.get("force", 0)) * DEGATS_PAR_FORCE
+	return float(caracteristiques.get("intelligence", 0)) * DEGATS_PAR_INTELLIGENCE
+
+# soin ajouté aux sorts de type heal (intelligence)
+func bonus_soin_sort() -> float:
+	return float(caracteristiques.get("intelligence", 0)) * SOIN_PAR_INTELLIGENCE
+
+# récompense d'XP avec le bonus de sagesse appliqué (pour gagner_xp
+# et l'affichage des récompenses de victoire)
+func xp_effectif(montant: int) -> int:
+	return roundi(float(montant) * (1.0 + float(caracteristiques.get("sagesse", 0)) * BONUS_XP_PAR_SAGESSE))
+
+# multiplicateur de probabilité de butin par point de chance
+func facteur_butin() -> float:
+	return 1.0 + float(caracteristiques.get("chance", 0)) * BONUS_BUTIN_PAR_CHANCE
+
+# précision ajoutée aux attaques grâce à l'agilité
+func bonus_precision() -> float:
+	return float(caracteristiques.get("agilite", 0)) * BONUS_PRECISION_PAR_AGILITE
+
 func gagner_xp(montant: int) -> void:
-	xp += montant
+	xp += xp_effectif(montant)
 	var niveau_avant := niveau
 	while xp >= xp_prochain_niveau():
 		xp -= xp_prochain_niveau()

@@ -747,10 +747,11 @@ func _mettre_a_jour_etiquette_etats() -> void:
 func etats_joueur_texte() -> String:
 	return _texte_etats_cible(_joueur)
 
-func calculer_degats(lanceur: Node, cible: Node, degats_base: int) -> int:
+func calculer_degats(lanceur: Node, cible: Node, degats_base: int, type_sort: String = "", portee_sort: int = 1) -> int:
 	var degats := float(maxi(degats_base, 0))
 	if lanceur == _joueur:
 		degats += float(Personnage.attaque)
+		degats += Personnage.bonus_degats_sort(type_sort, portee_sort)
 	if a_etat(lanceur, 13):
 		degats *= 1.0 + float(_valeur_etat(lanceur, 13)) * _piles_etat(lanceur, 13)
 	if a_etat(lanceur, 16) and _hasard.randf() < float(_valeur_etat(lanceur, 16)):
@@ -773,6 +774,8 @@ func calculer_degats(lanceur: Node, cible: Node, degats_base: int) -> int:
 
 func precision_reussie(lanceur: Node) -> bool:
 	var precision := 0.9
+	if lanceur == _joueur:
+		precision += Personnage.bonus_precision()
 	if a_etat(lanceur, 6):
 		precision *= maxf(0.0, 1.0 - float(_valeur_etat(lanceur, 6)) * float(_piles_etat(lanceur, 6)))
 	if a_etat(lanceur, 15):
