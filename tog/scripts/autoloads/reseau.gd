@@ -430,6 +430,7 @@ func envoie_scene(nom_scene: String, x: float = INF, y: float = INF) -> void:
 	_positions_a_relais.erase(peer_id)
 	session["scene"] = nom_scene
 	session["annonce"] = false
+	print("%s joue sur : %s" % [str(session["pseudo"]), nom_scene])
 	var position := Vector2(x, y)
 	if position.is_finite():
 		_annoncer_si_premiere_position(peer_id, position)
