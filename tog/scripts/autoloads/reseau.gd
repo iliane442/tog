@@ -13,6 +13,7 @@ extends Node
 
 const PORT_DEFAUT := 7777
 const JOUEURS_MAX := 64
+const VISUEL_DEFAUT := "humain_pirate"
 const THEME := preload("res://themes/theme_pirate.tres")
 const SCRIPT_AVATAR := preload("res://scripts/serveur/joueur_distant.gd")
 const SCRIPT_ADVERSAIRE_PVP := preload("res://scripts/combat/adversaire_pvp.gd")
@@ -231,6 +232,7 @@ func _ouvrir_session(peer_id: int, nom_pseudo: String) -> void:
 		"position": Vector2(INF, INF),
 		"annonce": false,
 		"scene": "",
+		"visuel": VISUEL_DEFAUT,
 	}
 	_limiteurs[peer_id] = {"position": 0, "chat": 0}
 	print("Connexion : %s (id %d, %d joueur(s) en ligne)" % [nom_pseudo, peer_id, _sessions.size()])
@@ -252,7 +254,8 @@ func _annoncer_si_premiere_position(peer_id: int, position: Vector2) -> void:
 		if int(autre) == peer_id:
 			continue
 		rpc_id(int(autre), "joueur_rejoint", peer_id, str(session["pseudo"]),
-			float(position.x), float(position.y), bool(session.get("en_combat", false)))
+			float(position.x), float(position.y), bool(session.get("en_combat", false)),
+			str(session.get("visuel", VISUEL_DEFAUT)))
 
 # limiteur par paire : true si le paquet arrive trop tôt
 func _trop_tot(peer_id: int, cle: String, intervalle_ms: int) -> bool:
@@ -336,7 +339,8 @@ func _annoncer_presents_sur_scene(peer_id: int, nom_scene: String) -> void:
 			continue
 		rpc_id(peer_id, "joueur_rejoint", int(autre), str(_sessions[autre]["pseudo"]),
 			float(_sessions[autre]["position"].x), float(_sessions[autre]["position"].y),
-			bool(_sessions[autre].get("en_combat", false)))
+			bool(_sessions[autre].get("en_combat", false)),
+			str(_sessions[autre].get("visuel", VISUEL_DEFAUT)))
 
 func _valider_identifiants(nom_pseudo: String, mdp: String) -> String:
 	if nom_pseudo.length() < 3 or nom_pseudo.length() > 16:
@@ -437,6 +441,19 @@ func envoie_scene(nom_scene: String, x: float = INF, y: float = INF) -> void:
 	_annoncer_presents_sur_scene(peer_id, nom_scene)
 	# l'etat du monde de cette map part au nouvel arrivant
 	rpc_id(peer_id, "etat_rencontres", _cles_vaincues(nom_scene), nom_scene)
+
+# RPC serveur : le client annonce l'apparence de son perso (préfixe de
+# planche de sprites, ex. humain_pirate, mink_pirate)
+@rpc("any_peer", "call_remote", "reliable")
+func annonce_visuel(prefixe: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _sessions.has(peer_id):
+		return
+	var visuel := str(prefixe).strip_edges()
+	if visuel != "":
+		_sessions[peer_id]["visuel"] = visuel
 
 # RPC serveur : un joueur a vaincu une rencontre de sa map
 @rpc("any_peer", "call_remote", "reliable")
@@ -834,16 +851,16 @@ func demande_import_perso() -> void:
 
 # RPC client : un joueur arrive (avatar visible)
 @rpc("any_peer", "call_remote", "reliable")
-func joueur_rejoint(peer_id: int, nom_recu: String, x: float, y: float, en_combat: bool) -> void:
+func joueur_rejoint(peer_id: int, nom_recu: String, x: float, y: float, en_combat: bool, visuel := VISUEL_DEFAUT) -> void:
 	if multiplayer.is_server():
 		return
 	if get_tree().current_scene == null:
 		_annonces_en_attente.append(
-			{"id": peer_id, "nom": nom_recu, "x": x, "y": y, "combat": en_combat})
+			{"id": peer_id, "nom": nom_recu, "x": x, "y": y, "combat": en_combat, "visuel": str(visuel)})
 		return
 	if _scene_locale != str(get_tree().current_scene.name):
 		return
-	_maj_avatar(peer_id, nom_recu, Vector2(x, y))
+	_maj_avatar(peer_id, nom_recu, Vector2(x, y), str(visuel))
 	if is_instance_valid(_avatars.get(peer_id)):
 		(_avatars[peer_id] as Node2D).maj_combat(en_combat)
 
@@ -856,7 +873,8 @@ func _client_appliquer_annonces_attente() -> void:
 	_annonces_en_attente = []
 	for entree in attente:
 		_maj_avatar(int(entree["id"]), str(entree["nom"]),
-			Vector2(float(entree["x"]), float(entree["y"])))
+			Vector2(float(entree["x"]), float(entree["y"])),
+			str(entree.get("visuel", VISUEL_DEFAUT)))
 		if is_instance_valid(_avatars.get(int(entree["id"]))):
 			(_avatars[int(entree["id"])] as Node2D).maj_combat(bool(entree["combat"]))
 
@@ -934,6 +952,8 @@ func _client_annoncer_scene() -> void:
 	_cacher_invitation()
 	_scene_locale = nom
 	_derniere_position_envoyee = joueur.global_position
+	if joueur.has_method("_prefixe_visuel_race"):
+		rpc_id(1, "annonce_visuel", str(joueur.call("_prefixe_visuel_race")))
 	rpc_id(1, "envoie_scene", nom, joueur.global_position.x, joueur.global_position.y)
 
 # RPC client : etat du monde recu (rencontres deja vaincues sur la map)
@@ -1255,11 +1275,12 @@ func _conteneur_avatars() -> Node2D:
 		scene.add_child(conteneur)
 	return conteneur
 
-func _maj_avatar(peer_id: int, nom_recu: String, position: Vector2, creer_si_absent := true) -> void:
+func _maj_avatar(peer_id: int, nom_recu: String, position: Vector2, visuel := VISUEL_DEFAUT, creer_si_absent := true) -> void:
 	if peer_id == multiplayer.get_unique_id():
 		return
 	var avatar_existant = _avatars.get(peer_id)
 	if is_instance_valid(avatar_existant):
+		avatar_existant.definir_visuel(visuel)
 		avatar_existant.viser(position)
 		return
 	if not creer_si_absent:
@@ -1269,6 +1290,7 @@ func _maj_avatar(peer_id: int, nom_recu: String, position: Vector2, creer_si_abs
 		return
 	var avatar := SCRIPT_AVATAR.new()
 	avatar.pseudo = nom_recu
+	avatar.definir_visuel(visuel)
 	avatar.position = conteneur.to_local(position)
 	conteneur.add_child(avatar)
 	_avatars[peer_id] = avatar
