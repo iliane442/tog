@@ -429,18 +429,7 @@ func _on_effacer_perso() -> void:
 	get_tree().reload_current_scene()
 
 const TAILLE_CASE_SORT := Vector2(56, 56)
-const ICONE_SORT_DEFAUT := "res://addons/pixel_ui_fantasy/icons/scroll.png"
-const ICONES_SORTS := {
-	"attack": "res://addons/pixel_ui_fantasy/icons/sword.png",
-	"heal": "res://addons/pixel_ui_fantasy/icons/potion_red.png",
-	"defense": "res://addons/pixel_ui_fantasy/icons/shield.png",
-	"buff": "res://addons/pixel_ui_fantasy/icons/gem.png",
-	"debuff": "res://addons/pixel_ui_fantasy/icons/cross.png",
-}
-
-func _icone_sort(sort: Dictionary) -> Texture2D:
-	var chemin: String = ICONES_SORTS.get(str(sort.get("type", "")).to_lower(), ICONE_SORT_DEFAUT)
-	return load(chemin)
+const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 
 # onglet Sorts : barre de combat en haut (cliquer un sort placé pour le
 # retirer), puis la liste des sorts de la classe et des pouvoirs du fruit
@@ -502,7 +491,7 @@ func _construire_barre_sorts() -> void:
 		bouton.custom_minimum_size = TAILLE_CASE_SORT
 		if id != "" and Personnage.sorts.has(id):
 			var sort: Dictionary = Personnage.sorts[id]
-			bouton.icon = _icone_sort(sort)
+			bouton.icon = ICONES_SORTS.pour_sort(id, str(sort.get("type", "")))
 			bouton.expand_icon = true
 			bouton.tooltip_text = "%s\nCliquez pour retirer de la barre." % sort.get("nom", "Sort")
 			bouton.pressed.connect(_on_retirer_sort_barre.bind(id))
@@ -524,7 +513,7 @@ func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
 	var entete := HBoxContainer.new()
 	entete.add_theme_constant_override("separation", 10)
 	var icone := TextureRect.new()
-	icone.texture = _icone_sort(sort)
+	icone.texture = ICONES_SORTS.pour_sort(id, str(sort.get("type", "")))
 	icone.custom_minimum_size = Vector2(32, 32)
 	icone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -808,7 +797,7 @@ func _trame_personnage() -> Texture2D:
 	if planche == null:
 		return null
 	# planche d'idle : 4 colonnes x 4 lignes de trames (cf. player.gd)
-	trame := AtlasTexture.new()
+	var trame := AtlasTexture.new()
 	trame.atlas = planche
 	trame.region = Rect2(0, 0, planche.get_width() / 4.0, planche.get_height() / 4.0)
 	return trame

@@ -8,6 +8,10 @@ extends Node2D
 signal sante_modifiee(vie: int, vie_max: int)
 
 const TEXTURE := preload("res://assets/sprites/humain_pirate/humain_pirate_idle.png")
+const VISUEL_DEFAUT := "humain_pirate"
+# planche d'idle : 4 colonnes d'animation, 4 lignes de direction (cf. player.gd)
+const COLONNES_REPOS := 4
+const LIGNES_REPOS := 4
 
 var nom := "Adversaire"
 var pv := 100
@@ -19,6 +23,7 @@ var pa_max := 6
 var defense_pvp := 0
 var sorts_noms: Array = []
 var distante := true          # marqueur PvP : jamais pilotée par l'IA locale
+var visuel := VISUEL_DEFAUT   # planche de sprites du joueur distant
 
 var _sprite: Sprite2D
 var _etiquette: Label
@@ -27,11 +32,16 @@ var _fin_tour_recue := false
 
 func _ready() -> void:
 	_sprite = Sprite2D.new()
-	_sprite.texture = TEXTURE
+	_sprite.name = "Sprite2D"
+	_appliquer_visuel()
+	_sprite.hframes = 4
+	_sprite.vframes = 4
+	_sprite.frame = 4
+	_sprite.position.y = -24.0
 	add_child(_sprite)
 	_etiquette = Label.new()
 	_etiquette.text = nom
-	_etiquette.position = Vector2(-40, -58)
+	_etiquette.position = Vector2(-64, _sprite.position.y + _sprite.get_rect().position.y - 14.0)
 	_etiquette.custom_minimum_size = Vector2(128, 0)
 	_etiquette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_etiquette.add_theme_font_size_override("font_size", 12)
@@ -53,6 +63,24 @@ func appliquer_profil(profil: Dictionary) -> void:
 	sorts_noms = profil.get("sorts", [])
 	_etiquette.text = nom
 	sante_modifiee.emit(pv, pv_max)
+
+# planche de sprites du joueur distant (race/sexe) : une trame face sud
+func definir_visuel(prefixe: String) -> void:
+	visuel = str(prefixe)
+	_appliquer_visuel()
+
+func _appliquer_visuel() -> void:
+	if _sprite == null:
+		return
+	var chemin := "res://assets/sprites/%s/%s_idle.png" % [visuel, visuel]
+	if not ResourceLoader.exists(chemin):
+		visuel = VISUEL_DEFAUT
+		chemin = "res://assets/sprites/%s/%s_idle.png" % [visuel, visuel]
+	_sprite.texture = load(chemin)
+	if _sprite.texture != null:
+		_sprite.hframes = COLONNES_REPOS
+		_sprite.vframes = LIGNES_REPOS
+		_sprite.frame = 0
 
 func recevoir_degats(montant: int) -> void:
 	pv = maxi(pv - maxi(montant, 0), 0)

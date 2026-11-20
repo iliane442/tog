@@ -37,7 +37,10 @@ var _cible_selectionnee: Node
 var groupe_combat := ""
 var pvp_actif := false        # un duel contre un joueur distant est en cours
 var pvp_premier := false      # le duel a commencé par notre tour
+var groupe_actif := false     # combat de groupe : les coéquipiers rejouent ici
 var _pvp_adversaire: SCRIPT_ADVERSAIRE_PVP   # miroir du joueur distant dans notre arène
+# miroirs des coéquipiers dans notre arène : peer_id -> combattant distant
+var _miroirs_groupe := {}
 var _ui: CanvasLayer
 var _fiche_ennemi: PanelContainer
 var _barre_vie_ennemi: ProgressBar
@@ -111,13 +114,16 @@ func ennemi_proche() -> Node:
 	if _joueur == null or not is_instance_valid(_joueur):
 		return null
 	var meilleure: Node = null
-	var meilleure_distance := -1
+	var meilleure_distance := INF
+	var sol := sol_combat()
 	for ennemi in ennemis_actifs() if en_combat else _ennemis_connus:
 		if ennemi == null or not is_instance_valid(ennemi) or int(ennemi.get("pv")) <= 0:
 			continue
 		var e := ennemi as Node2D
-		var distance: float = _joueur.global_position.distance_to(e.global_position)
-		if meilleure == null or distance < meilleure_distance:
+		var distance: float = _joueur.global_position.distance_squared_to(e.global_position)
+		if en_combat and sol != null:
+			distance = sol.to_local(_joueur.global_position).distance_squared_to(sol.to_local(e.global_position))
+		if distance < meilleure_distance:
 			meilleure = ennemi
 			meilleure_distance = distance
 	return meilleure
@@ -161,6 +167,28 @@ func _cycle_cible(sens: int) -> void:
 
 func sol_combat() -> TileMapLayer:
 	return _arene.sol if _arene != null else null
+
+func case_sous_point(point: Vector2, viser_ennemi: bool) -> Vector2i:
+	var sol := sol_combat()
+	if sol == null:
+		return ARENE_COMBAT.CASE_HORS_ARENE
+	# La sélection suit le sol et les personnages visibles à travers les blocs.
+	var case_sol := sol.local_to_map(sol.to_local(point))
+	if not viser_ennemi:
+		return case_sol
+	var premier_plan := -INF
+	var cible := case_sol
+	for entite in ennemis_actifs():
+		if entite.global_position.y <= premier_plan:
+			continue
+		var sprite := entite.get_node_or_null("Sprite2D") as Sprite2D
+		if sprite == null:
+			continue
+		var point_sprite := sprite.to_local(point)
+		if sprite.get_rect().has_point(point_sprite) and sprite.is_pixel_opaque(point_sprite):
+			premier_plan = entite.global_position.y
+			cible = sol.local_to_map(sol.to_local(entite.global_position))
+	return cible
 
 func dans_zone_combat(case: Vector2i) -> bool:
 	return _arene != null and Rect2i(Vector2i.ZERO, _arene.dimensions).has_point(case)
@@ -367,6 +395,11 @@ func _groupe_de(ennemi: Node) -> Array:
 			membres.append(connu)
 	return membres
 
+# accès public au camp d'un ennemi (surbrillance rouge au survol,
+# voir ennemy.gd)
+func membres_du_camp(ennemi: Node) -> Array:
+	return _groupe_de(ennemi)
+
 func _etiquette_de(entite: Node) -> String:
 	if entite == null or not is_instance_valid(entite):
 		return ""
@@ -380,6 +413,18 @@ func _on_bouton_combattre_presse() -> void:
 	_propositions.clear()
 	_bouton_combattre.hide()
 	lancer_combat(groupe)
+
+# engagement automatique (clic sur un ennemi en exploration, voir
+# ennemy.gd) : lance directement le combat contre la rencontre cliquée,
+# sans passer par le bouton Combattre
+func engager_rencontre(ennemi: Node) -> void:
+	if en_combat or ennemi == null or not is_instance_valid(ennemi):
+		return
+	if int(ennemi.get("pv")) <= 0:
+		return
+	_bouton_combattre.hide()
+	_propositions.clear()
+	lancer_combat(_groupe_de(ennemi))
 
 # engage un combat : contre le groupe d'ennemis donné (tableau), ou
 # l'ennemi le plus proche du joueur si rien n'est fourni
@@ -404,11 +449,7 @@ func lancer_combat(groupe = null) -> void:
 	if _joueur == null:
 		push_warning("Combat impossible : joueur introuvable.")
 		return
-	_camera_exploration = get_viewport().get_camera_2d()
-	_arene = ARENE_COMBAT.new()
-	_arene.index_plan = _hasard.randi_range(0, ARENE_COMBAT.PLANS.size() - 1)
-	_arene.position = POSITION_ARENE
-	add_child(_arene)
+	_ouvrir_arene(_hasard.randi_range(0, ARENE_COMBAT.PLANS.size() - 1))
 	var places := _arene.cases_ennemis()
 	if ennemis.size() > places.size():
 		_quitter_arene()
@@ -439,10 +480,16 @@ func lancer_combat(groupe = null) -> void:
 		if etiquette != "":
 			groupe_combat = etiquette
 			break
+	groupe_actif = groupe_combat != "" and not pvp_actif
 	if groupe_combat != "":
 		var reseau := get_tree().root.get_node_or_null("/root/Reseau")
 		if reseau != null:
 			reseau.call("debut_combat_local", groupe_combat)
+	# combat de groupe : les coéquipiers font apparaître notre miroir
+	if groupe_actif:
+		var reseau_groupe := get_tree().root.get_node_or_null("/root/Reseau")
+		if reseau_groupe != null:
+			reseau_groupe.call("emettre_action_groupe", _profil_groupe())
 
 # duel contre un joueur distant : l'arène utilise le même plan des deux
 # côtés (grilles identiques), l'adversaire est un miroir dont les
@@ -456,11 +503,7 @@ func lancer_duel(adversaire: SCRIPT_ADVERSAIRE_PVP, premier: bool) -> void:
 	if _joueur == null or not is_instance_valid(_joueur):
 		push_warning("Duel impossible : joueur introuvable.")
 		return
-	_camera_exploration = get_viewport().get_camera_2d()
-	_arene = ARENE_COMBAT.new()
-	_arene.index_plan = 0
-	_arene.position = POSITION_ARENE
-	add_child(_arene)
+	_ouvrir_arene(0)
 	pvp_actif = true
 	pvp_premier = premier
 	_pvp_adversaire = adversaire
@@ -559,6 +602,127 @@ func pvp_appliquer_etats(cible: Node, etats: Array) -> void:
 			_deplacer_par_etat(cible, int(float(etat.get("valeur", 1.0))), id_etat == 8)
 	_etats_actifs[cible.get_instance_id()] = par_cible
 
+# ============================================================
+#  COMBATS DE GROUPE (PvE a plusieurs, instances relieurs)
+# ============================================================
+
+# profil du joueur local, diffuse aux coequipiers pour notre miroir
+func _profil_groupe() -> Dictionary:
+	var visuel := "humain_pirate"
+	var pa_max := 6
+	var pm_max := 3
+	if _joueur != null:
+		if _joueur.has_method("_prefixe_visuel_race"):
+			visuel = str(_joueur.call("_prefixe_visuel_race"))
+		pa_max = int(_joueur.get("pa_max"))
+		pm_max = int(_joueur.get("pm_max"))
+	return {"t": "profil_groupe", "visuel": visuel,
+		"pv": int(Personnage.vie), "pv_max": int(Personnage.vie_max),
+		"attaque": int(Personnage.attaque), "defense": int(Personnage.defense),
+		"pa_max": pa_max, "pm_max": pm_max}
+
+# le serveur nous transmet les combattants deja en place (on arrive)
+func groupe_membres_recus(presents: Array) -> void:
+	if not groupe_actif:
+		return
+	for present in presents:
+		if present is Dictionary:
+			_apparaitre_miroir_groupe(int(present.get("peer", 0)),
+				str(present.get("pseudo", "??")), str(present.get("visuel", "humain_pirate")))
+
+# une action d'un coequipier, resolue chez lui, jouee ici
+func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionary) -> void:
+	if not groupe_actif or evenement == null or evenement is not Dictionary:
+		return
+	match str(evenement.get("t", "")):
+		"profil_groupe":
+			var profil: Dictionary = evenement.duplicate()
+			profil["pseudo"] = pseudo_exp
+			var miroir = _apparaitre_miroir_groupe(peer_exp, pseudo_exp,
+				str(profil.get("visuel", "humain_pirate")))
+			if miroir != null:
+				miroir.appliquer_profil(profil)
+		"deplacement":
+			var miroir_depl = _miroirs_groupe.get(peer_exp)
+			var sol := sol_combat()
+			if is_instance_valid(miroir_depl) and sol != null:
+				miroir_depl.rejouer_trajet(evenement.get("trajet", []), sol)
+		"manque":
+			afficher_message("%s rate son sort." % pseudo_exp)
+		"sort":
+			_rejouer_sort_groupe(peer_exp, pseudo_exp, evenement)
+		"fin_tour":
+			afficher_message("%s termine son tour." % pseudo_exp)
+		"tombe":
+			afficher_message("%s est a terre !" % pseudo_exp)
+			_retirer_miroir_groupe(peer_exp)
+	_mettre_a_jour_etiquette_etats()
+
+# un sort de coequipier : soin sur lui-meme, attaque sur l'ennemi partage
+func _rejouer_sort_groupe(peer_exp: int, pseudo_exp: String, evenement: Dictionary) -> void:
+	if str(evenement.get("cible", "")) == "soi":
+		var miroir_soi = _miroirs_groupe.get(peer_exp)
+		if is_instance_valid(miroir_soi):
+			if _joueur != null and str(evenement.get("id", "")) != "":
+				_joueur.call("_jouer_effet_sort", str(evenement.get("id", "")), miroir_soi)
+			var soin := int(evenement.get("soin", 0))
+			if soin > 0:
+				miroir_soi.soigner(soin)
+			var etats_soi: Array = evenement.get("etats", [])
+			if not etats_soi.is_empty():
+				pvp_appliquer_etats(miroir_soi, etats_soi)
+		afficher_message("%s se soigne." % pseudo_exp)
+		return
+	# attaque : l'index designe le meme ennemi que chez l'emetteur
+	# (meme scene, meme ordre d'engagement)
+	var index := int(evenement.get("index", -1))
+	var ennemis := ennemis_actifs()
+	if index < 0 or index >= ennemis.size():
+		return
+	var cible: Node = ennemis[index]
+	if _joueur != null and str(evenement.get("id", "")) != "":
+		_joueur.call("_jouer_effet_sort", str(evenement.get("id", "")), cible)
+	var degats := int(evenement.get("degats", 0))
+	if degats > 0 and cible.has_method("recevoir_degats"):
+		cible.recevoir_degats(degats)
+	var etats: Array = evenement.get("etats", [])
+	if not etats.is_empty():
+		pvp_appliquer_etats(cible, etats)
+	afficher_message("%s lance %s." % [pseudo_exp, str(evenement.get("nom", "un sort"))])
+
+# un coequipier quitte le combat (victoire ou defaite chez lui)
+func groupe_membre_parti(peer_qui_part: int) -> void:
+	_retirer_miroir_groupe(peer_qui_part)
+
+# fait apparaitre le miroir d'un coequipier dans notre arene, a cote
+# du joueur (positions approximatives, comme en duel)
+func _apparaitre_miroir_groupe(peer_id: int, nom_recu: String, visuel_recu: String):
+	if not groupe_actif or peer_id == 0 or _joueur == null:
+		return null
+	var existant = _miroirs_groupe.get(peer_id)
+	if is_instance_valid(existant):
+		return existant
+	var miroir := SCRIPT_ADVERSAIRE_PVP.new()
+	miroir.nom = nom_recu
+	miroir.distante = true
+	get_tree().current_scene.add_child(miroir)
+	miroir.definir_visuel(visuel_recu)
+	miroir.global_position = _joueur.global_position + Vector2(
+		110.0 * (_miroirs_groupe.size() + 1), -40.0)
+	_miroirs_groupe[peer_id] = miroir
+	afficher_message("%s combat a tes cotes !" % nom_recu)
+	return miroir
+
+func _retirer_miroir_groupe(peer_id: int) -> void:
+	var miroir = _miroirs_groupe.get(peer_id)
+	_miroirs_groupe.erase(peer_id)
+	if is_instance_valid(miroir):
+		miroir.queue_free()
+
+func _retirer_tous_miroirs_groupe() -> void:
+	for peer_id in _miroirs_groupe.keys():
+		_retirer_miroir_groupe(int(peer_id))
+
 # un ennemi du groupe est vaincu : le combat continue tant qu'il en
 # reste un debout
 func ennemi_vaincu(ennemi: Node) -> void:
@@ -575,6 +739,13 @@ func ennemi_vaincu(ennemi: Node) -> void:
 		_maj_propositions()
 	if en_combat and ennemis_actifs().is_empty():
 		terminer_combat(true)
+
+func _ouvrir_arene(index_plan: int) -> void:
+	_camera_exploration = get_viewport().get_camera_2d()
+	_arene = ARENE_COMBAT.new()
+	_arene.index_plan = index_plan
+	_arene.position = POSITION_ARENE
+	get_tree().current_scene.add_child(_arene)
 
 func _placer_dans_arene(entite: Node2D, case: Vector2i) -> void:
 	_positions_exploration[entite] = entite.global_position
@@ -607,6 +778,8 @@ func terminer_combat(victoire: bool) -> void:
 		return
 	en_combat = false
 	en_placement = false
+	groupe_actif = false
+	_retirer_tous_miroirs_groupe()
 	if pvp_actif:
 		# notre défaite est annoncée au serveur, qui préviendra le
 		# vainqueur ; une victoire locale n'est que l'echo du réseau

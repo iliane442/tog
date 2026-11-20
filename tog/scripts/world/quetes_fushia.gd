@@ -67,4 +67,22 @@ const DEFINITIONS := {
 		"objectif": 3, "recompense_xp": 120, "recompense_berry": 200,
 		"recompenses_objets": [{"item_id": 12, "quantity": 2}],
 	},
+	"orange_vivres": {
+		"titre": "Les provisions de Chouchou",
+		"description": "Chouchou monte la garde devant sa boutique. Récupère trois paniers de vivres au verger, au sud-est de la place.",
+		"objectif": 3, "recompense_xp": 165, "recompense_berry": 240,
+		"recompenses_objets": [{"item_id": 12, "quantity": 2}],
+	},
+	"orange_patrouille": {
+		"titre": "Les pirates du chapiteau",
+		"description": "Iris a repéré trois pirates qui surveillent la montée du camp, au nord-est de la ville. Mets leur patrouille en déroute.",
+		"objectif": 3, "recompense_xp": 245, "recompense_berry": 390,
+		"recompenses_objets": [{"item_id": 865, "quantity": 1}],
+	},
+	"orange_baggy": {
+		"titre": "Le dernier numéro de Baggy",
+		"description": "Le capitaine pirate s’est installé devant le grand chapiteau, au bout du sentier des falaises. Vaincs Baggy le Clown.",
+		"objectif": 1, "recompense_xp": 420, "recompense_berry": 720,
+		"recompenses_objets": [{"item_id": 866, "quantity": 1}],
+	},
 }

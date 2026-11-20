@@ -2,10 +2,11 @@
 extends Node2D
 
 const TAILLE_CASE := 64
-const CODES := ".:=#F~,"
+const CODES := ".:=#F~,+;"
 const COULEURS := [
 	Color("#698956"), Color("#b29568"), Color("#9b8c78"), Color("#697071"),
 	Color("#284d3e"), Color("#285767"), Color("#416d46"),
+	Color("#956542"), Color("#d6b078"),
 ]
 const PINS := [
 	preload("res://assets/world/kit_cartes/nature/pin_de_montagne.png"),
@@ -17,6 +18,8 @@ const SHADER_SOL := preload("res://assets/shaders/terrain_zone.gdshader")
 
 @export var plan: PackedStringArray
 @export var souterrain := false
+@export var littoral := false
+@export var emprises_decors: Array[Rect2i] = []
 
 var apercu: Texture2D
 var _dimensions := Vector2i.ZERO
@@ -39,6 +42,12 @@ func preparer(sol: TileMapLayer, falaises: TileMapLayer, paysage: Node2D) -> voi
 			couche.set_cell(Vector2i(x, y), 0, Vector2i.ZERO)
 			if id == 4 and hasard.randf() < 0.65:
 				_planter_arbre(paysage, Vector2i(x, y), hasard)
+	for emprise in emprises_decors:
+		for y in range(emprise.position.y, emprise.end.y):
+			for x in range(emprise.position.x, emprise.end.x):
+				var case_sol := Vector2i(x, y)
+				sol.erase_cell(case_sol)
+				falaises.set_cell(case_sol, 0, Vector2i.ZERO)
 
 func _construire_textures() -> PackedByteArray:
 	if plan.is_empty():
@@ -98,6 +107,7 @@ func _construire_textures() -> PackedByteArray:
 	materiau.set_shader_parameter("sols", SOLS)
 	materiau.set_shader_parameter("dimensions", Vector2(_dimensions))
 	materiau.set_shader_parameter("souterrain", souterrain)
+	materiau.set_shader_parameter("littoral", littoral)
 	material = materiau
 	queue_redraw()
 	return codes

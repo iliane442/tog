@@ -67,16 +67,32 @@ Le serveur doit être joignable depuis Internet. Trois options :
   que le jeu se stabilise ; les deux premières suffisent pour jouer
   entre amis dès maintenant.
 
-## Combats ensemble (phase 3, première passe)
+## Combats ensemble (phase 4 : combats de groupe)
 
 Quand un joueur engage une rencontre (groupe d'ennemis étiqueté),
 les autres joueurs de la même map reçoivent une invitation :
 **« Pseudo engage le groupe [camp] — Rejoindre le combat ? »**. En
-rejoignant, chacun combat le même camp dans sa propre instance
-miroir : même groupe, même map, chacun sa grille, son tour et son
-loot. Le monde reste cohérent grâce aux rencontres partagées (le camp
-vaincu par l'un disparaît pour les autres, les ennemis tombés à
-distance sont retirés proprement des combats locaux).
+rejoignant, chacun combat le même camp dans sa propre instance, mais
+les combattants sont maintenant reliés par le serveur :
+
+- les **coéquipiers apparaissent dans ton arène** (miroirs avec leur
+  pseudo, leur vrai sprite et leurs pv) placés à côté de toi ;
+- leurs **dégâts s'appliquent à tes ennemis** : chaque sort lancé est
+  relayé et frappe le même ennemi de ton côté (identification par
+  index dans le groupe) — le camp tombe d'autant plus vite à plusieurs ;
+- leurs soins, états, déplacements et fins de tour sont rejoués chez
+  toi en direct (comme en duel : les valeurs sont résolues chez le
+  lanceur, pas de second jet de dés) ;
+- quand un coéquipier tombe ou termine son combat, son miroir
+  disparaît et un message l'annonce ;
+- les ennemis restent pilotés par chaque client (ils attaquent le
+  joueur local de chaque instance) et le loot/XP reste par instance.
+
+Les tours restent parallèles (pas d'ordre de tour global) : chacun
+joue à son rythme contre le même camp. Le monde reste cohérent grâce
+aux rencontres partagées (le camp vaincu par l'un disparaît pour les
+autres, les ennemis tombés à distance sont retirés proprement des
+combats locaux).
 
 L'invitation tombe d'elle-même quand le combat initial se termine.
 Un joueur déjà en combat n'est pas sollicité.
@@ -160,13 +176,12 @@ Pour héberger le serveur sur une machine allumée 24 h/24 :
 
 ## Limites connues
 
-- Les combats restent des instances miroir : chaque joueur combat le
-  même camp dans sa propre grille, il n'y a pas encore de tour partagé
-  ni de dégâts croisés.
+- Les tours des combats de groupe restent parallèles : pas encore
+  d'ordre de tour global ni d'initiative partagée, et chaque client
+  pilote les ennemis de son instance (ils n'attaquent que lui).
 - Les mots de passe transitent en clair sur le réseau local : attends
   un vrai serveur (VPS + TLS/WSS) avant d'ouvrir le jeu à des
   inconnus.
-- Une seule map partagée : tous les joueurs doivent être sur la même
-  scène du monde.
+- Les joueurs ne se voient que s'ils sont sur la même scène du monde.
 - Sauvegarde serveur : le perso est renvoyé au serveur toutes les
   30 secondes et à la déconnexion.

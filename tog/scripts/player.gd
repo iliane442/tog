@@ -197,7 +197,7 @@ func _physics_process(delta: float) -> void:
 	if _combat_manager != null and _combat_manager.en_combat:
 		velocity = Vector2.ZERO
 		move_and_slide()
-		_animer(false, delta)
+		_animer(_deplacement_combat != null, delta)
 		return
 	var direction := target - global_position
 	if _en_deplacement and direction.length() <= 4.0:
@@ -236,10 +236,11 @@ func _ligne_cardinale(direction: Vector2) -> int:
 func _gerer_clic_combat() -> void:
 	if _sol == null or _combat_manager == null:
 		return
-	var case_cliquee := _sol.local_to_map(_sol.get_local_mouse_position())
+	var case_cliquee := _case_combat_sous_souris()
 	if _combat_manager.en_placement:
 		if _cases_placement.has(case_cliquee):
 			global_position = _sol.to_global(_sol.map_to_local(case_cliquee))
+			_faire_face_a_la_cible()
 		return
 	if not _tour_joueur or _occupe:
 		return
@@ -267,6 +268,11 @@ func _gerer_clic_combat() -> void:
 	var portee := _calculer_portee()
 	if case_cliquee != ma_case() and portee.has(case_cliquee):
 		_deplacer_case_par_case(case_cliquee, int(portee[case_cliquee]))
+
+func _case_combat_sous_souris() -> Vector2i:
+	var viser_ennemi: bool = _sort_selectionne and (_sort_selectionne_id == "boule_de_feu"
+		or not _combat_manager.est_allie(Personnage.sorts.get(_sort_selectionne_id, {})))
+	return _combat_manager.case_sous_point(get_global_mouse_position(), viser_ennemi)
 
 func ma_case() -> Vector2i:
 	return _case_de(global_position)
@@ -319,6 +325,7 @@ func _on_placement_commence() -> void:
 	_sort_selectionne = false
 	_arreter_exploration()
 	_sol = _combat_manager.sol_combat()
+	_faire_face_a_la_cible()
 	_cases_placement.clear()
 	var depart := ma_case()
 	for x in range(-rayon_placement, rayon_placement + 1):
@@ -327,7 +334,7 @@ func _on_placement_commence() -> void:
 			if absi(x) + absi(y) <= rayon_placement and _case_libre(candidate):
 				_cases_placement.append(candidate)
 	if _overlay != null:
-		_overlay.definir_sol(_sol)
+		_overlay.definir_sol(_sol, _case_combat_sous_souris)
 		_overlay.afficher(_cases_placement)
 
 func _valider_placement() -> void:
@@ -337,6 +344,11 @@ func _valider_placement() -> void:
 	if _overlay != null:
 		_overlay.effacer()
 	_combat_manager.valider_placement()
+
+func _faire_face_a_la_cible() -> void:
+	var cible: Node2D = _combat_manager.cible_courante()
+	if is_instance_valid(cible):
+		_ligne = _ligne_cardinale(cible.global_position - global_position)
 
 func _on_combat_commence() -> void:
 	if _combat_manager.pvp_actif and not _combat_manager.pvp_premier:
@@ -458,7 +470,7 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		var etats_appliques: Array = []
 		if _combat_manager.en_combat:
 			etats_appliques = _combat_manager.appliquer_effets_sort(cible, sort)
-		if _combat_manager.pvp_actif:
+		if _combat_manager.pvp_actif or _combat_manager.groupe_actif:
 			var evenement := {"t": "sort", "id": _id_sort,
 				"nom": str(sort.get("nom", "Sort")),
 				"etats": etats_appliques}
@@ -468,6 +480,9 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 			else:
 				evenement["cible"] = "adv"
 				evenement["degats"] = degats
+				# index de l'ennemi dans le groupe : indispensable aux
+				# coéquipiers pour viser le même ennemi de leur côté
+				evenement["index"] = _combat_manager.ennemis_actifs().find(cible)
 			_emettre_action_duel(evenement)
 		_pa -= cout
 		_combat_manager.afficher_message("%s lancé." % str(sort.get("nom", "Sort")))
@@ -552,7 +567,8 @@ func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 		var degats: int = _combat_manager.calculer_degats(self, cible, int(_sort_boule_de_feu.degats), "attack", int(_sort_boule_de_feu.portee_max))
 		cible.recevoir_degats(degats)
 		_emettre_action_duel({"t": "sort", "id": "boule_de_feu",
-			"nom": "Boule de feu", "cible": "adv", "degats": degats})
+			"nom": "Boule de feu", "cible": "adv", "degats": degats,
+			"index": _combat_manager.ennemis_actifs().find(cible)})
 		_combat_manager.effacer_message()
 	else:
 		_combat_manager.afficher_message("La boule de feu rate sa cible.")
@@ -564,13 +580,18 @@ func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 	_afficher_cases()
 	return true
 
-# en duel, une action résolue part au joueur distant pour être rejouée
+# en duel ou en combat de groupe, une action résolue part aux autres
+# joueurs pour être rejouée
 func _emettre_action_duel(evenement: Dictionary) -> void:
-	if _combat_manager == null or not _combat_manager.pvp_actif:
+	if _combat_manager == null:
 		return
 	var reseau := get_tree().root.get_node_or_null("/root/Reseau")
-	if reseau != null:
+	if reseau == null:
+		return
+	if _combat_manager.pvp_actif:
 		reseau.call("emettre_action_duel", evenement)
+	elif _combat_manager.groupe_actif:
+		reseau.call("emettre_action_groupe", evenement)
 
 func _deplacer_case_par_case(destination: Vector2i, cout: int) -> void:
 	if _occupe or cout <= 0 or cout > _pm:
@@ -587,7 +608,7 @@ func _deplacer_case_par_case(destination: Vector2i, cout: int) -> void:
 		case = parents[case]
 	_occupe = true
 	_pm -= cout
-	if _combat_manager.pvp_actif:
+	if _combat_manager.pvp_actif or _combat_manager.groupe_actif:
 		var trajet_reseau: Array = []
 		for etape in trajet:
 			trajet_reseau.append([etape.x, etape.y])
@@ -598,7 +619,10 @@ func _deplacer_case_par_case(destination: Vector2i, cout: int) -> void:
 	_maj_affichage()
 	_deplacement_combat = create_tween()
 	for etape in trajet:
-		_deplacement_combat.tween_property(self, "global_position", _sol.to_global(_sol.map_to_local(etape)), 0.12)
+		var position_etape := _sol.to_global(_sol.map_to_local(etape))
+		_deplacement_combat.tween_callback(func():
+			_ligne = _ligne_cardinale(position_etape - global_position))
+		_deplacement_combat.tween_property(self, "global_position", position_etape, 0.12)
 	_deplacement_combat.finished.connect(_fin_deplacement_combat)
 
 func _fin_deplacement_combat() -> void:
@@ -621,8 +645,8 @@ func _fin_du_tour() -> void:
 	if _overlay != null:
 		_overlay.effacer()
 	_combat_manager.terminer_tour(self)
-	# duel : notre tour fini part au distant avant d'attendre le sien
-	if _combat_manager.pvp_actif:
+	# duel/groupe : notre tour fini part aux autres avant d'attendre le leur
+	if _combat_manager.pvp_actif or _combat_manager.groupe_actif:
 		_emettre_action_duel({"t": "fin_tour"})
 	_jouer_tours_ennemis(numero, 0.5)
 
@@ -666,6 +690,8 @@ func recevoir_degats(degats: int) -> void:
 	Personnage.blesser(maxi(degats, 0))
 	_maj_affichage()
 	if Personnage.vie <= 0 and _combat_manager != null:
+		if _combat_manager.groupe_actif:
+			_emettre_action_duel({"t": "tombe"})
 		_combat_manager.terminer_combat(false)
 
 func _maj_affichage() -> void:

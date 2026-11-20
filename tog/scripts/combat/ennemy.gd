@@ -22,9 +22,21 @@ signal vaincu
 const ID_ETAT_TEST := 5 # Ralentissement
 const DUREE_ETAT_TEST := 2
 
+# surbrillance rouge au survol : même mécanique que les PNJ (shader
+# surlignage.gdshader) mais en rouge pour signaler un camp hostile
+const shader_surlignage := preload("res://assets/shaders/surlignage.gdshader")
+const COULEUR_SURBRILLANCE := Color(0.95, 0.16, 0.16, 1.0)
+
 var pv := 100
 var _combat_manager
 var _deplacement_combat: Tween
+# joueur présent dans la zone de détection
+var _zone_contient_joueur := false
+# engagement différé au clic : le joueur marche vers cet ennemi et le
+# combat se lance dès l'entrée dans la zone, sans bouton
+var _engagement_au_clique := false
+# un seul engagement différé à la fois, tous ennemis confondus
+static var _cible_engagement: Node = null
 
 @onready var zone_detection: Area2D = $ZoneDetection
 @onready var sprite: Sprite2D = $Sprite2D
@@ -41,8 +53,42 @@ func _ready() -> void:
 	zone_detection.body_exited.connect(_on_zone_body_exited)
 	if _combat_manager != null:
 		_combat_manager.enregistrer_ennemi(self)
+	var mat := ShaderMaterial.new()
+	mat.shader = shader_surlignage
+	mat.set_shader_parameter("couleur", COULEUR_SURBRILLANCE)
+	mat.set_shader_parameter("surligne", false)
+	sprite.material = mat
 	_charger_visuel_mob()
 	sante_modifiee.emit(pv, pv_max)
+
+# survol : surligne l'ennemi, ou tout son camp s'il porte une étiquette
+func _process(_delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
+	var survol := _clic_sur_ennemi(get_global_mouse_position())
+	if _combat_manager != null and _combat_manager.has_method("membres_du_camp"):
+		for membre in _combat_manager.membres_du_camp(self):
+			if membre != null and membre.has_method("_appliquer_surbrillance"):
+				membre.call("_appliquer_surbrillance", survol)
+	else:
+		_appliquer_surbrillance(survol)
+
+func _appliquer_surbrillance(surligne: bool) -> void:
+	if sprite.material == null or sprite.material is not ShaderMaterial:
+		return
+	if bool(sprite.material.get_shader_parameter("surligne")) != surligne:
+		sprite.material.set_shader_parameter("surligne", surligne)
+
+# zone de survol : le sprite et son étiquette « Nom (Niv. X) »
+func _clic_sur_ennemi(point: Vector2) -> bool:
+	if sprite.texture == null:
+		return false
+	var taille := sprite.texture.get_size() * sprite.scale
+	var coin := Vector2(
+		-taille.x / 2.0 - 16.0,
+		sprite.position.y - taille.y / 2.0 - 26.0)
+	return Rect2(coin, Vector2(taille.x + 32.0, taille.y + 40.0)).has_point(
+		point - global_position)
 
 # données visuelles du mob : sprite statique (colonne sprite_path, le loup
 # par défaut si absent) et étiquette nom + niveau au-dessus du sprite
@@ -105,11 +151,58 @@ func _ajouter_etiquette(nom_mob: String, niveau_mob: int) -> void:
 
 func _on_zone_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player") and _combat_manager != null:
+		_zone_contient_joueur = true
 		_combat_manager.proposer_combat(self)
+		if _engagement_au_clique:
+			_engager_si_encore_valide()
 
 func _on_zone_body_exited(body: Node2D) -> void:
 	if body.is_in_group("player") and _combat_manager != null:
+		_zone_contient_joueur = false
 		_combat_manager.annuler_proposition_combat(self)
+
+# clic sur l'ennemi en exploration : le joueur rejoint la zone et le
+# combat démarre tout seul à l'arrivée
+func _unhandled_input(event: InputEvent) -> void:
+	if Engine.is_editor_hint() or pv <= 0:
+		return
+	if _combat_manager != null and _combat_manager.en_combat:
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if not _clic_sur_ennemi(get_global_mouse_position()):
+			return
+		var joueur := get_tree().get_first_node_in_group("player")
+		if joueur != null and joueur.has_method("rejoindre_interaction"):
+			_definir_engagement_differe()
+			joueur.rejoindre_interaction(global_position, _engager_si_encore_valide)
+			get_viewport().set_input_as_handled()
+
+func _definir_engagement_differe() -> void:
+	if _cible_engagement != null and _cible_engagement != self \
+			and is_instance_valid(_cible_engagement) \
+			and _cible_engagement.has_method("_annuler_engagement"):
+		_cible_engagement.call("_annuler_engagement")
+	_engagement_au_clique = true
+	_cible_engagement = self
+	# déjà dans la zone : combat immédiat, pas besoin de marcher
+	if _zone_contient_joueur:
+		_engager_si_encore_valide()
+
+func _annuler_engagement() -> void:
+	_engagement_au_clique = false
+	if _cible_engagement == self:
+		_cible_engagement = null
+
+func _engager_si_encore_valide() -> void:
+	if not _engagement_au_clique:
+		return
+	_annuler_engagement()
+	if not is_inside_tree() or pv <= 0:
+		return
+	if _combat_manager != null and _combat_manager.en_combat:
+		return
+	if _combat_manager != null and _combat_manager.has_method("engager_rencontre"):
+		_combat_manager.engager_rencontre(self)
 
 func recevoir_degats(degats: int) -> void:
 	if pv <= 0:

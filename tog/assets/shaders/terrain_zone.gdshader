@@ -6,6 +6,7 @@ uniform sampler2D hauteur : filter_linear, repeat_disable;
 uniform sampler2D sols : source_color, filter_nearest, repeat_disable;
 uniform vec2 dimensions;
 uniform bool souterrain = false;
+uniform bool littoral = false;
 
 varying vec2 position_case;
 
@@ -22,6 +23,18 @@ float altitude(vec2 case_sol) {
 	return texture(hauteur, case_sol / dimensions).g;
 }
 
+bool terre_cotiere(vec2 p) {
+	int sol = type_sol(p);
+	return sol != 5 && sol != 7;
+}
+
+bool proche_rive(vec2 p, float distance) {
+	return terre_cotiere(p + vec2(distance, 0.0))
+		|| terre_cotiere(p - vec2(distance, 0.0))
+		|| terre_cotiere(p + vec2(0.0, distance))
+		|| terre_cotiere(p - vec2(0.0, distance));
+}
+
 vec3 tuile(vec2 case_sol, vec2 atlas) {
 	return texture(sols, (atlas + fract(case_sol)) / vec2(3.0, 2.0)).rgb;
 }
@@ -31,6 +44,12 @@ void fragment() {
 	vec2 bord = p + 0.15 * vec2(sin(p.y * 5.5) + 0.4 * sin(p.y * 13.7),
 		sin(p.x * 4.1) + 0.4 * sin(p.x * 11.1));
 	int id = type_sol(bord);
+	if (littoral) {
+		int case_entiere = type_sol(p);
+		if (case_entiere == 7 || id == 7) {
+			id = case_entiere;
+		}
+	}
 	float variation = sin(p.x * 0.78 + p.y * 0.34) * sin(p.y * 0.65 - p.x * 0.35);
 	float plis = sin(p.x * 2.4 + p.y * 0.93 + sin(p.y * 0.58) * 2.1)
 		* sin(p.x * 0.97 - p.y * 1.16);
@@ -54,8 +73,26 @@ void fragment() {
 	} else if (id == 5) {
 		float eau = sin(p.y * 26.0 + variation * 1.5) * sin(p.x * 8.0 + p.y * 1.7);
 		couleur = vec3(0.12, 0.26, 0.33) + max(eau, 0.0) * vec3(0.035, 0.052, 0.061);
+		if (littoral) {
+			couleur += max(plis, 0.0) * vec3(0.012, 0.028, 0.035);
+			if (proche_rive(bord, 1.45)) {
+				couleur = mix(couleur, vec3(0.21, 0.49, 0.49), 0.55 + 0.12 * plis);
+			}
+			if (proche_rive(bord, 0.24)) {
+				couleur = mix(couleur, vec3(0.63, 0.73, 0.65), 0.53 + 0.18 * variation);
+			}
+		}
 	} else if (id == 2) {
 		couleur = tuile(p * 0.91, vec2(0.0, 1.0));
+	} else if (id == 7) {
+		couleur = tuile(p, vec2(2.0, 1.0));
+		if (type_sol(p + vec2(0.0, 0.15)) == 5) {
+			couleur *= vec3(0.52, 0.48, 0.46);
+		} else if (type_sol(p - vec2(0.0, 0.06)) == 5) {
+			couleur *= 1.16;
+		}
+	} else if (id == 8) {
+		couleur = tuile(p * 0.92, vec2(2.0, 0.0)) * (0.84 + 0.10 * variation);
 	} else if (souterrain) {
 		couleur = tuile(p * 0.78, vec2(1.0, 1.0)) * (0.88 + 0.13 * variation);
 	} else if (id == 1) {

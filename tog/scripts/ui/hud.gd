@@ -1,15 +1,7 @@
 extends CanvasLayer
 
-const ICONE_DEFAUT_SORT := "res://addons/pixel_ui_fantasy/icons/scroll.png"
 const SCRIPT_PARAMETRES_TOUCHES := preload("res://scripts/ui/parametres_touches.gd")
-const ICONES_SORTS := {
-	"attack": "res://addons/pixel_ui_fantasy/icons/sword.png",
-	"heal": "res://addons/pixel_ui_fantasy/icons/potion_red.png",
-	"defense": "res://addons/pixel_ui_fantasy/icons/shield.png",
-	"buff": "res://addons/pixel_ui_fantasy/icons/gem.png",
-	"debuff": "res://addons/pixel_ui_fantasy/icons/cross.png",
-	"control": "res://addons/pixel_ui_fantasy/icons/cross.png",
-}
+const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 
 @onready var panneau_stats: PanelContainer = $PanneauStats
 @onready var panneau_sorts: PanelContainer = $BarreDeSorts
@@ -154,18 +146,13 @@ func maj_barre_sorts() -> void:
 		var id_sort: String = Personnage.barre_sorts[index] if index < Personnage.barre_sorts.size() else ""
 		if id_sort != "" and Personnage.sorts.has(id_sort):
 			var sort: Dictionary = Personnage.sorts[id_sort]
-			bouton.icon = _icone_sort(sort)
+			bouton.icon = ICONES_SORTS.pour_sort(id_sort, str(sort.get("type", "")))
 			bouton.disabled = false
 			bouton.tooltip_text = "%s\n%s\nTouche %s" % [str(sort.get("nom", "Sort")), str(sort.get("description", "")), _raccourci(index)]
 		else:
 			bouton.icon = null
 			bouton.disabled = true
 			bouton.tooltip_text = "Ouvre Menu > Sorts pour équiper un sort."
-
-func _icone_sort(sort: Dictionary) -> Texture2D:
-	var type_sort: String = str(sort.get("type", "")).to_lower()
-	var chemin: String = ICONES_SORTS.get(type_sort, ICONE_DEFAUT_SORT)
-	return load(chemin) as Texture2D
 
 func _animer_case(bouton: Control, echelle: Vector2) -> void:
 	var tween: Tween = bouton.create_tween()

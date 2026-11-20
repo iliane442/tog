@@ -18,13 +18,13 @@ const PROBA_JACKPOT := 0.10
 # du système de raretés (les fruits sont is_droppable = 0 et ne figurent
 # donc pas dans le tirage normal) et réservé aux coffres légendaires.
 # Une variable pour pouvoir être ajustée/testée en cours de partie.
-var proba_fruit := 1.0 / 10000.0
+var proba_fruit := 1.0 / 1000.0
 # chance qu'un coffre légendaire contienne une lame unique : tirage dédié,
 # à part du système de raretés (les lames sont is_droppable = 0 et ne
 # figurent donc pas dans le tirage normal). Une lame déjà détenue par le
 # joueur ou déjà présente dans un autre coffre ne peut plus sortir : il
 # n'existe qu'un exemplaire de chaque par monde.
-var proba_lame := 1.0 / 2000.0
+var proba_lame := 1.0 / 1000.0
 # sous-type des items-coffres (table `items`, type "coffre") -> rareté du coffre
 const SOUS_TYPES_COFFRE := {
 	"commun": 1, "rare": 2, "épique": 3, "légendaire": 4,

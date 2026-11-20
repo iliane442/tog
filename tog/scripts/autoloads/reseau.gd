@@ -84,6 +84,8 @@ var _temps_nettoyage_rencontres := 0.0
 # scene -> {groupe: peer_id du combatteur}
 var _combats_actifs := {}           # peer_id -> {pseudo, position, annonce}
 var _positions_a_relais := {}  # peer_id -> Vector2
+# membres d'un combat de groupe en cours : "scene|groupe" -> {peer_id: pseudo}
+var _membres_groupe := {}
 var _temps_relais := 0.0
 var _limiteurs := {}          # peer_id -> {position: ms, chat: ms}
 # duels en cours : peer_id -> peer_id de l'adversaire
@@ -512,6 +514,23 @@ func envoie_debut_combat(groupe: String) -> void:
 	combats_scene[groupe] = peer_id
 	_combats_actifs[nom_scene] = combats_scene
 	print("Combat : %s engage [%s] sur %s" % [session["pseudo"], groupe, nom_scene])
+	# combat de groupe : le premier est l'hôte, les suivants rejoignent
+	var cle := "%s|%s" % [nom_scene, groupe]
+	var membres: Dictionary = _membres_groupe.get(cle, {})
+	var nouveau := not membres.has(peer_id)
+	membres[peer_id] = str(session["pseudo"])
+	_membres_groupe[cle] = membres
+	if nouveau:
+		# le nouveau arrivant reçoit les combattants déjà en place
+		var presents: Array = []
+		for autre in membres:
+			if int(autre) == peer_id:
+				continue
+			presents.append({
+				"peer": int(autre), "pseudo": str(membres[autre]),
+				"visuel": str(_sessions[int(autre)].get("visuel", VISUEL_DEFAUT)),
+			})
+		rpc_id(peer_id, "membres_groupe", presents)
 	for autre in _pairs_sur_scene(nom_scene):
 		if int(autre) != peer_id:
 			rpc_id(int(autre), "etre_en_combat", peer_id, true)
@@ -533,6 +552,16 @@ func envoie_fin_combat(groupe: String) -> void:
 	session["en_combat"] = false
 	var nom_scene := str(session["scene"])
 	groupe = groupe.strip_edges().substr(0, 64)
+	# il quitte son combat de groupe : les autres perdent son miroir
+	for cle in _membres_groupe.keys():
+		var membres: Dictionary = _membres_groupe[cle]
+		if not membres.has(peer_id):
+			continue
+		membres.erase(peer_id)
+		for autre in membres:
+			rpc_id(int(autre), "sortie_combat_groupe", peer_id)
+		if membres.is_empty():
+			_membres_groupe.erase(cle)
 	for autre in _pairs_sur_scene(nom_scene):
 		if int(autre) != peer_id:
 			rpc_id(int(autre), "etre_en_combat", peer_id, false)
@@ -633,6 +662,22 @@ func envoie_action_duel(json: String) -> void:
 	if not _duels.has(peer_id):
 		return
 	rpc_id(int(_duels[peer_id]), "action_duel", json)
+
+# RPC serveur : action d'un membre d'un combat de groupe, relayée à tous
+# les autres membres de son combat (scene|groupe)
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_action_groupe(json: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	for cle in _membres_groupe:
+		var membres: Dictionary = _membres_groupe[cle]
+		if not membres.has(peer_id):
+			continue
+		for autre in membres:
+			if int(autre) != peer_id:
+				rpc_id(int(autre), "action_groupe", peer_id, str(membres[peer_id]), json)
+		return
 
 # RPC serveur : le client déclare forfait (ses pv sont tombés à zéro)
 @rpc("any_peer", "call_remote", "reliable")
@@ -1114,6 +1159,49 @@ func emettre_action_duel(evenement: Dictionary) -> void:
 	if pseudo == "":
 		return
 	rpc_id(1, "envoie_action_duel", JSON.stringify(evenement))
+
+# API appelée par player.gd : envoie une action résolue aux coéquipiers
+# de notre combat de groupe
+func emettre_action_groupe(evenement: Dictionary) -> void:
+	if mode != Mode.CLIENT or pseudo == "" or combat_groupe_local == "":
+		return
+	rpc_id(1, "envoie_action_groupe", JSON.stringify(evenement))
+
+# RPC client : les combattants déjà en place sur ce combat de groupe
+@rpc("any_peer", "call_remote", "reliable")
+func membres_groupe(presents: Array) -> void:
+	if multiplayer.is_server():
+		return
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var cm := scene.get_node_or_null("CombatManager")
+	if cm != null:
+		cm.call("groupe_membres_recus", presents)
+
+# RPC client : une action d'un coéquipier, rejouée dans notre arène
+@rpc("any_peer", "call_remote", "reliable")
+func action_groupe(peer_exp: int, pseudo_exp: String, json: String) -> void:
+	if multiplayer.is_server():
+		return
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var cm := scene.get_node_or_null("CombatManager")
+	if cm != null:
+		cm.call("groupe_action_recue", peer_exp, pseudo_exp, JSON.parse_string(json))
+
+# RPC client : un coéquipier quitte le combat de groupe (fin ou défaite)
+@rpc("any_peer", "call_remote", "reliable")
+func sortie_combat_groupe(peer_qui_part: int) -> void:
+	if multiplayer.is_server():
+		return
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var cm := scene.get_node_or_null("CombatManager")
+	if cm != null:
+		cm.call("groupe_membre_parti", peer_qui_part)
 
 # API appelée par combat_manager : nos pv sont tombés à zéro
 func declarer_defaite_duel() -> void:

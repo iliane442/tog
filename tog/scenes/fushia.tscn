@@ -32,6 +32,7 @@
 [ext_resource type="PackedScene" path="res://scenes/pnj_yosaku.tscn" id="24_yosaku"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_johnny.tscn" id="25_johnny"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_nojiko.tscn" id="26_nojiko"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_shells.tscn" id="27_capitaine"]
 [ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="theme"]
 [ext_resource type="Script" path="res://scripts/world/carte_fushia.gd" id="carte"]
 [ext_resource type="Texture2D" path="res://assets/sprites/pnj/nils.png" id="pawn"]
@@ -91,9 +92,6 @@ radius = 47.0
 
 [sub_resource type="RectangleShape2D" id="SeuilCorvo"]
 size = Vector2(218, 54)
-
-[sub_resource type="RectangleShape2D" id="SeuilShells"]
-size = Vector2(150, 54)
 
 [node name="Fushia" type="Node2D" unique_id=1794601484]
 y_sort_enabled = true
@@ -744,29 +742,8 @@ position = Vector2(3936, 2656)
 [node name="DepuisShells" type="Marker2D" parent="Arrivees"]
 position = Vector2(4768, 5952)
 
-[node name="VersShellsTown" type="Area2D" parent="."]
-position = Vector2(4864, 6144)
-collision_layer = 0
-script = ExtResource("Passage")
-destination = "res://scenes/shells_town.tscn"
-arrivee = &"DepuisFushia"
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="VersShellsTown"]
-shape = SubResource("SeuilShells")
-
-[node name="Etiquette" type="Label" parent="VersShellsTown"]
-z_index = 18
-offset_left = -180.0
-offset_top = -112.0
-offset_right = 180.0
-offset_bottom = -78.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.89, 0.64, 1)
-theme_override_colors/font_outline_color = Color(0.11, 0.15, 0.13, 1)
-theme_override_constants/outline_size = 10
-theme_override_font_sizes/font_size = 26
-text = "Bateau pour Shells Town"
-horizontal_alignment = 1
+[node name="capitaine_ferry" parent="." instance=ExtResource("27_capitaine")]
+position = Vector2(4832, 6112)
 
 [node name="VersMontCorvo" type="Area2D" parent="."]
 position = Vector2(3904, 2272)

@@ -20,12 +20,67 @@ func _ready() -> void:
 		_copier_base(CHEMIN_SOURCE, CHEMIN_TRAVAIL)
 	db = SQLite.new()
 	db.path = CHEMIN_TRAVAIL
-	db.open_db()
+	if not db.open_db():
+		push_warning("Impossible d’ouvrir la base : %s" % CHEMIN_TRAVAIL)
+		return
+	if not OS.has_feature("editor"):
+		_mettre_a_jour_sorts_classes()
 	# teste l'ouverture sur une vraie requête
 	db.query("SELECT COUNT(*) AS total FROM items;")
 	disponible = not db.query_result.is_empty()
 	if not disponible:
 		push_warning("Impossible de lire la base : %s" % CHEMIN_TRAVAIL)
+
+func _mettre_a_jour_sorts_classes() -> void:
+	var plage := "BETWEEN 200 AND 249"
+	if not db.query("SELECT COUNT(*) AS total FROM class_skills WHERE skill_id %s;" % plage):
+		return
+	if int(db.query_result[0]["total"]) == 50:
+		return
+	# En export, le catalogue embarqué peut se trouver dans le PCK.
+	var source := FileAccess.get_file_as_bytes(CHEMIN_SOURCE)
+	var catalogue := FileAccess.create_temp(FileAccess.WRITE, "tog-sorts-", "db")
+	if source.is_empty() or catalogue == null:
+		push_warning("Impossible de préparer le catalogue des nouveaux sorts.")
+		return
+	catalogue.store_buffer(source)
+	catalogue.flush()
+	if not db.query_with_bindings("ATTACH DATABASE ? AS catalogue_sorts;", [catalogue.get_path_absolute()]):
+		push_warning("Impossible de rattacher le catalogue des nouveaux sorts.")
+		return
+	if not _importer_sorts_classes(plage):
+		push_warning("La mise à jour des sorts de classe a échoué.")
+	db.query("DETACH DATABASE catalogue_sorts;")
+
+func _importer_sorts_classes(plage: String) -> bool:
+	# Les écritures concernent uniquement le catalogue et sont rejouables.
+	var requetes := [
+		"INSERT OR IGNORE INTO skills (id, name, description, type, element, base_damage, base_cooldown, range)"
+		+ " SELECT id, name, description, type, element, base_damage, base_cooldown, range"
+		+ " FROM catalogue_sorts.skills WHERE id %s;" % plage,
+		"INSERT OR IGNORE INTO animations (name, entity_type, entity_id, animation_type, sprite_sheet_path,"
+		+ " frame_width, frame_height, frame_count, frame_delay_ms, loop)"
+		+ " SELECT name, entity_type, entity_id, animation_type, sprite_sheet_path,"
+		+ " frame_width, frame_height, frame_count, frame_delay_ms, loop FROM catalogue_sorts.animations"
+		+ " WHERE entity_type = 'skill' AND entity_id %s;" % plage,
+		"UPDATE skills SET animation_id = (SELECT id FROM animations WHERE name = 'fx_classe_' || skills.id)"
+		+ " WHERE id %s;" % plage,
+		"INSERT OR IGNORE INTO skill_status_effects (skill_id, status_effect_id, chance, duration, value)"
+		+ " SELECT skill_id, status_effect_id, chance, duration, value"
+		+ " FROM catalogue_sorts.skill_status_effects WHERE skill_id %s;" % plage,
+		"INSERT OR IGNORE INTO class_skills (class_id, skill_id, unlock_level)"
+		+ " SELECT class_id, skill_id, unlock_level FROM catalogue_sorts.class_skills WHERE skill_id %s;" % plage,
+	]
+	if not db.query("BEGIN IMMEDIATE;"):
+		return false
+	for requete in requetes:
+		if not db.query(requete):
+			db.query("ROLLBACK;")
+			return false
+	if db.query("COMMIT;"):
+		return true
+	db.query("ROLLBACK;")
+	return false
 
 func lire(requete: String) -> Array:
 	if not disponible:
