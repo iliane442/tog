@@ -86,6 +86,7 @@ const LIBELLES_TYPES_INVENTAIRE := {
 @onready var btn_ouvrir_tous: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnOuvrirTous
 @onready var btn_debug_berry: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnDebugBerry
 @onready var silhouette: Control = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette
+@onready var portrait_equipement: TextureRect = silhouette.get_node("PortraitEquipement")
 @onready var argent_hotel: Label = $Fenetre/Corps/ContenuHotel/ArgentHotel
 @onready var info_achats_hotel: Label = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/InfoAchats
 @onready var liste_achats_hotel: VBoxContainer = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/DefilementAchats/ListeAchats
@@ -354,6 +355,7 @@ func maj_section() -> void:
 		"quetes":
 			maj_quetes()
 		"inventaire":
+			_maj_portrait_equipement()
 			maj_equipement()
 			maj_grille()
 		"wiki":
@@ -777,6 +779,25 @@ func _creer_emplacements() -> void:
 		var libelle: Label = slot.get_node("Contenu/Libelle")
 		libelle.text = LABELS_COURTS_EMPLACEMENTS.get(emplacement, TEXTES_EMPLACEMENTS[emplacement])
 		emplacements_ui[emplacement] = {"slot": slot, "icone": icone}
+
+# affiche le vrai personnage au centre de l'inventaire : la trame face
+# sud de sa planche d'idle (selon race et sexe) à la place du clown
+func _maj_portrait_equipement() -> void:
+	var prefixe := "humain_pirate"
+	var joueur := get_tree().current_scene.find_child("player", true, false) as Node
+	if joueur != null and joueur.has_method("_prefixe_visuel_race"):
+		prefixe = str(joueur.call("_prefixe_visuel_race"))
+	var chemin := "res://assets/sprites/%s/%s_idle.png" % [prefixe, prefixe]
+	if not ResourceLoader.exists(chemin):
+		return
+	var planche := load(chemin) as Texture2D
+	if planche == null:
+		return
+	# planche d'idle : 4 colonnes x 4 lignes de trames (cf. player.gd)
+	var trame := AtlasTexture.new()
+	trame.atlas = planche
+	trame.region = Rect2(0, 0, planche.get_width() / 4.0, planche.get_height() / 4.0)
+	portrait_equipement.texture = trame
 
 # met à jour les boutons d'action selon l'objet affiché dans le détail :
 # Équiper/Déséquiper, Ouvrir les coffres, Manger les fruits du démon
