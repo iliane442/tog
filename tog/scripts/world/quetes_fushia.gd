@@ -43,4 +43,28 @@ const DEFINITIONS := {
 		"objectif": 1, "recompense_xp": 110, "recompense_berry": 175,
 		"recompenses_objets": [{"item_id": 865, "quantity": 1}],
 	},
+	"shells_patrouille": {
+		"titre": "La patrouille de Morgan",
+		"description": "Coby veut redonner du courage à la ville. Repousse les trois hommes de la patrouille de Morgan : deux marins rôdent au nord de la rue du port, leur sergent garde l'entrée de l'esplanade de la base.",
+		"objectif": 3, "recompense_xp": 160, "recompense_berry": 260,
+		"recompenses_objets": [{"item_id": 2, "quantity": 1}],
+	},
+	"shells_morgan": {
+		"titre": "Le roi de la base",
+		"description": "Le capitaine Morgan s'est proclamé roi de Shells Town. Grimpe l'esplanade de la base de la Marine, au nord de la place, et remets-lui son galon à sa place.",
+		"objectif": 1, "recompense_xp": 300, "recompense_berry": 500,
+		"recompenses_objets": [{"item_id": 866, "quantity": 1}],
+	},
+	"shells_panneaux": {
+		"titre": "Les panneaux de Shells Town",
+		"description": "Lise t'a conseillé de lire la ville : le panneau du quai, celui de la place du Marché et celui de l'esplanade de la Marine.",
+		"objectif": 3, "recompense_xp": 90, "recompense_berry": 130,
+		"recompenses_objets": [{"item_id": 16, "quantity": 2}],
+	},
+	"shells_ravitaillement": {
+		"titre": "Le ravitaillement du port",
+		"description": "Morgan réquisitionne tout le fer qui débarque. Collecte trois caisses de ravitaillement sur le quai de Shells Town — Lise saura quel meilleur usage leur donner.",
+		"objectif": 3, "recompense_xp": 120, "recompense_berry": 200,
+		"recompenses_objets": [{"item_id": 12, "quantity": 2}],
+	},
 }
