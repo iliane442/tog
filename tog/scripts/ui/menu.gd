@@ -435,32 +435,39 @@ func _icone_sort(sort: Dictionary) -> Texture2D:
 
 # onglet Sorts : barre de combat en haut (cliquer un sort placé pour le
 # retirer), puis la liste des sorts de la classe et des pouvoirs du fruit
-# mangé débloqués, avec un bouton pour placer chacun dans la barre
+# mangé, avec un bouton pour placer chacun dans la barre de combat ; les
+# sorts pas encore débloqués apparaissent grisés avec leur niveau requis
 func maj_sorts() -> void:
 	for enfant in liste_sorts.get_children():
 		enfant.queue_free()
 	_construire_barre_sorts()
 	var ids_classe: Array[String] = Personnage.sorts_de_classe()
 	var ids_combat: Array[String] = []
-	# seuls les sorts disponibles hors classe (pouvoirs du fruit mangé
-	# débloqués par son niveau d'utilisation) apparaissent ici
+	# sorts disponibles hors classe (pouvoirs du fruit mangé débloqués
+	# par son niveau d'utilisation)
 	for id_sort in Personnage.sorts_disponibles():
 		if not ids_classe.has(id_sort):
 			ids_combat.append(id_sort)
-	if ids_classe.is_empty() and ids_combat.is_empty():
+	var verrous_classe := Personnage.sorts_de_classe_verrouilles()
+	var verrous_fruit := Personnage.sorts_fruit_verrouilles()
+	if ids_classe.is_empty() and ids_combat.is_empty() and verrous_classe.is_empty() and verrous_fruit.is_empty():
 		var vide := Label.new()
 		vide.text = "Aucun sort n'est disponible pour le moment."
 		liste_sorts.add_child(vide)
 		return
-	if not ids_classe.is_empty():
+	if not ids_classe.is_empty() or not verrous_classe.is_empty():
 		_ajouter_titre_section_sorts("Sorts de classe")
 		for id_classe in ids_classe:
 			if Personnage.sorts.has(id_classe):
 				_construire_carte_sort(id_classe)
-	if not ids_combat.is_empty():
+		for verrou in verrous_classe:
+			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du personnage." % int(verrou["niveau"]))
+	if not ids_combat.is_empty() or not verrous_fruit.is_empty():
 		_ajouter_titre_section_sorts("Pouvoirs du fruit du démon")
 		for id_combat in ids_combat:
 			_construire_carte_sort(id_combat)
+		for verrou in verrous_fruit:
+			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du fruit du démon." % int(verrou["niveau"]))
 func _ajouter_titre_section_sorts(texte: String) -> void:
 	var titre_section := Label.new()
 	titre_section.text = texte
@@ -497,9 +504,11 @@ func _construire_barre_sorts() -> void:
 	encadre.add_child(colonne)
 	liste_sorts.add_child(encadre)
 
-# carte d'un sort de la classe : nom, icône, infos, description et
-# bouton de placement dans la barre de combat
-func _construire_carte_sort(id: String) -> void:
+# carte d'un sort : nom, icône, infos, description et bouton de
+# placement dans la barre de combat ; si texte_verrou n'est pas vide,
+# le sort est verrouillé (grisé, non plaçable, condition affichée)
+func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
+	var verrouille := texte_verrou != ""
 	var sort: Dictionary = Personnage.sorts[id]
 	var encadre := PanelContainer.new()
 	var boite := VBoxContainer.new()
@@ -510,12 +519,17 @@ func _construire_carte_sort(id: String) -> void:
 	icone.custom_minimum_size = Vector2(32, 32)
 	icone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	if verrouille:
+		icone.modulate = Color(0.5, 0.5, 0.5)
 	var nom := Label.new()
 	nom.text = str(sort.get("nom", "Sort"))
 	nom.add_theme_font_size_override("font_size", 26)
 	nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var btn_barre := Button.new()
-	if Personnage.sort_dans_barre(id):
+	if verrouille:
+		btn_barre.text = "Verrouillé"
+		btn_barre.disabled = true
+	elif Personnage.sort_dans_barre(id):
 		btn_barre.text = "Retirer de la barre"
 		btn_barre.pressed.connect(_on_retirer_sort_barre.bind(id))
 	else:
@@ -531,6 +545,8 @@ func _construire_carte_sort(id: String) -> void:
 	]
 	if int(sort.get("degats", 0)) > 0:
 		texte_infos += " | Dégâts : %d" % int(sort["degats"])
+	if verrouille:
+		texte_infos += " | " + texte_verrou
 	infos.text = texte_infos
 	var description := Label.new()
 	var texte_description: String = str(sort.get("description", ""))

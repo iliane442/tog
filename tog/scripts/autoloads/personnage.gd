@@ -231,6 +231,23 @@ func sorts_de_classe() -> Array[String]:
 				ids.append(sort_debloque)
 	return ids
 
+# sorts de la classe pas encore débloqués (table class_skills), du plus
+# tôt au plus tard : [{"id": String, "niveau": int}]
+func sorts_de_classe_verrouilles() -> Array[Dictionary]:
+	var verrouilles: Array[Dictionary] = []
+	var connus := sorts_de_classe()
+	if not BaseDonnees.disponible or not classe_id.is_valid_int():
+		return verrouilles
+	for ligne in BaseDonnees.lire(
+		("SELECT skill_id, unlock_level FROM class_skills"
+		+ " WHERE class_id = %d AND unlock_level > %d"
+		+ " ORDER BY unlock_level;") % [classe_id.to_int(), niveau]):
+		var id := str(ligne["skill_id"])
+		if sorts.has(id) and not connus.has(id):
+			connus.append(id)
+			verrouilles.append({"id": id, "niveau": int(ligne["unlock_level"])})
+	return verrouilles
+
 # niveau actuel du fruit mangé (0 tant qu'il n'a pas été utilisé)
 func niveau_fruit() -> int:
 	var niveau := 0
@@ -256,6 +273,21 @@ func _sorts_fruit_niveau(niveau: int) -> Array[String]:
 # pouvoirs du fruit débloqués à son niveau actuel (4 sorts + 1 éveil)
 func sorts_fruit() -> Array[String]:
 	return _sorts_fruit_niveau(niveau_fruit())
+
+# pouvoirs du fruit mangé pas encore débloqués, du plus tôt au plus
+# tard : [{"id": String, "niveau": int}]
+func sorts_fruit_verrouilles() -> Array[Dictionary]:
+	var verrouilles: Array[Dictionary] = []
+	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
+		return verrouilles
+	for ligne in BaseDonnees.lire(
+		("SELECT skill_id, unlock_level FROM fruit_skills"
+		+ " WHERE fruit_item_id = %d AND unlock_level > %d"
+		+ " ORDER BY unlock_level;") % [fruit_id.to_int(), niveau_fruit()]):
+		var id := str(ligne["skill_id"])
+		if sorts.has(id):
+			verrouilles.append({"id": id, "niveau": int(ligne["unlock_level"])})
+	return verrouilles
 
 # true si ce sort est l'un des pouvoirs du fruit mangé (peu importe
 # s'il est déjà débloqué)
