@@ -87,6 +87,7 @@ const LIBELLES_TYPES_INVENTAIRE := {
 @onready var btn_debug_berry: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DetailItem/MargesDetail/ColonneDetail/BtnDebugBerry
 @onready var silhouette: Control = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/Silhouette
 @onready var portrait_equipement: TextureRect = silhouette.get_node("PortraitEquipement")
+@onready var portrait_perso: TextureRect = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/PortraitCadre/Portrait
 @onready var argent_hotel: Label = $Fenetre/Corps/ContenuHotel/ArgentHotel
 @onready var info_achats_hotel: Label = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/InfoAchats
 @onready var liste_achats_hotel: VBoxContainer = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/DefilementAchats/ListeAchats
@@ -370,6 +371,7 @@ func maj_section() -> void:
 func maj_personnage() -> void:
 	var en_attente := _total_points_en_attente()
 	var restants := maxi(Personnage.points_statistique - en_attente, 0)
+	_maj_portrait_perso()
 	label_nom.text = Personnage.nom
 	label_race_classe.text = "Race : %s | Classe : %s" % [Personnage.nom_race(), Personnage.nom_classe()]
 	label_niveau.text = "Niveau %d" % Personnage.niveau
@@ -783,21 +785,33 @@ func _creer_emplacements() -> void:
 # affiche le vrai personnage au centre de l'inventaire : la trame face
 # sud de sa planche d'idle (selon race et sexe) à la place du clown
 func _maj_portrait_equipement() -> void:
+	var trame := _trame_personnage()
+	if trame != null:
+		portrait_equipement.texture = trame
+
+# idem pour le portrait de la carte d'identité (onglet Personnage)
+func _maj_portrait_perso() -> void:
+	var trame := _trame_personnage()
+	if trame != null:
+		portrait_perso.texture = trame
+
+# trame face sud de la planche d'idle du perso courant (null si absent)
+func _trame_personnage() -> Texture2D:
 	var prefixe := "humain_pirate"
 	var joueur := get_tree().current_scene.find_child("player", true, false) as Node
 	if joueur != null and joueur.has_method("_prefixe_visuel_race"):
 		prefixe = str(joueur.call("_prefixe_visuel_race"))
 	var chemin := "res://assets/sprites/%s/%s_idle.png" % [prefixe, prefixe]
 	if not ResourceLoader.exists(chemin):
-		return
+		return null
 	var planche := load(chemin) as Texture2D
 	if planche == null:
-		return
+		return null
 	# planche d'idle : 4 colonnes x 4 lignes de trames (cf. player.gd)
-	var trame := AtlasTexture.new()
+	trame := AtlasTexture.new()
 	trame.atlas = planche
 	trame.region = Rect2(0, 0, planche.get_width() / 4.0, planche.get_height() / 4.0)
-	portrait_equipement.texture = trame
+	return trame
 
 # met à jour les boutons d'action selon l'objet affiché dans le détail :
 # Équiper/Déséquiper, Ouvrir les coffres, Manger les fruits du démon
