@@ -15,6 +15,7 @@ var player_near: bool = false
 var interaction_en_attente := false
 
 func _ready() -> void:
+	add_to_group("entites_minicarte")
 	var mat := ShaderMaterial.new()
 	mat.shader = shader_surlignage
 	sprite.material = mat
@@ -66,3 +67,6 @@ func ouvrir_boutique() -> void:
 	var ui := get_tree().get_first_node_in_group("boutique_ui")
 	if ui != null:
 		ui.ouvrir()
+
+func repere_minicarte() -> Dictionary:
+	return {"categorie": "marchands", "nom": $NomShankette.text, "role": "Vente de coffres"}

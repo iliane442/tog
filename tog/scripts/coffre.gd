@@ -45,6 +45,7 @@ var _ouverture_en_cours := false
 func _ready() -> void:
 	input_pickable = true
 	add_to_group("coffres")
+	add_to_group("entites_minicarte")
 	# cliquable même quand une fenêtre de loot met le jeu en pause :
 	# on peut ouvrir plusieurs coffres à la suite sans refermer
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -55,6 +56,11 @@ func _ready() -> void:
 	_configurer_particules()
 	# monde partagé : un coffre ouvert ou pillé par autrui change d'aspect ici aussi
 	Coffres.coffre_modifie.connect(_sur_etat_coffre)
+
+func repere_minicarte() -> Dictionary:
+	if Coffres.est_ouvert(coffre_id) and Coffres.contenu(coffre_id).is_empty():
+		return {}
+	return {"categorie": "butin", "nom": "Coffre", "role": "À fouiller"}
 
 func _sur_etat_coffre(id_recu: String) -> void:
 	if id_recu == coffre_id:

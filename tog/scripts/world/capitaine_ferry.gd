@@ -23,6 +23,7 @@ var player_near: bool = false
 var interaction_en_attente := false
 
 func _ready() -> void:
+	add_to_group("entites_minicarte")
 	var mat := ShaderMaterial.new()
 	mat.shader = shader_surlignage
 	mat.set_shader_parameter("surligne", false)
@@ -81,3 +82,6 @@ func _traverser() -> void:
 	if destination == "":
 		return
 	get_tree().current_scene.rejoindre_zone(destination, arrivee)
+
+func repere_minicarte() -> Dictionary:
+	return {"categorie": "voyages", "nom": nom_affiche, "role": libelle_traversee}

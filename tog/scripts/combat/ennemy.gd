@@ -9,6 +9,9 @@ signal vaincu
 @export var degats_attaque := 10
 @export var portee_attaque := 2
 @export var pm_max := 3
+# nombre d'attaques de mêlée par tour (difficulté) : les scènes
+# peuvent l'ajuster ennemi par ennemi
+@export var attaques_par_tour := 2
 # mob correspondant dans la table `mobs` (0 = aucun : récompenses
 # estimées à partir des stats de l'ennemi)
 @export var mob_id := 0
@@ -47,7 +50,9 @@ func _ready() -> void:
 		# dans l'éditeur : juste le visuel (le loup par défaut sinon),
 		# pas de combat ni d'étiquette (pour ne pas polluer la scène)
 		_charger_visuel_mob()
+		_centrer_contenu_sprite()
 		return
+	add_to_group("entites_minicarte")
 	_combat_manager = get_tree().current_scene.get_node_or_null("CombatManager")
 	zone_detection.body_entered.connect(_on_zone_body_entered)
 	zone_detection.body_exited.connect(_on_zone_body_exited)
@@ -59,7 +64,13 @@ func _ready() -> void:
 	mat.set_shader_parameter("surligne", false)
 	sprite.material = mat
 	_charger_visuel_mob()
+	_centrer_contenu_sprite()
 	sante_modifiee.emit(pv, pv_max)
+
+func repere_minicarte() -> Dictionary:
+	if pv <= 0:
+		return {}
+	return {"categorie": "ennemis", "nom": nom, "role": "Rencontre"}
 
 # survol : surligne l'ennemi, ou tout son camp s'il porte une étiquette
 func _process(_delta: float) -> void:
@@ -128,6 +139,33 @@ func _appliquer_sprite(chemin: String) -> void:
 	# le loup par défaut garde son décalage d'origine
 	if sprite.texture.get_height() != 100:
 		sprite.position = Vector2(0, -24)
+
+# décale le sprite pour que le DESSIN (et non les bords transparents
+# de sa planche) soit centré sur l'entité : le loup par exemple vit
+# dans un canvas de 100 px majoritairement vide à gauche, il
+# apparaissait décalé vers la droite de sa case de combat
+func _centrer_contenu_sprite() -> void:
+	if sprite.texture == null:
+		return
+	var image := sprite.texture.get_image()
+	if image == null or image.is_empty():
+		return
+	var largeur := image.get_width()
+	var min_x := largeur
+	var max_x := -1
+	for y in image.get_height():
+		for x in largeur:
+			if image.get_pixel(x, y).a8 > 25:
+				if x < min_x:
+					min_x = x
+				if x > max_x:
+						max_x = x
+	if max_x < 0:
+		return  # planche entièrement transparente
+	var centre_dessin := (min_x + max_x + 1) / 2.0
+	# le canvas est centré sur la position du sprite : on décale
+	# d'autant que le dessin s'écarte du centre du canvas
+	sprite.position.x = float(largeur) / 2.0 - centre_dessin
 
 # étiquette flottante au-dessus de l'ennemi : « Nom (Niv. X) »
 func _ajouter_etiquette(nom_mob: String, niveau_mob: int) -> void:
@@ -204,6 +242,36 @@ func _engager_si_encore_valide() -> void:
 	if _combat_manager != null and _combat_manager.has_method("engager_rencontre"):
 		_combat_manager.engager_rencontre(self)
 
+# stats d'origine : la difficulté multiplie toujours les valeurs de
+# base, jamais des valeurs déjà durcies — et l'ennemi qui survit à un
+# combat perdus les retrouve en exploration
+var _pv_max_original := 0
+var _degats_originaux := 0
+
+# entre en mode combat durci : PV et dégâts multipliés (appellé par le
+# gestionnaire de combat à l'ouverture de l'arène)
+func durcir(facteur_pv: float, facteur_degats: float) -> void:
+	if pv_max <= 0:
+		return
+	if _pv_max_original == 0:
+		_pv_max_original = pv_max
+		_degats_originaux = degats_attaque
+	pv_max = maxi(int(round(_pv_max_original * facteur_pv)), 1)
+	degats_attaque = maxi(int(round(_degats_originaux * facteur_degats)), 1)
+	pv = mini(pv, pv_max)
+	sante_modifiee.emit(pv, pv_max)
+
+# sort du mode combat durci : retour aux stats d'origine, la barre de
+# vie conserve sa proportion
+func assouplir() -> void:
+	if _pv_max_original == 0:
+		return
+	var proportion := float(pv) / float(maxi(pv_max, 1))
+	pv_max = _pv_max_original
+	degats_attaque = _degats_originaux
+	pv = clampi(int(round(proportion * pv_max)), 0, pv_max)
+	sante_modifiee.emit(pv, pv_max)
+
 func recevoir_degats(degats: int) -> void:
 	if pv <= 0:
 		return
@@ -259,9 +327,19 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 		depart = _case_de(sol, global_position)
 	if _peut_attaquer(depart, cible):
 		_appliquer_ralentissement_test(joueur)
-		if _combat_manager == null or _combat_manager.precision_reussie(self, joueur):
-			var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque)) if _combat_manager != null else degats_attaque
-			joueur.recevoir_degats(degats)
+		# difficulté : l'ennemi frappe tant qu'il lui reste des attaques
+		# et que sa cible est à portée (chaque coup jette sa précision)
+		var attaques := maxi(attaques_par_tour, 1)
+		while attaques > 0 and is_instance_valid(joueur) and _peut_attaquer(depart, cible):
+			if _combat_manager == null:
+				joueur.recevoir_degats(degats_attaque)
+			else:
+				if not _combat_manager.en_combat:
+					return
+				if _combat_manager.precision_reussie(self, joueur):
+					var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque))
+					joueur.recevoir_degats(degats)
+			attaques -= 1
 	if _combat_manager != null and _combat_manager.en_combat and is_inside_tree():
 		_combat_manager.terminer_tour(self)
 

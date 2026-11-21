@@ -26,6 +26,11 @@ func _enter_tree() -> void:
 			$player.position = arrivee.position
 		_scene_arrivee = ""
 		_point_arrivee = &""
+	else:
+		# retour sur une map sans arrivée précise (lancement du jeu,
+		# reconnexion) : le joueur reprend sa dernière position
+		# mémorisée sur cette carte
+		Reseau.appliquer_position_memorisee(scene_file_path, $player)
 
 func _ready() -> void:
 	var terrain := get_node_or_null("TerrainZone")

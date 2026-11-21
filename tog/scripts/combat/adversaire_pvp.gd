@@ -70,6 +70,11 @@ func _process(delta: float) -> void:
 # profil envoyé par l'adversaire (pv réels, stats, sorts affichés)
 func appliquer_profil(profil: Dictionary) -> void:
 	nom = str(profil.get("pseudo", nom))
+	# planche de sprites du joueur distant (race/sexe) : le miroir
+	# porte son vrai visuel, pas l'humain de base
+	var visuel_profil := str(profil.get("visuel", ""))
+	if visuel_profil != "" and visuel_profil != visuel:
+		definir_visuel(visuel_profil)
 	pv_max = maxi(int(profil.get("pv_max", pv_max)), 1)
 	pv = clampi(int(profil.get("pv", pv)), 0, pv_max)
 	degats_attaque = int(profil.get("attaque", degats_attaque))

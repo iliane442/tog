@@ -23,6 +23,7 @@ var player_near: bool = false
 var interaction_en_attente := false
 
 func _ready() -> void:
+	add_to_group("entites_minicarte")
 	var mat := ShaderMaterial.new()
 	mat.shader = shader_surlignage
 	sprite.material = mat
@@ -82,6 +83,13 @@ func quest_suivante() -> String:
 			continue
 		return id_quete
 	return ""
+
+func repere_minicarte() -> Dictionary:
+	var nom := nom_affiche if not nom_affiche.is_empty() else str(name)
+	var quete := quest_suivante()
+	if not quete.is_empty():
+		return {"categorie": "quetes", "nom": nom, "role": str(QuestManager.quetes[quete]["titre"])}
+	return {"categorie": "pnj", "nom": nom, "role": "Dialogue"}
 
 func ouvrir_dialogue() -> void:
 	var quest := quest_suivante()

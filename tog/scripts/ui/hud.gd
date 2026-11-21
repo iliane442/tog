@@ -17,7 +17,6 @@ const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 @onready var label_pm: Label = $PanneauStats/Colonne/LigneCombat/PM
 @onready var label_etats_joueur: Label = $PanneauStats/Colonne/EtatsJoueur
 @onready var boutons_combat: HBoxContainer = $PanneauStats/Colonne/BoutonsCombat
-@onready var bouton_placement: Button = $PanneauStats/Colonne/BoutonsCombat/ValiderPlacement
 @onready var bouton_fin_tour: Button = $PanneauStats/Colonne/BoutonsCombat/FinTour
 @onready var label_berry: Label = $BerryPanel/BerryRow/Berry
 @onready var label_action: Label = $BarreDeSorts/Colonne/Entete/Action
@@ -44,8 +43,7 @@ func _ready() -> void:
 		_gestionnaire_combat.combat_commence.connect(_on_combat_commence)
 		_gestionnaire_combat.combat_termine.connect(_afficher_barre_sorts)
 		_gestionnaire_combat.ressources_joueur_modifiees.connect(maj_ressources_combat)
-		bouton_placement.pressed.connect(Callable(_gestionnaire_combat, "demander_validation_placement"))
-		bouton_fin_tour.pressed.connect(Callable(_gestionnaire_combat, "demander_fin_tour"))
+		bouton_fin_tour.pressed.connect(_on_bouton_fin_tour_presse)
 	_menu = get_tree().current_scene.get_node_or_null("MenuUI")
 	if _menu != null:
 		_menu.connect("menu_ouvert", _masquer_hud_menu)
@@ -186,6 +184,16 @@ func _utiliser_sort(id_sort: String) -> void:
 	if _joueur.has_method("utiliser_sort_hors_combat"):
 		_joueur.call("utiliser_sort_hors_combat", id_sort)
 
+# le même bouton sert aux deux phases : valider son placement
+# pendant la phase de placement, finir son tour pendant le combat
+func _on_bouton_fin_tour_presse() -> void:
+	if _gestionnaire_combat == null:
+		return
+	if _gestionnaire_combat.en_placement:
+		_gestionnaire_combat.demander_validation_placement()
+	elif _gestionnaire_combat.en_combat:
+		_gestionnaire_combat.demander_fin_tour()
+
 func afficher_message_sort(message: String) -> void:
 	label_action.text = message
 
@@ -193,15 +201,15 @@ func _on_placement_commence() -> void:
 	_animer_visibilite_sorts(false)
 	_synchroniser_etats_joueur()
 	_afficher_stats_combat(true)
-	bouton_placement.show()
-	bouton_fin_tour.hide()
+	bouton_fin_tour.text = "Placement OK"
+	bouton_fin_tour.show()
 	label_action.text = "Place-toi, puis valide le placement."
 
 func _on_combat_commence() -> void:
 	maj_barre_sorts()
 	_synchroniser_etats_joueur()
 	_afficher_stats_combat(true)
-	bouton_placement.hide()
+	bouton_fin_tour.text = "Fin du tour"
 	bouton_fin_tour.show()
 	label_action.text = "Sorts : %s | cible : %s / %s | fin du tour : %s" % [
 		Touches.libelle_action("sort_1"),

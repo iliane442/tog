@@ -28,6 +28,7 @@ var _ligne := 0
 var _colonne := 0.0
 
 func _ready() -> void:
+	add_to_group("entites_minicarte")
 	z_index = 20
 	_sprite = Sprite2D.new()
 	_appliquer_visuel()
@@ -42,6 +43,9 @@ func _ready() -> void:
 	_etiquette.add_theme_constant_override("shadow_offset_x", 1)
 	_etiquette.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_etiquette)
+
+func repere_minicarte() -> Dictionary:
+	return {"categorie": "joueurs", "nom": pseudo, "role": "Dans ton groupe" if _marque_groupe else "Joueur"}
 
 # anime l'avatar : planche de marche tant que le glissement vers la
 # dernière position reçue dure, puis retour au repos sur place

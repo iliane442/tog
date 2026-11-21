@@ -26,6 +26,14 @@ const DELAI_CONNEXION := 9.0
 const CHEMIN_DB_MMO := "user://mmo.db"
 const FREQUENCE_POSITION := 0.1
 const INTERVALLE_SAUVEGARDE := 30.0
+# mémorisation de la position d'exploration (jamais la position
+# d'arène) : le joueur reprend sa place au prochain lancement
+const INTERVALLE_MEMOIRE_POSITION := 10.0
+# dernière position d'exploration connue : {scene, x, y} — servie à
+# l'ouverture des maps (solo : fichier de préférences, en ligne :
+# sauvegarde du perso sur le serveur)
+var position_memorisee: Dictionary = {}
+var _temps_memoire_position := 0.0
 # délai avant qu'une rencontre vaincue réapparaisse pour tous
 const RESPAWN_RENCONTRES_S := 300.0
 const ITERATIONS_HASH := 24000
@@ -59,6 +67,8 @@ var _tentatives_auth := 0
 
 # --- client : chat ---
 var _chat: CanvasLayer
+# fenêtre de chat complète (menu) : titre, historique, saisie
+var _fenetre_chat: PanelContainer
 var _chat_log: RichTextLabel
 var _chat_saisie: LineEdit
 var _chat_ouvert := false
@@ -92,7 +102,7 @@ var _temps_nettoyage_rencontres := 0.0
 # scene -> {groupe: peer_id du combatteur}
 var _combats_actifs := {}           # peer_id -> {pseudo, position, annonce}
 var _positions_a_relais := {}  # peer_id -> Vector2
-# membres d'un combat de groupe en cours : "scene|groupe" -> {peer_id: pseudo}
+# membres d'un combat de groupe en cours : "scene|groupe" -> {peer_id: true}
 var _membres_groupe := {}
 var _temps_relais := 0.0
 var _limiteurs := {}          # peer_id -> {position: ms, chat: ms}
@@ -100,12 +110,21 @@ var _limiteurs := {}          # peer_id -> {position: ms, chat: ms}
 var _duels := {}
 # invitations de duel en attente : peer_cible -> peer_demandeur
 var _invites_duel := {}
+# échanges d'objets en cours : peer -> peer partenaire
+var _echanges := {}
+# dernier état d'échange connu d'un pair : {pret: bool, offre: JSON}
+var _etats_echange := {}
+# invitations d'échange en attente : peer_cible -> peer_demandeur
+var _invites_echange := {}
 # groupes de joueurs (rien à voir avec les équipages : un groupe se
 # forme à la volée pour jouer ensemble quand son équipage n'est pas
-# connecté) : peer du chef -> {peer_id: pseudo} — le chef est membre
+# connecté) : peer du chef -> {peer_id: true} — le chef est membre
 var _groupes := {}
 # invitations de groupe en attente : peer_cible -> peer_demandeur
 var _invites_groupe := {}
+# invitations de recrutement d'équipage en attente : peer_cible ->
+# {demandeur: pseudo du capitaine, cible: pseudo invité}
+var _invites_equipage := {}
 # taille maximale d'un groupe de joueurs
 const GROUPE_TAILLE_MAX := 5
 
@@ -125,11 +144,15 @@ func _process(delta: float) -> void:
 		_client_envoyer_position(delta)
 		_client_sauvegarde_periodique(delta)
 		_client_appliquer_annonces_attente()
+		_memoriser_position_periodique(delta)
 	elif mode == Mode.CLIENT and _action_en_attente != "":
 		_client_piloter_auth(delta)
 	elif mode == Mode.SERVEUR:
 		_serveur_diffuser_positions(delta)
 		_serveur_purger_rencontres(delta)
+	else:
+		# solo : la position suit le fichier de préférences de la machine
+		_memoriser_position_periodique(delta)
 
 # ============================================================
 #  SERVEUR
@@ -146,6 +169,9 @@ func demarrer_serveur(port := PORT_DEFAUT) -> bool:
 	multiplayer.peer_connected.connect(_sur_client_connecte)
 	multiplayer.peer_disconnected.connect(_on_peer_deconnecte)
 	_ouvrir_base_mmo()
+	# les équipages en ligne vivent dans une base serveur dédiée pour
+	# ne jamais mélanger avec le fichier du jeu solo de la machine
+	Equipages.basculer_serveur()
 	creer_tables_mmo()
 	print("Serveur en écoute sur le port %d (%d joueurs max)." % [port, JOUEURS_MAX])
 	return true
@@ -192,6 +218,16 @@ func creer_tables_mmo() -> void:
 		"CREATE TABLE IF NOT EXISTS mmo_coffres ("
 		+ "cle TEXT PRIMARY KEY,"
 		+ "contenu TEXT NOT NULL DEFAULT '[]');")
+	# HDV partagé : mises en vente des joueurs, visibles et achetables
+	# par tout le monde (vendeur = pseudo du compte)
+	_sql(
+		"CREATE TABLE IF NOT EXISTS mmo_hdventes ("
+		+ "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+		+ "vendeur TEXT NOT NULL,"
+		+ "item_id TEXT NOT NULL,"
+		+ "quantite INTEGER NOT NULL DEFAULT 1,"
+		+ "prix_unite INTEGER NOT NULL DEFAULT 1,"
+		+ "cree_le TEXT DEFAULT (datetime('now')));")
 
 func _hacher_mdp(mdp: String, sel: String) -> String:
 	# itérations de SHA-256 salé : petit mais dissuasif pour un jeu
@@ -232,31 +268,36 @@ func _perso_du_serveur(compte_id: int) -> String:
 		return ""
 	return str(lignes[0]["donnees"])
 
-func _ecrire_perso_serveur(compte_id: int, donnees_json: String) -> void:
+func _ecrire_perso_serveur(compte_id: int, donnees_json: String) -> bool:
 	var existant := not _lire(
 		"SELECT compte_id FROM mmo_persos WHERE compte_id = %d;" % compte_id).is_empty()
 	if existant:
-		_sql("UPDATE mmo_persos SET donnees = '%s', maj_le = datetime('now') WHERE compte_id = %d;" % [
+		return _sql("UPDATE mmo_persos SET donnees = '%s', maj_le = datetime('now') WHERE compte_id = %d;" % [
 			_echapper_texte(donnees_json), compte_id])
-	else:
-		_sql("INSERT INTO mmo_persos (compte_id, donnees) VALUES (%d, '%s');" % [
-			compte_id, _echapper_texte(donnees_json)])
+	return _sql("INSERT INTO mmo_persos (compte_id, donnees) VALUES (%d, '%s');" % [
+		compte_id, _echapper_texte(donnees_json)])
 
-func _ouvrir_session(peer_id: int, nom_pseudo: String) -> void:
+func _nom_personnage(donnees: Dictionary) -> String:
+	var valeur: Variant = donnees.get("nom")
+	var nom: String = valeur.strip_edges() if valeur is String else ""
+	return nom if not nom.is_empty() else "Héros"
+
+func _ouvrir_session(peer_id: int, nom_pseudo: String, perso_json := "") -> void:
+	var donnees: Variant = JSON.parse_string(perso_json) if not perso_json.is_empty() else null
 	_sessions[peer_id] = {
 		"pseudo": nom_pseudo,
+		"nom_personnage": _nom_personnage(donnees) if donnees is Dictionary else "",
 		"position": Vector2(INF, INF),
 		"annonce": false,
+		"embarque": false,
+		# étiquette du camp combattu (vide hors combat étiqueté) : c'est
+		# elle qu'un compagnon de groupe rejoint à la demande
+		"combat_groupe": "",
 		"scene": "",
 		"visuel": VISUEL_DEFAUT,
 	}
 	_limiteurs[peer_id] = {"position": 0, "chat": 0}
 	print("Connexion : %s (id %d, %d joueur(s) en ligne)" % [nom_pseudo, peer_id, _sessions.size()])
-	# les joueurs déjà annoncés apprennent l'arrivée
-	for autre in _sessions:
-		if int(autre) == peer_id or not bool(_sessions[int(autre)]["annonce"]):
-			continue
-		rpc_id(int(autre), "recoit_message_chat", "Serveur", "%s a embarqué !" % nom_pseudo)
 
 # le nouveau est annoncé aux autres quand on connaît enfin sa
 # position (premier paquet), pas dès le login (sinon avatar en 0,0)
@@ -266,10 +307,19 @@ func _annoncer_si_premiere_position(peer_id: int, position: Vector2) -> void:
 		return
 	session["annonce"] = true
 	session["position"] = position
+	if not bool(session["embarque"]):
+		session["embarque"] = true
+		for autre in _sessions:
+			if int(autre) != peer_id and bool(_sessions[autre]["embarque"]):
+				rpc_id(int(autre), "recoit_message_chat", "Serveur", "%s a embarqué !" % session["nom_personnage"])
+	_annoncer_avatar(peer_id, session)
+
+func _annoncer_avatar(peer_id: int, session: Dictionary) -> void:
+	var position: Vector2 = session["position"]
 	for autre in _pairs_sur_scene(str(session["scene"])):
 		if int(autre) == peer_id:
 			continue
-		rpc_id(int(autre), "joueur_rejoint", peer_id, str(session["pseudo"]),
+		rpc_id(int(autre), "joueur_rejoint", peer_id, str(session["nom_personnage"]),
 			float(position.x), float(position.y), bool(session.get("en_combat", false)),
 			str(session.get("visuel", VISUEL_DEFAUT)))
 
@@ -331,7 +381,9 @@ func demande_inscription(nom_pseudo: String, mdp: String) -> void:
 	_ouvrir_session(peer_id, nom_pseudo)
 	# nouveau compte : aucun perso n'existe encore, le client doit en
 	# créer un avant de jouer (le perso local n'est jamais importé)
-	rpc_id(peer_id, "reponse_authentification", true, "Bienvenue %s ! Crée ton personnage." % nom_pseudo, "")
+	rpc_id(peer_id, "reponse_authentification", true, "Compte créé. Crée ton personnage.", "")
+	rpc_id(peer_id, "maj_equipage", _snapshot_equipage(nom_pseudo))
+	rpc_id(peer_id, "maj_hdventes", _snapshot_hdventes())
 
 # RPC serveur : connexion à un compte existant
 @rpc("any_peer", "call_remote", "reliable")
@@ -344,16 +396,18 @@ func demande_connexion(nom_pseudo: String, mdp: String) -> void:
 		rpc_id(peer_id, "reponse_authentification", false, "Pseudo ou mot de passe incorrect.", "")
 		return
 	var pseudo_final := nom_pseudo.strip_edges()
-	_ouvrir_session(peer_id, pseudo_final)
-	rpc_id(peer_id, "reponse_authentification", true, "Bienvenue %s !" % pseudo_final,
-		_perso_du_serveur(int(compte["id"])))
+	var perso_json := _perso_du_serveur(int(compte["id"]))
+	_ouvrir_session(peer_id, pseudo_final, perso_json)
+	rpc_id(peer_id, "reponse_authentification", true, "Connexion réussie.", perso_json)
+	rpc_id(peer_id, "maj_equipage", _snapshot_equipage(pseudo_final))
+	rpc_id(peer_id, "maj_hdventes", _snapshot_hdventes())
 
 # Les avatars existent uniquement dans la scène où leurs joueurs se trouvent.
 func _annoncer_presents_sur_scene(peer_id: int, nom_scene: String) -> void:
 	for autre in _pairs_sur_scene(nom_scene):
 		if int(autre) == peer_id or not bool(_sessions[autre]["annonce"]):
 			continue
-		rpc_id(peer_id, "joueur_rejoint", int(autre), str(_sessions[autre]["pseudo"]),
+		rpc_id(peer_id, "joueur_rejoint", int(autre), str(_sessions[autre]["nom_personnage"]),
 			float(_sessions[autre]["position"].x), float(_sessions[autre]["position"].y),
 			bool(_sessions[autre].get("en_combat", false)),
 			str(_sessions[autre].get("visuel", VISUEL_DEFAUT)))
@@ -374,12 +428,23 @@ func envoie_sauvegarde_perso(donnees_json: String) -> void:
 	if not multiplayer.is_server():
 		return
 	var session := _pair_authentifie()
-	if session.is_empty() or JSON.parse_string(donnees_json) == null:
+	var donnees: Variant = JSON.parse_string(donnees_json)
+	if session.is_empty() or not donnees is Dictionary:
 		return
 	var compte := _compte(str(session["pseudo"]))
-	if compte.is_empty():
+	if compte.is_empty() or not _ecrire_perso_serveur(int(compte["id"]), donnees_json):
 		return
-	_ecrire_perso_serveur(int(compte["id"]), donnees_json)
+	var peer_id := int(session["peer_id"])
+	var partie: Dictionary = _sessions[peer_id]
+	var nom := _nom_personnage(donnees)
+	if partie["nom_personnage"] == nom:
+		return
+	partie["nom_personnage"] = nom
+	if bool(partie["annonce"]):
+		_annoncer_avatar(peer_id, partie)
+	var groupe := _trouver_groupe(peer_id)
+	if not groupe.is_empty():
+		_annoncer_groupe(int(groupe["id"]))
 
 # RPC serveur : position d'un joueur
 @rpc("any_peer", "call_remote", "unreliable")
@@ -428,7 +493,7 @@ func envoie_scene(nom_scene: String, x: float = INF, y: float = INF) -> void:
 	nom_scene = nom_scene.strip_edges().substr(0, 64)
 	var session: Dictionary = _sessions[peer_id]
 	var ancienne_scene: String = session["scene"]
-	if nom_scene == "" or nom_scene == ancienne_scene:
+	if nom_scene == "" or nom_scene == ancienne_scene or str(session["nom_personnage"]).is_empty():
 		return
 	for autre in _pairs_sur_scene(ancienne_scene):
 		if int(autre) != peer_id:
@@ -436,7 +501,7 @@ func envoie_scene(nom_scene: String, x: float = INF, y: float = INF) -> void:
 	_positions_a_relais.erase(peer_id)
 	session["scene"] = nom_scene
 	session["annonce"] = false
-	print("%s joue sur : %s" % [str(session["pseudo"]), nom_scene])
+	print("%s joue sur : %s" % [str(session["nom_personnage"]), nom_scene])
 	var position := Vector2(x, y)
 	if position.is_finite():
 		_annoncer_si_premiere_position(peer_id, position)
@@ -613,24 +678,25 @@ func envoie_debut_combat(groupe: String) -> void:
 	if nom_scene == "" or groupe == "":
 		return
 	session["en_combat"] = true
+	session["combat_groupe"] = groupe
 	var combats_scene: Dictionary = _combats_actifs.get(nom_scene, {})
 	combats_scene[groupe] = peer_id
 	_combats_actifs[nom_scene] = combats_scene
-	print("Combat : %s engage [%s] sur %s" % [session["pseudo"], groupe, nom_scene])
+	print("Combat : %s engage [%s] sur %s" % [session["nom_personnage"], groupe, nom_scene])
 	# combat de groupe : le premier est l'hôte, les suivants rejoignent
 	var cle := "%s|%s" % [nom_scene, groupe]
 	var membres: Dictionary = _membres_groupe.get(cle, {})
 	var nouveau := not membres.has(peer_id)
-	membres[peer_id] = str(session["pseudo"])
+	membres[peer_id] = true
 	_membres_groupe[cle] = membres
 	if nouveau:
 		# le nouveau arrivant reçoit les combattants déjà en place
 		var presents: Array = []
 		for autre in membres:
-			if int(autre) == peer_id:
+			if int(autre) == peer_id or not _sessions.has(autre):
 				continue
 			presents.append({
-				"peer": int(autre), "pseudo": str(membres[autre]),
+				"peer": int(autre), "pseudo": str(_sessions[autre]["nom_personnage"]),
 				"visuel": str(_sessions[int(autre)].get("visuel", VISUEL_DEFAUT)),
 			})
 		rpc_id(peer_id, "membres_groupe", presents)
@@ -641,7 +707,9 @@ func envoie_debut_combat(groupe: String) -> void:
 	for autre in _pairs_sur_scene(nom_scene):
 		if int(autre) == peer_id or bool(_sessions[int(autre)].get("en_combat", false)):
 			continue
-		rpc_id(int(autre), "invitation_combat", str(session["pseudo"]), groupe)
+		rpc_id(int(autre), "invitation_combat", str(session["nom_personnage"]), groupe)
+	# le panneau du groupe suit le statut en combat de chacun
+	_annoncer_groupes_du_pair(peer_id)
 
 # RPC serveur : le combat du joueur est terminé
 @rpc("any_peer", "call_remote", "reliable")
@@ -653,6 +721,7 @@ func envoie_fin_combat(groupe: String) -> void:
 		return
 	var session: Dictionary = _sessions[peer_id]
 	session["en_combat"] = false
+	session["combat_groupe"] = ""
 	var nom_scene := str(session["scene"])
 	groupe = groupe.strip_edges().substr(0, 64)
 	# il quitte son combat de groupe : les autres perdent son miroir
@@ -668,6 +737,8 @@ func envoie_fin_combat(groupe: String) -> void:
 	for autre in _pairs_sur_scene(nom_scene):
 		if int(autre) != peer_id:
 			rpc_id(int(autre), "etre_en_combat", peer_id, false)
+	# le panneau du groupe suit le statut en combat de chacun
+	_annoncer_groupes_du_pair(peer_id)
 	var combats_scene: Dictionary = _combats_actifs.get(nom_scene, {})
 	if not combats_scene.has(groupe):
 		return
@@ -678,7 +749,7 @@ func envoie_fin_combat(groupe: String) -> void:
 	if combats_scene.is_empty():
 		_combats_actifs.erase(nom_scene)
 	for autre in _pairs_sur_scene(nom_scene):
-		rpc_id(int(autre), "fin_combat_distante", str(session["pseudo"]), groupe)
+		rpc_id(int(autre), "fin_combat_distante", str(session["nom_personnage"]), groupe)
 
 # nettoyage : un joueur parti ne garde pas la main sur un combat
 func _liberer_combats(peer_id: int) -> void:
@@ -696,7 +767,7 @@ func _liberer_combats(peer_id: int) -> void:
 #  DUELS ENTRE JOUEURS
 # ============================================================
 
-# peer d'un pseudo en ligne (0 si introuvable, insensible à la casse)
+# Recherche par identifiant de compte pour les équipages persistants.
 func _peer_du_pseudo(pseudo: String) -> int:
 	var cherche := pseudo.to_lower()
 	for peer_id in _sessions:
@@ -704,13 +775,39 @@ func _peer_du_pseudo(pseudo: String) -> int:
 			return int(peer_id)
 	return 0
 
+# Les commandes de jeu ciblent le nom public ou la référence indiquée par /joueurs.
+func _chercher_cible(demandeur: int, cible: String) -> int:
+	var identifiant := cible.trim_prefix("#")
+	var cible_par_id := cible.begins_with("#") and identifiant.is_valid_int()
+	var nom_cherche := cible.to_lower()
+	var resultat := 0
+	for peer_id in _sessions:
+		var session: Dictionary = _sessions[peer_id]
+		if not bool(session["embarque"]):
+			continue
+		var correspond := (
+			int(peer_id) == identifiant.to_int() if cible_par_id
+			else str(session["nom_personnage"]).to_lower() == nom_cherche
+		)
+		if not correspond:
+			continue
+		if resultat != 0:
+			rpc_id(demandeur, "recoit_message_chat", "Serveur",
+				"Plusieurs personnages portent ce nom. Utilise /joueurs pour trouver leur référence #.")
+			return 0
+		resultat = int(peer_id)
+	if resultat == 0:
+		rpc_id(demandeur, "recoit_message_chat", "Serveur",
+			"Aucun personnage en ligne ne correspond à %s." % cible)
+	return resultat
+
 # le badge « en combat » d'un pair est propagé aux joueurs de sa map
 func _annoncer_etat_combat(peer_id: int, actif: bool) -> void:
 	if not _sessions.has(peer_id):
 		return
 	var nom_scene := str(_sessions[peer_id]["scene"])
 	for autre in _pairs_sur_scene(nom_scene):
-		if int(autre) != peer_id:
+		if int(autre) != peer_id and _pair_connecte(int(autre)):
 			rpc_id(int(autre), "etre_en_combat", peer_id, actif)
 
 # le duel entre les deux pairs est clos, badges retirés
@@ -738,8 +835,8 @@ func reponse_duel(accepte: bool) -> void:
 	if _sessions[demandeur]["scene"] != _sessions[peer_id]["scene"]:
 		rpc_id(demandeur, "recoit_message_chat", "Serveur", "Ce joueur a changé de zone.")
 		return
-	var pseudo_demandeur := str(_sessions[demandeur]["pseudo"])
-	var pseudo_cible := str(_sessions[peer_id]["pseudo"])
+	var pseudo_demandeur := str(_sessions[demandeur]["nom_personnage"])
+	var pseudo_cible := str(_sessions[peer_id]["nom_personnage"])
 	if not accepte:
 		rpc_id(demandeur, "recoit_message_chat", "Serveur", "%s refuse le duel." % pseudo_cible)
 		return
@@ -752,9 +849,13 @@ func reponse_duel(accepte: bool) -> void:
 	_annoncer_etat_combat(demandeur, true)
 	_annoncer_etat_combat(peer_id, true)
 	print("Duel : %s contre %s" % [pseudo_demandeur, pseudo_cible])
+	# le visuel (race/sexe) de l'adversaire part avec : le miroir de
+	# duel porte les vrais sprites du joueur distant, pas l'humain de base
+	var visuel_demandeur := str(_sessions[demandeur].get("visuel", VISUEL_DEFAUT))
+	var visuel_cible := str(_sessions[peer_id].get("visuel", VISUEL_DEFAUT))
 	# celui qui a défié ouvre le bal
-	rpc_id(demandeur, "debut_duel", pseudo_cible, peer_id, true)
-	rpc_id(peer_id, "debut_duel", pseudo_demandeur, demandeur, false)
+	rpc_id(demandeur, "debut_duel", pseudo_cible, peer_id, true, visuel_cible)
+	rpc_id(peer_id, "debut_duel", pseudo_demandeur, demandeur, false, visuel_demandeur)
 
 # RPC serveur : action de duel à relayer à l'adversaire
 @rpc("any_peer", "call_remote", "reliable")
@@ -779,7 +880,7 @@ func envoie_action_groupe(json: String) -> void:
 			continue
 		for autre in membres:
 			if int(autre) != peer_id:
-				rpc_id(int(autre), "action_groupe", peer_id, str(membres[peer_id]), json)
+				rpc_id(int(autre), "action_groupe", peer_id, str(_sessions[peer_id]["nom_personnage"]), json)
 		return
 
 # RPC serveur : le client déclare forfait (ses pv sont tombés à zéro)
@@ -791,9 +892,219 @@ func envoie_defaite_duel() -> void:
 	if not _duels.has(peer_id):
 		return
 	var adversaire := int(_duels[peer_id])
-	var pseudo := str(_sessions[peer_id]["pseudo"])
+	var nom_defait := str(_sessions[peer_id]["nom_personnage"])
 	_fin_duel(peer_id)
-	rpc_id(adversaire, "victoire_duel", pseudo, false)
+	rpc_id(adversaire, "victoire_duel", nom_defait, false)
+
+# ============================================================
+#  ÉCHANGES D'OBJETS ENTRE JOUEURS
+# ============================================================
+
+# un joueur propose un échange à un pair en ligne
+func _proposer_echange(demandeur: int, cible: int) -> void:
+	var nom_cible: String = _sessions[cible]["nom_personnage"]
+	var nom_demandeur: String = _sessions[demandeur]["nom_personnage"]
+	if cible == demandeur:
+		rpc_id(demandeur, "recoit_message_chat", "Serveur", "Échanger avec soi-même, vraiment ?")
+		return
+	if _echanges.has(demandeur) or _echanges.has(cible):
+		rpc_id(demandeur, "recoit_message_chat", "Serveur", "Un des deux joueurs est déjà en échange.")
+		return
+	if _invites_echange.has(cible):
+		rpc_id(demandeur, "recoit_message_chat", "Serveur", "%s a déjà une proposition en attente." % nom_cible)
+		return
+	_invites_echange[cible] = demandeur
+	rpc_id(demandeur, "recoit_message_chat", "Serveur", "Tu proposes un échange à %s..." % nom_cible)
+	rpc_id(cible, "invite_echange", nom_demandeur)
+
+# RPC serveur : réponse à une proposition d'échange
+@rpc("any_peer", "call_remote", "reliable")
+func reponse_echange(accepte: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	var demandeur := int(_invites_echange.get(peer_id, 0))
+	_invites_echange.erase(peer_id)
+	if demandeur == 0 or not _sessions.has(peer_id) or not _sessions.has(demandeur):
+		return
+	var nom_cible: String = _sessions[peer_id]["nom_personnage"]
+	if not accepte:
+		rpc_id(demandeur, "recoit_message_chat", "Serveur", "%s refuse l'échange." % nom_cible)
+		return
+	if _echanges.has(demandeur) or _echanges.has(peer_id):
+		rpc_id(demandeur, "recoit_message_chat", "Serveur", "Un des deux joueurs est déjà en échange.")
+		return
+	_echanges[demandeur] = peer_id
+	_echanges[peer_id] = demandeur
+	_etats_echange[demandeur] = {"pret": false, "offre": "{}"}
+	_etats_echange[peer_id] = {"pret": false, "offre": "{}"}
+	var nom_demandeur: String = _sessions[demandeur]["nom_personnage"]
+	print("Échange : %s avec %s" % [nom_demandeur, nom_cible])
+	rpc_id(demandeur, "debut_echange", nom_cible)
+	rpc_id(peer_id, "debut_echange", nom_demandeur)
+
+# RPC serveur : offre d'un joueur (objets + Berry) et son état "prêt" ;
+# toute nouvelle offre déverrouille les deux côtés — l'échange ne
+# s'exécute que si les deux ont confirmé la même version des offres
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_offre_echange(offre_json: String, pret: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _echanges.has(peer_id) or not _etats_echange.has(peer_id):
+		return
+	var partenaire := int(_echanges[peer_id])
+	if not _sessions.has(partenaire) or not _etats_echange.has(partenaire):
+		return
+	var etat: Dictionary = _etats_echange[peer_id]
+	var changement := str(etat.get("offre", "")) != offre_json
+	etat["offre"] = offre_json
+	if changement:
+		etat["pret"] = false
+		_etats_echange[partenaire]["pret"] = false
+	else:
+		etat["pret"] = bool(pret)
+	rpc_id(partenaire, "offre_echange", offre_json, bool(etat["pret"]))
+	var etat_partenaire: Dictionary = _etats_echange[partenaire]
+	if bool(etat["pret"]) and bool(etat_partenaire["pret"]):
+		_executer_echange_binaire(peer_id, partenaire)
+
+# les deux côtés ont confirmé : chacun reçoit l'offre définitive de
+# l'autre et l'applique dans sa propre sauvegarde
+func _executer_echange_binaire(pair_a: int, pair_b: int) -> void:
+	var offre_a := str(_etats_echange[pair_a]["offre"])
+	var offre_b := str(_etats_echange[pair_b]["offre"])
+	_cloturer_echange(pair_a, pair_b)
+	rpc_id(pair_a, "executer_echange", offre_b)
+	rpc_id(pair_b, "executer_echange", offre_a)
+
+# oublie l'échange entre deux pairs (sans leur envoyer de message)
+func _cloturer_echange(pair_a: int, pair_b: int) -> void:
+	_echanges.erase(pair_a)
+	_echanges.erase(pair_b)
+	_etats_echange.erase(pair_a)
+	_etats_echange.erase(pair_b)
+
+# RPC serveur : un joueur abandonne l'échange en cours
+@rpc("any_peer", "call_remote", "reliable")
+func annuler_echange() -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _echanges.has(peer_id):
+		return
+	var partenaire := int(_echanges[peer_id])
+	_cloturer_echange(peer_id, partenaire)
+	if _pair_connecte(partenaire):
+		rpc_id(partenaire, "fin_echange", "Échange annulé.")
+
+# ============================================================
+#  HDV PARTAGÉ (mises en vente des joueurs)
+# ============================================================
+
+# instantané de toutes les mises en vente actives
+func _snapshot_hdventes() -> String:
+	var entrees: Array = []
+	for ligne in _lire(
+			"SELECT id, vendeur, item_id, quantite, prix_unite"
+			+ " FROM mmo_hdventes ORDER BY id DESC;"):
+		entrees.append({
+			"id": int(ligne["id"]),
+			"vendeur": str(ligne["vendeur"]),
+			"item": str(ligne["item_id"]),
+			"quantite": int(ligne["quantite"]),
+			"prix_unite": int(ligne["prix_unite"]),
+		})
+	return JSON.stringify(entrees)
+
+# pousse l'état du HDV à tous les joueurs connectés
+func _diffuser_hdventes() -> void:
+	var snapshot := _snapshot_hdventes()
+	for autre in _sessions:
+		rpc_id(int(autre), "maj_hdventes", snapshot)
+
+# RPC serveur : vendre / retirer / acheter une mise en vente
+@rpc("any_peer", "call_remote", "reliable")
+func demande_hdvente(action: String, offre_id: int, item: String, quantite: int, prix: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var session := _pair_authentifie()
+	if session.is_empty():
+		return
+	var peer_id := int(session["peer_id"])
+	var pseudo := str(session["pseudo"])
+	match action:
+		"vendre":
+			quantite = clampi(quantite, 1, 999)
+			prix = maxi(prix, 1)
+			item = str(item).strip_edges().substr(0, 40)
+			if item == "":
+				return
+			_sql("INSERT INTO mmo_hdventes (vendeur, item_id, quantite, prix_unite)"
+				+ " VALUES ('%s', '%s', %d, %d);" % [
+				_echapper_texte(pseudo), _echapper_texte(item), quantite, prix])
+			rpc_id(peer_id, "message_hdvente", "Objet en vente : visible par tous les joueurs du serveur.")
+			_diffuser_hdventes()
+		"retirer":
+			var lignes := _lire(
+				"SELECT vendeur, item_id, quantite FROM mmo_hdventes WHERE id = %d;" % offre_id)
+			if lignes.is_empty():
+				return
+			if str(lignes[0]["vendeur"]) != pseudo:
+				rpc_id(peer_id, "message_hdvente", "Cette mise en vente n'est pas la tienne.")
+				return
+			_sql("DELETE FROM mmo_hdventes WHERE id = %d;" % offre_id)
+			rpc_id(peer_id, "livraison_hdvente", JSON.stringify({
+				"item": str(lignes[0]["item_id"]),
+				"quantite": int(lignes[0]["quantite"])}))
+			_diffuser_hdventes()
+		"acheter":
+			_acheter_mise_hdvente(peer_id, pseudo, offre_id)
+
+# achat d'une mise en vente : le serveur débite l'acheteur, crédite le
+# vendeur (connecté ou non), livre les objets et rafraîchit tout le monde
+func _acheter_mise_hdvente(peer_id: int, pseudo: String, offre_id: int) -> void:
+	var lignes := _lire(
+		"SELECT vendeur, item_id, quantite, prix_unite FROM mmo_hdventes WHERE id = %d;" % offre_id)
+	if lignes.is_empty():
+		rpc_id(peer_id, "message_hdvente", "Cette offre a déjà disparu.")
+		return
+	var vendeur := str(lignes[0]["vendeur"])
+	if vendeur == pseudo:
+		rpc_id(peer_id, "message_hdvente", "On n'achète pas sa propre mise en vente.")
+		return
+	var total := int(lignes[0]["prix_unite"]) * int(lignes[0]["quantite"])
+	var compte_acheteur := _compte(pseudo)
+	var perso_acheteur := _perso_json_serveur(compte_acheteur)
+	if perso_acheteur.is_empty():
+		rpc_id(peer_id, "message_hdvente", "Personnage introuvable")
+		return
+	if int(perso_acheteur.get("berry", 0)) < total:
+		rpc_id(peer_id, "message_hdvente", "Pas assez de Berry (%d requis)." % total)
+		return
+	# l'offre disparaît avant tout mouvement : personne ne peut la
+	# prendre deux fois
+	_sql("DELETE FROM mmo_hdventes WHERE id = %d;" % offre_id)
+	perso_acheteur["berry"] = int(perso_acheteur.get("berry", 0)) - total
+	_ecrire_perso_serveur(int(compte_acheteur["id"]), JSON.stringify(perso_acheteur))
+	rpc_id(peer_id, "maj_perso_berry", int(perso_acheteur["berry"]))
+	rpc_id(peer_id, "livraison_hdvente", JSON.stringify({
+		"item": str(lignes[0]["item_id"]),
+		"quantite": int(lignes[0]["quantite"])}))
+	rpc_id(peer_id, "message_hdvente", "Achat effectué : %d Berry dépensés." % total)
+	# le vendeur encaisse (commission HDV de 2 %) — sa bourse est
+	# créditée même s'il est hors ligne
+	var gains := int(floor(total * (1.0 - 0.02)))
+	var compte_vendeur := _compte(vendeur)
+	var perso_vendeur := _perso_json_serveur(compte_vendeur)
+	if not perso_vendeur.is_empty():
+		perso_vendeur["berry"] = int(perso_vendeur.get("berry", 0)) + gains
+		_ecrire_perso_serveur(int(compte_vendeur["id"]), JSON.stringify(perso_vendeur))
+		var peer_vendeur := _peer_du_pseudo(vendeur)
+		if peer_vendeur != 0:
+			rpc_id(peer_vendeur, "maj_perso_berry", int(perso_vendeur["berry"]))
+			rpc_id(peer_vendeur, "message_hdvente", "Ta mise en vente s'est vendue : +%d Berry." % gains)
+	_diffuser_hdventes()
 
 # RPC serveur : message de chat global
 @rpc("any_peer", "call_remote", "reliable")
@@ -801,22 +1112,22 @@ func envoie_message_chat(texte: String) -> void:
 	if not multiplayer.is_server():
 		return
 	var peer_id := multiplayer.get_remote_sender_id()
-	if not _sessions.has(peer_id) or _trop_tot(peer_id, "chat", 300):
+	if not _sessions.has(peer_id) or not bool(_sessions[peer_id]["embarque"]) or _trop_tot(peer_id, "chat", 300):
 		return
 	texte = texte.strip_edges().substr(0, 200)
 	if texte == "":
 		return
-	var nom_envoyeur: String = _sessions[peer_id]["pseudo"]
+	var nom_envoyeur: String = _sessions[peer_id]["nom_personnage"]
 	# commande /defier : lancer un défi à un autre joueur
-	if texte.begins_with("/defier"):
+	if texte == "/defier" or texte.begins_with("/defier "):
 		var cible := texte.substr(7).strip_edges()
 		if cible == "":
-			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Utilisation : /defier Pseudo")
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Utilisation : /defier Nom du personnage")
 			return
-		var peer_cible := _peer_du_pseudo(cible)
+		var peer_cible := _chercher_cible(peer_id, cible)
 		if peer_cible == 0:
-			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Aucun joueur en ligne ne s'appelle %s." % cible)
 			return
+		var nom_cible: String = _sessions[peer_cible]["nom_personnage"]
 		if peer_cible == peer_id:
 			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Se défier soi-même, vraiment ?")
 			return
@@ -830,24 +1141,36 @@ func envoie_message_chat(texte: String) -> void:
 			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Un des deux joueurs est en plein combat.")
 			return
 		if _invites_duel.has(peer_cible):
-			rpc_id(peer_id, "recoit_message_chat", "Serveur", "%s a déjà une invitation en attente." % cible)
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "%s a déjà une invitation en attente." % nom_cible)
 			return
 		_invites_duel[peer_cible] = peer_id
-		rpc_id(peer_id, "recoit_message_chat", "Serveur", "Tu défies %s en duel..." % cible)
+		rpc_id(peer_id, "recoit_message_chat", "Serveur", "Tu défies %s en duel..." % nom_cible)
 		rpc_id(peer_cible, "invite_duel", nom_envoyeur)
+		return
+	# commande /echanger : proposer un échange d'objets et de Berry
+	if texte == "/echanger" or texte.begins_with("/echanger "):
+		var cible_echange := texte.substr(9).strip_edges()
+		if cible_echange == "":
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Utilisation : /echanger Nom du personnage")
+			return
+		var peer_cible_echange := _chercher_cible(peer_id, cible_echange)
+		if peer_cible_echange == 0:
+			return
+		_proposer_echange(peer_id, peer_cible_echange)
 		return
 	# commande /joueurs : la liste revient en privé
 	if texte == "/joueurs":
-		var pseudos: Array = []
+		var joueurs: PackedStringArray = []
 		for autre in _sessions:
-			pseudos.append(str(_sessions[int(autre)]["pseudo"]))
+			if bool(_sessions[autre]["embarque"]):
+				joueurs.append("%s (#%d)" % [_sessions[autre]["nom_personnage"], autre])
 		rpc_id(peer_id, "recoit_message_chat", "Serveur",
-			"En ligne (%d) : %s" % [pseudos.size(), ", ".join(pseudos)])
+			"En ligne (%d) : %s" % [joueurs.size(), ", ".join(joueurs)])
 		return
 	# commande /groupe : groupes de joueurs (sans rapport avec les
 	# équipages — rejoindre ses amis quand l'équipage n'est pas co)
-	# /groupe Pseudo -> inviter, /groupe -> liste, /groupe quitter
-	if texte.begins_with("/groupe"):
+	# /groupe Nom du personnage -> inviter, /groupe -> liste, /groupe quitter
+	if texte == "/groupe" or texte.begins_with("/groupe "):
 		var argument := texte.substr(7).strip_edges()
 		if argument == "":
 			_repondre_liste_groupe(peer_id)
@@ -864,7 +1187,7 @@ func envoie_message_chat(texte: String) -> void:
 #  GROUPES DE JOUEURS (distinct des équipages)
 # ============================================================
 
-# le groupe du joueur : {id: peer du chef, membres: {peer: pseudo}},
+# le groupe du joueur : {id: peer du chef, membres: {peer: true}},
 # {} s'il n'est dans aucun groupe
 func _trouver_groupe(peer_id: int) -> Dictionary:
 	for id_chef in _groupes:
@@ -874,23 +1197,22 @@ func _trouver_groupe(peer_id: int) -> Dictionary:
 
 # invite à rejoindre le groupe du demandeur (il en devient le chef
 # s'il n'en a pas)
-func _inviter_au_groupe(demandeur: int, cible_pseudo: String) -> void:
-	var peer_cible := _peer_du_pseudo(cible_pseudo)
+func _inviter_au_groupe(demandeur: int, cible: String) -> void:
+	var peer_cible := _chercher_cible(demandeur, cible)
 	if peer_cible == 0:
-		rpc_id(demandeur, "recoit_message_chat", "Serveur",
-			"Aucun joueur en ligne ne s'appelle %s." % cible_pseudo)
 		return
+	var nom_cible: String = _sessions[peer_cible]["nom_personnage"]
 	if peer_cible == demandeur:
 		rpc_id(demandeur, "recoit_message_chat", "Serveur",
 			"Un groupe, c'est à plusieurs — invite quelqu'un d'autre.")
 		return
 	if not _trouver_groupe(peer_cible).is_empty():
 		rpc_id(demandeur, "recoit_message_chat", "Serveur",
-			"%s est déjà dans un groupe." % cible_pseudo)
+			"%s est déjà dans un groupe." % nom_cible)
 		return
 	if _invites_groupe.has(peer_cible):
 		rpc_id(demandeur, "recoit_message_chat", "Serveur",
-			"%s a déjà une invitation en attente." % cible_pseudo)
+			"%s a déjà une invitation en attente." % nom_cible)
 		return
 	var groupe_demandeur := _trouver_groupe(demandeur)
 	if not groupe_demandeur.is_empty() and groupe_demandeur["id"] != demandeur:
@@ -903,8 +1225,8 @@ func _inviter_au_groupe(demandeur: int, cible_pseudo: String) -> void:
 		return
 	_invites_groupe[peer_cible] = demandeur
 	rpc_id(demandeur, "recoit_message_chat", "Serveur",
-		"Tu invites %s dans ton groupe..." % cible_pseudo)
-	rpc_id(peer_cible, "invite_groupe", str(_sessions[demandeur]["pseudo"]))
+		"Tu invites %s dans ton groupe..." % nom_cible)
+	rpc_id(peer_cible, "invite_groupe", str(_sessions[demandeur]["nom_personnage"]))
 
 # RPC serveur : réponse à une invitation de groupe
 @rpc("any_peer", "call_remote", "reliable")
@@ -916,8 +1238,8 @@ func reponse_groupe(accepte: bool) -> void:
 	_invites_groupe.erase(peer_id)
 	if demandeur == 0 or not _sessions.has(peer_id) or not _sessions.has(demandeur):
 		return
-	var pseudo_cible := str(_sessions[peer_id]["pseudo"])
-	var pseudo_demandeur := str(_sessions[demandeur]["pseudo"])
+	var pseudo_cible := str(_sessions[peer_id]["nom_personnage"])
+	var pseudo_demandeur := str(_sessions[demandeur]["nom_personnage"])
 	if not accepte:
 		rpc_id(demandeur, "recoit_message_chat", "Serveur",
 			"%s refuse de rejoindre le groupe." % pseudo_cible)
@@ -928,12 +1250,12 @@ func reponse_groupe(accepte: bool) -> void:
 		return
 	# le demandeur fonde son groupe s'il n'en a pas (il en est le chef)
 	if not _groupes.has(demandeur):
-		_groupes[demandeur] = {demandeur: pseudo_demandeur}
+		_groupes[demandeur] = {demandeur: true}
 	var membres: Dictionary = _groupes[demandeur]
 	if membres.size() >= GROUPE_TAILLE_MAX:
 		rpc_id(peer_id, "recoit_message_chat", "Serveur", "Le groupe est plein.")
 		return
-	membres[peer_id] = pseudo_cible
+	membres[peer_id] = true
 	for membre in membres:
 		rpc_id(int(membre), "recoit_message_chat", "Serveur",
 			"%s a rejoint le groupe." % pseudo_cible)
@@ -945,12 +1267,12 @@ func _repondre_liste_groupe(peer_id: int) -> void:
 	var groupe := _trouver_groupe(peer_id)
 	if groupe.is_empty():
 		rpc_id(peer_id, "recoit_message_chat", "Serveur",
-			"Tu n'es dans aucun groupe. Utilise /groupe Pseudo pour inviter un joueur.")
+			"Tu n'es dans aucun groupe. Utilise /groupe Nom du personnage pour inviter un joueur.")
 		return
 	var membres: Dictionary = groupe["membres"]
 	var noms: Array[String] = []
 	for membre in membres:
-		var nom_membre := str(membres[membre])
+		var nom_membre := str(_sessions[membre]["nom_personnage"])
 		if int(membre) == groupe["id"]:
 			nom_membre += " (chef)"
 		noms.append(nom_membre)
@@ -963,14 +1285,14 @@ func _repondre_liste_groupe(peer_id: int) -> void:
 func _sortir_du_groupe(peer_id: int, volontaire: bool) -> void:
 	var groupe := _trouver_groupe(peer_id)
 	if groupe.is_empty():
-		if _sessions.has(peer_id):
+		if volontaire and _sessions.has(peer_id):
 			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Tu n'es dans aucun groupe.")
 		return
 	var id_chef: int = groupe["id"]
 	var membres: Dictionary = _groupes[id_chef]
-	var pseudo_partant := str(membres.get(peer_id, "?"))
+	var nom_partant := str(_sessions[peer_id]["nom_personnage"])
 	membres.erase(peer_id)
-	if _sessions.has(peer_id):
+	if volontaire:
 		rpc_id(peer_id, "maj_groupe", [])
 	if membres.is_empty():
 		_groupes.erase(id_chef)
@@ -983,49 +1305,388 @@ func _sortir_du_groupe(peer_id: int, volontaire: bool) -> void:
 		_groupes.erase(id_chef)
 		_groupes[nouveau_chef] = membres
 		for membre in membres:
+			if not _pair_connecte(int(membre)):
+				continue
 			rpc_id(int(membre), "recoit_message_chat", "Serveur",
-				"%s mène désormais le groupe." % str(membres[nouveau_chef]))
+				"%s mène désormais le groupe." % str(_sessions[nouveau_chef]["nom_personnage"]))
 	for membre in membres:
+		if not _pair_connecte(int(membre)):
+			continue
 		rpc_id(int(membre), "recoit_message_chat", "Serveur",
-			"%s %s le groupe." % [pseudo_partant, "a quitté" if volontaire else "a quitté (déconnexion)"])
+			"%s %s le groupe." % [nom_partant, "a quitté" if volontaire else "a quitté (déconnexion)"])
 	_annoncer_groupe(nouveau_chef)
 	# le chef parti volontairement apprend la passation
 	if _sessions.has(peer_id) and volontaire and id_chef == peer_id:
 		rpc_id(peer_id, "recoit_message_chat", "Serveur",
-			"%s prend la tête du groupe." % str(membres[nouveau_chef]))
+			"%s prend la tête du groupe." % str(_sessions[nouveau_chef]["nom_personnage"]))
 
 # diffuse la composition du groupe à ses membres (interface + couleur)
 func _annoncer_groupe(id_chef: int) -> void:
 	var membres: Dictionary = _groupes.get(id_chef, {})
 	var liste: Array = []
 	for membre in membres:
-		liste.append({"peer": int(membre), "pseudo": str(membres[membre]),
-			"chef": int(membre) == id_chef})
+		liste.append({"peer": int(membre), "pseudo": str(_sessions[membre]["nom_personnage"]),
+			"chef": int(membre) == id_chef,
+			"combat": bool(_sessions[int(membre)].get("en_combat", false))})
 	for membre in membres:
-		rpc_id(int(membre), "maj_groupe", liste)
+		if _pair_connecte(int(membre)):
+			rpc_id(int(membre), "maj_groupe", liste)
+
+# ============================================================
+#  ÉQUIPAGES EN LIGNE (serveur-autoritaires)
+# ============================================================
+
+# instantané complet de l'état équipage d'un joueur : son équipage,
+# les membres, le journal, les autres équipages (avec effectifs) et
+# sa flotte — tout l'onglet Équipage du client en découle
+func _snapshot_equipage(pseudo: String) -> String:
+	Equipages.joueur_courant = pseudo
+	Equipages._recharger_mon_equipage()
+	var autres: Array = []
+	for ligne in Equipages.autres_equipages():
+		autres.append({
+			"id": int(ligne["id"]),
+			"nom": str(ligne["nom"]),
+			"capitaine": str(ligne["capitaine"]),
+			"niveau": int(ligne.get("niveau", 1)),
+			"membres": Equipages.nb_membres_de(int(ligne["id"])),
+		})
+	var instantané := {
+		"equipage": Equipages.mon_equipage,
+		"membres": Equipages.liste_membres(),
+		"journal": Equipages.liste_journal(),
+		"autres": autres,
+		"flotte": Equipages.ma_flotte(),
+		"membres_flotte": Equipages.membres_de_ma_flotte(),
+	}
+	Equipages.joueur_courant = ""
+	return JSON.stringify(instantané)
+
+# pousse son instantané à chaque membre en ligne d'un équipage
+func _diffuser_equipage(id_equipage: int) -> void:
+	for pseudo_membre in Equipages.pseudos_de_l_equipage(id_equipage):
+		var peer_membre := _peer_du_pseudo(str(pseudo_membre))
+		if peer_membre != 0:
+			rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(pseudo_membre)))
+
+# JSON du perso serveur d'un compte (dictionnaire vide si absent ou
+# illisible : le joueur n'a pas encore créé son personnage)
+func _perso_json_serveur(compte: Dictionary) -> Dictionary:
+	var perso: Dictionary = {}
+	if compte.is_empty():
+		return perso
+	var analyse: Variant = JSON.parse_string(_perso_du_serveur(int(compte["id"])))
+	if analyse is Dictionary:
+		perso = analyse
+	return perso
+
+# RPC serveur : action d'équipage demandée par un client (le serveur
+# tranche seul : jamais d'écriture directe côté client en ligne)
+@rpc("any_peer", "call_remote", "reliable")
+func demande_equipage(action: String, argument: String, montant: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var session := _pair_authentifie()
+	if session.is_empty():
+		return
+	var peer_id := int(session["peer_id"])
+	var pseudo := str(session["pseudo"])
+	Equipages.joueur_courant = pseudo
+	Equipages._recharger_mon_equipage()
+	match action:
+		"creer":
+			var erreur_creer := Equipages.creer(argument)
+			if erreur_creer != "":
+				rpc_id(peer_id, "message_equipage", erreur_creer)
+			elif not Equipages.mon_equipage.is_empty():
+				_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+		"dissoudre":
+			if Equipages.mon_equipage.is_empty():
+				rpc_id(peer_id, "message_equipage", "Vous n'êtes capitaine d'aucun équipage")
+			else:
+				var membres_dissous := Equipages.pseudos_de_l_equipage(int(Equipages.mon_equipage["id"]))
+				Equipages.dissoudre()
+				for pseudo_membre in membres_dissous:
+					var peer_membre := _peer_du_pseudo(str(pseudo_membre))
+					if peer_membre != 0:
+						rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(pseudo_membre)))
+		"quitter":
+			if Equipages.mon_equipage.is_empty():
+				rpc_id(peer_id, "message_equipage", "Vous n'êtes dans aucun équipage")
+			else:
+				var membres_quittes := Equipages.pseudos_de_l_equipage(int(Equipages.mon_equipage["id"]))
+				Equipages.quitter()
+				for pseudo_membre in membres_quittes:
+					var peer_membre := _peer_du_pseudo(str(pseudo_membre))
+					if peer_membre != 0:
+						rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(pseudo_membre)))
+		"ajouter":
+			_inviter_dans_equipage(peer_id, pseudo, argument)
+		"virer":
+			if Equipages.mon_equipage.is_empty():
+				rpc_id(peer_id, "message_equipage", "Vous n'êtes dans aucun équipage")
+			else:
+				var erreur_virer := Equipages.virer(argument)
+				if erreur_virer != "":
+					rpc_id(peer_id, "message_equipage", erreur_virer)
+				else:
+					var membres_vires := Equipages.pseudos_de_l_equipage(int(Equipages.mon_equipage["id"]))
+					membres_vires.append(argument.strip_edges())
+					for pseudo_membre in membres_vires:
+						var peer_membre := _peer_du_pseudo(str(pseudo_membre))
+						if peer_membre != 0:
+							rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(pseudo_membre)))
+		"nommer_vice":
+			var erreur_vice := Equipages.nommer_vice(argument)
+			if erreur_vice != "":
+				rpc_id(peer_id, "message_equipage", erreur_vice)
+			elif not Equipages.mon_equipage.is_empty():
+				_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+		"destituer_vice":
+			var erreur_destituer := Equipages.destituer_vice()
+			if erreur_destituer != "":
+				rpc_id(peer_id, "message_equipage", erreur_destituer)
+			elif not Equipages.mon_equipage.is_empty():
+				_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+		"description":
+			var erreur_description := Equipages.changer_description(argument)
+			if erreur_description != "":
+				rpc_id(peer_id, "message_equipage", erreur_description)
+			elif not Equipages.mon_equipage.is_empty():
+				_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+		"deposer":
+			_equipage_deposer(peer_id, pseudo, montant)
+		"retirer":
+			_equipage_retirer(peer_id, pseudo, montant)
+		"alliance":
+			_conclure_alliance_equipage(peer_id, argument)
+		"rompre":
+			_rompre_alliance_equipage(peer_id)
+	Equipages.joueur_courant = ""
+
+# le recrutement devient une invitation : la cible reçoit une popup
+func _inviter_dans_equipage(peer_id: int, pseudo_demandeur: String, cible_pseudo: String) -> void:
+	var cible := cible_pseudo.strip_edges()
+	if cible.to_lower() == pseudo_demandeur.to_lower():
+		rpc_id(peer_id, "message_equipage", "On ne se recrute pas soi-même !")
+		return
+	var erreur := Equipages._valider_recrutement(cible)
+	if erreur != "":
+		rpc_id(peer_id, "message_equipage", erreur)
+		return
+	if Equipages._deja_engage(cible):
+		rpc_id(peer_id, "message_equipage", "%s fait déjà partie d'un équipage." % cible)
+		return
+	var peer_cible := _peer_du_pseudo(cible)
+	if peer_cible == 0:
+		rpc_id(peer_id, "message_equipage", "%s n'est pas en ligne." % cible)
+		return
+	if _invites_equipage.has(peer_cible):
+		rpc_id(peer_id, "message_equipage", "%s a déjà une invitation en attente." % cible)
+		return
+	_invites_equipage[peer_cible] = {"demandeur": pseudo_demandeur, "cible": cible}
+	rpc_id(peer_id, "message_equipage", "Invitation envoyée à %s..." % cible)
+	rpc_id(peer_cible, "invite_equipage", str(Equipages.mon_equipage.get("nom", "?")), pseudo_demandeur)
+
+# RPC serveur : réponse à une invitation de recrutement
+@rpc("any_peer", "call_remote", "reliable")
+func reponse_equipage_recruit(accepte: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	var session := _pair_authentifie()
+	if session.is_empty():
+		return
+	var peer_id := int(session["peer_id"])
+	var pseudo := str(session["pseudo"])
+	var invitation_lue: Variant = _invites_equipage.get(peer_id, {})
+	_invites_equipage.erase(peer_id)
+	if not invitation_lue is Dictionary:
+		return
+	var invitation: Dictionary = invitation_lue
+	var demandeur := str(invitation["demandeur"])
+	var cible := str(invitation["cible"])
+	var peer_demandeur := _peer_du_pseudo(demandeur)
+	if peer_demandeur == 0:
+		return  # le capitaine s'est déconnecté, l'invitation tombe
+	if not accepte:
+		rpc_id(peer_demandeur, "message_equipage", "%s refuse de rejoindre l'équipage." % pseudo)
+		return
+	# re-validation côté demandeur puis ajout effectif
+	Equipages.joueur_courant = demandeur
+	Equipages._recharger_mon_equipage()
+	var erreur := Equipages._valider_recrutement(cible)
+	if erreur != "":
+		rpc_id(peer_demandeur, "message_equipage", erreur)
+	else:
+		var erreur_ajout := Equipages.ajouter_membre(cible)
+		if erreur_ajout != "":
+			rpc_id(peer_demandeur, "message_equipage", erreur_ajout)
+		else:
+			_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+			# la cible vient d'entrer dans l'équipage : son état change aussi
+			rpc_id(peer_id, "maj_equipage", _snapshot_equipage(pseudo))
+			rpc_id(peer_demandeur, "message_equipage", "%s rejoint l'équipage !" % cible)
+	Equipages.joueur_courant = ""
+
+# versement à la caisse : le Berry en ligne vit dans le perso serveur,
+# c'est lui qu'on débite (jamais Personnage dans le processus serveur)
+func _equipage_deposer(peer_id: int, pseudo: String, montant: int) -> void:
+	var compte := _compte(pseudo)
+	var perso := _perso_json_serveur(compte)
+	if perso.is_empty():
+		rpc_id(peer_id, "message_equipage", "Personnage introuvable")
+		return
+	var solde := int(perso.get("berry", 0)) - montant
+	if solde < 0:
+		rpc_id(peer_id, "message_equipage", "Pas assez de Berry")
+		return
+	var erreur := Equipages.verser_caisse(montant)
+	if erreur != "":
+		rpc_id(peer_id, "message_equipage", erreur)
+		return
+	perso["berry"] = solde
+	_ecrire_perso_serveur(int(compte["id"]), JSON.stringify(perso))
+	rpc_id(peer_id, "maj_perso_berry", solde)
+	if not Equipages.mon_equipage.is_empty():
+		_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+
+# retrait de la caisse vers la bourse du perso serveur du joueur
+func _equipage_retirer(peer_id: int, pseudo: String, montant: int) -> void:
+	var compte := _compte(pseudo)
+	var perso := _perso_json_serveur(compte)
+	if perso.is_empty():
+		rpc_id(peer_id, "message_equipage", "Personnage introuvable")
+		return
+	var erreur := Equipages.prendre_caisse(montant)
+	if erreur != "":
+		rpc_id(peer_id, "message_equipage", erreur)
+		return
+	var solde := int(perso.get("berry", 0)) + montant
+	perso["berry"] = solde
+	_ecrire_perso_serveur(int(compte["id"]), JSON.stringify(perso))
+	rpc_id(peer_id, "maj_perso_berry", solde)
+	if not Equipages.mon_equipage.is_empty():
+		_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+
+# alliance : les équipages des deux flottes touchées se rafraîchissent
+func _conclure_alliance_equipage(peer_id: int, argument: String) -> void:
+	if Equipages.mon_equipage.is_empty():
+		rpc_id(peer_id, "message_equipage", "Vous n'êtes pas engagé dans un équipage")
+		return
+	if not argument.is_valid_int():
+		rpc_id(peer_id, "message_equipage", "Équipage introuvable")
+		return
+	var id_cible := int(argument)
+	# toute flotte déjà formée autour de l'un des deux est concernée
+	var equipages_touches := Equipages.equipages_de_la_flotte_de(int(Equipages.mon_equipage["id"]))
+	equipages_touches.append_array(Equipages.equipages_de_la_flotte_de(id_cible))
+	equipages_touches.append(int(Equipages.mon_equipage["id"]))
+	equipages_touches.append(id_cible)
+	var erreur := Equipages.proposer_alliance(id_cible)
+	if erreur != "":
+		rpc_id(peer_id, "message_equipage", erreur)
+		return
+	for id_equipage in equipages_touches:
+		_diffuser_equipage(int(id_equipage))
+
+# rupture d'alliance : les équipages concernés se rafraîchissent
+func _rompre_alliance_equipage(peer_id: int) -> void:
+	if Equipages.mon_equipage.is_empty():
+		rpc_id(peer_id, "message_equipage", "Vous n'êtes pas engagé dans un équipage")
+		return
+	var equipages_touches := Equipages.equipages_de_la_flotte_de(int(Equipages.mon_equipage["id"]))
+	var erreur := Equipages.rompre_alliance()
+	if erreur != "":
+		rpc_id(peer_id, "message_equipage", erreur)
+		return
+	for id_equipage in equipages_touches:
+		_diffuser_equipage(int(id_equipage))
+
+# le statut en combat d'un membre apparaît dans le panneau du groupe :
+# on rediffuse la composition après chaque changement
+func _annoncer_groupes_du_pair(peer_id: int) -> void:
+	var groupe := _trouver_groupe(peer_id)
+	if not groupe.is_empty():
+		_annoncer_groupe(int(groupe["id"]))
+
+# RPC serveur : un joueur veut rejoindre le combat en cours d'un membre
+# de son groupe (bouton « Rejoindre » du panneau GROUPE)
+@rpc("any_peer", "call_remote", "reliable")
+func demande_rejoindre_combat(peer_cible: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var session := _pair_authentifie()
+	if session.is_empty():
+		return
+	var peer_id := int(session["peer_id"])
+	if peer_id == peer_cible or not _sessions.has(peer_cible):
+		return
+	var cible: Dictionary = _sessions[peer_cible]
+	var nom_cible := str(cible["nom_personnage"])
+	if bool(_sessions[peer_id].get("en_combat", false)):
+		return  # déjà occupé : le bouton disparaîtra au prochain tour d'annonce
+	if not bool(cible.get("en_combat", false)):
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"%s n'est plus en combat." % nom_cible)
+		return
+	var combat_cible := str(cible.get("combat_groupe", ""))
+	if combat_cible == "":
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"%s est dans un combat qui ne se rejoint pas." % nom_cible)
+		return
+	if str(cible["scene"]) != str(_sessions[peer_id]["scene"]):
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"Rejoins la même map que %s pour combattre à ses côtés." % nom_cible)
+		return
+	# validé : le client engage ce camp dans sa propre instance
+	rpc_id(peer_id, "rejoindre_combat_permis", combat_cible)
 
 # NETTOYAGE : un pair se déconnecte
+func _pair_connecte(peer_id: int) -> bool:
+	var serveur := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if serveur == null or peer_id not in multiplayer.get_peers():
+		return false
+	var pair := serveur.get_peer(peer_id)
+	return pair != null and pair.get_state() == ENetPacketPeer.STATE_CONNECTED
+
 func _nettoyer_session(peer_id: int) -> void:
 	if not _sessions.has(peer_id):
 		return
 	# un duel en cours se solde par forfait du fuyard
 	if _duels.has(peer_id):
 		var adversaire := int(_duels[peer_id])
-		var pseudo_fuyard := str(_sessions[peer_id]["pseudo"])
+		var nom_fuyard := str(_sessions[peer_id]["nom_personnage"])
 		_fin_duel(peer_id)
-		rpc_id(adversaire, "victoire_duel", pseudo_fuyard, true)
+		if _pair_connecte(adversaire):
+			rpc_id(adversaire, "victoire_duel", nom_fuyard, true)
+	# un échange en cours tombe, son partenaire est prévenu
+	if _echanges.has(peer_id):
+		var partenaire_echange := int(_echanges[peer_id])
+		var nom_parti_echange := str(_sessions[peer_id]["nom_personnage"])
+		_cloturer_echange(peer_id, partenaire_echange)
+		if _pair_connecte(partenaire_echange):
+			rpc_id(partenaire_echange, "fin_echange", "Échange interrompu : %s a déconnecté." % nom_parti_echange)
+	_invites_echange.erase(peer_id)
+	for cible_invite_echange in _invites_echange.keys():
+		if int(_invites_echange[cible_invite_echange]) == peer_id:
+			_invites_echange.erase(cible_invite_echange)
 	# son groupe de joueurs l'oublie (partance de tête si nécessaire)
 	_sortir_du_groupe(peer_id, false)
 	_liberer_combats(peer_id)
 	_invites_groupe.erase(peer_id)
-	var pseudo_quittant: String = _sessions[peer_id]["pseudo"]
+	_invites_equipage.erase(peer_id)
+	var session: Dictionary = _sessions[peer_id]
+	var nom_quittant: String = session["nom_personnage"]
 	_sessions.erase(peer_id)
 	_limiteurs.erase(peer_id)
 	_positions_a_relais.erase(peer_id)
-	print("Déconnexion : %s (%d joueur(s) en ligne)" % [pseudo_quittant, _sessions.size()])
+	print("Déconnexion : %s (%d joueur(s) en ligne)" % [session["pseudo"], _sessions.size()])
 	for autre in _sessions:
+		if not _pair_connecte(int(autre)):
+			continue
 		rpc_id(int(autre), "joueur_quitte", peer_id)
-		rpc_id(int(autre), "recoit_message_chat", "Serveur", "%s a débarqué." % pseudo_quittant)
+		if bool(session["embarque"]) and bool(_sessions[autre]["embarque"]):
+			rpc_id(int(autre), "recoit_message_chat", "Serveur", "%s a débarqué." % nom_quittant)
 
 # ============================================================
 #  CLIENT
@@ -1122,6 +1783,9 @@ func fermer_connexion() -> void:
 	groupe_local = []
 	_maj_panneau_groupe()
 	_cacher_invite_groupe()
+	_cacher_invite_equipage()
+	_cacher_invite_echange()
+	_fermer_fenetre_echange()
 	_retirer_tous_avatars()
 	_cacher_invitation()
 	_cacher_invite_duel()
@@ -1130,7 +1794,7 @@ func fermer_connexion() -> void:
 	_chat_log.clear()
 	if Personnage.en_ligne:
 		_retablir_perso_local()
-	if Coffres.en_ligne or CartesTresor.en_ligne:
+	if Coffres.en_ligne or CartesTresor.en_ligne or Equipages.en_ligne or HotelVentes.en_ligne:
 		_retablir_ressources_partagees()
 	get_tree().paused = false
 
@@ -1159,6 +1823,8 @@ func _retablir_perso_local() -> void:
 func _retablir_ressources_partagees() -> void:
 	Coffres.recharger_etat_local()
 	CartesTresor.recharger_etat_local()
+	Equipages.recharger_etat_local()
+	HotelVentes.recharger_etat_local()
 
 # RPC client : réponse d'inscription/connexion (le perso suit si connu)
 @rpc("any_peer", "call_remote", "reliable")
@@ -1178,6 +1844,8 @@ func reponse_authentification(ok: bool, message: String, perso_json: String) -> 
 	# vivent sur le serveur pendant la session
 	Coffres.basculer_en_ligne()
 	CartesTresor.basculer_en_ligne()
+	Equipages.basculer_en_ligne()
+	HotelVentes.basculer_en_ligne()
 	if perso_json != "":
 		_appliquer_perso(perso_json)
 	else:
@@ -1247,8 +1915,12 @@ func recoit_message_chat(nom_recu: String, texte: String) -> void:
 	if multiplayer.is_server():
 		return
 	chat_recu.emit(nom_recu, texte)
-	_chat_log.append_text("[color=#ffd166][b]%s[/b][/color] : %s\n" % [
-		nom_recu, texte.replace("[", "&#91;").replace("]", "&#93;")])
+	_chat_log.push_color(Color("#ffd166"))
+	_chat_log.push_bold()
+	_chat_log.add_text(nom_recu)
+	_chat_log.pop()
+	_chat_log.pop()
+	_chat_log.add_text(" : %s\n" % texte)
 
 # --- envois périodiques du client ---
 
@@ -1415,7 +2087,7 @@ func invitation_combat(chef: String, groupe: String) -> void:
 func fin_combat_distante(chef: String, groupe: String) -> void:
 	if multiplayer.is_server():
 		return
-	if not invitation_en_attente.is_empty() and str(invitation_en_attente[0]) == chef:
+	if invitation_en_attente == [chef, groupe]:
 		invitation_en_attente = []
 		_cacher_invitation()
 
@@ -1463,10 +2135,10 @@ func invite_duel(pseudo: String) -> void:
 
 # RPC client : le duel démarre, notre miroir de l'adversaire apparaît
 @rpc("any_peer", "call_remote", "reliable")
-func debut_duel(pseudo_adv: String, adversaire_id: int, premier: bool) -> void:
+func debut_duel(pseudo_adv: String, adversaire_id: int, premier: bool, visuel := VISUEL_DEFAUT) -> void:
 	if multiplayer.is_server():
 		return
-	_demarrer_duel_local(pseudo_adv, adversaire_id, premier)
+	_demarrer_duel_local(pseudo_adv, adversaire_id, premier, visuel)
 
 # RPC client : une action de l'adversaire, rejouée sur notre grille
 @rpc("any_peer", "call_remote", "reliable")
@@ -1553,7 +2225,7 @@ func declarer_defaite_duel() -> void:
 		return
 	rpc_id(1, "envoie_defaite_duel")
 
-func _demarrer_duel_local(pseudo_adv: String, _adversaire_id: int, premier: bool) -> void:
+func _demarrer_duel_local(pseudo_adv: String, _adversaire_id: int, premier: bool, visuel := VISUEL_DEFAUT) -> void:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
@@ -1562,6 +2234,7 @@ func _demarrer_duel_local(pseudo_adv: String, _adversaire_id: int, premier: bool
 		return
 	var adversaire := SCRIPT_ADVERSAIRE_PVP.new()
 	adversaire.nom = pseudo_adv
+	adversaire.visuel = str(visuel)
 	scene.add_child(adversaire)
 	cm.call("lancer_duel", adversaire, premier)
 	# le profil part juste après : le miroir distant existe déjà, la
@@ -1575,9 +2248,13 @@ func _demarrer_duel_local(pseudo_adv: String, _adversaire_id: int, premier: bool
 	var noms_sorts: Array = []
 	for id_sort in Personnage.sorts:
 		noms_sorts.append(str(Personnage.sorts[id_sort].get("nom", id_sort)))
+	var visuel_joueur := ""
+	if joueur != null and joueur.has_method("_prefixe_visuel_race"):
+		visuel_joueur = str(joueur.call("_prefixe_visuel_race"))
 	emettre_action_duel({
 		"t": "profil", "profil": {
-			"pseudo": pseudo,
+			"pseudo": Personnage.nom,
+			"visuel": visuel_joueur,
 			"pv": int(Personnage.vie),
 			"pv_max": int(Personnage.vie_max),
 			"attaque": int(Personnage.attaque),
@@ -1642,6 +2319,430 @@ func _on_duel_accepte() -> void:
 func _on_duel_refuse() -> void:
 	_cacher_invite_duel()
 	rpc_id(1, "reponse_duel", false)
+
+# ============================================================
+#  ÉCHANGES D'OBJETS (côté client)
+# ============================================================
+
+# état local de l'échange en cours
+var _echange_actif := false
+var _echange_partenaire := ""
+var _offre_echange_locale: Dictionary = {}    # id d'objet -> quantité
+var _offre_echange_distante: Dictionary = {}
+var _offre_echange_distante_json := "{}"
+var _berry_echange_local := 0
+var _berry_echange_distant := 0
+var _echange_pret_local := false
+var _echange_pret_distant := false
+
+# interface
+var _panneau_invite_echange: PanelContainer
+var _fenetre_echange: PanelContainer
+var _etiquette_partenaire_echange: Label
+var _etat_partenaire_echange: Label
+var _liste_offre_locale: VBoxContainer
+var _liste_offre_distante: VBoxContainer
+var _choix_objet_echange: OptionButton
+var _qte_objet_echange: SpinBox
+var _berry_echange_spin: SpinBox
+var _ids_objets_echange: Array = []
+
+# RPC client : un joueur nous propose un échange
+@rpc("any_peer", "call_remote", "reliable")
+func invite_echange(nom: String) -> void:
+	if multiplayer.is_server():
+		return
+	_montrer_invite_echange(nom)
+
+# RPC client : l'échange démarre, la fenêtre s'ouvre des deux côtés
+@rpc("any_peer", "call_remote", "reliable")
+func debut_echange(nom_partenaire: String) -> void:
+	if multiplayer.is_server():
+		return
+	_ouvrir_fenetre_echange(nom_partenaire)
+
+# RPC client : offre du partenaire et son état "prêt"
+@rpc("any_peer", "call_remote", "reliable")
+func offre_echange(offre_json: String, pret_distant: bool) -> void:
+	if multiplayer.is_server() or not _echange_actif:
+		return
+	var changement := offre_json != _offre_echange_distante_json
+	_offre_echange_distante_json = offre_json
+	_offre_echange_distante = {}
+	_berry_echange_distant = 0
+	var analyse: Variant = JSON.parse_string(offre_json)
+	if analyse is Dictionary:
+		var offre: Dictionary = analyse
+		var objets_offerts: Variant = offre.get("objets", {})
+		if objets_offerts is Dictionary:
+			_offre_echange_distante = (objets_offerts as Dictionary).duplicate()
+		_berry_echange_distant = int(offre.get("berry", 0))
+	_echange_pret_distant = bool(pret_distant)
+	# le partenaire vient de changer son offre : notre confirmation
+	# éventuelle ne vaut plus, il faudra reconfirmer
+	if changement:
+		_echange_pret_local = false
+	_rafraichir_echange()
+
+# RPC client : les deux côtés ont confirmé — l'échange s'applique ici :
+# les objets et Berry offerts quittent notre inventaire, ceux du
+# partenaire y entrent
+@rpc("any_peer", "call_remote", "reliable")
+func executer_echange(offre_json: String) -> void:
+	if multiplayer.is_server():
+		return
+	for id_offre in _offre_echange_locale:
+		var qte_possedee := int(Inventaire.objets.get(str(id_offre), 0))
+		var qte_offerte := mini(int(_offre_echange_locale[id_offre]), qte_possedee)
+		if qte_offerte > 0:
+			Inventaire.retirer_objet(str(id_offre), qte_offerte)
+	var analyse_finale: Variant = JSON.parse_string(offre_json)
+	if analyse_finale is Dictionary:
+		var offre_finale: Dictionary = analyse_finale
+		var objets_recus: Variant = offre_finale.get("objets", {})
+		if objets_recus is Dictionary:
+			for id_recu in (objets_recus as Dictionary):
+				Inventaire.ajouter_objet(str(id_recu), int((objets_recus as Dictionary)[id_recu]))
+		_berry_echange_local = mini(_berry_echange_local, Personnage.berry)
+		_berry_echange_distant = int(offre_finale.get("berry", _berry_echange_distant))
+	Personnage.berry = maxi(Personnage.berry - _berry_echange_local + _berry_echange_distant, 0)
+	Personnage.caracteristiques_modifiees.emit()
+	sauvegarder_perso_immediat()
+	var nom_partenaire_echange := _echange_partenaire
+	_fermer_fenetre_echange()
+	recoit_message_chat("Serveur", "Échange effectué avec %s !" % nom_partenaire_echange)
+
+# RPC client : l'échange s'arrête sans rien échanger
+@rpc("any_peer", "call_remote", "reliable")
+func fin_echange(raison: String) -> void:
+	if multiplayer.is_server():
+		return
+	if _echange_actif:
+		_fermer_fenetre_echange()
+		recoit_message_chat("Serveur", raison)
+
+# popup de proposition d'échange
+func _montrer_invite_echange(nom_proposant: String) -> void:
+	if _panneau_invite_echange == null:
+		_construire_invite_echange()
+	var etiquette: Label = _panneau_invite_echange.get_meta("etiquette")
+	etiquette.text = "%s te propose un échange !" % nom_proposant
+	_panneau_invite_echange.show()
+
+func _cacher_invite_echange() -> void:
+	if _panneau_invite_echange != null:
+		_panneau_invite_echange.hide()
+
+func _construire_invite_echange() -> void:
+	_panneau_invite_echange = PanelContainer.new()
+	_panneau_invite_echange.theme = THEME
+	_panneau_invite_echange.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_panneau_invite_echange.offset_top = 430.0
+	_chat.add_child(_panneau_invite_echange)
+	var marges := MarginContainer.new()
+	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		marges.add_theme_constant_override(marge, 16)
+	_panneau_invite_echange.add_child(marges)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 10)
+	marges.add_child(colonne)
+	var etiquette := Label.new()
+	etiquette.add_theme_font_size_override("font_size", 17)
+	colonne.add_child(etiquette)
+	_panneau_invite_echange.set_meta("etiquette", etiquette)
+	var boutons := HBoxContainer.new()
+	boutons.alignment = BoxContainer.ALIGNMENT_CENTER
+	boutons.add_theme_constant_override("separation", 14)
+	colonne.add_child(boutons)
+	var accepter := Button.new()
+	accepter.text = "Accepter"
+	accepter.custom_minimum_size = Vector2(0, 42)
+	accepter.pressed.connect(func() -> void:
+		_cacher_invite_echange()
+		rpc_id(1, "reponse_echange", true))
+	boutons.add_child(accepter)
+	var refuser := Button.new()
+	refuser.text = "Refuser"
+	refuser.custom_minimum_size = Vector2(0, 42)
+	refuser.pressed.connect(func() -> void:
+		_cacher_invite_echange()
+		rpc_id(1, "reponse_echange", false))
+	boutons.add_child(refuser)
+	_panneau_invite_echange.hide()
+
+# ouvre la fenêtre d'échange, offre remise à zéro
+func _ouvrir_fenetre_echange(partenaire: String) -> void:
+	if _fenetre_echange == null:
+		_construire_fenetre_echange()
+	_echange_actif = true
+	_echange_partenaire = partenaire
+	_offre_echange_locale = {}
+	_offre_echange_distante = {}
+	_offre_echange_distante_json = "{}"
+	_berry_echange_local = 0
+	_berry_echange_distant = 0
+	_echange_pret_local = false
+	_echange_pret_distant = false
+	_berry_echange_spin.max_value = maxi(Personnage.berry, 0)
+	_berry_echange_spin.set_value_no_signal(0.0)
+	_fermer_chat(false)
+	_rafraichir_choix_objets_echange()
+	_rafraichir_echange()
+	_fenetre_echange.show()
+
+# referme la fenêtre et oublie l'échange en cours
+func _fermer_fenetre_echange() -> void:
+	_echange_actif = false
+	_echange_partenaire = ""
+	_offre_echange_locale = {}
+	_offre_echange_distante = {}
+	_offre_echange_distante_json = "{}"
+	_berry_echange_local = 0
+	_berry_echange_distant = 0
+	_echange_pret_local = false
+	_echange_pret_distant = false
+	if _fenetre_echange != null:
+		_fenetre_echange.hide()
+
+# notre offre part au partenaire dès qu'elle change (et déverrouille
+# les confirmations des deux côtés, via le serveur)
+func _envoyer_offre_echange() -> void:
+	if mode != Mode.CLIENT or pseudo == "" or not _echange_actif:
+		return
+	var charge := JSON.stringify({
+		"objets": _offre_echange_locale,
+		"berry": int(_berry_echange_local),
+	})
+	rpc_id(1, "envoie_offre_echange", charge, bool(_echange_pret_local))
+
+# bouton "Confirmer l'échange" : notre accord part avec notre offre
+func _on_confirmer_echange() -> void:
+	if not _echange_actif:
+		return
+	_echange_pret_local = true
+	_rafraichir_echange()
+	_envoyer_offre_echange()
+
+# bouton "Annuler" : prévient le serveur et referme
+func _on_annuler_echange() -> void:
+	var etait_actif := _echange_actif
+	_fermer_fenetre_echange()
+	if etait_actif and mode == Mode.CLIENT and pseudo != "":
+		rpc_id(1, "annuler_echange")
+
+# ajoute l'objet sélectionné à notre offre (borné par l'inventaire)
+func _on_ajouter_objet_echange() -> void:
+	if not _echange_actif or _ids_objets_echange.is_empty() or int(_choix_objet_echange.selected) < 0:
+		return
+	var id_choisi := str(_ids_objets_echange[int(_choix_objet_echange.selected)])
+	var dispo := int(Inventaire.objets.get(id_choisi, 0)) - int(_offre_echange_locale.get(id_choisi, 0))
+	if dispo <= 0:
+		return
+	var qte := clampi(int(_qte_objet_echange.value), 1, dispo)
+	_offre_echange_locale[id_choisi] = int(_offre_echange_locale.get(id_choisi, 0)) + qte
+	_echange_pret_local = false
+	_rafraichir_echange()
+	_envoyer_offre_echange()
+
+# retire un objet de notre offre
+func _retirer_objet_echange(id: String) -> void:
+	_offre_echange_locale.erase(id)
+	_echange_pret_local = false
+	_rafraichir_echange()
+	_envoyer_offre_echange()
+
+# Berry offerts ajustés dans la fenêtre
+func _on_berry_echange_change(valeur: float) -> void:
+	if not _echange_actif or int(valeur) == _berry_echange_local:
+		return
+	_berry_echange_local = clampi(int(valeur), 0, maxi(Personnage.berry, 0))
+	_echange_pret_local = false
+	_rafraichir_echange()
+	_envoyer_offre_echange()
+
+# borne la quantité à ce qu'on possède encore hors offre en cours
+func _on_objet_echange_choisi(_index: int) -> void:
+	if _ids_objets_echange.is_empty() or int(_choix_objet_echange.selected) < 0:
+		return
+	var id_choisi := str(_ids_objets_echange[int(_choix_objet_echange.selected)])
+	var dispo := maxi(int(Inventaire.objets.get(id_choisi, 0)) - int(_offre_echange_locale.get(id_choisi, 0)), 1)
+	_qte_objet_echange.max_value = dispo
+	_qte_objet_echange.value = 1.0
+
+# remplissage du sélecteur avec notre inventaire
+func _rafraichir_choix_objets_echange() -> void:
+	_choix_objet_echange.clear()
+	_ids_objets_echange = []
+	for id_possede in Inventaire.objets:
+		_ids_objets_echange.append(str(id_possede))
+		_choix_objet_echange.add_item("%s (x%d)" % [
+			Inventaire.nom_objet(str(id_possede)), int(Inventaire.objets[id_possede])])
+	if _ids_objets_echange.is_empty():
+		_choix_objet_echange.add_item("Inventaire vide")
+		_choix_objet_echange.selected = 0
+	else:
+		_choix_objet_echange.selected = 0
+		_on_objet_echange_choisi(0)
+
+# reconstruit les deux colonnes d'offres et les états
+func _rafraichir_echange() -> void:
+	if _fenetre_echange == null:
+		return
+	for enfant in _liste_offre_locale.get_children():
+		enfant.queue_free()
+	for enfant in _liste_offre_distante.get_children():
+		enfant.queue_free()
+	_etiquette_partenaire_echange.text = "avec %s" % _echange_partenaire
+	# mon offre
+	if _offre_echange_locale.is_empty() and _berry_echange_local == 0:
+		var vide_mien := Label.new()
+		vide_mien.text = "(rien)"
+		vide_mien.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		_liste_offre_locale.add_child(vide_mien)
+	for id_offre in _offre_echange_locale:
+		var rangee := HBoxContainer.new()
+		rangee.add_theme_constant_override("separation", 6)
+		_liste_offre_locale.add_child(rangee)
+		var ligne_offre := Label.new()
+		ligne_offre.text = "%dx %s" % [
+			int(_offre_echange_locale[id_offre]), Inventaire.nom_objet(str(id_offre))]
+		ligne_offre.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rangee.add_child(ligne_offre)
+		var retirer_offre := Button.new()
+		retirer_offre.text = "Retirer"
+		retirer_offre.pressed.connect(_retirer_objet_echange.bind(str(id_offre)))
+		rangee.add_child(retirer_offre)
+	if _berry_echange_local > 0:
+		var ligne_berry_mien := Label.new()
+		ligne_berry_mien.text = "%d Berry" % _berry_echange_local
+		ligne_berry_mien.add_theme_color_override("font_color", Color("#ffd166"))
+		_liste_offre_locale.add_child(ligne_berry_mien)
+	# son offre
+	if _offre_echange_distante.is_empty() and _berry_echange_distant == 0:
+		var vide_sien := Label.new()
+		vide_sien.text = "(rien pour l'instant)"
+		vide_sien.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		_liste_offre_distante.add_child(vide_sien)
+	for id_distante in _offre_echange_distante:
+		var ligne_distante := Label.new()
+		ligne_distante.text = "%dx %s" % [
+			int(_offre_echange_distante[id_distante]), Inventaire.nom_objet(str(id_distante))]
+		_liste_offre_distante.add_child(ligne_distante)
+	if _berry_echange_distant > 0:
+		var ligne_berry_sien := Label.new()
+		ligne_berry_sien.text = "%d Berry" % _berry_echange_distant
+		ligne_berry_sien.add_theme_color_override("font_color", Color("#ffd166"))
+		_liste_offre_distante.add_child(ligne_berry_sien)
+	# états de confirmation
+	_etat_partenaire_echange.text = "%s est prêt !" % _echange_partenaire if _echange_pret_distant else "%s compose son offre..." % _echange_partenaire
+	var etat_local := Label.new()
+	etat_local.text = "Tu es prêt !" if _echange_pret_local else "Sélectionne tes objets, puis confirme."
+	etat_local.add_theme_font_size_override("font_size", 14)
+	etat_local.add_theme_color_override("font_color", Color("#7bd88f") if _echange_pret_local else Color(0.6, 0.6, 0.6))
+	_liste_offre_locale.add_child(etat_local)
+	var etat_distant := Label.new()
+	etat_distant.text = "%s est prêt !" % _echange_partenaire if _echange_pret_distant else "%s compose son offre..." % _echange_partenaire
+	etat_distant.add_theme_font_size_override("font_size", 14)
+	etat_distant.add_theme_color_override("font_color", Color("#7bd88f") if _echange_pret_distant else Color(0.6, 0.6, 0.6))
+	_liste_offre_distante.add_child(etat_distant)
+
+# la fenêtre d'échange complète
+func _construire_fenetre_echange() -> void:
+	_fenetre_echange = PanelContainer.new()
+	_fenetre_echange.theme = THEME
+	_fenetre_echange.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_fenetre_echange.offset_left = -320.0
+	_fenetre_echange.offset_top = -220.0
+	_fenetre_echange.offset_right = 320.0
+	_fenetre_echange.offset_bottom = 220.0
+	_chat.add_child(_fenetre_echange)
+	var marges := MarginContainer.new()
+	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		marges.add_theme_constant_override(marge, 14)
+	_fenetre_echange.add_child(marges)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 10)
+	marges.add_child(colonne)
+	var entete := HBoxContainer.new()
+	entete.add_theme_constant_override("separation", 10)
+	colonne.add_child(entete)
+	var titre_echange := Label.new()
+	titre_echange.text = "ÉCHANGE"
+	titre_echange.add_theme_font_size_override("font_size", 18)
+	titre_echange.add_theme_color_override("font_color", Color("#ffd166"))
+	entete.add_child(titre_echange)
+	_etiquette_partenaire_echange = Label.new()
+	_etiquette_partenaire_echange.add_theme_font_size_override("font_size", 16)
+	_etiquette_partenaire_echange.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	entete.add_child(_etiquette_partenaire_echange)
+	var annuler := Button.new()
+	annuler.text = "Annuler"
+	annuler.pressed.connect(_on_annuler_echange)
+	entete.add_child(annuler)
+	var corps := HBoxContainer.new()
+	corps.add_theme_constant_override("separation", 20)
+	corps.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	colonne.add_child(corps)
+	# à gauche : mon offre
+	var gauche := VBoxContainer.new()
+	gauche.add_theme_constant_override("separation", 6)
+	gauche.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	corps.add_child(gauche)
+	var titre_mienne := Label.new()
+	titre_mienne.text = "Mon offre"
+	titre_mienne.add_theme_color_override("font_color", Color("#ffd166"))
+	gauche.add_child(titre_mienne)
+	_liste_offre_locale = VBoxContainer.new()
+	_liste_offre_locale.add_theme_constant_override("separation", 2)
+	_liste_offre_locale.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	gauche.add_child(_liste_offre_locale)
+	var choix := HBoxContainer.new()
+	choix.add_theme_constant_override("separation", 6)
+	gauche.add_child(choix)
+	_choix_objet_echange = OptionButton.new()
+	_choix_objet_echange.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_choix_objet_echange.item_selected.connect(_on_objet_echange_choisi)
+	choix.add_child(_choix_objet_echange)
+	_qte_objet_echange = SpinBox.new()
+	_qte_objet_echange.min_value = 1
+	_qte_objet_echange.max_value = 1
+	choix.add_child(_qte_objet_echange)
+	var ajouter := Button.new()
+	ajouter.text = "Ajouter"
+	ajouter.pressed.connect(_on_ajouter_objet_echange)
+	choix.add_child(ajouter)
+	var ligne_berry := HBoxContainer.new()
+	ligne_berry.add_theme_constant_override("separation", 8)
+	gauche.add_child(ligne_berry)
+	var etiquette_berry := Label.new()
+	etiquette_berry.text = "Berry offerts :"
+	ligne_berry.add_child(etiquette_berry)
+	_berry_echange_spin = SpinBox.new()
+	_berry_echange_spin.min_value = 0
+	_berry_echange_spin.max_value = 0
+	_berry_echange_spin.value_changed.connect(_on_berry_echange_change)
+	ligne_berry.add_child(_berry_echange_spin)
+	var confirmer := Button.new()
+	confirmer.text = "Confirmer l'échange"
+	confirmer.pressed.connect(_on_confirmer_echange)
+	gauche.add_child(confirmer)
+	# à droite : l'offre du partenaire
+	var droite := VBoxContainer.new()
+	droite.add_theme_constant_override("separation", 6)
+	droite.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	corps.add_child(droite)
+	var titre_sienne := Label.new()
+	titre_sienne.text = "Offre reçue"
+	titre_sienne.add_theme_color_override("font_color", Color("#7bd88f"))
+	droite.add_child(titre_sienne)
+	_liste_offre_distante = VBoxContainer.new()
+	_liste_offre_distante.add_theme_constant_override("separation", 2)
+	_liste_offre_distante.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	droite.add_child(_liste_offre_distante)
+	_etat_partenaire_echange = Label.new()
+	_etat_partenaire_echange.add_theme_font_size_override("font_size", 14)
+	droite.add_child(_etat_partenaire_echange)
+	_fenetre_echange.hide()
 
 func cacher_rencontre(cle: String) -> void:
 	var scene := get_tree().current_scene
@@ -1719,6 +2820,7 @@ func _maj_avatar(peer_id: int, nom_recu: String, position: Vector2, visuel := VI
 		return
 	var avatar_existant = _avatars.get(peer_id)
 	if is_instance_valid(avatar_existant):
+		avatar_existant.pseudo = nom_recu
 		avatar_existant.definir_visuel(visuel)
 		avatar_existant.viser(position)
 		return
@@ -1749,7 +2851,7 @@ func _retirer_tous_avatars() -> void:
 # --- sérialisation du perso (mêmes champs que perso.cfg) ---
 
 func serialiser_perso() -> Dictionary:
-	return {
+	var donnees := {
 		"nom": Personnage.nom, "race": Personnage.race_id, "classe": Personnage.classe_id,
 		"sexe": Personnage.sexe, "niveau": Personnage.niveau, "xp": Personnage.xp,
 		"vie": Personnage.vie, "berry": Personnage.berry,
@@ -1761,6 +2863,12 @@ func serialiser_perso() -> Dictionary:
 		# suivent la sauvegarde du perso sur le serveur
 		"croix": CartesTresor.croix_serialisables(),
 	}
+	# position d'exploration : pas pendant un combat (le corps vit
+	# alors dans l'arène, pas sur la map)
+	var position := _position_exploration()
+	if position.is_finite() and _scene_locale != "":
+		donnees["position"] = {"scene": _scene_locale, "x": position.x, "y": position.y}
+	return donnees
 
 # remplace le perso en mémoire par la version sauvegardée sur le serveur
 func _appliquer_perso(perso_json: String) -> void:
@@ -1768,7 +2876,7 @@ func _appliquer_perso(perso_json: String) -> void:
 	if analyse == null or not analyse is Dictionary:
 		return
 	var d: Dictionary = analyse
-	Personnage.nom = str(d.get("nom", Personnage.nom))
+	Personnage.nom = _nom_personnage(d)
 	Personnage.race_id = str(d.get("race", Personnage.race_id))
 	Personnage.classe_id = str(d.get("classe", Personnage.classe_id))
 	Personnage.sexe = str(d.get("sexe", Personnage.sexe))
@@ -1802,6 +2910,10 @@ func _appliquer_perso(perso_json: String) -> void:
 				Personnage.buffs.append(buff)
 	# croix au trésor personnelles non fouillées : elles suivent le perso
 	CartesTresor.appliquer_croix_serveur(d.get("croix", []))
+	# dernière position d'exploration : la map y replacera le joueur
+	var position_lue = d.get("position", {})
+	if position_lue is Dictionary and str((position_lue as Dictionary).get("scene", "")) != "":
+		position_memorisee = (position_lue as Dictionary).duplicate()
 	Personnage.perso_cree = true
 	Personnage.recalculer_stats()
 	Personnage.caracteristiques_modifiees.emit()
@@ -1840,11 +2952,83 @@ func annuler_authentification() -> void:
 func jouer_hors_ligne() -> void:
 	if mode == Mode.CLIENT:
 		fermer_connexion()
+	# solo : la dernière position locale fait foi (elle écrase toute
+	# position ramenée du serveur par une session en ligne)
+	_charger_position_locale()
 
 func revenir_accueil(message: String = "") -> void:
 	jouer_hors_ligne()
 	message_accueil = message
 	get_tree().change_scene_to_file.call_deferred(CHEMIN_ACCUEIL)
+
+# --- mémorisation de la position du joueur ---
+
+# position d'exploration du joueur (rien s'il est en combat : son
+# corps vit dans l'arène, pas sur la map)
+func _position_exploration() -> Vector2:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return Vector2(INF, INF)
+	var cm := scene.get_node_or_null("CombatManager")
+	if cm != null and bool(cm.get("en_combat")):
+		return Vector2(INF, INF)
+	var joueur := _joueur_local()
+	if joueur == null or not is_instance_valid(joueur):
+		return Vector2(INF, INF)
+	return joueur.global_position
+
+# mémorise la position d'exploration toutes les 10 s : en mémoire
+# (part au perso serveur à chaque sauvegarde) et, hors ligne, dans le
+# fichier de préférences
+func _memoriser_position_periodique(delta: float) -> void:
+	_temps_memoire_position += delta
+	if _temps_memoire_position < INTERVALLE_MEMOIRE_POSITION:
+		return
+	_temps_memoire_position = 0.0
+	var position := _position_exploration()
+	if not position.is_finite() or _scene_locale == "":
+		return
+	position_memorisee = {"scene": _scene_locale, "x": position.x, "y": position.y}
+	if mode != Mode.HORS_LIGNE:
+		return
+	var cfg := ConfigFile.new()
+	if cfg.load(CHEMIN_PREF) != OK:
+		return
+	cfg.set_value("position", "scene", _scene_locale)
+	cfg.set_value("position", "x", position.x)
+	cfg.set_value("position", "y", position.y)
+	cfg.save(CHEMIN_PREF)
+
+# charge la position mémorisée localement (solo) : les préférences de
+# la machine font foi, elles écrasent toute position en ligne
+func _charger_position_locale() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(CHEMIN_PREF) != OK:
+		return
+	var scene := str(cfg.get_value("position", "scene", ""))
+	if scene == "":
+		return
+	position_memorisee = {
+		"scene": scene,
+		"x": float(cfg.get_value("position", "x", 0.0)),
+		"y": float(cfg.get_value("position", "y", 0.0)),
+	}
+
+# replace le joueur à sa dernière position mémorisée sur cette map
+# (appelé à l'ouverture de chaque map) ; renvoie true si appliqué
+func appliquer_position_memorisee(chemin_scene: String, joueur: Node2D) -> bool:
+	if position_memorisee.is_empty() or joueur == null or not is_instance_valid(joueur):
+		return false
+	var scene_attendue := str(position_memorisee.get("scene", ""))
+	if scene_attendue == "" or chemin_scene.get_file().get_basename() != scene_attendue:
+		return false
+	var position := Vector2(
+		float(position_memorisee.get("x", 0.0)), float(position_memorisee.get("y", 0.0)))
+	if not position.is_finite() or position == Vector2.ZERO:
+		return false
+	joueur.global_position = position
+	position_memorisee = {}
+	return true
 
 func charger_preferences() -> void:
 	var cfg := ConfigFile.new()
@@ -1872,34 +3056,55 @@ func _construire_chat() -> void:
 	_chat = CanvasLayer.new()
 	_chat.layer = 35
 	add_child(_chat)
-	var panneau := PanelContainer.new()
-	panneau.theme = THEME
-	panneau.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	panneau.offset_left = 18.0
-	panneau.offset_top = -260.0
-	panneau.offset_right = 418.0
-	panneau.offset_bottom = -140.0
-	_chat.add_child(panneau)
+	# le chat est une fenêtre à part entière, style menu : titre, bouton
+	# de fermeture, historique complet et ligne de saisie (ouverte par T
+	# ou Entrée, refermée par Échap)
+	_fenetre_chat = PanelContainer.new()
+	_fenetre_chat.theme = THEME
+	_fenetre_chat.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_fenetre_chat.offset_left = -300.0
+	_fenetre_chat.offset_top = -240.0
+	_fenetre_chat.offset_right = 300.0
+	_fenetre_chat.offset_bottom = 240.0
+	_chat.add_child(_fenetre_chat)
+	var marges := MarginContainer.new()
+	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		marges.add_theme_constant_override(marge, 14)
+	_fenetre_chat.add_child(marges)
 	var colonne := VBoxContainer.new()
-	panneau.add_child(colonne)
+	colonne.add_theme_constant_override("separation", 10)
+	marges.add_child(colonne)
+	var entete := HBoxContainer.new()
+	entete.add_theme_constant_override("separation", 10)
+	colonne.add_child(entete)
+	var titre_chat := Label.new()
+	titre_chat.text = "CHAT"
+	titre_chat.add_theme_font_size_override("font_size", 18)
+	titre_chat.add_theme_color_override("font_color", Color("#ffd166"))
+	titre_chat.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	entete.add_child(titre_chat)
+	var fermer_chat := Button.new()
+	fermer_chat.text = "Fermer"
+	fermer_chat.pressed.connect(_fermer_chat.bind(false))
+	entete.add_child(fermer_chat)
 	_chat_log = RichTextLabel.new()
 	_chat_log.scroll_following = true
 	_chat_log.bbcode_enabled = true
 	_chat_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	colonne.add_child(_chat_log)
 	_chat_saisie = LineEdit.new()
-	_chat_saisie.placeholder_text = "T pour discuter, Entrée pour envoyer"
-	_chat_saisie.visible = false
+	_chat_saisie.placeholder_text = "Écris ton message puis Entrée ; Échap referme le chat"
 	_chat_saisie.text_submitted.connect(_on_chat_envoye)
 	colonne.add_child(_chat_saisie)
+	_fenetre_chat.hide()
 	# panneau des membres de notre groupe de joueurs, au-dessus du chat
 	_panneau_groupe = PanelContainer.new()
 	_panneau_groupe.theme = THEME
 	_panneau_groupe.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	_panneau_groupe.offset_left = 18.0
-	_panneau_groupe.offset_top = -372.0
+	_panneau_groupe.offset_top = -260.0
 	_panneau_groupe.offset_right = 258.0
-	_panneau_groupe.offset_bottom = -268.0
+	_panneau_groupe.offset_bottom = -156.0
 	_panneau_groupe.hide()
 	_chat.add_child(_panneau_groupe)
 
@@ -1927,6 +3132,23 @@ func maj_groupe(membres: Array) -> void:
 		var avatar = _avatars[pair]
 		if is_instance_valid(avatar):
 			avatar.marquer_groupe(est_dans_groupe(int(pair)))
+
+# demande au serveur l'autorisation de rejoindre le combat en cours
+# d'un compagnon (bouton « Rejoindre » du panneau GROUPE)
+func demander_rejoindre_combat(peer_cible: int) -> void:
+	if mode != Mode.CLIENT or pseudo == "":
+		return
+	rpc_id(1, "demande_rejoindre_combat", peer_cible)
+
+# RPC client : le serveur a validé — on engage ce camp dans notre
+# propre instance (même chemin que l'invitation de map)
+@rpc("any_peer", "call_remote", "reliable")
+func rejoindre_combat_permis(groupe: String) -> void:
+	if multiplayer.is_server():
+		return
+	invitation_en_attente = []
+	_cacher_invitation()
+	rejoindre_combat(groupe)
 
 # true si ce pair fait partie de notre groupe
 func est_dans_groupe(peer_id: int) -> bool:
@@ -1956,8 +3178,12 @@ func _maj_panneau_groupe() -> void:
 	titre.add_theme_color_override("font_color", Color("#ffd166"))
 	colonne.add_child(titre)
 	for membre in groupe_local:
+		var rangee := HBoxContainer.new()
+		rangee.add_theme_constant_override("separation", 6)
+		colonne.add_child(rangee)
 		var ligne := Label.new()
 		ligne.add_theme_font_size_override("font_size", 14)
+		ligne.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var texte := "• " + str(membre.get("pseudo", "?"))
 		if bool(membre.get("chef", false)):
 			texte += " (chef)"
@@ -1965,8 +3191,20 @@ func _maj_panneau_groupe() -> void:
 		else:
 			ligne.add_theme_color_override("font_color", Color("#7bd88f"))
 		ligne.text = texte
-		colonne.add_child(ligne)
+		rangee.add_child(ligne)
+		# compagnon en combat et nous disponibles : on peut le rejoindre
+		if bool(membre.get("combat", false)) and combat_groupe_local == "" \
+				and int(membre.get("peer", 0)) != multiplayer.get_unique_id():
+			var rejoindre := Button.new()
+			rejoindre.text = "Rejoindre"
+			rejoindre.add_theme_font_size_override("font_size", 13)
+			rejoindre.pressed.connect(
+				demander_rejoindre_combat.bind(int(membre.get("peer", 0))))
+			rangee.add_child(rejoindre)
 	_panneau_groupe.show()
+	# le panneau grandit vers le haut avec son contenu (bas fixe)
+	var hauteur := _panneau_groupe.get_combined_minimum_size().y
+	_panneau_groupe.offset_top = _panneau_groupe.offset_bottom - maxi(hauteur, 96.0)
 
 # popup d'invitation de groupe
 var _panneau_invite_groupe: PanelContainer
@@ -2018,6 +3256,129 @@ func _construire_invite_groupe() -> void:
 		rpc_id(1, "reponse_groupe", false))
 	boutons.add_child(refuser)
 	_panneau_invite_groupe.hide()
+
+# --- équipages en ligne (côté client) : le serveur est seul maître ---
+
+# toute action d'équipage en ligne passe par le serveur : il valide,
+# écrit dans sa base et renouvelle les instantanés des membres
+func demander_equipage(action: String, argument := "", montant := 0) -> void:
+	if mode != Mode.CLIENT or pseudo == "":
+		return
+	rpc_id(1, "demande_equipage", action, argument, montant)
+
+# RPC client : instantané complet de mon état d'équipage
+@rpc("any_peer", "call_remote", "reliable")
+func maj_equipage(snapshot_json: String) -> void:
+	if multiplayer.is_server():
+		return
+	Equipages.appliquer_snapshot(snapshot_json)
+
+# --- HDV partagé (côté client) ---
+
+# toute action HDV en ligne passe par le serveur (vendre, retirer,
+# acheter une mise en vente d'un autre joueur)
+func demander_hdvente(action: String, offre_id := 0, item := "", quantite := 0, prix := 0) -> void:
+	if mode != Mode.CLIENT or pseudo == "":
+		return
+	rpc_id(1, "demande_hdvente", action, offre_id, item, quantite, prix)
+
+# RPC client : instantané des mises en vente du serveur
+@rpc("any_peer", "call_remote", "reliable")
+func maj_hdventes(snapshot_json: String) -> void:
+	if multiplayer.is_server():
+		return
+	HotelVentes.appliquer_hdventes(snapshot_json)
+
+# RPC client : message du serveur (confirmation ou refus d'une action)
+@rpc("any_peer", "call_remote", "reliable")
+func message_hdvente(texte: String) -> void:
+	if multiplayer.is_server():
+		return
+	HotelVentes.message_serveur(texte)
+
+# RPC client : les objets achetés ou retirés entrent dans l'inventaire
+@rpc("any_peer", "call_remote", "reliable")
+func livraison_hdvente(livraison_json: String) -> void:
+	if multiplayer.is_server():
+		return
+	var analyse: Variant = JSON.parse_string(livraison_json)
+	if not analyse is Dictionary:
+		return
+	var livraison: Dictionary = analyse
+	Inventaire.ajouter_objet(str(livraison.get("item", "")), int(livraison.get("quantite", 0)))
+
+# RPC client : message du serveur (confirmation ou refus d'une action)
+@rpc("any_peer", "call_remote", "reliable")
+func message_equipage(texte: String) -> void:
+	if multiplayer.is_server():
+		return
+	Equipages.message_serveur(texte)
+
+# RPC client : mon solde de Berry vient de changer côté serveur
+@rpc("any_peer", "call_remote", "reliable")
+func maj_perso_berry(solde: int) -> void:
+	if multiplayer.is_server():
+		return
+	Personnage.berry = int(solde)
+	Personnage.caracteristiques_modifiees.emit()
+
+# RPC client : le capitaine d'un équipage me recrute
+@rpc("any_peer", "call_remote", "reliable")
+func invite_equipage(nom_equipage: String, capitaine_pseudo: String) -> void:
+	if multiplayer.is_server():
+		return
+	_montrer_invite_equipage(nom_equipage, capitaine_pseudo)
+
+# popup d'invitation de recrutement dans un équipage
+var _panneau_invite_equipage: PanelContainer
+
+func _montrer_invite_equipage(nom_equipage: String, capitaine_pseudo: String) -> void:
+	if _panneau_invite_equipage == null:
+		_construire_invite_equipage()
+	var etiquette: Label = _panneau_invite_equipage.get_meta("etiquette")
+	etiquette.text = "%s t'invite dans son équipage « %s » !" % [capitaine_pseudo, nom_equipage]
+	_panneau_invite_equipage.show()
+
+func _cacher_invite_equipage() -> void:
+	if _panneau_invite_equipage != null:
+		_panneau_invite_equipage.hide()
+
+func _construire_invite_equipage() -> void:
+	_panneau_invite_equipage = PanelContainer.new()
+	_panneau_invite_equipage.theme = THEME
+	_panneau_invite_equipage.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_panneau_invite_equipage.offset_top = 340.0
+	_chat.add_child(_panneau_invite_equipage)
+	var marges := MarginContainer.new()
+	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		marges.add_theme_constant_override(marge, 16)
+	_panneau_invite_equipage.add_child(marges)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 10)
+	marges.add_child(colonne)
+	var etiquette := Label.new()
+	etiquette.add_theme_font_size_override("font_size", 17)
+	colonne.add_child(etiquette)
+	_panneau_invite_equipage.set_meta("etiquette", etiquette)
+	var boutons := HBoxContainer.new()
+	boutons.alignment = BoxContainer.ALIGNMENT_CENTER
+	boutons.add_theme_constant_override("separation", 14)
+	colonne.add_child(boutons)
+	var accepter := Button.new()
+	accepter.text = "Rejoindre"
+	accepter.custom_minimum_size = Vector2(0, 42)
+	accepter.pressed.connect(func() -> void:
+		_cacher_invite_equipage()
+		rpc_id(1, "reponse_equipage_recruit", true))
+	boutons.add_child(accepter)
+	var refuser := Button.new()
+	refuser.text = "Refuser"
+	refuser.custom_minimum_size = Vector2(0, 42)
+	refuser.pressed.connect(func() -> void:
+		_cacher_invite_equipage()
+		rpc_id(1, "reponse_equipage_recruit", false))
+	boutons.add_child(refuser)
+	_panneau_invite_equipage.hide()
 
 # popup d'invitation au combat, en haut de l'écran
 var _panneau_invitation: PanelContainer
@@ -2076,14 +3437,36 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	if not _chat.visible:
 		return
-	if event.keycode == KEY_T and not _chat_ouvert and mode == Mode.CLIENT and pseudo != "":
-		_chat_ouvert = true
-		_chat_saisie.visible = true
-		_chat_saisie.grab_focus()
-		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_ESCAPE and _chat_ouvert:
+	# T ou Entrée ouvre la fenêtre de chat ; Échap la referme (le_traiter
+	# d'abord : la fenêtre du menu ne doit pas s'ouvrir par-dessus)
+	if event.keycode == KEY_ESCAPE and _chat_ouvert:
 		_fermer_chat(false)
 		get_viewport().set_input_as_handled()
+		return
+	if (event.keycode == KEY_T or event.keycode == KEY_ENTER \
+			or event.keycode == KEY_KP_ENTER) and not _chat_ouvert:
+		if mode == Mode.CLIENT and pseudo != "" and not _menu_ouvert():
+			ouvrir_chat()
+			get_viewport().set_input_as_handled()
+
+# ouvre la fenêtre de chat : la saisie prend le clavier directement
+func ouvrir_chat() -> void:
+	if _fenetre_chat == null or _chat_ouvert:
+		return
+	_chat_ouvert = true
+	_fenetre_chat.show()
+	_chat_saisie.grab_focus()
+
+# une fenêtre de jeu (menu principal) est-elle déjà ouverte ? le chat
+# ne doit pas s'ouvrir par-dessus
+func _menu_ouvert() -> bool:
+	if get_tree().paused:
+		return true
+	var menu_ui := get_tree().root.find_child("MenuUI", false, false)
+	if menu_ui == null:
+		return false
+	var fenetre_menu: Variant = menu_ui.get("fenetre")
+	return fenetre_menu is Control and bool((fenetre_menu as Control).visible)
 
 func _fermer_chat(envoyer: bool) -> void:
 	if envoyer and _chat_saisie.text.strip_edges() != "":
@@ -2091,7 +3474,8 @@ func _fermer_chat(envoyer: bool) -> void:
 	_chat_ouvert = false
 	_chat_saisie.text = ""
 	_chat_saisie.release_focus()
-	_chat_saisie.visible = false
+	if _fenetre_chat != null:
+		_fenetre_chat.hide()
 
 func _on_chat_envoye(_texte: String) -> void:
 	_fermer_chat(true)

@@ -28,6 +28,7 @@ var equipement: Dictionary = {
 var metiers: Dictionary = {}
 
 const POINTS_PAR_NIVEAU := 5
+const EFFET_REATTRIBUTION := "reset_stats"
 
 # impacts des points de caractéristiques (la vitalité donne +5 PV par
 # point, cf. recalculer_stats / depenser_point) ; la caractéristique
@@ -436,12 +437,14 @@ func sorts_fruit_disponibles_pour(id_fruit: String) -> bool:
 # même potion rafraîchit son buff au lieu de le cumuler. Renvoie ""
 # si réussi, sinon un message d'erreur expliquant le refus.
 func utiliser_objet(id_objet: String) -> String:
-	if not Inventaire.objets.has(id_objet):
+	if int(Inventaire.objets.get(id_objet, 0)) <= 0:
 		return "Tu ne possèdes pas cet objet."
 	var details := Inventaire.details_objet(id_objet)
 	if str(details.get("type", "")) != "consumable":
 		return "Cet objet ne se consomme pas."
 	var effets: Dictionary = details.get("effets", {})
+	if bool(effets.get(EFFET_REATTRIBUTION, false)):
+		return _utiliser_parchemin_reattribution(id_objet)
 	# carte au trésor : elle se déchiffre et plante une croix sur la
 	# carte du monde (aucun soin ni buff)
 	if str(details.get("sous_type", "")) == "carte_tresor":
@@ -475,9 +478,29 @@ func utiliser_objet(id_objet: String) -> String:
 	sauvegarder()
 	return ""
 
+func points_recuperables() -> int:
+	var total := 0
+	for cle in caracteristiques:
+		total += maxi(int(points_depenses.get(cle, 0)), 0)
+	return total
+
+func _utiliser_parchemin_reattribution(id_objet: String) -> String:
+	var scene := get_tree().current_scene
+	var combat := scene.get_node_or_null("CombatManager") if scene != null else null
+	if combat != null and combat.en_combat:
+		return "Ce parchemin s’utilise hors combat."
+	var points := points_recuperables()
+	if points == 0:
+		return "Tu n’as aucun point investi à récupérer."
+	points_statistique += points
+	points_depenses.clear()
+	Inventaire.retirer_objet(id_objet, 1)
+	recalculer_stats(false)
+	return ""
+
 # Applique les bonus de la race et de la classe sur les stats de base,
 # puis réapplique les points de caractéristiques dépensés
-func recalculer_stats() -> void:
+func recalculer_stats(remplir_vie := true) -> void:
 	vie_max = 100
 	attaque = 0
 	defense = 0
@@ -520,7 +543,7 @@ func recalculer_stats() -> void:
 	for buff in actifs:
 		_appliquer_effets_objet(buff.get("effets", {}))
 	vie_max = maxi(vie_max, 1)
-	vie = vie_max
+	vie = vie_max if remplir_vie else clampi(vie, 0, vie_max)
 	caracteristiques_modifiees.emit()
 
 # applique les effets d'un objet (paires clé -> valeur de effects_json)

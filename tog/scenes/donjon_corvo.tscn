@@ -64,13 +64,13 @@ position = Vector2(1440, 2144)
 text = "Grotte des Os"
 
 [node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
-reperes = Dictionary[Vector2, String]({Vector2(1440, 2336): "Sortie vers le mont Corvo", Vector2(800, 1504): "Galerie inondée", Vector2(2208, 1632): "Galerie des cristaux", Vector2(1760, 608): "Sanctuaire du gardien"})
+reperes = Dictionary[Vector2, String]({Vector2(1440, 2208): "Sortie vers le mont Corvo", Vector2(800, 1504): "Galerie inondée", Vector2(2208, 1632): "Galerie des cristaux", Vector2(1760, 608): "Sanctuaire du gardien"})
 
 [node name="DepuisCorvo" type="Marker2D" parent="Arrivees"]
 position = Vector2(1440, 2144)
 
 [node name="VersMontCorvo" type="Area2D" parent="."]
-position = Vector2(1440, 2336)
+position = Vector2(1440, 2208)
 collision_layer = 0
 script = ExtResource("Passage")
 destination = "res://scenes/mont_corvo.tscn"
@@ -94,7 +94,7 @@ text = "Retour au mont Corvo"
 horizontal_alignment = 1
 
 [node name="ArcheEntree" type="Sprite2D" parent="Paysage"]
-position = Vector2(1440, 2336)
+position = Vector2(1440, 2208)
 scale = Vector2(1.06, 1.06)
 texture = ExtResource("Arche")
 offset = Vector2(0, -90.5)

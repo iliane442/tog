@@ -7,6 +7,7 @@ extends Node
 
 const CHEMIN_SOURCE := "res://donnees/glo.db"
 const CHEMIN_TRAVAIL := "user://glo.db"
+const ID_PARCHEMIN_REATTRIBUTION := 975
 
 var db: SQLite
 var disponible := false
@@ -24,52 +25,62 @@ func _ready() -> void:
 		push_warning("Impossible d’ouvrir la base : %s" % CHEMIN_TRAVAIL)
 		return
 	if not OS.has_feature("editor"):
-		_mettre_a_jour_sorts_classes()
+		_mettre_a_jour_catalogue()
 	# teste l'ouverture sur une vraie requête
 	db.query("SELECT COUNT(*) AS total FROM items;")
 	disponible = not db.query_result.is_empty()
 	if not disponible:
 		push_warning("Impossible de lire la base : %s" % CHEMIN_TRAVAIL)
 
-func _mettre_a_jour_sorts_classes() -> void:
+func _mettre_a_jour_catalogue() -> void:
 	var plage := "BETWEEN 200 AND 249"
 	if not db.query("SELECT COUNT(*) AS total FROM class_skills WHERE skill_id %s;" % plage):
 		return
-	if int(db.query_result[0]["total"]) == 50:
+	var importer_sorts := int(db.query_result[0]["total"]) != 50
+	if not db.query_with_bindings("SELECT id FROM items WHERE id = ?;", [ID_PARCHEMIN_REATTRIBUTION]):
+		return
+	var importer_parchemin := db.query_result.is_empty()
+	if not importer_sorts and not importer_parchemin:
 		return
 	# En export, le catalogue embarqué peut se trouver dans le PCK.
 	var source := FileAccess.get_file_as_bytes(CHEMIN_SOURCE)
-	var catalogue := FileAccess.create_temp(FileAccess.WRITE, "tog-sorts-", "db")
+	var catalogue := FileAccess.create_temp(FileAccess.WRITE, "tog-catalogue-", "db")
 	if source.is_empty() or catalogue == null:
-		push_warning("Impossible de préparer le catalogue des nouveaux sorts.")
+		push_warning("Impossible de préparer la mise à jour du catalogue.")
 		return
 	catalogue.store_buffer(source)
 	catalogue.flush()
-	if not db.query_with_bindings("ATTACH DATABASE ? AS catalogue_sorts;", [catalogue.get_path_absolute()]):
-		push_warning("Impossible de rattacher le catalogue des nouveaux sorts.")
+	if not db.query_with_bindings("ATTACH DATABASE ? AS catalogue_embarque;", [catalogue.get_path_absolute()]):
+		push_warning("Impossible de rattacher le catalogue embarqué.")
 		return
-	if not _importer_sorts_classes(plage):
+	if importer_sorts and not _importer_sorts_classes(plage):
 		push_warning("La mise à jour des sorts de classe a échoué.")
-	db.query("DETACH DATABASE catalogue_sorts;")
+	if importer_parchemin:
+		var champs := "id, name, type, subtype, rarity_id, description, base_price, is_droppable, effects_json, icon_path"
+		if not db.query_with_bindings(
+			"INSERT OR IGNORE INTO items (%s) SELECT %s FROM catalogue_embarque.items WHERE id = ?;"
+			% [champs, champs], [ID_PARCHEMIN_REATTRIBUTION]):
+			push_warning("La mise à jour du parchemin de réattribution a échoué.")
+	db.query("DETACH DATABASE catalogue_embarque;")
 
 func _importer_sorts_classes(plage: String) -> bool:
 	# Les écritures concernent uniquement le catalogue et sont rejouables.
 	var requetes := [
 		"INSERT OR IGNORE INTO skills (id, name, description, type, element, base_damage, base_cooldown, range)"
 		+ " SELECT id, name, description, type, element, base_damage, base_cooldown, range"
-		+ " FROM catalogue_sorts.skills WHERE id %s;" % plage,
+		+ " FROM catalogue_embarque.skills WHERE id %s;" % plage,
 		"INSERT OR IGNORE INTO animations (name, entity_type, entity_id, animation_type, sprite_sheet_path,"
 		+ " frame_width, frame_height, frame_count, frame_delay_ms, loop)"
 		+ " SELECT name, entity_type, entity_id, animation_type, sprite_sheet_path,"
-		+ " frame_width, frame_height, frame_count, frame_delay_ms, loop FROM catalogue_sorts.animations"
+		+ " frame_width, frame_height, frame_count, frame_delay_ms, loop FROM catalogue_embarque.animations"
 		+ " WHERE entity_type = 'skill' AND entity_id %s;" % plage,
 		"UPDATE skills SET animation_id = (SELECT id FROM animations WHERE name = 'fx_classe_' || skills.id)"
 		+ " WHERE id %s;" % plage,
 		"INSERT OR IGNORE INTO skill_status_effects (skill_id, status_effect_id, chance, duration, value)"
 		+ " SELECT skill_id, status_effect_id, chance, duration, value"
-		+ " FROM catalogue_sorts.skill_status_effects WHERE skill_id %s;" % plage,
+		+ " FROM catalogue_embarque.skill_status_effects WHERE skill_id %s;" % plage,
 		"INSERT OR IGNORE INTO class_skills (class_id, skill_id, unlock_level)"
-		+ " SELECT class_id, skill_id, unlock_level FROM catalogue_sorts.class_skills WHERE skill_id %s;" % plage,
+		+ " SELECT class_id, skill_id, unlock_level FROM catalogue_embarque.class_skills WHERE skill_id %s;" % plage,
 	]
 	if not db.query("BEGIN IMMEDIATE;"):
 		return false

@@ -1017,6 +1017,27 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
+[node name="TitreVentesJoueurs" type="Label" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Mises en vente des joueurs"
+
+[node name="InfoVentesJoueurs" type="Label" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+autowrap_mode = 2
+size_flags_horizontal = 3
+text = "Aucune mise en vente d'autre joueur pour l'instant."
+
+[node name="DefilementVentesJoueurs" type="ScrollContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListeVentesJoueurs" type="VBoxContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/DefilementVentesJoueurs"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
 [node name="PanneauVentes" type="PanelContainer" parent="Fenetre/Corps/ContenuHotel/ZoneHotel"]
 layout_mode = 2
 size_flags_horizontal = 3

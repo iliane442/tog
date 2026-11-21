@@ -38,8 +38,9 @@ Depuis le menu principal, ouvre **Multijoueur** pour te connecter ou créer un c
 L'adresse du serveur se note `ip:port` (ex. `127.0.0.1:7777`), le
 dernier pseudo/adresse utilisés sont retenus.
 
-Sur la map : appuie sur **T** pour écrire dans le chat global, Entrée
-envoie, Échap annule. Les autres joueurs apparaissent avec leur pseudo.
+Sur la carte, appuie sur **T** pour écrire dans le chat global. Entrée
+envoie le message et Échap ferme la saisie. Le nom du personnage est
+affiché sur la carte, dans le chat, dans les groupes et dans les duels.
 
 **Rencontres partagées** : quand quelqu'un vainc une rencontre (un
 groupe d'ennemis étiqueté), elle disparaît pour tous les joueurs de
@@ -66,6 +67,19 @@ voient pas et ne peuvent pas en fouiller le trésor. En ligne, les
 croix non fouillées suivent la sauvegarde serveur du perso (elles
 retrouvent leur propriétaire à chaque connexion) ; en solo, elles
 vivent dans `cartes_tresor.cfg`.
+
+## Chat
+
+Le chat est une **fenêtre dédiée** (style menu : titre, historique
+complet, ligne de saisie) :
+
+- **T ou Entrée** ouvre la fenêtre, la saisie prend le clavier
+  directement ; **Échap** ou le bouton « Fermer » la referme.
+- **Entrée** envoie le message saisi. Le chat n'apparaît qu'en ligne
+  (connecté à un serveur).
+- Les annonces du serveur (arrivées, départs, duels, groupes) et les
+  messages des joueurs arrivent dans l'historique ; les commandes de
+  chat commencent par `/` (`/joueurs`, `/groupe`, `/defier`).
 
 ## Tester en local
 
@@ -126,7 +140,7 @@ Un joueur déjà en combat n'est pas sollicité.
 
 ## Duels entre joueurs (PvP)
 
-Écris **`/defier Pseudo`** dans le chat (T) pour lancer un défi à un
+Écris **`/defier Nom du personnage`** dans le chat pour lancer un défi à un
 joueur en ligne. Il reçoit un popup « X te défie en duel ! » avec
 Accepter / Refuser. S'il accepte, le duel démarre des deux côtés :
 
@@ -135,6 +149,9 @@ Accepter / Refuser. S'il accepte, le duel démarre des deux côtés :
   par le réseau. Les grilles des deux côtés sont identiques (même
   plan d'arène), les positions restent approximatives mais les
   portées et lignes de vue se calculent toujours localement.
+- Le miroir de l'adversaire porte son **vrai visuel** (race/sexe,
+  même planche de sprites que sur la map) : le serveur l'envoie au
+  lancement du duel et le profil réseau le confirme ensuite.
 - Les valeurs font foi : les dégâts, soins et états sont **résolus
   chez le lanceur** puis envoyés tels quels — pas de second jet de
   dés chez la victime. Les pv restent détenus par leur propriétaire,
@@ -160,7 +177,7 @@ groupes sont des associations **à la volée**, sans rapport avec les
 équipages. Ils vivent le temps de la session du serveur (pas de
 persistance).
 
-- **Inviter** : `/groupe Pseudo` dans le chat — la cible reçoit un
+- **Inviter** avec `/groupe Nom du personnage` dans le chat. La cible reçoit un
   popup « Rejoindre / Refuser ». Seul le chef du groupe peut inviter
   (le fondateur est chef tant qu'il ne part pas), jusqu'à **5
   joueurs** par groupe. Un joueur n'appartient qu'à un seul groupe.
@@ -169,8 +186,91 @@ persistance).
   restant prend la tête ; le dernier parti dissout le groupe. Une
   déconnexion vaut départ.
 - **Repérage** : le panneau au-dessus du chat liste tes compagnons
-  (chef en doré), et leurs pseudos apparaissent en **vert** sur la
+  (chef en doré), et leurs noms apparaissent en **vert** sur la
   map. Les annonces du groupe passent dans le chat.
+- **Rejoindre un combat en cours** : un compagnon en combat affiche un
+  bouton **« Rejoindre »** dans le panneau du groupe (même si tu n'as
+  pas vu la popup d'invitation au départ du combat). Le serveur
+  vérifie que tu es libre, sur la même map, et que son combat est une
+  rencontre rejoignable — sinon un message du Serveur t'explique quoi
+  faire. Le statut « en combat » de chacun se met à jour en direct.
+
+Si deux personnages portent le même nom, `/joueurs` affiche leur référence
+de session. Tu peux alors utiliser `/groupe #identifiant` ou `/defier #identifiant`.
+
+## Équipages en ligne
+
+En ligne, les équipages (guildes) sont **serveur-autoritaires** : le
+serveur écrit dans sa propre base `mmo_equipages.db` (le fichier solo
+`equipages.db` n'est jamais touché par le serveur, ni lu par un client
+connecté).
+
+- **Chaque action passe par le serveur** : fonder, dissoudre, quitter,
+  recruter, virer, nommer/destituer un vice-capitaine, description,
+  caisse, alliances. Le client envoie une demande (`demander_equipage`),
+  le serveur valide, écrit, puis renvoie à chaque membre en ligne un
+  instantané complet de son état (équipage, membres, journal, autres
+  équipages, flotte).
+- **Recrutement** : « Ajouter un membre » envoie une **invitation** —
+  la cible reçoit un popup « Rejoindre / Refuser », le capitaine
+  apprend sa réponse dans l'onglet Équipage. On ne peut recruter
+  qu'un compte en ligne qui n'est engagé dans aucun équipage.
+- **Caisse** : les Berry online vivent dans le perso serveur. Déposer
+  ou retirer ajuste la bourse via le serveur, qui renvoie le solde à
+  jour au client (et l'onglet affiche chaque confirmation ou refus,
+  même asynchrone).
+- **Alliances / flottes** : conclure ou rompre une alliance
+  rafraîchit l'état de tous les équipages de la(s) flotte(s) touchée(s).
+- **Solo inchangé** : hors ligne, le jeu local `equipages.db` reste la
+  référence et le recrutement reste immédiat (pas d'invitation).
+
+## Hôtel des ventes (HDV) partagé
+
+En ligne, les **mises en vente des joueurs** vivent sur le serveur
+(table `mmo_hdventes`) : tout le monde les voit et peut les acheter.
+Les offres des vendeurs PNJ restent locales à chaque joueur.
+
+- **Mettre en vente** (onglet HDV du menu, panneau de droite) : les
+  objets quittent ton inventaire immédiatement, l'offre part au
+  serveur et apparaît sous « Mises en vente des joueurs » chez tous
+  les joueurs connectés.
+- **Acheter** (panneau de gauche, sous les offres PNJ) : le serveur
+  vérifie ta bourse (Berry du perso serveur), te livre les objets,
+  débite ton solde et **crédite le vendeur — même s'il est hors
+  ligne** (sa bourse sera à jour à sa prochaine connexion). Une
+  commission HDV de 2 % est retenue. Impossible d'acheter sa propre
+  mise en vente ; l'offre disparaît avant tout mouvement, personne ne
+  peut l'acheter deux fois.
+- **Retirer** : le serveur vérifie que la mise est bien la tienne et
+  te rend les objets par livraison réseau ; l'offre disparaît pour
+  tout le monde.
+- **Acheteurs simulés** : ils fonctionnent hors ligne, comme avant ;
+  en ligne, seuls de vrais joueurs achètent (pas de simulation).
+- Les confirmations et refus du serveur s'affichent dans l'onglet HDV.
+
+## Échanges d'objets entre joueurs
+
+Écris **`/echanger Nom du personnage`** dans le chat : la cible reçoit
+un popup « X te propose un échange ! » (Accepter / Refuser). Si elle
+accepte, une **fenêtre d'échange** s'ouvre des deux côtés :
+
+- **Mon offre** à gauche : piocher des objets de ton inventaire
+  (quantité bornée par ce que tu possèdes) et des Berry ; chaque
+  ajout/retrait/retrait de Berry est envoyé en direct au partenaire.
+- **Offre reçue** à droite : ce que le partenaire propose apparaît en
+  direct, avec son état (« compose son offre... » / « est prêt ! »).
+- **Confirmation croisée** : « Confirmer l'échange » envoie ton accord
+  pour l'offre en cours. Dès que l'un des deux **change son offre**,
+  les deux confirmations retombent — il faut reconfirmer. L'échange ne
+  s'exécute que si les deux ont confirmé la même version des offres.
+- À l'exécution : les objets et Berry offerts quittent ton inventaire,
+  ceux du partenaire y entrent (sauvegarde serveur immédiate du Berry).
+- **Annuler** / refuser / déconnecter : rien
+  ne s'échange, le partenaire en est informé dans le chat.
+- Un joueur ne peut participer qu'à un échange à la fois ; les
+  exemplaires de noms se ciblent via `#identifiant` (cf. `/joueurs`).
+
+Hors ligne, la commande n'a pas d'effet (elle passe par le serveur).
 
 ## Indicateurs sociaux
 
@@ -234,3 +334,10 @@ Pour héberger le serveur sur une machine allumée 24 h/24 :
 - Sauvegarde serveur : le perso part au serveur immédiatement à chaque
   changement important (création, sorts, équipement, XP...) puis
   toutes les 30 secondes ; `perso.cfg` n'est plus touché en ligne.
+- **Position mémorisée** : la position d'exploration (jamais pendant
+  un combat) est mémorisée toutes les 10 s — en ligne, elle suit la
+  sauvegarde du perso sur le serveur (connexion depuis une autre
+  machine comprise) ; en solo, elle suit le fichier local de la
+  machine. Le joueur reprend sa place à l'ouverture du jeu ou à la
+  reconnexion ; les traversées de zones vers un marqueur d'arrivée
+  restent prioritaires.

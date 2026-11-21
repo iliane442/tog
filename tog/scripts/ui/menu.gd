@@ -91,6 +91,8 @@ const LIBELLES_TYPES_INVENTAIRE := {
 @onready var argent_hotel: Label = $Fenetre/Corps/ContenuHotel/ArgentHotel
 @onready var info_achats_hotel: Label = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/InfoAchats
 @onready var liste_achats_hotel: VBoxContainer = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/DefilementAchats/ListeAchats
+@onready var info_ventes_joueurs: Label = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/InfoVentesJoueurs
+@onready var liste_ventes_joueurs: VBoxContainer = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/DefilementVentesJoueurs/ListeVentesJoueurs
 @onready var liste_ventes_hotel: VBoxContainer = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/DefilementVentes/ListeVentes
 @onready var champ_objet_hotel: OptionButton = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/RangeeObjet/ChampObjet
 @onready var nb_quantite_hotel: SpinBox = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauVentes/MargesVentes/ColonneVentes/RangeeMise/NbQuantite
@@ -903,8 +905,9 @@ func _maj_bouton_utiliser(details: Dictionary) -> void:
 	btn_utiliser.visible = consommable
 	if not consommable:
 		return
-	btn_utiliser.text = "Utiliser"
-	btn_utiliser.disabled = (details.get("effets", {}) as Dictionary).is_empty()
+	var effets: Dictionary = details.get("effets", {})
+	btn_utiliser.text = "Réattribuer les points" if bool(effets.get(Personnage.EFFET_REATTRIBUTION, false)) else "Utiliser"
+	btn_utiliser.disabled = effets.is_empty()
 
 # utilise le consommable sélectionné dans le détail : applique ses effets
 # (points de vie restaurés, bonus temporaires) et le retire de
@@ -912,23 +915,59 @@ func _maj_bouton_utiliser(details: Dictionary) -> void:
 func _on_bouton_utiliser() -> void:
 	if detail_id_courant == "":
 		return
-	var nom := Inventaire.nom_objet(detail_id_courant)
-	var details := Inventaire.details_objet(detail_id_courant)
+	var id := detail_id_courant
+	var effets: Dictionary = Inventaire.details_objet(id).get("effets", {})
+	if bool(effets.get(Personnage.EFFET_REATTRIBUTION, false)):
+		_confirmer_reattribution(id)
+		return
+	_utiliser_consommable(id)
+
+func _confirmer_reattribution(id: String) -> void:
+	var points := Personnage.points_recuperables()
+	if points == 0:
+		avertir("Tu n’as aucun point investi à récupérer.")
+		return
+	var dialogue := ConfirmationDialog.new()
+	dialogue.title = "Réattribuer tes points"
+	var unite := "point" if points == 1 else "points"
+	dialogue.dialog_text = (
+		"Utiliser un parchemin pour récupérer %d %s de caractéristique à redistribuer ?" % [points, unite]
+	)
+	dialogue.ok_button_text = "Utiliser le parchemin"
+	dialogue.cancel_button_text = "Annuler"
+	dialogue.confirmed.connect(func(): _utiliser_consommable.call_deferred(id))
+	dialogue.visibility_changed.connect(func() -> void:
+		if not dialogue.visible:
+			dialogue.queue_free())
+	add_child(dialogue)
+	dialogue.popup_centered()
+
+func _utiliser_consommable(id: String) -> void:
+	var nom := Inventaire.nom_objet(id)
+	var details := Inventaire.details_objet(id)
 	var effets: Dictionary = details.get("effets", {})
 	var soin := int(effets.get("heal", 0))
-	var message := Personnage.utiliser_objet(detail_id_courant)
+	var points_avant := Personnage.points_statistique
+	var message := Personnage.utiliser_objet(id)
 	maj_grille()
-	if Inventaire.objets.has(detail_id_courant):
-		maj_detail_item(detail_id_courant)
-	else:
-		maj_detail_aucun()
+	if detail_id_courant == id:
+		if Inventaire.objets.has(id):
+			maj_detail_item(id)
+		else:
+			maj_detail_aucun()
 	if message != "":
 		avertir(message)
 		return
 	var info := AcceptDialog.new()
 	info.title = "%s consommé !" % nom
 	var texte := "Ses bonus sont actifs temporairement."
-	if soin > 0:
+	if bool(effets.get(Personnage.EFFET_REATTRIBUTION, false)):
+		points_en_attente.clear()
+		maj_personnage()
+		var points_rendus := Personnage.points_statistique - points_avant
+		var unite := "point" if points_rendus == 1 else "points"
+		texte = "%d %s à redistribuer dans l’onglet Personnage." % [points_rendus, unite]
+	elif soin > 0:
 		texte = "Tu récupères %d points de vie." % soin
 	# carte au trésor : la croix est plantée, la chasse commence
 	if str(details.get("sous_type", "")) == "carte_tresor":
@@ -1083,6 +1122,8 @@ func _texte_stats(details: Dictionary) -> String:
 	var lignes: Array[String] = []
 	var effets: Dictionary = details.get("effets", {})
 	for cle in effets:
+		if cle == Personnage.EFFET_REATTRIBUTION:
+			continue
 		var libelle: String = LIBELLES_EFFETS.get(cle, str(cle).capitalize())
 		lignes.append("%s : %+d" % [libelle, int(effets[cle])])
 	if int(details.get("niveau_min", 1)) > 1:
@@ -1384,7 +1425,16 @@ func _on_hotel_modifie() -> void:
 func maj_hotel() -> void:
 	argent_hotel.text = "Berry : %d" % Personnage.berry
 	info_achats_hotel.text = "Prochain réapprovisionnement des vendeurs dans %d s" % HotelVentes.secondes_avant_remplissage()
+	# message du serveur HDV (confirmation ou refus d'une action en
+	# ligne), affiché une fois puis oublié
+	info_mise_hotel.text = ""
+	info_mise_hotel.add_theme_color_override("font_color", Color(0.85, 0.3, 0.3))
+	if HotelVentes.dernier_message != "":
+		info_mise_hotel.text = HotelVentes.dernier_message
+		info_mise_hotel.add_theme_color_override("font_color", Color(0.4, 0.7, 0.35))
+		HotelVentes.dernier_message = ""
 	_construire_achats_hotel()
+	_construire_ventes_joueurs_hotel()
 	_construire_ventes_hotel()
 	_remplir_forme_hotel()
 
@@ -1436,6 +1486,69 @@ func _construire_achats_hotel() -> void:
 		colonne.add_child(ligne_action)
 		encadre.add_child(colonne)
 		liste_achats_hotel.add_child(encadre)
+
+# mises en vente des autres joueurs (HDV partagé en ligne)
+func _construire_ventes_joueurs_hotel() -> void:
+	for enfant in liste_ventes_joueurs.get_children():
+		enfant.queue_free()
+	var mises := HotelVentes.ventes_joueurs()
+	if mises.is_empty():
+		info_ventes_joueurs.visible = true
+		info_ventes_joueurs.text = ("Aucune mise en vente d'autre joueur pour l'instant."
+			if HotelVentes.en_ligne else "Hors ligne : les ventes des joueurs arrivent en ligne.")
+		return
+	info_ventes_joueurs.visible = false
+	for i in mises.size():
+		var mise: Dictionary = mises[i]
+		var details := Inventaire.details_objet(str(mise.get("item", "")))
+		var encadre := PanelContainer.new()
+		encadre.theme_type_variation = _variation_rarete(int(details.get("id_rarete", 1)))
+		var colonne := VBoxContainer.new()
+		colonne.add_theme_constant_override("separation", 6)
+		var ligne_nom := HBoxContainer.new()
+		ligne_nom.add_theme_constant_override("separation", 12)
+		var icone := TextureRect.new()
+		icone.texture = _icone_objet(details)
+		icone.custom_minimum_size = Vector2(32, 32)
+		icone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var nom := Label.new()
+		nom.text = Inventaire.nom_objet(str(mise.get("item", "")))
+		nom.add_theme_color_override("font_color", details["couleur_rarete"])
+		nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		nom.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		nom.add_theme_font_size_override("font_size", 22)
+		ligne_nom.add_child(icone)
+		ligne_nom.add_child(nom)
+		var ligne_action := HBoxContainer.new()
+		ligne_action.add_theme_constant_override("separation", 12)
+		var total := int(mise.get("prix_unite", 0)) * int(mise.get("quantite", 0))
+		var prix := Label.new()
+		prix.text = "x%d à %d Berry/u - %d Berry - %s" % [
+			int(mise.get("quantite", 0)), int(mise.get("prix_unite", 0)),
+			total, str(mise.get("vendeur", "?"))]
+		prix.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		prix.add_theme_font_size_override("font_size", 20)
+		var btn := Button.new()
+		btn.text = "Acheter"
+		btn.disabled = Personnage.berry < total
+		btn.pressed.connect(_on_acheter_joueur_hotel.bind(i))
+		ligne_action.add_child(prix)
+		ligne_action.add_child(btn)
+		colonne.add_child(ligne_nom)
+		colonne.add_child(ligne_action)
+		encadre.add_child(colonne)
+		liste_ventes_joueurs.add_child(encadre)
+
+func _on_acheter_joueur_hotel(index: int) -> void:
+	var erreur := HotelVentes.acheter_joueur(index)
+	if erreur != "":
+		info_mise_hotel.text = erreur
+		info_mise_hotel.add_theme_color_override("font_color", Color(0.85, 0.3, 0.3))
+		return
+	info_mise_hotel.text = "Achat envoyé au serveur..."
+	info_mise_hotel.add_theme_color_override("font_color", Color(0.4, 0.7, 0.35))
+	maj_hotel()
 
 func _construire_ventes_hotel() -> void:
 	for enfant in liste_ventes_hotel.get_children():
@@ -1560,9 +1673,20 @@ func maj_equipage() -> void:
 		if gerant and champ_description.text.is_empty():
 			champ_description.text = description
 		info_caisse.text = "Caisse : %d Berry" % int(Equipages.mon_equipage["caisse"])
+		# message serveur en attente (confirmation ou refus d'une action
+		# en ligne) : il est asynchrone, il s'affiche au prochain
+		# rafraîchissement
+		if Equipages.dernier_message != "":
+			info_equipage.text += "\n" + Equipages.dernier_message
+			Equipages.dernier_message = ""
 	else:
 		info_equipage.text = "Fondez votre équipage : jusqu'à %d joueurs, capitaine compris." % Equipages.MEMBRES_MAX
 		champ_description.text = ""
+	# message serveur en attente (confirmation ou refus d'une action en
+	# ligne) : il est asynchrone, il s'affiche au prochain rafraîchissement
+	if Equipages.dernier_message != "":
+		info_equipage.text += "\n" + Equipages.dernier_message
+		Equipages.dernier_message = ""
 	_construire_membres()
 	_construire_alliances()
 	_construire_journal()

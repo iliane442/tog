@@ -10,6 +10,12 @@ signal ressources_joueur_modifiees(pa: int, pa_max: int, pm: int, pm_max: int)
 
 const ARENE_COMBAT := preload("res://scripts/combat/arene_combat.gd")
 const POSITION_ARENE := Vector2(-16384, -16384)
+# difficulté des combats : PV et dégâts des ennemis sont multipliés à
+# l'ouverture de l'arène (ennemis classiques uniquement — les duels PvP
+# gardent les vraies stats des joueurs) ; les attaques par tour se
+# règlent sur chaque ennemi (attaques_par_tour, 2 par défaut)
+const DIFFICULTE_PV := 1.5
+const DIFFICULTE_DEGATS := 1.25
 
 var en_combat := false
 var en_placement := false
@@ -652,6 +658,11 @@ func lancer_combat(groupe = null) -> void:
 		afficher_message("Il n’y a pas assez de place dans l’arène pour cette rencontre.")
 		return
 	_ennemis = ennemis
+	# difficulté : les ennemis entrent dans l'arène durcis (les ennemis
+	# qui survivent à un combat perdu retrouvent leurs stats en_sortie)
+	for ennemi_durci in _ennemis:
+		if ennemi_durci.has_method("durcir"):
+			ennemi_durci.durcir(DIFFICULTE_PV, DIFFICULTE_DEGATS)
 	_etats_actifs.clear()
 	_raz_recompenses()
 	numero_combat += 1
@@ -1037,6 +1048,10 @@ func _quitter_arene() -> void:
 		if is_instance_valid(entite):
 			entite.arreter_deplacement_combat()
 			entite.global_position = _positions_exploration[entite]
+			# un ennemi qui survit au combat (défaite ou fuite) retrouve
+			# ses stats d'origine en exploration
+			if entite.has_method("assouplir"):
+				entite.assouplir()
 	_positions_exploration.clear()
 	if is_instance_valid(_camera_exploration):
 		_camera_exploration.make_current()
