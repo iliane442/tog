@@ -1,0 +1,605 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_logue.tscn" id="FerryLogue"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_alabasta.tscn" id="FerryAlabasta"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="Borne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/cabane_de_peche.png" id="Cabane"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="Rochers"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/chene_ancien.png" id="Chene"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/pin_de_montagne.png" id="Pin"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/colonne_brisee.png" id="Colonne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/stele_de_la_vague.png" id="Stele"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
+[ext_resource type="Texture2D" path="res://assets/world/world-planches-ressource-grandline-nasse.png" id="Nasse"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/phare.png" id="Van"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="pnj_alba"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pnj/malo.png" id="pnj_malo"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/goon_pirate.png" id="tex_goon"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/moussaillon.png" id="tex_moussaillon"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/officier_marine.png" id="tex_officier"]
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[node name="ReverseMountain" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"#######################~~#######################",
+	"#######################~~#######################",
+	"#######################~~#######################",
+	"#######################~~#######################",
+	"#######################~~#######################",
+	"#######################~~#######################",
+	"#####################::::::#####################",
+	"#################,,,,:,,,,:,,,,#################",
+	"#################,,,,:,,,,:,,,,#################",
+	"#################,,,,:,,,,:,,,,#################",
+	"#################,,,,:,,,,:,,,,#################",
+	"#################,,,,:,,,,:,,,,#################",
+	"#################,,,,:,,,,:,,,,#################",
+	"#####################:#~~#:#####################",
+	"#################::::::::::::::#################",
+	"#####################:#~~#:#####################",
+	"#####################:#~~#:#####################",
+	"#####################:#~~#:#####################",
+	"########;;;;;;#######:#~~#:#####################",
+	"########;;;;;;#######:#~~#:#####################",
+	"########;;;;;;#######:#~~#:######;;;;;;#########",
+	"########;;;;;;#######:#~~#:######;;;;;;#########",
+	"########;;;;;;#######:#~~#:######;;;;;;#########",
+	"#####################:#~~#:######;;;;;;#########",
+	"#####################:#~~#:######;;;;;;#########",
+	"#####################:#~~#:#####################",
+	"#####################:#~~#:#####################",
+	"#####################:#~~#:#####################",
+	"..;;;;;;;;;;;;;;;;;;;:;~~;:;;;;;;;;;;;;;;;;;;;..",
+	"..;;;;;;;;;;;;;;;;;;;:;~~;:;;;;;;;;;;;;;;;;;;;..",
+	"..;;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,;;..",
+	"..;;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,;;..",
+	"..;;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,;;..",
+	"..;;::::::::::::::::::::::::::::::::::::::::;;..",
+	"..;;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,;;..",
+	"..;;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,;;..",
+	"..;;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,;;..",
+	"..;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;..",
+	"..;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;..",
+	"................................................",
+)
+littoral = true
+emprises_decors = Array[Rect2i]([])
+
+[node name="player" parent="." index="5"]
+position = Vector2(1542.4, 2144.0)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Reverse Mountain"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1472.0, 2112.0): "Quai de la baie du Sud", Vector2(1620.0, 640.0): "Col du courant", Vector2(1370.0, 1300.0): "Vanne des Écumes", Vector2(850.0, 1400.0): "Île des Bœufs", Vector2(1472.0, 1984.0): "Cap des Jumeaux"})
+
+[node name="DepuisLoguetown" type="Marker2D" parent="Arrivees"]
+position = Vector2(1472.0, 2112.0)
+
+[node name="DepuisAlabasta" type="Marker2D" parent="Arrivees"]
+position = Vector2(1600.0, 2112.0)
+
+[node name="CapitaineEsturgeon" parent="." instance=ExtResource("FerryLogue")]
+position = Vector2(1369.6, 2080.0)
+paroles = "Redescendre sur Loguetown à la marée qui suit ? Possible, mon mousse. Le courant redescend comme il monte : dans le bon chenal, et jamais sans balises."
+destination = "res://scenes/loguetown.tscn"
+arrivee = &"DepuisReverseMountain"
+libelle_traversee = "Descendre vers Loguetown"
+
+[node name="CapitaineSimoun" parent="." instance=ExtResource("FerryAlabasta")]
+position = Vector2(1753.6, 2080.0)
+paroles = "Une fois le col franchi, la mer du haut se jette dans Grand Line : ma prochaine escale sent le sable et l'épice. Alabasta. Montre ton Log Pose à la douane, pas ton assurance."
+destination = "res://scenes/alabasta.tscn"
+arrivee = &"DepuisReverseMountain"
+libelle_traversee = "Embarquer pour Alabasta"
+
+[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
+position = Vector2(1088.0, 2600.0)
+texture = ExtResource("Sloop")
+offset = Vector2(0, -250.0)
+scale = Vector2(0.7, 0.7)
+z_index = -3
+
+[node name="BarqueDeLaBaie" type="Sprite2D" parent="Paysage"]
+position = Vector2(2278.4, 2688.0)
+texture = ExtResource("Barque")
+offset = Vector2(0, -70.0)
+scale = Vector2(0.9, 0.9)
+flip_h = true
+z_index = -3
+
+[node name="BorneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1305.6, 2201.6)
+texture = ExtResource("Borne")
+offset = Vector2(0, -31.5)
+scale = Vector2(0.75, 0.75)
+
+[node name="LanterneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1395.2, 2156.8)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+scale = Vector2(0.78, 0.78)
+
+[node name="CabaneDeHoule" type="Sprite2D" parent="Paysage"]
+position = Vector2(1800.0, 1930.0)
+texture = ExtResource("Cabane")
+offset = Vector2(0, -83.0)
+scale = Vector2(0.95, 0.95)
+
+[node name="RochersDeLaGreve" type="Sprite2D" parent="Paysage"]
+position = Vector2(1560.0, 2000.0)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="RochersDeLEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(2400.0, 1450.0)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+scale = Vector2(0.9, 0.9)
+
+[node name="RochersDeLaCorniche" type="Sprite2D" parent="Paysage"]
+position = Vector2(1330.0, 1000.0)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+scale = Vector2(1.1, 1.1)
+flip_h = true
+
+[node name="PinDeLaCorniche" type="Sprite2D" parent="Paysage"]
+position = Vector2(1200.0, 1500.0)
+texture = ExtResource("Pin")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="PinDuCol" type="Sprite2D" parent="Paysage"]
+position = Vector2(1750.0, 450.0)
+texture = ExtResource("Pin")
+offset = Vector2(0, -90.0)
+scale = Vector2(0.9, 0.9)
+flip_h = true
+
+[node name="CheneDeLaBaie" type="Sprite2D" parent="Paysage"]
+position = Vector2(700.0, 1800.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(0.85, 0.85)
+
+[node name="SteleDeLaVanne" type="Sprite2D" parent="Paysage"]
+position = Vector2(1360.0, 1250.0)
+texture = ExtResource("Stele")
+offset = Vector2(0, -51.5)
+scale = Vector2(0.9, 0.9)
+
+[node name="ColonneDuCap" type="Sprite2D" parent="Paysage"]
+position = Vector2(1900.0, 700.0)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -60.5)
+scale = Vector2(0.9, 0.9)
+
+[node name="VanneDesEcumes" type="Sprite2D" parent="Paysage"]
+position = Vector2(1700.0, 1300.0)
+texture = ExtResource("Van")
+offset = Vector2(0, -126.0)
+scale = Vector2(0.5, 0.5)
+
+[node name="Houle" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1472.0, 1984.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["trm_c6_courant", "trm_c6_remorqueurs", "trm_c6_pilote", "trm_c6_logpose"])
+nom_affiche = "Houle, veilleuse du cap"
+paroles = "La montagne ne se franchit pas, elle se lit. Corvus avait gravé ses marques dans le chenal : chaque trait dit au navire où le courant porte, où il rejette. Les gris les recouvrent une à une. Relis-les avant qu'ils ne les effacent toutes."
+
+[node name="Sprite2D" type="Sprite2D" parent="Houle"]
+position = Vector2(0, -46.5)
+texture = ExtResource("pnj_alba")
+
+[node name="Area2D" type="Area2D" parent="Houle"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Houle/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Houle"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Houle, veilleuse du cap"
+horizontal_alignment = 1
+
+[node name="Lao" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1900.0, 2000.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["reverse_balises", "reverse_lignes"])
+nom_affiche = "Lao le charpentier"
+paroles = "Je répare les barques qui redescendent du col — quand il en redescend. Les balises défaillantes, c'est pour les autres ; les nasses pleines, c'est pour nous. Aide la baie, la baie t'aidera."
+
+[node name="Sprite2D" type="Sprite2D" parent="Lao"]
+position = Vector2(0, -46.5)
+texture = ExtResource("pnj_malo")
+
+[node name="Area2D" type="Area2D" parent="Lao"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Lao/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Lao"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Lao le charpentier"
+horizontal_alignment = 1
+
+[node name="MarqueDeLaBase" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1650.0, 1950.0)
+script = ExtResource("Recolte")
+titre = "La base des Cinq-Mers"
+description = "La marque de Corvus au pied du chenal : cinq vagues convergentes, un seul trait plein. L'Aiguille du Cap pointe le trait et s'y tient, rigide : c'est ici que le courant se prend."
+quete = "trm_c6_courant"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="MarqueDeLaBase"]
+position = Vector2(0, -51.5)
+texture = ExtResource("Stele")
+
+[node name="Etiquette" type="Label" parent="MarqueDeLaBase"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="MarqueDeLaVanne" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1370.0, 1300.0)
+script = ExtResource("Recolte")
+titre = "La vanne des Écumes"
+description = "Sur la pierre humide, un relief de vagues superposées : la marque dit au pilote de ne pas tenter la montée entre la troisième et la quatrième écume. Quelqu'un a blanchi les traits au calfeutrage. Ils se lisent encore."
+quete = "trm_c6_courant"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="MarqueDeLaVanne"]
+position = Vector2(0, -28.0)
+texture = ExtResource("Coffre")
+
+[node name="Etiquette" type="Label" parent="MarqueDeLaVanne"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="MarqueDeLaCorniche" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1645.0, 900.0)
+script = ExtResource("Recolte")
+titre = "La corniche du Col"
+description = "Au sommet de la corniche, la marque est intacte : un cercle autour d'un point. Le col n'est pas la crête — le col, c'est le calme au milieu du tourbillon."
+quete = "trm_c6_courant"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="MarqueDeLaCorniche"]
+position = Vector2(0, -51.5)
+texture = ExtResource("Stele")
+
+[node name="Etiquette" type="Label" parent="MarqueDeLaCorniche"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BaliseDuPied" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2000.0, 2000.0)
+script = ExtResource("Recolte")
+titre = "Balise du pied de la falaise"
+description = "Le fanal de Corvus, rallumé : à gauche la baie sud, à droite le chenal. Le réflecteur remis d'aplomb éclaire une voile grise... qui n'ose plus approcher."
+quete = "reverse_balises"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BaliseDuPied"]
+position = Vector2(0, -67.0)
+texture = ExtResource("Lanterne")
+
+[node name="Etiquette" type="Label" parent="BaliseDuPied"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BaliseDesBoeufs" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(850.0, 1400.0)
+script = ExtResource("Recolte")
+titre = "Balise de l'Île des Bœufs"
+description = "Sur le rocher plat que les marins appellent l'Île des Bœufs, la balise répond au premier appel. De là, on voit la baie d'un seul regard."
+quete = "reverse_balises"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BaliseDesBoeufs"]
+position = Vector2(0, -67.0)
+texture = ExtResource("Lanterne")
+
+[node name="Etiquette" type="Label" parent="BaliseDesBoeufs"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BaliseDuCol" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1600.0, 830.0)
+script = ExtResource("Recolte")
+titre = "Balise du col du courant"
+description = "La plus haute balise de Corvus : sa flamme dit aux montants « passe au calme », aux descendants « serre la rive ». Rallumée, elle veille de nouveau."
+quete = "reverse_balises"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BaliseDuCol"]
+position = Vector2(0, -67.0)
+texture = ExtResource("Lanterne")
+
+[node name="Etiquette" type="Label" parent="BaliseDuCol"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="NasseDeLaBaie" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1300.0, 2450.0)
+script = ExtResource("Recolte")
+titre = "Nasse de la baie du Sud"
+description = "Une nasse lourde : trois maquereaux et une sandale d'enfant. Lao saura."
+quete = "reverse_lignes"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="NasseDeLaBaie"]
+position = Vector2(0, -30.0)
+texture = ExtResource("Nasse")
+
+[node name="Etiquette" type="Label" parent="NasseDeLaBaie"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="NasseDesBoeufs" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1050.0, 2350.0)
+script = ExtResource("Recolte")
+titre = "Nasse de l'Île des Bœufs"
+description = "Une nasse bien tendue, comme dirait Lao."
+quete = "reverse_lignes"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="NasseDesBoeufs"]
+position = Vector2(0, -30.0)
+texture = ExtResource("Nasse")
+
+[node name="Etiquette" type="Label" parent="NasseDesBoeufs"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="NasseDuCalme" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1650.0, 2350.0)
+script = ExtResource("Recolte")
+titre = "Nasse du calme du courant"
+description = "Posée dans le calme du courant, pleine à se fendre."
+quete = "reverse_lignes"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="NasseDuCalme"]
+position = Vector2(0, -30.0)
+texture = ExtResource("Nasse")
+
+[node name="Etiquette" type="Label" parent="NasseDuCalme"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="ColDuCourant" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1620.0, 640.0)
+script = ExtResource("Recolte")
+titre = "Le cap du Log Pose"
+description = "Au col du courant, l'aiguille du Log Pose se pose d'elle-même. Étalonne-la : elle enregistre le premier cap de la mer du haut et ne relâchera plus. La descente vers Grand Line est ouverte — l'Ouest du monde attend."
+quete = "trm_c6_logpose"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="ColDuCourant"]
+position = Vector2(0, -60.0)
+texture = ExtResource("Colonne")
+
+[node name="Etiquette" type="Label" parent="ColDuCourant"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="RemorqueurDeLaBase" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1750.0, 1900.0)
+nom = "RemorqueurDeLaBase"
+pv_max = 450
+degats_attaque = 28
+portee_attaque = 1
+pm_max = 3
+mob_id = 1
+quetes_a_progresser = Array[String](["trm_c6_remorqueurs"])
+niveau_personnalise = 30
+groupe = "remorqueurs_vigie"
+texture_personnalisee = ExtResource("tex_goon")
+
+[node name="RemorqueurDeLaVanne" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1360.0, 1450.0)
+nom = "RemorqueurDeLaVanne"
+pv_max = 470
+degats_attaque = 29
+portee_attaque = 2
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String](["trm_c6_remorqueurs"])
+niveau_personnalise = 31
+groupe = "remorqueurs_vigie"
+texture_personnalisee = ExtResource("tex_moussaillon")
+
+[node name="RemorqueurDuCol" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1000.0, 900.0)
+nom = "RemorqueurDuCol"
+pv_max = 480
+degats_attaque = 30
+portee_attaque = 2
+pm_max = 3
+mob_id = 4
+quetes_a_progresser = Array[String](["trm_c6_remorqueurs"])
+niveau_personnalise = 31
+groupe = "remorqueurs_vigie"
+texture_personnalisee = ExtResource("tex_officier")
+
+[node name="PiloteDuChenal" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1520.0, 700.0)
+nom = "PiloteDuChenal"
+pv_max = 800
+degats_attaque = 36
+portee_attaque = 2
+pm_max = 3
+mob_id = 0
+quetes_a_progresser = Array[String](["trm_c6_pilote"])
+niveau_personnalise = 32
+groupe = ""
+texture_personnalisee = ExtResource("tex_officier")
+attaques_par_tour = 3
+
+[node name="LoupMarinDeLEst" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2650.0, 2300.0)
+nom = "LoupMarinDeLEst"
+pv_max = 135
+degats_attaque = 16
+portee_attaque = 1
+pm_max = 3
+mob_id = 5
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 16
+groupe = "loups_baie"
+
+[node name="LoupMarinDeLOuest" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(950.0, 2450.0)
+nom = "LoupMarinDeLOuest"
+pv_max = 135
+degats_attaque = 16
+portee_attaque = 1
+pm_max = 3
+mob_id = 5
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 16
+groupe = "loups_baie"

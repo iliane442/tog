@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
 [ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_baratie.tscn" id="FerryBaratie"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_logue.tscn" id="FerryLogue"]
 [ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
 [ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-medium-house-v0.png" id="MaisonMoyenne"]
@@ -98,10 +99,17 @@ position = Vector2(704.0, 2368.0)
 text = "Village Coco"
 
 [node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
-reperes = Dictionary[Vector2, String]({Vector2(608.0, 2368.0): "Quai du ferry", Vector2(1000.0, 1936.0): "Village Coco", Vector2(768.0, 1472.0): "Maison de Nojiko", Vector2(2000.0, 2200.0): "Orangeraie de Bellemère", Vector2(2784.0, 1230.0): "Grille d'Arlong Park", Vector2(2816.0, 704.0): "Coeur d'Arlong Park", Vector2(3264.0, 1980.0): "Rive de l'est"})
+reperes = Dictionary[Vector2, String]({Vector2(608.0, 2368.0): "Quai du ferry", Vector2(1000.0, 1936.0): "Village Coco", Vector2(768.0, 1472.0): "Maison de Nojiko", Vector2(2000.0, 2200.0): "Orangeraie de Bellemère", Vector2(2784.0, 1230.0): "Grille d'Arlong Park", Vector2(2816.0, 704.0): "Coeur d'Arlong Park", Vector2(3264.0, 1980.0): "Rive de l'est", Vector2(420.0, 2368.0): "Ferry pour Loguetown"})
 
 [node name="DepuisBaratie" type="Marker2D" parent="Arrivees"]
-position = Vector2(608.0, 2368.0)
+position = Vector2(608, 2368)
+
+[node name="DepuisLoguetown" type="Marker2D" parent="Arrivees"]
+position = Vector2(500, 2368)
+
+[node name="CapitaineEsturgeon" parent="." instance=ExtResource("FerryLogue")]
+position = Vector2(420.0, 2368.0)
+paroles = "Derrière Coco commence le bout d'East Blue. Loguetown emboute les journaux de bord des candidats au départ, et un gris en profite pour racheter les témoignages. Si tu montes là-haut, montre-leur comment on s'en va."
 
 [node name="CapitaineBarrique" parent="." instance=ExtResource("FerryBaratie")]
 position = Vector2(550.4, 2368.0)

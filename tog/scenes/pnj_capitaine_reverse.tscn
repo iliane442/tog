@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/capitaine_ferry.gd" id="1_cap"]
+[ext_resource type="Texture2D" path="res://assets/sprites/fishman_pirate/Idle/rotations/south.png" id="2_cap"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_cap"]
+radius = 24.020824
+
+[node name="CapitaineHalcion" type="Node2D"]
+script = ExtResource("1_cap")
+nom_affiche = "Capitaine Halcion"
+paroles = "Reverse Mountain ? Le seul endroit du monde où la mer monte au lieu de descendre. Cinq canaux, un chenal viable, des balises à lire avant de tenter quoi que ce soit. Sans Log Pose, on remonte pour se casser. Avec, on remonte pour vivre."
+destination = "res://scenes/reverse_mountain.tscn"
+arrivee = &"DepuisLoguetown"
+libelle_traversee = "Remonter vers Reverse Mountain"
+
+[node name="Nom" type="Label" parent="."]
+position = Vector2(-90.000, -121.000)
+size = Vector2(180, 28)
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 0.89, 0.64, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+text = "Capitaine Halcion"
+horizontal_alignment = 1
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(0.000, -44.500)
+texture = ExtResource("2_cap")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(0, -11)
+shape = SubResource("CircleShape2D_cap")
