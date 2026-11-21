@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_orange.tscn" id="Ferry"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_syrup.tscn" id="FerrySyrup"]
 [ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
 [ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
 [ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
@@ -109,10 +110,16 @@ position = Vector2(672.000, 1760.000)
 text = "Orange Town"
 
 [node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
-reperes = Dictionary[Vector2, String]({Vector2(672.000, 1760.000): "Quai du ferry", Vector2(1632.000, 1568.000): "Place des Orangers", Vector2(1568.000, 1376.000): "Boutique de Chouchou", Vector2(2720.000, 2144.000): "Verger des falaises", Vector2(2912.000, 992.000): "Chapiteau de Baggy", Vector2(992.000, 2272.000): "Crique du Ressac"})
+reperes = Dictionary[Vector2, String]({Vector2(672.000, 1760.000): "Quai du ferry", Vector2(1632.000, 1568.000): "Place des Orangers", Vector2(1568.000, 1376.000): "Boutique de Chouchou", Vector2(2720.000, 2144.000): "Verger des falaises", Vector2(2912.000, 992.000): "Chapiteau de Baggy", Vector2(992.000, 2272.000): "Crique du Ressac", Vector2(524.800, 1856.000): "Ferry pour Syrup Village"})
 
 [node name="DepuisShellsTown" type="Marker2D" parent="Arrivees"]
 position = Vector2(672.000, 1760.000)
+
+[node name="DepuisSyrupVillage" type="Marker2D" parent="Arrivees"]
+position = Vector2(736.000, 1824.000)
+
+[node name="CapitaineVolige" parent="." instance=ExtResource("FerrySyrup")]
+position = Vector2(524.800, 1856.000)
 
 [node name="CapitaineBrise" parent="." instance=ExtResource("Ferry")]
 position = Vector2(819.200, 1728.000)
