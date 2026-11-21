@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
 [ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_logue.tscn" id="FerryLogue"]
-[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_alabasta.tscn" id="FerryAlabasta"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_whisky.tscn" id="FerryWhisky"]
 [ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
 [ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
@@ -92,6 +92,9 @@ position = Vector2(1472.0, 2112.0)
 [node name="DepuisAlabasta" type="Marker2D" parent="Arrivees"]
 position = Vector2(1600.0, 2112.0)
 
+[node name="DepuisWhiskyPeak" type="Marker2D" parent="Arrivees"]
+position = Vector2(1700.0, 2112.0)
+
 [node name="CapitaineEsturgeon" parent="." instance=ExtResource("FerryLogue")]
 position = Vector2(1369.6, 2080.0)
 paroles = "Redescendre sur Loguetown à la marée qui suit ? Possible, mon mousse. Le courant redescend comme il monte : dans le bon chenal, et jamais sans balises."
@@ -99,12 +102,8 @@ destination = "res://scenes/loguetown.tscn"
 arrivee = &"DepuisReverseMountain"
 libelle_traversee = "Descendre vers Loguetown"
 
-[node name="CapitaineSimoun" parent="." instance=ExtResource("FerryAlabasta")]
+[node name="CapitaineTopaze" parent="." instance=ExtResource("FerryWhisky")]
 position = Vector2(1753.6, 2080.0)
-paroles = "Une fois le col franchi, la mer du haut se jette dans Grand Line : ma prochaine escale sent le sable et l'épice. Alabasta. Montre ton Log Pose à la douane, pas ton assurance."
-destination = "res://scenes/alabasta.tscn"
-arrivee = &"DepuisReverseMountain"
-libelle_traversee = "Embarquer pour Alabasta"
 
 [node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
 position = Vector2(1088.0, 2600.0)

@@ -95,7 +95,7 @@ text = "Alabasta"
 [node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
 reperes = Dictionary[Vector2, String]({Vector2(640.0, 2304.0): "Port de Nanohana", Vector2(1700.0, 1500.0): "Oasis de Yuba", Vector2(700.0, 700.0): "Sphinx de Nanohana", Vector2(2450.0, 780.0): "Alubarna", Vector2(2400.0, 1150.0): "Entrée du plateau", Vector2(2800.0, 620.0): "Monument du royaume"})
 
-[node name="DepuisReverseMountain" type="Marker2D" parent="Arrivees"]
+[node name="DepuisDrum" type="Marker2D" parent="Arrivees"]
 position = Vector2(576.0, 2304.0)
 
 [node name="DepuisZou" type="Marker2D" parent="Arrivees"]
