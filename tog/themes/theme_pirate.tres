@@ -1,112 +1,13 @@
-[gd_resource type="Theme" load_steps=44 format=3]
+[gd_resource type="Theme" format=3 uid="uid://coyij64h4xwno"]
 
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/window.png" id="window"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/parchment.png" id="parchment"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/panel_inset.png" id="inset"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/button_normal.png" id="button_normal"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/button_hover.png" id="button_hover"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/button_pressed.png" id="button_pressed"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/button_disabled.png" id="button_disabled"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/focus.png" id="focus"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/line_edit.png" id="line_edit"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/ribbon.png" id="ribbon"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/nameplate.png" id="nameplate"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/themes/parchment/progress_bg.png" id="progress_bg"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/bars/bar_red.png" id="bar_red"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/bars/bar_gold.png" id="bar_gold"]
-[ext_resource type="Texture2D" path="res://assets/ui/pirate_frame.svg" id="pirate_frame"]
-[ext_resource type="Texture2D" path="res://assets/ui/parchment_panel.svg" id="pirate_parchment"]
-[ext_resource type="Texture2D" path="res://assets/ui/pirate_button.svg" id="pirate_button"]
-[ext_resource type="Texture2D" path="res://assets/ui/pirate_button_hover.svg" id="pirate_button_hover"]
-[ext_resource type="Texture2D" path="res://assets/ui/pirate_window.svg" id="pirate_window"]
-[ext_resource type="Texture2D" path="res://assets/ui/pirate_ribbon.svg" id="pirate_ribbon"]
-
-[sub_resource type="StyleBoxTexture" id="WindowFrame"]
-content_margin_left = 10.0
-content_margin_top = 22.0
-content_margin_right = 10.0
-content_margin_bottom = 10.0
-texture = ExtResource("pirate_window")
-texture_margin_left = 20.0
-texture_margin_top = 20.0
-texture_margin_right = 20.0
-texture_margin_bottom = 20.0
-axis_stretch_horizontal = 0
-axis_stretch_vertical = 0
-
-[sub_resource type="StyleBoxTexture" id="ParchmentPanel"]
-content_margin_left = 10.0
-content_margin_top = 10.0
-content_margin_right = 10.0
-content_margin_bottom = 10.0
-texture = ExtResource("pirate_parchment")
-texture_margin_left = 15.0
-texture_margin_top = 15.0
-texture_margin_right = 15.0
-texture_margin_bottom = 15.0
-axis_stretch_horizontal = 0
-axis_stretch_vertical = 0
-
-[sub_resource type="StyleBoxTexture" id="InsetPanel"]
-content_margin_left = 8.0
-content_margin_top = 8.0
-content_margin_right = 8.0
-content_margin_bottom = 8.0
-texture = ExtResource("pirate_frame")
-texture_margin_left = 20.0
-texture_margin_top = 20.0
-texture_margin_right = 20.0
-texture_margin_bottom = 20.0
-axis_stretch_horizontal = 0
-axis_stretch_vertical = 0
-
-[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
-content_margin_left = 12.0
-content_margin_top = 4.0
-content_margin_right = 12.0
-content_margin_bottom = 4.0
-bg_color = Color(0.32, 0.075, 0.085, 1)
-border_color = Color(0.89, 0.63, 0.24, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-
-[sub_resource type="StyleBoxFlat" id="ButtonHover"]
-content_margin_left = 12.0
-content_margin_top = 4.0
-content_margin_right = 12.0
-content_margin_bottom = 4.0
-bg_color = Color(0.48, 0.1, 0.1, 1)
-border_color = Color(1, 0.82, 0.39, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-
-[sub_resource type="StyleBoxFlat" id="ButtonPressed"]
-content_margin_left = 12.0
-content_margin_top = 4.0
-content_margin_right = 12.0
-content_margin_bottom = 4.0
-bg_color = Color(0.22, 0.045, 0.06, 1)
-border_color = Color(0.72, 0.43, 0.16, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
+[ext_resource type="Texture2D" uid="uid://02qfq235gvdc" path="res://addons/pixel_ui_fantasy/bars/bar_gold.png" id="bar_gold"]
+[ext_resource type="Texture2D" uid="uid://b0oia1dlkpk0" path="res://addons/pixel_ui_fantasy/bars/bar_red.png" id="bar_red"]
+[ext_resource type="Texture2D" uid="uid://cy225fkqiriuc" path="res://addons/pixel_ui_fantasy/themes/parchment/focus.png" id="focus"]
+[ext_resource type="Texture2D" uid="uid://d2cb3ganvfpry" path="res://addons/pixel_ui_fantasy/themes/parchment/line_edit.png" id="line_edit"]
+[ext_resource type="Texture2D" uid="uid://dter2npodjkb1" path="res://assets/ui/pirate_frame.svg" id="pirate_frame"]
+[ext_resource type="Texture2D" uid="uid://1fls7u8m0c3t" path="res://assets/ui/parchment_panel.svg" id="pirate_parchment"]
+[ext_resource type="Texture2D" uid="uid://dxfmdj1w11ey6" path="res://assets/ui/pirate_window.svg" id="pirate_window"]
+[ext_resource type="Texture2D" uid="uid://b2dkqm3e8al0g" path="res://addons/pixel_ui_fantasy/themes/parchment/progress_bg.png" id="progress_bg"]
 
 [sub_resource type="StyleBoxFlat" id="ButtonDisabled"]
 content_margin_left = 12.0
@@ -114,11 +15,11 @@ content_margin_top = 4.0
 content_margin_right = 12.0
 content_margin_bottom = 4.0
 bg_color = Color(0.28, 0.22, 0.18, 1)
-border_color = Color(0.48, 0.39, 0.29, 1)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
+border_color = Color(0.48, 0.39, 0.29, 1)
 corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
@@ -131,6 +32,151 @@ texture_margin_top = 4.0
 texture_margin_right = 4.0
 texture_margin_bottom = 4.0
 
+[sub_resource type="StyleBoxFlat" id="ButtonHover"]
+content_margin_left = 12.0
+content_margin_top = 4.0
+content_margin_right = 12.0
+content_margin_bottom = 4.0
+bg_color = Color(0.48, 0.1, 0.1, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.82, 0.39, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
+content_margin_left = 12.0
+content_margin_top = 4.0
+content_margin_right = 12.0
+content_margin_bottom = 4.0
+bg_color = Color(0.32, 0.075, 0.085, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.89, 0.63, 0.24, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="ButtonPressed"]
+content_margin_left = 12.0
+content_margin_top = 4.0
+content_margin_right = 12.0
+content_margin_bottom = 4.0
+bg_color = Color(0.22, 0.045, 0.06, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.72, 0.43, 0.16, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="SystemFont" id="BodyFont"]
+font_names = PackedStringArray("Arial")
+
+[sub_resource type="StyleBoxFlat" id="CompassFocus"]
+bg_color = Color(0.24, 0.075, 0.065, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 0.9, 0.59, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="CloseHover"]
+bg_color = Color(0.75, 0.15, 0.1, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.9, 0.53, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="CloseNormal"]
+bg_color = Color(0.55, 0.09, 0.09, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.98, 0.74, 0.31, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="CompassHover"]
+bg_color = Color(0.52, 0.12, 0.08, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.82, 0.39, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="CompassNormal"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.24, 0.075, 0.065, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.94, 0.67, 0.24, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="CompassPressed"]
+bg_color = Color(0.72, 0.35, 0.08, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.87, 0.5, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxTexture" id="ProgressGold"]
+texture = ExtResource("bar_gold")
+texture_margin_left = 5.0
+texture_margin_top = 2.0
+texture_margin_right = 5.0
+texture_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxTexture" id="InsetPanel"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+texture = ExtResource("pirate_frame")
+texture_margin_left = 20.0
+texture_margin_top = 20.0
+texture_margin_right = 20.0
+texture_margin_bottom = 20.0
+
 [sub_resource type="StyleBoxTexture" id="Field"]
 content_margin_left = 7.0
 content_margin_top = 5.0
@@ -142,16 +188,8 @@ texture_margin_top = 4.0
 texture_margin_right = 4.0
 texture_margin_bottom = 4.0
 
-[sub_resource type="StyleBoxTexture" id="Ribbon"]
-content_margin_left = 12.0
-content_margin_top = 3.0
-content_margin_right = 12.0
-content_margin_bottom = 5.0
-texture = ExtResource("pirate_ribbon")
-texture_margin_left = 20.0
-texture_margin_top = 20.0
-texture_margin_right = 20.0
-texture_margin_bottom = 20.0
+[sub_resource type="SystemFont" id="DisplayFont"]
+font_names = PackedStringArray("Georgia", "Times New Roman")
 
 [sub_resource type="StyleBoxFlat" id="Nameplate"]
 content_margin_left = 10.0
@@ -159,15 +197,37 @@ content_margin_top = 4.0
 content_margin_right = 10.0
 content_margin_bottom = 4.0
 bg_color = Color(0.91, 0.74, 0.46, 1)
-border_color = Color(0.51, 0.27, 0.12, 1)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
+border_color = Color(0.51, 0.27, 0.12, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxTexture" id="WindowFrame"]
+content_margin_left = 10.0
+content_margin_top = 22.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+texture = ExtResource("pirate_window")
+texture_margin_left = 20.0
+texture_margin_top = 20.0
+texture_margin_right = 20.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxTexture" id="ParchmentPanel"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+texture = ExtResource("pirate_parchment")
+texture_margin_left = 15.0
+texture_margin_top = 15.0
+texture_margin_right = 15.0
+texture_margin_bottom = 15.0
 
 [sub_resource type="StyleBoxTexture" id="ProgressBackground"]
 texture = ExtResource("progress_bg")
@@ -183,175 +243,86 @@ texture_margin_top = 2.0
 texture_margin_right = 5.0
 texture_margin_bottom = 2.0
 
-[sub_resource type="StyleBoxTexture" id="ProgressGold"]
-texture = ExtResource("bar_gold")
-texture_margin_left = 5.0
-texture_margin_top = 2.0
-texture_margin_right = 5.0
-texture_margin_bottom = 2.0
-
-[sub_resource type="StyleBoxFlat" id="CompassNormal"]
-bg_color = Color(0.24, 0.075, 0.065, 1)
-border_color = Color(0.94, 0.67, 0.24, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-corner_radius_top_left = 28
-corner_radius_top_right = 28
-corner_radius_bottom_right = 28
-corner_radius_bottom_left = 28
-content_margin_left = 4.0
-content_margin_top = 4.0
-content_margin_right = 4.0
-content_margin_bottom = 4.0
-
-[sub_resource type="StyleBoxFlat" id="CompassHover"]
-bg_color = Color(0.52, 0.12, 0.08, 1)
-border_color = Color(1, 0.82, 0.39, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-corner_radius_top_left = 28
-corner_radius_top_right = 28
-corner_radius_bottom_right = 28
-corner_radius_bottom_left = 28
-
-[sub_resource type="StyleBoxFlat" id="CompassPressed"]
-bg_color = Color(0.72, 0.35, 0.08, 1)
-border_color = Color(1, 0.87, 0.5, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-corner_radius_top_left = 28
-corner_radius_top_right = 28
-corner_radius_bottom_right = 28
-corner_radius_bottom_left = 28
-
-[sub_resource type="StyleBoxFlat" id="CompassFocus"]
-bg_color = Color(0.24, 0.075, 0.065, 1)
-border_color = Color(1, 0.9, 0.59, 1)
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-corner_radius_top_left = 28
-corner_radius_top_right = 28
-corner_radius_bottom_right = 28
-corner_radius_bottom_left = 28
-
-[sub_resource type="SystemFont" id="BodyFont"]
-font_names = PackedStringArray("Arial")
-
-[sub_resource type="SystemFont" id="DisplayFont"]
-font_names = PackedStringArray("Georgia", "Times New Roman")
-
 [sub_resource type="StyleBoxFlat" id="TitlePlate"]
-bg_color = Color(0.26, 0.055, 0.075, 1)
-border_color = Color(0.91, 0.66, 0.25, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 content_margin_left = 14.0
 content_margin_top = 6.0
 content_margin_right = 14.0
 content_margin_bottom = 6.0
-
-[sub_resource type="StyleBoxFlat" id="CloseNormal"]
-bg_color = Color(0.55, 0.09, 0.09, 1)
-border_color = Color(0.98, 0.74, 0.31, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-corner_radius_top_left = 28
-corner_radius_top_right = 28
-corner_radius_bottom_right = 28
-corner_radius_bottom_left = 28
-
-[sub_resource type="StyleBoxFlat" id="CloseHover"]
-bg_color = Color(0.75, 0.15, 0.1, 1)
-border_color = Color(1, 0.9, 0.53, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-corner_radius_top_left = 28
-corner_radius_top_right = 28
-corner_radius_bottom_right = 28
-corner_radius_bottom_left = 28
+bg_color = Color(0.26, 0.055, 0.075, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.91, 0.66, 0.25, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
 [resource]
 default_font = SubResource("BodyFont")
 default_font_size = 19
 Button/colors/font_color = Color(0.98, 0.88, 0.65, 1)
+Button/colors/font_disabled_color = Color(0.67, 0.55, 0.39, 1)
 Button/colors/font_hover_color = Color(1, 0.96, 0.78, 1)
 Button/colors/font_pressed_color = Color(1, 0.84, 0.35, 1)
-Button/colors/font_disabled_color = Color(0.67, 0.55, 0.39, 1)
 Button/font_sizes/font_size = 19
-Button/styles/normal = SubResource("ButtonNormal")
-Button/styles/hover = SubResource("ButtonHover")
-Button/styles/pressed = SubResource("ButtonPressed")
 Button/styles/disabled = SubResource("ButtonDisabled")
 Button/styles/focus = SubResource("ButtonFocus")
-OptionButton/colors/font_color = Color(0.98, 0.88, 0.65, 1)
-OptionButton/font_sizes/font_size = 19
-OptionButton/styles/normal = SubResource("ButtonNormal")
-OptionButton/styles/hover = SubResource("ButtonHover")
-OptionButton/styles/pressed = SubResource("ButtonPressed")
-OptionButton/styles/disabled = SubResource("ButtonDisabled")
-OptionButton/styles/focus = SubResource("ButtonFocus")
-Panel/styles/panel = SubResource("WindowFrame")
-PanelContainer/styles/panel = SubResource("ParchmentPanel")
+Button/styles/hover = SubResource("ButtonHover")
+Button/styles/normal = SubResource("ButtonNormal")
+Button/styles/pressed = SubResource("ButtonPressed")
+CloseButton/base_type = &"Button"
+CloseButton/colors/font_color = Color(1, 0.91, 0.69, 1)
+CloseButton/colors/font_hover_color = Color(1, 1, 0.86, 1)
+CloseButton/font_sizes/font_size = 30
+CloseButton/fonts/font = SubResource("BodyFont")
+CloseButton/styles/focus = SubResource("CompassFocus")
+CloseButton/styles/hover = SubResource("CloseHover")
+CloseButton/styles/normal = SubResource("CloseNormal")
+CloseButton/styles/pressed = SubResource("CloseHover")
+CompassButton/base_type = &"Button"
+CompassButton/colors/font_color = Color(0.98, 0.87, 0.55, 1)
+CompassButton/colors/icon_hover_color = Color(1, 0.97, 0.77, 1)
+CompassButton/colors/icon_normal_color = Color(1, 0.87, 0.55, 1)
+CompassButton/styles/focus = SubResource("CompassFocus")
+CompassButton/styles/hover = SubResource("CompassHover")
+CompassButton/styles/normal = SubResource("CompassNormal")
+CompassButton/styles/pressed = SubResource("CompassPressed")
+GoldBar/base_type = &"ProgressBar"
+GoldBar/styles/fill = SubResource("ProgressGold")
+InsetPanel/base_type = &"PanelContainer"
+InsetPanel/styles/panel = SubResource("InsetPanel")
 Label/colors/font_color = Color(0.22, 0.12, 0.07, 1)
+LineEdit/colors/caret_color = Color(0.62, 0.1, 0.08, 1)
 LineEdit/colors/font_color = Color(0.22, 0.12, 0.07, 1)
 LineEdit/colors/font_placeholder_color = Color(0.43, 0.29, 0.16, 1)
-LineEdit/colors/caret_color = Color(0.62, 0.1, 0.08, 1)
-LineEdit/styles/normal = SubResource("Field")
 LineEdit/styles/focus = SubResource("ButtonFocus")
+LineEdit/styles/normal = SubResource("Field")
 LineEdit/styles/read_only = SubResource("Field")
+Nameplate/base_type = &"Label"
+Nameplate/colors/font_color = Color(0.24, 0.075, 0.045, 1)
+Nameplate/fonts/font = SubResource("DisplayFont")
+Nameplate/styles/normal = SubResource("Nameplate")
+OptionButton/colors/font_color = Color(0.98, 0.88, 0.65, 1)
+OptionButton/font_sizes/font_size = 19
+OptionButton/styles/disabled = SubResource("ButtonDisabled")
+OptionButton/styles/focus = SubResource("ButtonFocus")
+OptionButton/styles/hover = SubResource("ButtonHover")
+OptionButton/styles/normal = SubResource("ButtonNormal")
+OptionButton/styles/pressed = SubResource("ButtonPressed")
+Panel/styles/panel = SubResource("WindowFrame")
+PanelContainer/styles/panel = SubResource("ParchmentPanel")
+ParchmentPanel/base_type = &"PanelContainer"
+ParchmentPanel/styles/panel = SubResource("ParchmentPanel")
 ProgressBar/styles/background = SubResource("ProgressBackground")
 ProgressBar/styles/fill = SubResource("ProgressGold")
 RedBar/base_type = &"ProgressBar"
 RedBar/styles/fill = SubResource("ProgressRed")
-GoldBar/base_type = &"ProgressBar"
-GoldBar/styles/fill = SubResource("ProgressGold")
-ParchmentPanel/base_type = &"PanelContainer"
-ParchmentPanel/styles/panel = SubResource("ParchmentPanel")
-InsetPanel/base_type = &"PanelContainer"
-InsetPanel/styles/panel = SubResource("InsetPanel")
-Title/base_type = &"Label"
-Title/fonts/font = SubResource("DisplayFont")
-Title/colors/font_color = Color(0.98, 0.88, 0.65, 1)
 Ribbon/base_type = &"Label"
-Ribbon/fonts/font = SubResource("DisplayFont")
 Ribbon/colors/font_color = Color(0.98, 0.88, 0.65, 1)
+Ribbon/fonts/font = SubResource("DisplayFont")
 Ribbon/styles/normal = SubResource("TitlePlate")
-CloseButton/base_type = &"Button"
-CloseButton/fonts/font = SubResource("BodyFont")
-CloseButton/font_sizes/font_size = 30
-CloseButton/colors/font_color = Color(1, 0.91, 0.69, 1)
-CloseButton/colors/font_hover_color = Color(1, 1, 0.86, 1)
-CloseButton/styles/normal = SubResource("CloseNormal")
-CloseButton/styles/hover = SubResource("CloseHover")
-CloseButton/styles/pressed = SubResource("CloseHover")
-CloseButton/styles/focus = SubResource("CompassFocus")
-Nameplate/base_type = &"Label"
-Nameplate/fonts/font = SubResource("DisplayFont")
-Nameplate/colors/font_color = Color(0.24, 0.075, 0.045, 1)
-Nameplate/styles/normal = SubResource("Nameplate")
-CompassButton/base_type = &"Button"
-CompassButton/colors/font_color = Color(0.98, 0.87, 0.55, 1)
-CompassButton/colors/icon_normal_color = Color(1, 0.87, 0.55, 1)
-CompassButton/colors/icon_hover_color = Color(1, 0.97, 0.77, 1)
-CompassButton/styles/normal = SubResource("CompassNormal")
-CompassButton/styles/hover = SubResource("CompassHover")
-CompassButton/styles/pressed = SubResource("CompassPressed")
-CompassButton/styles/focus = SubResource("CompassFocus")
+Title/base_type = &"Label"
+Title/colors/font_color = Color(0.98, 0.88, 0.65, 1)
+Title/fonts/font = SubResource("DisplayFont")

@@ -1,6 +1,6 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://dmdrm4d1k0r33"]
 
-[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/sols.png" id="atlas"]
+[ext_resource type="Texture2D" uid="uid://dlv5ari3gp1q8" path="res://assets/world/kit_cartes/sols.png" id="atlas"]
 
 [sub_resource type="TileSetAtlasSource" id="Sols"]
 texture = ExtResource("atlas")
@@ -17,7 +17,6 @@ texture_region_size = Vector2i(64, 64)
 1:1/0/custom_data_0 = "Ardoise"
 2:1/0 = 0
 2:1/0/custom_data_0 = "Planches"
-
 
 [resource]
 tile_size = Vector2i(64, 64)
