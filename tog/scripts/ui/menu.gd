@@ -1559,7 +1559,9 @@ func maj_wiki() -> void:
 		liste_wiki.set_item_metadata(index, id)
 		if id == id_wiki_courant:
 			index_actuel = index
-		if Inventaire.est_connu(id) or est_fruit:
+		# ressources et fruits révélés : jamais de cadenas sur elles
+		var est_ressource := str(ligne["type"]) == "ressource"
+		if Inventaire.est_connu(id) or est_fruit or est_ressource:
 			connus += 1
 		else:
 			liste_wiki.set_item_icon(index, preload(ICONE_CADENAS))
