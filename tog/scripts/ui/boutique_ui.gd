@@ -72,19 +72,35 @@ func _creer_ligne(id: String, prix: int) -> HBoxContainer:
 	prix_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	ligne.add_child(prix_label)
 
+	# quantité achetable d'un coup, plafonnée à ce que la bourse suit
+	var quantite := SpinBox.new()
+	quantite.min_value = 1
+	quantite.max_value = maxi(1, mini(99, floori(float(Personnage.berry) / float(prix))))
+	quantite.value = 1
+	quantite.custom_minimum_size = Vector2(84, 0)
+	quantite.tooltip_text = "Quantité à acheter"
+	ligne.add_child(quantite)
+
 	var bouton := Button.new()
 	bouton.text = "Acheter"
 	bouton.disabled = Personnage.berry < prix
-	bouton.pressed.connect(_acheter.bind(id, prix))
+	bouton.pressed.connect(_acheter.bind(id, prix, quantite))
+	quantite.value_changed.connect(func(_valeur: float) -> void:
+		bouton.disabled = Personnage.berry < prix * int(quantite.value))
 	ligne.add_child(bouton)
 	return ligne
 
-func _acheter(id: String, prix: int) -> void:
-	if Personnage.berry < prix:
+func _acheter(id: String, prix: int, quantite: SpinBox) -> void:
+	var nombre := maxi(1, int(quantite.value))
+	var total := prix * nombre
+	if Personnage.berry < total:
 		return
-	Personnage.ajouter_berry(-prix)
-	Inventaire.ajouter_objet(id, 1)
-	_annonce("Acheté : %s" % Inventaire.nom_objet(id))
+	Personnage.ajouter_berry(-total)
+	Inventaire.ajouter_objet(id, nombre)
+	if nombre > 1:
+		_annonce("Acheté : %s ×%d (%d Berry)" % [Inventaire.nom_objet(id), nombre, total])
+	else:
+		_annonce("Acheté : %s" % Inventaire.nom_objet(id))
 	_rafraichir()
 
 func _annonce(texte: String) -> void:
