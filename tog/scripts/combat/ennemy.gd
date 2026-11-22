@@ -479,6 +479,15 @@ func recompenser_victoire() -> void:
 			var liste: Variant = JSON.parse_string(str(ligne.get("drops_json", "[]")))
 			if liste is Array:
 				drops = liste
+	# la tablette des Flots Calmes honore sa promesse : les gains de ce
+	# combat sont doublés (le drapeau tient jusqu'à la victoire, donc
+	# toutes les rencontres de la même escarmouche profitent du bonus)
+	if Personnage.prochain_combat_double:
+		xp *= 2
+		berry_min *= 2
+		berry_max *= 2
+		if _combat_manager != null:
+			_combat_manager.afficher_message("La tablette des Flots Calmes double tes gains !")
 	# tirage des objets : chaque entrée {item_id, probability, min/max_quantity}
 	# (les ids arrivent en float depuis le JSON : on les repasse en int)
 	var objets_gagnes: Array = []

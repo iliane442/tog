@@ -1427,6 +1427,8 @@ func _utiliser_consommable(id: String) -> void:
 		texte = "%d %s à redistribuer dans l’onglet Personnage." % [points_rendus, unite]
 	elif soin > 0:
 		texte = "Tu récupères %d points de vie." % soin
+	elif effets.has(Personnage.EFFET_DOUBLE_COMBAT):
+		texte = "La tablette s'est brisée en une bénédiction : prochain combat gagné, XP et Berry doublés !"
 	# carte au trésor : la croix est plantée, la chasse commence
 	if str(details.get("sous_type", "")) == "carte_tresor":
 		texte = "Une croix marque un trésor sur la carte du monde. File la déterrer !"

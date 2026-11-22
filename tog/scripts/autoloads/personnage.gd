@@ -43,6 +43,12 @@ const EMPLACEMENTS_NAVIRE := {
 
 const POINTS_PAR_NIVEAU := 5
 const EFFET_REATTRIBUTION := "reset_stats"
+# tablette des Flots Calmes : gains du prochain combat doublés
+const EFFET_DOUBLE_COMBAT := "prochain_combat_double"
+
+# la bénédiction de la tablette attend le prochain combat gagné :
+# XP et Berry versés par les victoires y seront doublés
+var prochain_combat_double := false
 
 # impacts des points de caractéristiques (la vitalité donne +5 PV par
 # point, cf. recalculer_stats / depenser_point) ; la caractéristique
@@ -528,6 +534,13 @@ func utiliser_objet(id_objet: String) -> String:
 		var niveau := clampi(int(effets.get("tresor", 1)), 1, 4)
 		if not CartesTresor.creer_croix(niveau):
 			return "Aucun emplacement exploitable sur la carte."
+		Inventaire.retirer_objet(id_objet, 1)
+		sauvegarder()
+		return ""
+	# tablette des Flots Calmes : elle se brise en une bénédiction —
+	# les gains (XP et Berry) du prochain combat gagné seront doublés
+	if effets.has(EFFET_DOUBLE_COMBAT):
+		prochain_combat_double = true
 		Inventaire.retirer_objet(id_objet, 1)
 		sauvegarder()
 		return ""
@@ -1063,6 +1076,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "fruit", fruit_id)
 	cfg.set_value("perso", "fruit_xp", fruit_xp)
 	cfg.set_value("perso", "buffs", buffs)
+	cfg.set_value("perso", "prochain_combat_double", prochain_combat_double)
 	perso_cree = cfg.save(CHEMIN_PERSO) == OK
 
 func charger_perso() -> void:
@@ -1085,6 +1099,7 @@ func charger_perso() -> void:
 	sexe = sexe_lu if VALEURS_SEXES_VALIDES.has(sexe_lu) else "M"
 	berry = int(cfg.get_value("perso", "berry", 0))
 	points_statistique = int(cfg.get_value("perso", "points_statistique", 0))
+	prochain_combat_double = bool(cfg.get_value("perso", "prochain_combat_double", false))
 	var depenses = cfg.get_value("perso", "points_depenses", {})
 	if depenses is Dictionary:
 		points_depenses = depenses

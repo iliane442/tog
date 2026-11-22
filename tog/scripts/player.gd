@@ -431,6 +431,11 @@ func _on_combat_termine(_victoire: bool) -> void:
 	_tour_joueur = false
 	_arreter_chrono_tour()
 	_sort_selectionne = false
+	# combat gagné : la bénédiction de la tablette des Flots Calmes
+	# s'est consommée (en cas de fuite elle attend le prochain combat)
+	if _victoire and Personnage.prochain_combat_double:
+		Personnage.prochain_combat_double = false
+		Personnage.sauvegarder()
 	# plus de combat : plus de recharges, la barre redevient blanche
 	_recharges_sorts.clear()
 	_cases_placement.clear()
