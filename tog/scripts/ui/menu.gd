@@ -307,7 +307,8 @@ func _ready() -> void:
 		var ligne_stat: Dictionary = lignes_stats[cle]
 		var bouton_ajouter: Button = ligne_stat["ajouter"] as Button
 		bouton_ajouter.pressed.connect(_on_augmenter_stat.bind(cle))
-		bouton_ajouter.tooltip_text = str(AIDE_STATS.get(cle, ""))
+		bouton_ajouter.gui_input.connect(_on_stat_bouton_input.bind(cle))
+		bouton_ajouter.tooltip_text = str(AIDE_STATS.get(cle, "")) + "\nClic droit : choisir le nombre de points."
 	champ_recherche.text_changed.connect(func(_t): maj_wiki())
 	liste_wiki.item_selected.connect(_selectionner_objet_wiki)
 	option_type_wiki.item_selected.connect(func(_i): maj_wiki())
@@ -576,6 +577,46 @@ func _on_augmenter_stat(cle: String) -> void:
 		return
 	points_en_attente[cle] = int(points_en_attente.get(cle, 0)) + 1
 	maj_personnage()
+
+# clic droit sur le « + » d'une stat : ouvrir la saisie d'un nombre
+# précis de points (le clic gauche garde son +1)
+func _on_stat_bouton_input(evenement: InputEvent, cle: String) -> void:
+	if evenement is InputEventMouseButton and evenement.pressed \
+			and evenement.button_index == MOUSE_BUTTON_RIGHT:
+		var restants := maxi(Personnage.points_statistique - _total_points_en_attente(), 0)
+		if restants > 0:
+			_ouvrir_saisie_points(cle, restants)
+
+# fenêtre de choix du nombre : le maximum restant est prérempli —
+# après une montée de 55 niveaux, 55 points se posent d'un coup
+func _ouvrir_saisie_points(cle: String, restants: int) -> void:
+	var fenetre := AcceptDialog.new()
+	fenetre.title = "Répartir des points"
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 10)
+	var question := Label.new()
+	question.text = "Combien de points en %s ?" % str(LIBELLES_EFFETS.get(cle, cle))
+	colonne.add_child(question)
+	var saisie := SpinBox.new()
+	saisie.min_value = 1
+	saisie.max_value = restants
+	saisie.value = restants
+	saisie.custom_minimum_size = Vector2(64, 38)
+	colonne.add_child(saisie)
+	fenetre.add_child(colonne)
+	fenetre.ok_button_text = "Ajouter"
+	fenetre.confirmed.connect(func() -> void:
+		var montant := clampi(int(roundi(saisie.value)), 1, restants)
+		var en_attente := maxi(Personnage.points_statistique - _total_points_en_attente(), 0)
+		points_en_attente[cle] = int(points_en_attente.get(cle, 0)) + mini(montant, en_attente)
+		maj_personnage())
+	add_child(fenetre)
+	fenetre.popup_centered()
+	saisie.get_line_edit().select_all()
+	saisie.get_line_edit().grab_focus()
+	fenetre.visibility_changed.connect(func() -> void:
+		if not fenetre.visible:
+			fenetre.queue_free())
 
 func _on_valider_points() -> void:
 	if _total_points_en_attente() == 0:
