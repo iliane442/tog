@@ -48,8 +48,7 @@ const EFFET_REATTRIBUTION := "reset_stats"
 # point, cf. recalculer_stats / depenser_point) ; la caractéristique
 # « chance » s'affiche « Précision » et « agilite » s'affiche « Vitesse »
 # (les clés restent celles de la base et du fichier de sauvegarde)
-const DEGATS_PAR_FORCE := 1.0  # sort d'attaque de portée 1 (corps à corps)
-const DEGATS_PAR_INTELLIGENCE := 1.0  # sort d'attaque de portée >= 2
+const DEGATS_PAR_FORCE := 1.0  # tout sort d'attaque
 const SOIN_PAR_INTELLIGENCE := 1.0  # sorts de type heal
 const BONUS_XP_PAR_SAGESSE := 0.02  # +2% d'XP par point de sagesse
 const PRECISION_PAR_CHANCE := 0.01  # +1% de toucher par point de « Précision »
@@ -1193,26 +1192,24 @@ func xp_prochain_niveau() -> int:
 
 # --- bonus de caractéristiques au gameplay ---
 
-# dégâts ajoutés à un sort selon son profil : force pour le corps à
-# corps (portée 1), intelligence pour la distance (portée >= 2)
-func bonus_degats_sort(type_sort: String, portee_sort: int) -> float:
+# dégâts ajoutés à tout sort d'attaque : la Force muscle chaque coup,
+# au corps à corps comme à distance (l'Intelligence, elle, soigne)
+func bonus_degats_sort(type_sort: String, _portee_sort: int) -> float:
 	if type_sort.to_lower() != "attack":
 		return 0.0
-	if portee_sort <= 1:
-		return float(caracteristiques.get("force", 0)) * DEGATS_PAR_FORCE
-	return float(caracteristiques.get("intelligence", 0)) * DEGATS_PAR_INTELLIGENCE
+	return float(caracteristiques.get("force", 0)) * DEGATS_PAR_FORCE
 
 # soin ajouté aux sorts de type heal (intelligence)
 func bonus_soin_sort() -> float:
 	return float(caracteristiques.get("intelligence", 0)) * SOIN_PAR_INTELLIGENCE
 
 # la caractéristique qui augmente les effets d'un sort ("" si aucune) :
-# la Force muscle le corps à corps, l'Intelligence la distance et les
-# soins — c'est elle qu'il faut améliorer pour renforcer ce sort
+# la Force muscle toutes les attaques, l'Intelligence les soins —
+# c'est elle qu'il faut améliorer pour renforcer ce sort
 func stat_booster_sort(sort: Dictionary) -> String:
 	var type := str(sort.get("type", "")).to_lower()
 	if type == "attack":
-		return "Force" if int(sort.get("portee", 1)) <= 1 else "Intelligence"
+		return "Force"
 	if type == "heal" or type == "healing":
 		return "Intelligence"
 	return ""

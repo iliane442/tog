@@ -181,7 +181,7 @@ func maj_barre_sorts() -> void:
 				recharge = int(_joueur.call("recharge_restante_sort", id_sort))
 			bouton.modulate = Color(0.45, 0.45, 0.5) if recharge > 0 else Color.WHITE
 			# la caractéristique qui renforce ce sort suit son type :
-			# Force au corps à corps, Intelligence à distance et en soin
+			# Force pour toutes les attaques, Intelligence pour les soins
 			var stat_boost: String = Personnage.stat_booster_sort(sort)
 			var texte_boost := ""
 			if stat_boost != "":

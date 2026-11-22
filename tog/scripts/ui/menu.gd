@@ -79,8 +79,8 @@ const LIBELLES_TYPES_INVENTAIRE := {
 const AIDE_STATS := {
 	"vitalite": "Vitalité : +5 points de vie par point.",
 	"sagesse": "Sagesse : +2% d'expérience gagnée par point.",
-	"force": "Force : +1 dégât par point sur les sorts d'attaque au corps à corps (portée 1).",
-	"intelligence": "Intelligence : +1 dégât par point sur les sorts d'attaque à distance (portée 2 et plus), +1 point de soin par point sur les sorts de soin.",
+	"force": "Force : +1 dégât par point sur tous les sorts d'attaque.",
+	"intelligence": "Intelligence : +1 point de soin par point sur les sorts de soin.",
 	"chance": "Précision : +1% de chances de toucher par point.",
 	"agilite": "Vitesse : +1% d'esquive et +1% d'initiative par point, jusqu'à +50% de chances de gagner un PM supplémentaire par tour.",
 	"defense": "Défense : chaque point absorbe une part croissante des dégâts reçus (dégâts x 100 / (100 + défense)) — 100 points réduisent tout coup de moitié.",
