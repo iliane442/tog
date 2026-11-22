@@ -327,6 +327,7 @@ func _ready() -> void:
 	btn_navire.pressed.connect(_on_bouton_navire)
 	btn_vue_equipement.toggled.connect(_basculer_vue_equipement)
 	btn_vue_navire.toggled.connect(_basculer_vue_navire)
+	_construire_onglets_metiers()
 	_appliquer_vue_colonne()
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	btn_valider.pressed.connect(_on_valider_points)
@@ -1880,6 +1881,9 @@ func maj_metiers() -> void:
 	titre_recettes.visible = false
 	for enfant in liste_recettes.get_children():
 		enfant.queue_free()
+	if liste_ameliorations != null:
+		for enfant in liste_ameliorations.get_children():
+			enfant.queue_free()
 
 func afficher_metier(id_profession: String) -> void:
 	metier_affiche = id_profession
@@ -1891,6 +1895,8 @@ func afficher_metier(id_profession: String) -> void:
 		titre_recettes.visible = false
 		for enfant in liste_recettes.get_children():
 			enfant.queue_free()
+		for enfant in liste_ameliorations.get_children():
+			enfant.queue_free()
 		return
 	titre_recettes.visible = true
 	var donnees: Dictionary = Personnage.metiers[id_profession]
@@ -1899,7 +1905,140 @@ func afficher_metier(id_profession: String) -> void:
 		int(donnees["xp"]),
 		Personnage.xp_prochain_niveau_metier(id_profession),
 	]
-	_construire_recettes(id_profession)
+	# l'atelier affiche la vue choisie : recettes de craft ou établi
+	# d'amélioration des objets de la spécialité du métier
+	if _onglet_metiers == "ameliorations":
+		titre_recettes.text = "Améliorations (+20%% par niveau, max %d)" % Personnage.AMELIORATION_MAX
+		liste_recettes.visible = false
+		liste_ameliorations.visible = true
+		_construire_ameliorations()
+	else:
+		titre_recettes.text = _titre_recettes_initial
+		liste_recettes.visible = true
+		liste_ameliorations.visible = false
+		_construire_recettes(id_profession)
+
+# --- onglets de l'atelier du métier : Recettes et Améliorations ---
+
+var _onglet_metiers := "recettes"
+var _titre_recettes_initial := "Recettes"
+var _btn_onglet_recettes: Button
+var _btn_onglet_ameliorations: Button
+var liste_ameliorations: VBoxContainer
+
+# construit une fois la rangée d'onglets (entre l'XP du métier et le
+# titre) et la colonne des améliorations, jumelle de la liste des
+# recettes dans le même défilement
+func _construire_onglets_metiers() -> void:
+	var colonne := xp_metier.get_parent()
+	var rangee := HBoxContainer.new()
+	rangee.add_theme_constant_override("separation", 8)
+	_titre_recettes_initial = titre_recettes.text
+	_btn_onglet_recettes = Button.new()
+	_btn_onglet_recettes.text = "Recettes"
+	_btn_onglet_recettes.toggle_mode = true
+	_btn_onglet_recettes.button_pressed = true
+	_btn_onglet_recettes.pressed.connect(_sur_onglet_metiers.bind("recettes"))
+	_btn_onglet_ameliorations = Button.new()
+	_btn_onglet_ameliorations.text = "Améliorations"
+	_btn_onglet_ameliorations.toggle_mode = true
+	_btn_onglet_ameliorations.pressed.connect(_sur_onglet_metiers.bind("ameliorations"))
+	rangee.add_child(_btn_onglet_recettes)
+	rangee.add_child(_btn_onglet_ameliorations)
+	colonne.add_child(rangee)
+	# la rangée s'installe juste au-dessus du titre (entre l'XP du
+	# métier et « Recettes »)
+	colonne.move_child(rangee, titre_recettes.get_index())
+	liste_ameliorations = VBoxContainer.new()
+	liste_ameliorations.add_theme_constant_override("separation", 10)
+	liste_recettes.get_parent().add_child(liste_ameliorations)
+	liste_ameliorations.visible = false
+
+func _sur_onglet_metiers(onglet: String) -> void:
+	_onglet_metiers = onglet
+	if _btn_onglet_recettes != null:
+		_btn_onglet_recettes.button_pressed = onglet == "recettes"
+	if _btn_onglet_ameliorations != null:
+		_btn_onglet_ameliorations.button_pressed = onglet == "ameliorations"
+	if metier_affiche != "":
+		afficher_metier(metier_affiche)
+
+# l'établi d'amélioration : chaque objet possédé relevant de la
+# spécialité du métier, son niveau, le coût du prochain cran et le
+# bouton qui engage la retouche
+func _construire_ameliorations() -> void:
+	for enfant in liste_ameliorations.get_children():
+		enfant.queue_free()
+	var possedes: Array = []
+	for id_objet in Inventaire.objets:
+		if int(Inventaire.objets[id_objet]) > 0 and Personnage.objet_ameliorable(str(id_objet)):
+			possedes.append(str(id_objet))
+	possedes.sort_custom(func(a, b): return Inventaire.nom_objet(str(a)).to_lower() < Inventaire.nom_objet(str(b)).to_lower())
+	if possedes.is_empty():
+		var vide := Label.new()
+		vide.text = "Aucun objet de ta spécialité dans ton sac : fabrique-en ou améliore ce que tu possèdes déjà."
+		vide.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		liste_ameliorations.add_child(vide)
+		return
+	for id_objet in possedes:
+		var niveau: int = Personnage.niveau_amelioration(id_objet)
+		var cout: Dictionary = Personnage.cout_amelioration(id_objet) if niveau < Personnage.AMELIORATION_MAX else {}
+		var complet := true
+		var fragments: Array[String] = []
+		for id_ressource in cout:
+			var possede := int(Inventaire.objets.get(str(id_ressource), 0))
+			if possede < int(cout[id_ressource]):
+				complet = false
+			fragments.append("%s %d/%d" % [Inventaire.nom_objet(str(id_ressource)), possede, int(cout[id_ressource])])
+		var encadre := PanelContainer.new()
+		encadre.add_theme_stylebox_override("panel", FICHE_MENU)
+		var boite := VBoxContainer.new()
+		boite.add_theme_constant_override("separation", 4)
+		var entete := HBoxContainer.new()
+		var nom := Label.new()
+		nom.text = "%s · Niv. %d/%d" % [Inventaire.nom_objet(id_objet), niveau, Personnage.AMELIORATION_MAX]
+		nom.add_theme_font_size_override("font_size", 20)
+		nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		nom.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var btn := Button.new()
+		if niveau >= Personnage.AMELIORATION_MAX:
+			btn.text = "Au sommet"
+			btn.disabled = true
+		else:
+			btn.text = "Améliorer"
+			btn.disabled = not complet
+			btn.pressed.connect(_on_ameliorer.bind(id_objet))
+		entete.add_child(nom)
+		entete.add_child(btn)
+		var ligne_bonus := Label.new()
+		ligne_bonus.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		ligne_bonus.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if niveau >= Personnage.AMELIORATION_MAX:
+			ligne_bonus.text = "Bonus : +%d %% (statut maximum de l'art)." % roundi((Personnage.facteur_amelioration(id_objet) - 1.0) * 100.0)
+		else:
+			ligne_bonus.text = "Bonus actuel : +%d %%  ·  Après amélioration : +%d %%" % [
+				roundi((Personnage.facteur_amelioration(id_objet) - 1.0) * 100.0),
+				roundi((Personnage.facteur_amelioration(id_objet) - 1.0) * 100.0 + Personnage.AMELIORATION_BONUS * 100.0),
+			]
+		boite.add_child(entete)
+		boite.add_child(ligne_bonus)
+		if not fragments.is_empty():
+			var ligne_cout := Label.new()
+			ligne_cout.text = "Coût : " + ", ".join(PackedStringArray(fragments))
+			if not complet:
+				ligne_cout.add_theme_color_override("font_color", Color(0.55, 0.11, 0.10))
+			boite.add_child(ligne_cout)
+		encadre.add_child(boite)
+		liste_ameliorations.add_child(encadre)
+
+func _on_ameliorer(id_objet: String) -> void:
+	var message := Personnage.ameliorer_objet(id_objet)
+	if message != "":
+		avertir(message)
+	_construire_ameliorations()
+	maj_grille()
+	if detail_id_courant == id_objet:
+		maj_detail_item(id_objet)
 
 func _construire_recettes(id_profession: String) -> void:
 	for enfant in liste_recettes.get_children():

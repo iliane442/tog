@@ -80,10 +80,20 @@ const CLASSES_REMPLACEMENT := {
 	"6": "5",   # Infirmière -> Médecin
 	"8": "14",  # Timonier -> Combattant
 }
-# sexe ("M" ou "F") — seul élément de personnalisation choisi à la création,
-# l'apparence dépend ensuite de l'équipement porté
 var sexe: String = "M"
 const VALEURS_SEXES_VALIDES: Array[String] = ["M", "F"]
+const APPARENCE_HUMAINE_DEFAUT := "fushia"
+const APPARENCES_HUMAINES := {
+	"fushia": {"nom": "Aventuriers de Fushia", "M": "humain_pirate", "F": "humaine_pirate"},
+	"loguetown": {"nom": "Contrebandiers de Loguetown", "M": "humain_loguetown", "F": "humaine_loguetown"},
+	"large": {"nom": "Duellistes du large", "M": "humain_duelliste", "F": "humaine_duelliste"},
+}
+const VISUELS_AUTRES_RACES := {
+	"mink": {"M": "mink_pirate", "F": "mink_pirate_f"},
+	"fishman": {"M": "fishman_pirate", "F": "femme_poisson_pirate"},
+	"giant": {"M": "geant_pirate", "F": "geante_pirate"},
+}
+var apparence_humaine := APPARENCE_HUMAINE_DEFAUT
 var perso_cree := false
 # vrai quand le perso vit sur le serveur (compte connecté) : chaque
 # sauvegarde part immédiatement au serveur et le fichier local
@@ -261,6 +271,39 @@ func charger_classes() -> void:
 
 func nom_race() -> String:
 	return races.get(race_id, {}).get("nom", race_id)
+
+func a_une_apparence_humaine(id_race: String) -> bool:
+	return str(races.get(id_race, {}).get("id_technique", "human")) == "human"
+
+func normaliser_apparence_humaine(id_race: String, apparence: String) -> String:
+	if a_une_apparence_humaine(id_race) and APPARENCES_HUMAINES.has(apparence):
+		return apparence
+	return APPARENCE_HUMAINE_DEFAUT
+
+func prefixe_visuel(id_race: String, variante_sexe: String, apparence: String) -> String:
+	var id_technique := str(races.get(id_race, {}).get("id_technique", "human"))
+	var cle_sexe := "F" if variante_sexe == "F" else "M"
+	if id_technique == "human":
+		return APPARENCES_HUMAINES[normaliser_apparence_humaine(id_race, apparence)][cle_sexe]
+	return VISUELS_AUTRES_RACES.get(id_technique, {}).get(cle_sexe, "humain_pirate")
+
+func choisir_apparence_humaine(apparence: String) -> void:
+	var choix := normaliser_apparence_humaine(race_id, apparence)
+	if choix == apparence_humaine:
+		return
+	apparence_humaine = choix
+	sauvegarder()
+
+func portrait_visuel(prefixe: String) -> AtlasTexture:
+	var chemin := "res://assets/sprites/%s/%s_idle.png" % [prefixe, prefixe]
+	if not ResourceLoader.exists(chemin):
+		return null
+	var planche := load(chemin) as Texture2D
+	var portrait := AtlasTexture.new()
+	portrait.atlas = planche
+	portrait.region = Rect2(Vector2.ZERO, planche.get_size() / Vector2(4.0, 4.0))
+	portrait.filter_clip = true
+	return portrait
 
 func nom_classe() -> String:
 	return classes.get(classe_id, {}).get("nom", classe_id)
@@ -544,12 +587,15 @@ func utiliser_objet(id_objet: String) -> String:
 		Inventaire.retirer_objet(id_objet, 1)
 		sauvegarder()
 		return ""
-	var soin := int(effets.get("heal", 0))
+	# un consommable amélioré par son métier (cuisinier, médecin) soigne
+	# et buffe davantage : le facteur d'amélioration gonfle tout
+	var facteur := facteur_amelioration(id_objet)
+	var soin := roundi(int(effets.get("heal", 0)) * facteur)
 	# clés de bonus durable (hors soin et durée de l'effet)
 	var bonus := {}
 	for cle in effets:
 		if str(cle) != "heal" and str(cle) != "health" and str(cle) != "duration":
-			bonus[str(cle)] = int(effets[cle])
+			bonus[str(cle)] = roundi(int(effets[cle]) * facteur)
 	if soin == 0 and bonus.is_empty():
 		return "Cet objet n'a aucun effet."
 	Inventaire.retirer_objet(id_objet, 1)
@@ -625,12 +671,13 @@ func recalculer_stats(remplir_vie := true) -> void:
 	vie_max = maxi(vie_max, 1)
 	# bonus de points de vie accumulés par les niveaux gagnés
 	vie_max += 5 * maxi(niveau - 1, 0)
-	# bonus des objets équipés (effects_json des items)
+	# bonus des objets équipés (effects_json des items) — gonflés par
+	# les niveaux d'amélioration de l'atelier du métier
 	for emplacement in equipement:
 		var id_equipe: String = str(equipement[emplacement])
 		if id_equipe == "":
 			continue
-		_appliquer_effets_objet(Inventaire.details_objet(id_equipe).get("effets", {}))
+		_appliquer_effets_objet(_effets_ameliores(id_equipe))
 	# bonus passifs du fruit du démon mangé (effects_json de l'item fruit)
 	if fruit_id != "":
 		_appliquer_effets_objet(Inventaire.details_objet(fruit_id).get("effets", {}))
@@ -846,6 +893,12 @@ func _stats_piece_bateau(id: String) -> Dictionary:
 	if analyse != null:
 		stats["solidite"] = int(analyse.get_string(1))
 		stats["tempete"] = float(analyse.get_string(2))
+	# une pièce améliorée par le charpentier encaisse davantage :
+	# ses niveaux gonflent la solidité comme les stats d'un équipement
+	var facteur := facteur_amelioration(id)
+	if facteur != 1.0:
+		stats["solidite"] = roundi(float(stats["solidite"]) * facteur)
+		stats["tempete"] = float(stats["tempete"]) * facteur
 	return stats
 
 # solidité et résistance aux tempêtes du navire : la somme des
@@ -872,6 +925,100 @@ func bonus_vitesse_navire() -> float:
 # coup reçoit dans la formule de dégâts (attaque + bonus de Force)
 func attaque_effective() -> int:
 	return attaque + int(caracteristiques.get("force", 0))
+
+# --- améliorations d'équipement (atelier du métier) ---
+
+# chaque niveau d'amélioration gonfle les stats de l'objet de 20 %,
+# jusqu'à dix niveaux (soit un triplement des stats au sommet)
+const AMELIORATION_MAX := 10
+const AMELIORATION_BONUS := 0.20
+# id objet -> niveau d'amélioration atteint
+var ameliorations: Dictionary = {}
+
+# familles d'objets qu'un métier sait améliorer : paires (type,
+# sous-type) — sous-type vide = tout le type — ou l'entrée spéciale
+# (« navire ») pour les pièces de navire, reconnues par leur
+# description. Chaque métier ne retouche que sa spécialité,
+# c'est-à-dire ce qu'il fabrique lui-même.
+const FAMILLES_AMELIORATION := {
+	"carpenter": [["navire", ""]],
+	"medic": [["consumable", "soin"]],
+	"cook": [["consumable", "energie"], ["consumable", "nourriture"]],
+	"musician": [["accessoire", "instrument"]],
+	"blacksmith": [["armure", ""], ["arme", "hache"], ["arme", "masse"], ["arme", "lance"], ["arme", "bâton"]],
+	"navigateur": [["accessoire", "boussole"], ["accessoire", "longue-vue"], ["accessoire", "sextant"]],
+	"combattant": [["arme", "gants"], ["armure", "protège-bras"], ["accessoire", "visage"], ["accessoire", "pieds"], ["accessoire", "ceinture"], ["accessoire", "bracelet"]],
+	"sabreur": [["arme", "épée"]],
+	"tireur": [["arme", "pistolet"], ["arme", "fusil"], ["arme", "mousquet"], ["arme", "carabine"], ["arme", "canon"], ["arme", "lance-roquettes"]],
+	"archeologue": [["accessoire", "monocle"]],
+}
+
+# le métier unique du personnage (clé de `metiers`), "" s'il n'en a pas
+func metier_perso() -> String:
+	if metiers.is_empty():
+		return ""
+	return str(metiers.keys()[0])
+
+func niveau_amelioration(id_objet: String) -> int:
+	return int(ameliorations.get(id_objet, 0))
+
+# multiplicateur courant des stats de l'objet (1.0 = vierge)
+func facteur_amelioration(id_objet: String) -> float:
+	return 1.0 + AMELIORATION_BONUS * float(niveau_amelioration(id_objet))
+
+# coût du prochain niveau : du fer et de l'or, en quantités
+# croissantes (deux fois le niveau visé en fer, une fois en or)
+func cout_amelioration(id_objet: String) -> Dictionary:
+	var niveau_vise := mini(niveau_amelioration(id_objet) + 1, AMELIORATION_MAX)
+	return {"16": 2 * niveau_vise, "17": niveau_vise}
+
+# l'objet appartient-il à une famille que le métier sait améliorer ?
+func objet_ameliorable(id_objet: String) -> bool:
+	var details := Inventaire.details_objet(id_objet)
+	var familles: Array = FAMILLES_AMELIORATION.get(metier_perso(), [])
+	for famille in familles:
+		var famille_type := str(famille[0])
+		var famille_sous_type := str(famille[1])
+		if famille_type == "navire":
+			if str(details.get("description", "")).begins_with("Navire :"):
+				return true
+		elif str(details.get("type", "")) == famille_type and (famille_sous_type == "" or str(details.get("sous_type", "")) == famille_sous_type):
+			return true
+	return false
+
+# engage le prochain niveau d'amélioration ; renvoie un message
+# d'explication en cas de refus, "" si l'atelier a travaillé
+func ameliorer_objet(id_objet: String) -> String:
+	if int(Inventaire.objets.get(id_objet, 0)) <= 0:
+		return "Tu ne possèdes pas cet objet."
+	if not objet_ameliorable(id_objet):
+		return "Ton métier ne sait pas améliorer cet objet."
+	var niveau := niveau_amelioration(id_objet)
+	if niveau >= AMELIORATION_MAX:
+		return "Cet objet est déjà au sommet de l'art de ton métier."
+	var cout := cout_amelioration(id_objet)
+	for id_ressource in cout:
+		if int(Inventaire.objets.get(str(id_ressource), 0)) < int(cout[id_ressource]):
+			return "Il te manque des ressources pour ce niveau."
+	for id_ressource in cout:
+		Inventaire.retirer_objet(str(id_ressource), int(cout[id_ressource]))
+	ameliorations[id_objet] = niveau + 1
+	# les effets de l'objet porté changent : les stats suivent
+	recalculer_stats(false)
+	sauvegarder()
+	return ""
+
+# effets d'un objet, gonflés par ses niveaux d'amélioration (chaque
+# valeur arrondie à l'entier le plus proche)
+func _effets_ameliores(id_objet: String) -> Dictionary:
+	var effets: Dictionary = Inventaire.details_objet(id_objet).get("effets", {})
+	var facteur := facteur_amelioration(id_objet)
+	if facteur == 1.0:
+		return effets
+	var copies := {}
+	for cle in effets:
+		copies[cle] = roundi(float(effets[cle]) * facteur)
+	return copies
 
 # équipe d'un coup, sur chaque emplacement, le meilleur objet atteignable
 # (score = somme des effets bénéfiques) ; l'arme principale exige une
@@ -1001,7 +1148,8 @@ func _equiper_sur_emplacement(emplacement: String, id: String) -> bool:
 
 # Création définitive du personnage (depuis l'interface de création)
 func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
-		id_profession: String = "", nouveau_sexe: String = "M") -> void:
+		id_profession: String = "", nouveau_sexe: String = "M",
+		nouvelle_apparence: String = APPARENCE_HUMAINE_DEFAUT) -> void:
 	# le nouveau perso ne garde rien de l'ancien : l'inventaire et
 	# l'historique des quêtes (fichiers locaux) repartent de zéro,
 	# pas plus sa dernière position d'exploration
@@ -1012,6 +1160,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	race_id = nouvelle_race
 	classe_id = nouvelle_classe
 	sexe = nouveau_sexe if VALEURS_SEXES_VALIDES.has(nouveau_sexe) else "M"
+	apparence_humaine = normaliser_apparence_humaine(race_id, nouvelle_apparence)
 	niveau = 1
 	xp = 0
 	berry = 0
@@ -1062,6 +1211,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "race", race_id)
 	cfg.set_value("perso", "classe", classe_id)
 	cfg.set_value("perso", "sexe", sexe)
+	cfg.set_value("perso", "apparence_humaine", apparence_humaine)
 	cfg.set_value("perso", "berry", berry)
 	cfg.set_value("perso", "niveau", niveau)
 	cfg.set_value("perso", "xp", xp)
@@ -1077,6 +1227,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "fruit_xp", fruit_xp)
 	cfg.set_value("perso", "buffs", buffs)
 	cfg.set_value("perso", "prochain_combat_double", prochain_combat_double)
+	cfg.set_value("perso", "ameliorations", ameliorations)
 	perso_cree = cfg.save(CHEMIN_PERSO) == OK
 
 func charger_perso() -> void:
@@ -1097,9 +1248,15 @@ func charger_perso() -> void:
 		classe_remplacee = true
 	var sexe_lu := str(cfg.get_value("perso", "sexe", "M"))
 	sexe = sexe_lu if VALEURS_SEXES_VALIDES.has(sexe_lu) else "M"
+	apparence_humaine = normaliser_apparence_humaine(
+		race_id, str(cfg.get_value("perso", "apparence_humaine", APPARENCE_HUMAINE_DEFAUT)))
 	berry = int(cfg.get_value("perso", "berry", 0))
 	points_statistique = int(cfg.get_value("perso", "points_statistique", 0))
 	prochain_combat_double = bool(cfg.get_value("perso", "prochain_combat_double", false))
+	ameliorations = {}
+	var ameliorations_sauvees: Dictionary = cfg.get_value("perso", "ameliorations", {})
+	for id_ameliore in ameliorations_sauvees:
+		ameliorations[str(id_ameliore)] = int(ameliorations_sauvees[id_ameliore])
 	var depenses = cfg.get_value("perso", "points_depenses", {})
 	if depenses is Dictionary:
 		points_depenses = depenses
@@ -1182,6 +1339,7 @@ func reinitialiser() -> void:
 	nom = "Héros"
 	race_id = "1"
 	classe_id = "1"
+	apparence_humaine = APPARENCE_HUMAINE_DEFAUT
 	niveau = 1
 	xp = 0
 	berry = 0
@@ -1193,6 +1351,7 @@ func reinitialiser() -> void:
 	buffs = []
 	metiers = {}
 	points_depenses = {}
+	ameliorations = {}
 	equipement = {
 		"arme": "", "arme2": "", "corps": "", "tête": "", "visage": "", "cou": "",
 		"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
