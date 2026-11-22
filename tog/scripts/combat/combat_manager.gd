@@ -1563,7 +1563,11 @@ func sort_autorise(cible: Node) -> bool:
 	return not a_etat(cible, 7)
 
 func points_mouvement(cible: Node, points: int) -> int:
-	return maxi(points - (1 if a_etat(cible, 5) else 0), 1)
+	# la valeur de l'état Ralentissement donne la taille du malus (1
+	# par défaut, 2 pour le Sceau des ruines) ; il reste au moins 1 PM
+	if not a_etat(cible, 5):
+		return points
+	return maxi(points - maxi(int(round(_valeur_etat(cible, 5))), 1), 1)
 
 func _valeur_etat(cible: Node, id_etat: int) -> float:
 	return float(_etats_actifs.get(cible.get_instance_id(), {}).get(str(id_etat), {}).get("valeur", 0.0))
