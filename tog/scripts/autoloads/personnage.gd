@@ -503,6 +503,10 @@ func utiliser_objet(id_objet: String) -> String:
 	if str(details.get("type", "")) != "consumable":
 		return "Cet objet ne se consomme pas."
 	var effets: Dictionary = details.get("effets", {})
+	# les consommables ne se partagent qu'hors combat : potions,
+	# buffs et plats attendent la fin de la rencontre
+	if _est_en_combat():
+		return "Cet objet ne s'utilise pas en combat."
 	if bool(effets.get(EFFET_REATTRIBUTION, false)):
 		return _utiliser_parchemin_reattribution(id_objet)
 	# carte au trésor : elle se déchiffre et plante une croix sur la
@@ -515,10 +519,6 @@ func utiliser_objet(id_objet: String) -> String:
 		sauvegarder()
 		return ""
 	var soin := int(effets.get("heal", 0))
-	# un consommable qui soigne ne s'utilise qu'en combat : pas de
-	# restauration gratuite entre deux rencontres
-	if soin > 0 and not _est_en_combat():
-		return "Cet objet ne s’utilise qu’en combat."
 	# clés de bonus durable (hors soin et durée de l'effet)
 	var bonus := {}
 	for cle in effets:
