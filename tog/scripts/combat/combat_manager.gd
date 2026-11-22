@@ -5,6 +5,7 @@ signal combat_termine(victoire: bool)
 signal placement_commence
 signal sort_demandee(id_sort: String)
 signal fin_tour_demandee
+signal fuite_demandee
 signal placement_valide
 signal ressources_joueur_modifiees(pa: int, pa_max: int, pm: int, pm_max: int)
 # annonce qui joue : le HUD n'affiche le bouton de fin de tour que
@@ -1064,13 +1065,24 @@ func _rejouer_sort_groupe(peer_exp: int, pseudo_exp: String, evenement: Dictiona
 				pvp_appliquer_etats(miroir_soi, etats_soi)
 		afficher_message("%s se soigne." % pseudo_exp)
 		return
-	# attaque : l'index designe le meme ennemi que chez l'emetteur
-	# (meme scene, meme ordre d'engagement)
-	var index := int(evenement.get("index", -1))
+	# attaque : le nom du node désigne le même ennemi chez tous les
+	# coéquipiers (grille et scène identiques) ; l'index ne reste
+	# aligné que tant qu'aucun ennemi n'est tombé d'un côté, il ne
+	# sert que de repli aux événements plus anciens
 	var ennemis := ennemis_actifs()
-	if index < 0 or index >= ennemis.size():
+	var cible: Node = null
+	var cible_nom := str(evenement.get("cible_nom", ""))
+	if cible_nom != "":
+		for ennemi in ennemis:
+			if str((ennemi as Node).name) == cible_nom:
+				cible = ennemi
+				break
+	if cible == null:
+		var index := int(evenement.get("index", -1))
+		if index >= 0 and index < ennemis.size():
+			cible = ennemis[index]
+	if cible == null:
 		return
-	var cible: Node = ennemis[index]
 	if _joueur != null and str(evenement.get("id", "")) != "":
 		_joueur.call("_jouer_effet_sort", str(evenement.get("id", "")), cible)
 	var degats := int(evenement.get("degats", 0))
@@ -1233,7 +1245,7 @@ func valider_placement() -> void:
 		if reseau != null:
 			reseau.call("emettre_action_groupe", _profil_groupe())
 
-func terminer_combat(victoire: bool) -> void:
+func terminer_combat(victoire: bool, fuite := false) -> void:
 	if not en_combat:
 		return
 	en_combat = false
@@ -1247,12 +1259,13 @@ func terminer_combat(victoire: bool) -> void:
 	_rafraichir_roster()
 	_retirer_tous_miroirs_groupe()
 	if pvp_actif:
-		# notre défaite est annoncée au serveur, qui préviendra le
-		# vainqueur ; une victoire locale n'est que l'echo du réseau
+		# notre départ du duel (défaite ou fuite) est annoncé au serveur,
+		# qui préviendra l'adversaire ; une victoire locale n'est que
+		# l'echo du réseau
 		if not victoire:
-			var reseau_defaite := get_tree().root.get_node_or_null("/root/Reseau")
-			if reseau_defaite != null:
-				reseau_defaite.call("declarer_defaite_duel")
+			var reseau_depart := get_tree().root.get_node_or_null("/root/Reseau")
+			if reseau_depart != null:
+				reseau_depart.call("declarer_fuite_duel" if fuite else "declarer_defaite_duel")
 		pvp_actif = false
 		if is_instance_valid(_pvp_adversaire):
 			_pvp_adversaire.queue_free()
@@ -1357,6 +1370,10 @@ func demander_validation_placement() -> void:
 func demander_fin_tour() -> void:
 	if en_combat and not en_placement:
 		fin_tour_demandee.emit()
+
+func demander_fuite() -> void:
+	if en_combat:
+		fuite_demandee.emit()
 
 func est_allie(sort: Dictionary) -> bool:
 	return str(sort.get("type", "")) in ["buff", "defense", "heal", "healing"]

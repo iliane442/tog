@@ -733,8 +733,11 @@ func envoie_debut_combat(groupe: String) -> void:
 	combats_scene[groupe] = peer_id
 	_combats_actifs[nom_scene] = combats_scene
 	print("Combat : %s engage [%s] sur %s" % [session["nom_personnage"], groupe, nom_scene])
-	# combat de groupe : le premier est l'hôte, les suivants rejoignent
-	var cle := "%s|%s" % [nom_scene, groupe]
+	# combat de groupe : le premier est l'hôte, les suivants rejoignent —
+	# la clé inclut le groupe de joueurs : seuls les membres d'un même
+	# groupe partagent un combat, les autres joueurs (même camp, même
+	# map) restent sur leur propre instance
+	var cle := _cle_combat_groupe(peer_id, nom_scene, groupe)
 	var membres: Dictionary = _membres_groupe.get(cle, {})
 	var nouveau := not membres.has(peer_id)
 	membres[peer_id] = true
@@ -753,13 +756,32 @@ func envoie_debut_combat(groupe: String) -> void:
 	for autre in _pairs_sur_scene(nom_scene):
 		if int(autre) != peer_id:
 			rpc_id(int(autre), "etre_en_combat", peer_id, true)
-	# invitation pour les autres joueurs de la map pas déjà en combat
-	for autre in _pairs_sur_scene(nom_scene):
-		if int(autre) == peer_id or bool(_sessions[int(autre)].get("en_combat", false)):
-			continue
-		rpc_id(int(autre), "invitation_combat", str(session["nom_personnage"]), groupe)
+	# invitation pour les membres du groupe présents sur la map et pas
+	# déjà en combat : un combat ne se rejoint qu'entre membres d'un
+	# même groupe de joueurs (le bouton « Rejoindre » du panneau GROUPE
+	# permet aussi de les rejoindre en cours de combat)
+	var groupe_pair := _trouver_groupe(peer_id)
+	if not groupe_pair.is_empty():
+		for membre in groupe_pair["membres"]:
+			var autre := int(membre)
+			if autre == peer_id or not _sessions.has(autre):
+				continue
+			if str(_sessions[autre]["scene"]) != nom_scene:
+				continue
+			if bool(_sessions[autre].get("en_combat", false)):
+				continue
+			rpc_id(autre, "invitation_combat", str(session["nom_personnage"]), groupe)
 	# le panneau du groupe suit le statut en combat de chacun
 	_annoncer_groupes_du_pair(peer_id)
+
+# clé d'un combat de groupe : même scène, même camp étiqueté, même
+# groupe de joueurs (sans groupe : identifiant du pair — combat isolé)
+func _cle_combat_groupe(peer_id: int, nom_scene: String, groupe: String) -> String:
+	var groupe_pair := _trouver_groupe(peer_id)
+	var id_partie := str(peer_id)
+	if not groupe_pair.is_empty():
+		id_partie = str(int(groupe_pair["id"]))
+	return "%s|%s|%s" % [nom_scene, groupe, id_partie]
 
 # RPC serveur : le combat du joueur est terminé
 @rpc("any_peer", "call_remote", "reliable")
@@ -954,6 +976,19 @@ func envoie_defaite_duel() -> void:
 	var nom_defait := str(_sessions[peer_id]["nom_personnage"])
 	_fin_duel(peer_id)
 	rpc_id(adversaire, "victoire_duel", nom_defait, false)
+
+# RPC serveur : le client fuit le duel, son adversaire l'emporte
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_fuite_duel() -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _duels.has(peer_id):
+		return
+	var adversaire := int(_duels[peer_id])
+	var nom_fuyard := str(_sessions[peer_id]["nom_personnage"])
+	_fin_duel(peer_id)
+	rpc_id(adversaire, "victoire_duel", nom_fuyard, true)
 
 # ============================================================
 #  ÉCHANGES D'OBJETS ENTRE JOUEURS
@@ -1238,9 +1273,64 @@ func envoie_message_chat(texte: String) -> void:
 		else:
 			_inviter_au_groupe(peer_id, argument)
 		return
+	# messagerie privée : /msg (alias /mp et /w) Nom message ; /r
+	# répond au dernier correspondant ; /aide liste les commandes
+	var commande_mp := ""
+	if texte.begins_with("/msg "):
+		commande_mp = texte.substr(5)
+	elif texte.begins_with("/mp "):
+		commande_mp = texte.substr(4)
+	elif texte.begins_with("/w "):
+		commande_mp = texte.substr(3)
+	if commande_mp != "":
+		var espace_mp := commande_mp.find(" ")
+		if espace_mp <= 0:
+			rpc_id(peer_id, "recoit_message_chat", "Serveur",
+				"Utilisation : /msg Nom du personnage ton message")
+			return
+		var cible_mp := _chercher_cible(peer_id, commande_mp.substr(0, espace_mp).strip_edges())
+		if cible_mp == 0:
+			return
+		var message_mp := commande_mp.substr(espace_mp + 1).strip_edges()
+		if message_mp == "":
+			rpc_id(peer_id, "recoit_message_chat", "Serveur",
+				"Utilisation : /msg Nom du personnage ton message")
+			return
+		_envoyer_mp(peer_id, cible_mp, message_mp)
+		return
+	if texte == "/r" or texte.begins_with("/r "):
+		var reponse_r := texte.substr(2).strip_edges()
+		var dernier_pair := int(_sessions[peer_id].get("mp_de", 0))
+		if dernier_pair == 0 or not _sessions.has(dernier_pair):
+			rpc_id(peer_id, "recoit_message_chat", "Serveur",
+				"Personne ne t'a écrit en MP pour l'instant.")
+			return
+		if reponse_r == "":
+			rpc_id(peer_id, "recoit_message_chat", "Serveur", "Utilisation : /r ton message")
+			return
+		_envoyer_mp(peer_id, dernier_pair, reponse_r)
+		return
+	if texte == "/aide" or texte == "/help":
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"Commandes : /msg Nom message (MP, alias /mp /w), /r message (répondre),"
+			+ " /joueurs, /groupe, /defier, /echanger. Le chat sans commande est public.")
+		return
 	print("Chat <%s> %s" % [nom_envoyeur, texte])
 	for autre in _sessions:
 		rpc_id(int(autre), "recoit_message_chat", nom_envoyeur, texte)
+
+# message privé d'un pair à l'autre : les deux voient l'échange, et /r
+# sait à qui répondre (le dernier correspondant de chaque côté)
+func _envoyer_mp(peer_de: int, peer_vers: int, message: String) -> void:
+	if peer_de == peer_vers or not _sessions.has(peer_de) or not _sessions.has(peer_vers):
+		rpc_id(peer_de, "recoit_message_chat", "Serveur", "Destinataire introuvable.")
+		return
+	var nom_de := str(_sessions[peer_de]["nom_personnage"])
+	var nom_vers := str(_sessions[peer_vers]["nom_personnage"])
+	_sessions[peer_de]["mp_vers"] = peer_vers
+	_sessions[peer_vers]["mp_de"] = peer_de
+	rpc_id(peer_vers, "recoit_message_chat", "[MP] %s" % nom_de, message)
+	rpc_id(peer_de, "recoit_message_chat", "MP vers %s" % nom_vers, message)
 
 # ============================================================
 #  GROUPES DE JOUEURS (distinct des équipages)
@@ -1682,6 +1772,10 @@ func _conclure_alliance_equipage(peer_id: int, argument: String) -> void:
 	if erreur != "":
 		rpc_id(peer_id, "message_equipage", erreur)
 		return
+	# l'alliance se conclut automatiquement : le proposant est confirmé
+	# (la proposition n'attend pas le capitaine adverse)
+	rpc_id(peer_id, "message_equipage",
+		"Alliance conclue avec « %s » !" % Equipages.nom_equipage(id_cible))
 	for id_equipage in equipages_touches:
 		_diffuser_equipage(int(id_equipage))
 
@@ -1733,6 +1827,15 @@ func demande_rejoindre_combat(peer_cible: int) -> void:
 	if str(cible["scene"]) != str(_sessions[peer_id]["scene"]):
 		rpc_id(peer_id, "recoit_message_chat", "Serveur",
 			"Rejoins la même map que %s pour combattre à ses côtés." % nom_cible)
+		return
+	# on ne rejoint le combat d'un joueur que si on est dans son groupe
+	# de joueurs (mention « Rejoindre » du panneau GROUPE)
+	var groupe_demandeur := _trouver_groupe(peer_id)
+	var groupe_cible := _trouver_groupe(peer_cible)
+	if groupe_demandeur.is_empty() or groupe_cible.is_empty() \
+			or int(groupe_demandeur["id"]) != int(groupe_cible["id"]):
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"Seuls les membres du groupe de %s rejoignent son combat." % nom_cible)
 		return
 	# validé : le client engage ce camp dans sa propre instance
 	rpc_id(peer_id, "rejoindre_combat_permis", combat_cible)
@@ -2325,6 +2428,13 @@ func declarer_defaite_duel() -> void:
 	if pseudo == "":
 		return
 	rpc_id(1, "envoie_defaite_duel")
+
+# API appelée par combat_manager : on fuit le duel, l'adversaire
+# l'emporte par forfait
+func declarer_fuite_duel() -> void:
+	if pseudo == "":
+		return
+	rpc_id(1, "envoie_fuite_duel")
 
 func _demarrer_duel_local(pseudo_adv: String, _adversaire_id: int, premier: bool, visuel := VISUEL_DEFAUT) -> void:
 	var scene := get_tree().current_scene
@@ -3236,7 +3346,7 @@ func _construire_chat() -> void:
 	_chat_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	colonne.add_child(_chat_log)
 	_chat_saisie = LineEdit.new()
-	_chat_saisie.placeholder_text = "Écris ton message puis Entrée ; Échap referme le chat"
+	_chat_saisie.placeholder_text = "Écris ton message puis Entrée ; Échap referme le chat ; /aide liste les commandes"
 	_chat_saisie.text_submitted.connect(_on_chat_envoye)
 	colonne.add_child(_chat_saisie)
 	_fenetre_chat.hide()

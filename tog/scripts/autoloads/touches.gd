@@ -23,6 +23,7 @@ var actions: Dictionary = {
 	"fin_tour": "Fin du tour / valider le placement",
 	"cible_suivante": "Cible suivante",
 	"cible_precedente": "Cible précédente",
+	"fuir": "Fuir le combat",
 }
 
 # touches par défaut (Keycodes Godot)
@@ -40,6 +41,7 @@ var _defauts: Dictionary = {
 	"fin_tour": KEY_ENTER,
 	"cible_suivante": KEY_TAB,
 	"cible_precedente": KEY_LEFT,
+	"fuir": KEY_H,
 }
 
 # action -> keycode courant

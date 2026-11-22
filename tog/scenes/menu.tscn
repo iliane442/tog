@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/gem.png" id="9_stat_intelligence"]
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/coin.png" id="10_stat_chance"]
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/arrow_right.png" id="11_stat_agilite"]
+[ext_resource type="Texture2D" path="res://assets/items/217_bouclier_en_bois.png" id="15_stat_defense"]
 [ext_resource type="PackedScene" path="res://scenes/case_equipement.tscn" id="12_case_equipement"]
 
 [ext_resource type="StyleBox" path="res://themes/fiche_menu.tres" id="14_fiche"]
@@ -635,6 +636,41 @@ custom_minimum_size = Vector2(42, 38)
 layout_mode = 2
 text = "+"
 
+[node name="StatDefense" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ParchmentPanel"
+
+[node name="Ligne" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icone" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+texture = ExtResource("15_stat_defense")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Défense"
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 2
+
+[node name="Ajouter" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne"]
+custom_minimum_size = Vector2(42, 38)
+layout_mode = 2
+text = "+"
+
 [node name="ActionsStats" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
 theme_override_constants/separation = 12
@@ -736,6 +772,11 @@ theme_type_variation = "Ribbon"
 theme_override_font_sizes/font_size = 20
 text = "ÉQUIPEMENT"
 horizontal_alignment = 1
+
+[node name="BtnAutoEquipement" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "Équiper les meilleurs"
 
 [node name="Silhouette" type="Control" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
 custom_minimum_size = Vector2(0, 410)

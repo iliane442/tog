@@ -89,6 +89,7 @@ func _connecter_combat() -> void:
 	_combat_manager.combat_termine.connect(_on_combat_termine)
 	_combat_manager.sort_demandee.connect(_selectionner_sort)
 	_combat_manager.fin_tour_demandee.connect(_fin_du_tour)
+	_combat_manager.fuite_demandee.connect(_tenter_fuite)
 	_combat_manager.placement_valide.connect(_valider_placement)
 
 func _prefixe_visuel_race() -> String:
@@ -512,8 +513,10 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 			else:
 				evenement["cible"] = "adv"
 				evenement["degats"] = degats
-				# index de l'ennemi dans le groupe : indispensable aux
-				# coéquipiers pour viser le même ennemi de leur côté
+				# nom de l'ennemi visé : stable chez tous les coéquipiers
+				# (l'index bouge dès qu'un ennemi tombe d'un côté), plus
+				# l'index en repli pour les événements plus anciens
+				evenement["cible_nom"] = cible.name
 				evenement["index"] = _combat_manager.ennemis_actifs().find(cible)
 			_emettre_action_duel(evenement)
 		_pa -= cout
@@ -600,6 +603,7 @@ func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 		cible.recevoir_degats(degats)
 		_emettre_action_duel({"t": "sort", "id": "boule_de_feu",
 			"nom": "Boule de feu", "cible": "adv", "degats": degats,
+			"cible_nom": cible.name,
 			"index": _combat_manager.ennemis_actifs().find(cible)})
 		_combat_manager.effacer_message()
 	else:
@@ -732,6 +736,28 @@ func _fin_du_tour() -> void:
 	else:
 		_combat_manager.afficher_message("Les ennemis jouent…")
 	_jouer_tours_ennemis(numero, 0.5)
+
+# fuit le combat : toujours réussie pendant le placement, un duel ou
+# un combat de groupe se dissout, contre des ennemis elle se joue à
+# la chance (agilité) et un échec coûte le tour
+func _tenter_fuite() -> void:
+	if _combat_manager == null or not _combat_manager.en_combat or _occupe:
+		return
+	# en plein combat contre des ennemis, on ne fuit que pendant son tour
+	if not _combat_manager.en_placement and not _tour_joueur:
+		_combat_manager.afficher_message("Tu ne peux fuir que pendant ton tour !")
+		return
+	# placement, duel ou combat de groupe : partir dissout l'engagement
+	if _combat_manager.en_placement or _combat_manager.pvp_actif or _combat_manager.groupe_actif:
+		_combat_manager.afficher_message("Tu prends la fuite !")
+		_combat_manager.terminer_combat(false, _combat_manager.pvp_actif)
+		return
+	if randf() < Personnage.chance_fuite():
+		_combat_manager.afficher_message("Tu prends la fuite !")
+		_combat_manager.terminer_combat(false)
+		return
+	_combat_manager.afficher_message("Tu échoues à fuir !")
+	_fin_du_tour()
 
 # sequence : le tour de chaque ennemi engagé, l'un après l'autre, puis
 # le tour du joueur (pause avant sa reprise)

@@ -77,6 +77,7 @@ const AIDE_STATS := {
 	"intelligence": "Intelligence : +1 dégât par point sur les sorts d'attaque à distance (portée 2 et plus), +1 point de soin par point sur les sorts de soin.",
 	"chance": "Précision : +1% de chances de toucher par point.",
 	"agilite": "Vitesse : +1% d'esquive et +1% d'initiative par point, jusqu'à +50% de chances de gagner un PM supplémentaire par tour.",
+	"defense": "Défense : chaque point absorbe une part croissante des dégâts reçus (dégâts x 100 / (100 + défense)) — 100 points réduisent tout coup de moitié.",
 }
 
 @onready var monnaie: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/Monnaie
@@ -114,6 +115,7 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 	"intelligence": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence/Ligne/Ajouter},
 	"chance": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance/Ligne/Ajouter},
 	"agilite": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite/Ligne/Ajouter},
+	"defense": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne/Ajouter},
 }
 @onready var icone_detail: TextureRect = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/EnteteDetail/IconeItem
 @onready var nom_detail: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/EnteteDetail/IdentiteItem/NomItem
@@ -138,6 +140,7 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var titre_recettes: Label = $Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/TitreRecettes
 @onready var liste_recettes: VBoxContainer = $Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/DefilementRecettes/ListeRecettes
 @onready var btn_equiper: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnEquip
+@onready var btn_auto_equipement: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BtnAutoEquipement
 @onready var btn_ouvrir_coffre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnOuvrirCoffre
 @onready var btn_ouvrir_tous: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnOuvrirTous
 @onready var panneau_personnage_inventaire: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette
@@ -294,6 +297,7 @@ func _ready() -> void:
 	call_deferred("_positionner_emplacements")
 	_connecter_onglets()
 	btn_equiper.pressed.connect(_on_bouton_equiper)
+	btn_auto_equipement.pressed.connect(_on_auto_equipement)
 	btn_ouvrir_coffre.pressed.connect(_on_bouton_ouvrir_coffre)
 	btn_ouvrir_tous.pressed.connect(_on_bouton_ouvrir_tous)
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
@@ -504,7 +508,9 @@ func maj_personnage() -> void:
 	btn_reinitialiser.disabled = en_attente == 0
 	valeur_vie_max.text = str(vie_max_affichee)
 	valeur_attaque.text = str(Personnage.attaque)
-	valeur_defense.text = str(Personnage.defense)
+	# la défense en attente se prévisualise comme la vie (points posés,
+	# pas encore validés)
+	valeur_defense.text = str(int(Personnage.defense) + int(points_en_attente.get("defense", 0)))
 	for cle: String in Personnage.caracteristiques:
 		var ligne_stat: Dictionary = lignes_stats[cle]
 		var valeur_stat: Label = ligne_stat["valeur"] as Label
@@ -1172,6 +1178,19 @@ func _maj_bouton_equiper(details: Dictionary, id: String) -> void:
 	btn_equiper.text = "Déséquiper" if emplacement_equipe != "" else "Équiper"
 	var niveau_suffisant := int(details.get("niveau_min", 1)) <= Personnage.niveau
 	btn_equiper.disabled = emplacement_equipe == "" and not niveau_suffisant
+
+# équipe d'un coup le meilleur objet atteignable de chaque emplacement
+# puis rafraîchit silhouette, grille et détail
+func _on_auto_equipement() -> void:
+	var changements := Personnage.equiper_les_meilleurs()
+	if changements > 0:
+		avertir("%d emplacement(s) optimisé(s)." % changements)
+	else:
+		avertir("Équipement déjà au mieux de ton inventaire.")
+	maj_grille()
+	maj_equipement()
+	_maj_resume_personnage()
+	maj_detail_aucun()
 
 func _on_bouton_equiper() -> void:
 	if detail_id_courant == "":

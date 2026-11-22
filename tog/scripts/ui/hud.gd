@@ -19,6 +19,7 @@ const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 @onready var label_etats_joueur: Label = $PanneauStats/Colonne/EtatsJoueur
 @onready var boutons_combat: HBoxContainer = $PanneauStats/Colonne/BoutonsCombat
 @onready var bouton_fin_tour: Button = $PanneauStats/Colonne/BoutonsCombat/FinTour
+@onready var bouton_fuir: Button = $PanneauStats/Colonne/BoutonsCombat/Fuir
 @onready var label_berry: Label = $BerryPanel/BerryRow/Berry
 @onready var label_action: Label = $BarreDeSorts/Colonne/Entete/Action
 @onready var label_quete: Label = $QuestPanel/Marges/Colonne/QuestName
@@ -62,6 +63,7 @@ func _ready() -> void:
 		_gestionnaire_combat.ressources_joueur_modifiees.connect(maj_ressources_combat)
 		_gestionnaire_combat.tour_actif_change.connect(_maj_bouton_fin_tour)
 		bouton_fin_tour.pressed.connect(_on_bouton_fin_tour_presse)
+		bouton_fuir.pressed.connect(_on_bouton_fuir_presse)
 	_menu = get_tree().current_scene.get_node_or_null("MenuUI")
 	if _menu != null:
 		_menu.get_node("Fenetre").visibility_changed.connect(_actualiser_visibilite_menu)
@@ -220,6 +222,12 @@ func _on_bouton_fin_tour_presse() -> void:
 	elif _gestionnaire_combat.en_combat:
 		_gestionnaire_combat.demander_fin_tour()
 
+func _on_bouton_fuir_presse() -> void:
+	if _gestionnaire_combat == null:
+		return
+	if _gestionnaire_combat.en_combat:
+		_gestionnaire_combat.demander_fuite()
+
 func afficher_message_sort(message: String) -> void:
 	_label_action_actif().text = message
 
@@ -230,7 +238,11 @@ func afficher_message_sort(message: String) -> void:
 func _maj_bouton_fin_tour(combattant: Node2D) -> void:
 	if _gestionnaire_combat == null or _gestionnaire_combat.en_placement:
 		return
-	bouton_fin_tour.visible = _gestionnaire_combat.en_combat and combattant != null and combattant == _joueur
+	# le bouton de fuite suit le même rythme : jamais pendant le tour
+	# d'un ennemi ou celui de l'adversaire distant
+	var mon_tour: bool = _gestionnaire_combat.en_combat and combattant != null and combattant == _joueur
+	bouton_fin_tour.visible = mon_tour
+	bouton_fuir.visible = mon_tour
 
 func _on_placement_commence() -> void:
 	_animer_visibilite_sorts(false)
@@ -238,6 +250,7 @@ func _on_placement_commence() -> void:
 	_afficher_stats_combat(true)
 	bouton_fin_tour.text = "Placement OK"
 	bouton_fin_tour.show()
+	bouton_fuir.show()
 	_label_action_actif().text = "Place-toi, puis valide le placement : %s" % [
 		Touches.libelle_action("fin_tour")]
 
@@ -248,11 +261,13 @@ func _on_combat_commence() -> void:
 	_afficher_stats_combat(true)
 	bouton_fin_tour.text = "Fin du tour"
 	bouton_fin_tour.show()
-	_label_action_actif().text = "Sorts : %s | cible : %s / %s | fin du tour : %s" % [
+	bouton_fuir.show()
+	_label_action_actif().text = "Sorts : %s | cible : %s / %s | fin du tour : %s | fuir : %s" % [
 		Touches.libelle_action("sort_1"),
 		Touches.libelle_action("cible_suivante"),
 		Touches.libelle_action("cible_precedente"),
 		Touches.libelle_action("fin_tour"),
+		Touches.libelle_action("fuir"),
 	]
 	_animer_visibilite_sorts(true)
 
@@ -569,4 +584,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		"cible_precedente":
 			_gestionnaire_combat.cible_precedente()
+			get_viewport().set_input_as_handled()
+		"fuir":
+			_gestionnaire_combat.demander_fuite()
 			get_viewport().set_input_as_handled()

@@ -41,6 +41,9 @@ const BONUS_XP_PAR_SAGESSE := 0.02  # +2% d'XP par point de sagesse
 const PRECISION_PAR_CHANCE := 0.01  # +1% de toucher par point de « Précision »
 const ESQUIVE_PAR_AGILITE := 0.01  # -1% de précision aux attaques ennemies
 const CHANCE_PM_PAR_AGILITE := 0.01  # chance de +1 PM au début du tour (max 50%)
+const FUITE_BASE := 0.5  # chance de fuite de base en combat PvE
+const FUITE_PAR_AGILITE := 0.03  # bonus de fuite par point d'agilité
+const FUITE_MAX := 0.95  # une fuite n'est jamais certaine
 const INITIATIVE_BASE := 0.5  # probabilité de base de commencer le combat
 const INITIATIVE_PAR_AGILITE := 0.01  # +1% par point de « Vitesse »
 
@@ -76,6 +79,9 @@ var caracteristiques: Dictionary = {
 	"intelligence": 0,
 	"chance": 0,
 	"agilite": 0,
+	# réductrice : chaque point absorbe une part croissante des dégâts
+	# reçus (dégâts x 100 / (100 + défense), comme une armure)
+	"defense": 0,
 }
 
 # Barre de sorts du joueur : ids des sorts placés dans les emplacements
@@ -576,7 +582,8 @@ func recalculer_stats(remplir_vie := true) -> void:
 	for donnees in [races.get(race_id, {}), classes.get(classe_id, {})]:
 		vie_max += int(donnees.get("vie", 0))
 		attaque += int(donnees.get("attaque", 0))
-		defense += int(donnees.get("defense", 0))
+		# pas de defense ici : la boucle des caracteristiques la prend
+		# (clé « defense » présente), elle rejoint le total à la fin
 		vitesse += int(donnees.get("vitesse", 0))
 		for cle in caracteristiques:
 			caracteristiques[cle] += int(donnees.get(cle, 0))
@@ -610,6 +617,10 @@ func recalculer_stats(remplir_vie := true) -> void:
 		_appliquer_effets_objet(buff.get("effets", {}))
 	vie_max = maxi(vie_max, 1)
 	vie = vie_max if remplir_vie else clampi(vie, 0, vie_max)
+	# la défense répartie (race, classe, points dépensés) rejoint la
+	# défense des objets et des buffs : c'est le total qui absorbe les
+	# dégâts dans les combats
+	defense += int(caracteristiques.get("defense", 0))
 	caracteristiques_modifiees.emit()
 
 # applique les effets d'un objet (paires clé -> valeur de effects_json)
@@ -737,6 +748,132 @@ func desequiper(emplacement: String) -> void:
 	Inventaire.ajouter_objet(equipement[emplacement])
 	equipement[emplacement] = ""
 	recalculer_stats()
+
+# équipe d'un coup, sur chaque emplacement, le meilleur objet atteignable
+# (score = somme des effets bénéfiques) ; l'arme principale exige une
+# arme accordée à la classe, l'arme secondaire accepte toute classe, les
+# deux meilleures bagues couvrent les anneaux ; un objet porté n'est
+# remplacé que par un score strictement supérieur — l'automatisation ne
+# régresse jamais. Renvoie le nombre d'emplacements modifiés.
+func equiper_les_meilleurs() -> int:
+	var candidats: Array = []
+	for id in Inventaire.objets:
+		var candidat := _candidat_equipement(str(id))
+		if not candidat.is_empty():
+			candidats.append(candidat)
+	for emplacement in equipement:
+		var id_porte := str(equipement[emplacement])
+		if id_porte == "":
+			continue
+		var candidat_porte := _candidat_equipement(id_porte, true)
+		if not candidat_porte.is_empty():
+			candidats.append(candidat_porte)
+	# meilleur de chaque emplacement simple (le porté gagne les égalités)
+	var fixes := ["tête", "visage", "cou", "corps", "cape", "ceinture", "pantalon", "pieds", "main"]
+	var meilleurs := {}
+	for candidat in candidats:
+		var emplacement := str(candidat["emplacement"])
+		if emplacement == "arme" or emplacement == "anneau":
+			continue
+		if not meilleurs.has(emplacement):
+			meilleurs[emplacement] = candidat
+			continue
+		var score := int(candidat["score"])
+		var porteur: bool = bool(candidat["porte"])
+		var actuel: Dictionary = meilleurs[emplacement]
+		if score > int(actuel["score"]) or (score == int(actuel["score"]) and porteur and not bool(actuel["porte"])):
+			meilleurs[emplacement] = candidat
+	# armes et bagues : classées par score décroissant
+	var armes: Array = []
+	var bagues: Array = []
+	for candidat in candidats:
+		if str(candidat["emplacement"]) == "arme":
+			armes.append(candidat)
+		elif str(candidat["emplacement"]) == "anneau":
+			bagues.append(candidat)
+	for liste in [armes, bagues]:
+		liste.sort_custom(func(a, b) -> bool: return int(a["score"]) > int(b["score"]))
+	var remplacements := {}
+	for emplacement in fixes:
+		if meilleurs.has(emplacement):
+			remplacements[emplacement] = str(meilleurs[emplacement]["id"])
+	# bagues : les deux meilleures ; une bague seule reste à sa place
+	if bagues.size() == 1:
+		var bague_seule: Dictionary = bagues[0]
+		if bool(bague_seule["porte"]):
+			remplacements[est_equipe(str(bague_seule["id"]))] = str(bague_seule["id"])
+		else:
+			remplacements["anneau1"] = str(bague_seule["id"])
+	elif bagues.size() >= 2:
+		remplacements["anneau1"] = str(bagues[0]["id"])
+		remplacements["anneau2"] = str(bagues[1]["id"])
+	# arme principale : la meilleure accordée à la classe ; l'arme
+	# secondaire : la meilleure des autres (l'actuelle incluse)
+	for candidat in armes:
+		if bool(candidat["accordee"]):
+			remplacements["arme"] = str(candidat["id"])
+			break
+	for candidat in armes:
+		if str(candidat["id"]) != str(remplacements.get("arme", "@")):
+			remplacements["arme2"] = str(candidat["id"])
+			break
+	# application : arme avant arme secondaire (l'ancienne arme
+	# retourne à l'inventaire et reste candidate pour arme2)
+	var changements := 0
+	for emplacement in remplacements:
+		if str(equipement.get(emplacement, "")) == str(remplacements[emplacement]):
+			continue
+		if _equiper_sur_emplacement(emplacement, str(remplacements[emplacement])):
+			changements += 1
+	if changements > 0:
+		recalculer_stats()
+		sauvegarder()
+	return changements
+
+# fiche de candidature d'un objet : vide s'il n'équipe aucun
+# emplacement ; porté = déjà sur le perso (l'objet des slots sortis
+# du combat garde son droit de place, il n'est pas dans l'inventaire)
+func _candidat_equipement(id: String, porte := false) -> Dictionary:
+	var details := Inventaire.details_objet(id)
+	var emplacement := emplacement_equipement(str(details.get("type", "")), str(details.get("sous_type", "")))
+	if emplacement == "":
+		return {}
+	if int(details.get("niveau_min", 1)) > niveau and not porte:
+		return {}
+	return {
+		"emplacement": emplacement,
+		"id": id,
+		"score": _score_equipement(details),
+		"accordee": arme_accordee(details),
+		"porte": porte,
+	}
+
+# score d'un équipement pour l'optimisation : somme des valeurs
+# positives de ses effets (attaque, défense, vie, caractéristiques...)
+func _score_equipement(details: Dictionary) -> int:
+	var score := 0
+	var effets: Dictionary = details.get("effets", {})
+	for cle in effets:
+		if str(cle) == "duration":
+			continue
+		score += maxi(int(effets[cle]), 0)
+	return score
+
+# équipe un objet sur un emplacement précis (l'ancien retourne à
+# l'inventaire) sans passer par la résolution automatique des slots
+func _equiper_sur_emplacement(emplacement: String, id: String) -> bool:
+	if not equipement.has(emplacement) or not Inventaire.objets.has(id):
+		return false
+	if equipement[emplacement] == id:
+		return false
+	var details := Inventaire.details_objet(id)
+	if int(details.get("niveau_min", 1)) > niveau:
+		return false
+	if equipement[emplacement] != "":
+		Inventaire.ajouter_objet(equipement[emplacement])
+	Inventaire.retirer_objet(id, 1)
+	equipement[emplacement] = id
+	return true
 
 # Création définitive du personnage (depuis l'interface de création)
 func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
@@ -987,6 +1124,12 @@ func bonus_esquive() -> float:
 func chance_pm_supplementaire() -> float:
 	return clampf(float(caracteristiques.get("agilite", 0)) * CHANCE_PM_PAR_AGILITE, 0.0, 0.5)
 
+# chance de réussir sa fuite d'un combat contre des ennemis : une
+# base accueillante grandit avec l'agilité, plafonnée pour garder
+# un risque
+func chance_fuite() -> float:
+	return clampf(FUITE_BASE + float(caracteristiques.get("agilite", 0)) * FUITE_PAR_AGILITE, 0.0, FUITE_MAX)
+
 # probabilité de prendre l'initiative à l'ouverture du combat
 # (jouer avant les ennemis)
 func chance_initiative() -> float:
@@ -1036,6 +1179,10 @@ func depenser_point(cle: String) -> bool:
 		vie += 5
 	else:
 		caracteristiques[cle] += 1
+	# la défense dépensée s'applique immédiatement (le total absorbs les
+	# dégâts) ; recalculer_stats la reconfirme au prochain passage
+	if cle == "defense":
+		defense += 1
 	caracteristiques_modifiees.emit()
 	return true
 
@@ -1055,6 +1202,8 @@ func appliquer_points(repartition: Dictionary) -> void:
 			vie += 5 * montant
 		else:
 			caracteristiques[cle] += montant
+		if cle == "defense":
+			defense += montant
 	sauvegarder()
 	caracteristiques_modifiees.emit()
 
