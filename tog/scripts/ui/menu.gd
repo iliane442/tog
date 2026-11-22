@@ -2003,10 +2003,14 @@ func _maj_bouton_navire(details: Dictionary, id: String) -> void:
 		btn_navire.disabled = false
 	elif int(Inventaire.objets.get(id, 0)) > 0:
 		btn_navire.text = "Installer sur le navire"
-		btn_navire.disabled = false
-		btn_navire.tooltip_text = "Prend la place de %s." % (
-			Inventaire.nom_objet(str(Personnage.bateau[emplacement]))
-			if str(Personnage.bateau[emplacement]) != "" else "l'emplacement vide")
+		# niveau requis, comme pour l'équipement porté
+		btn_navire.disabled = int(details.get("niveau_min", 1)) > Personnage.niveau
+		if btn_navire.disabled:
+			btn_navire.tooltip_text = "Niveau %d requis." % int(details.get("niveau_min", 1))
+		else:
+			btn_navire.tooltip_text = "Prend la place de %s." % (
+				Inventaire.nom_objet(str(Personnage.bateau[emplacement]))
+				if str(Personnage.bateau[emplacement]) != "" else "l'emplacement vide")
 
 # installe ou retire la pièce de navire sélectionnée : la sortie
 # d'une pièce la renvoie à l'inventaire
@@ -2023,6 +2027,9 @@ func _on_bouton_navire() -> void:
 	else:
 		var nom_piece := Inventaire.nom_objet(detail_id_courant)
 		if Personnage.installer_piece_navire(detail_id_courant) == "":
+			if int(Inventaire.details_objet(detail_id_courant).get("niveau_min", 1)) > Personnage.niveau:
+				prix_detail.text = "Niveau %d requis pour installer %s." % [
+					int(Inventaire.details_objet(detail_id_courant).get("niveau_min", 1)), nom_piece]
 			return
 		prix_detail.text = "%s installé sur le navire." % nom_piece
 	maj_grille()

@@ -795,6 +795,11 @@ func installer_piece_navire(id: String) -> String:
 	var emplacement := emplacement_navire(id)
 	if emplacement == "" or emplacement not in bateau or int(Inventaire.objets.get(id, 0)) <= 0:
 		return ""
+	# une pièce trop exigeante pour le capitaine ne s'installe pas,
+	# comme pour l'équipement porté
+	var details := Inventaire.details_objet(id)
+	if int(details.get("niveau_min", 1)) > niveau:
+		return ""
 	var ancienne := str(bateau[emplacement])
 	Inventaire.retirer_objet(id, 1)
 	if ancienne != "":
