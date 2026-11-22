@@ -1,0 +1,425 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_celeste.tscn" id="FerryCeleste"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-large-house-v0.png" id="Sanctuaire"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-small-house-v0.png" id="Hameau"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/pin_de_montagne.png" id="Pin"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/chene_ancien.png" id="Chene"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/fleurs_medicinales.png" id="Fleurs"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/monument_a_l_ancre.png" id="Monument"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="Borne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pell.png" id="sprite_ile_pell"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pilote_du_chenal.png" id="sprite_ile_pilote"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/oiseau_des_neiges.png" id="sprite_ile_oiseau"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/cerf_zou.png" id="sprite_ile_cerf"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/mercenaire_alabasta.png" id="sprite_ile_mercenaire"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/chasseur_baroque.png" id="sprite_ile_chasseur"]
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[node name="IleCeleste" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;,,,,,,,####################,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,#..................#,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,#..F..F..F....F....#,,,,,,,,,,,,,;;~~",
+	"~~;;,,FFF,FFF.F.FFF..F..F..F..#,,,,,,,,,,,,,;;~~",
+	"~~;;,,FF,FFF.F...F...F.::F..F.#,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,F,FFF.F.F..F...::...F.#,,,,,,,,,,,,,;;~~",
+	"~~;;,,FF,FFF.FFFFF..F..::.F...#,,,,,,,,,,,,,;;~~",
+	"~~;;,,,FFF,FFFF........::.....#,,,,,,,,,,,,,;;~~",
+	"~~;;,,F,FFF#FFF########::######,,,,,,,,,,,,,;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,....F.FF...;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,..FF.....F.;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,.F....F.FF.;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,....FF.....;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,.F.F....F..;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,FF....FF...;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,...F.F.....;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,,,,,,,,,,,++++++++++++++++++,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,++++++++++++++++++,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,:::++++++++++++++++++::::,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,++++++++++++++++++,,,,,,,,,,,;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+)
+littoral = true
+emprises_decors = Array[Rect2i]([])
+
+[node name="player" parent="." index="5"]
+position = Vector2(1568.0, 2144.0)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Île Céleste"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1568.0, 2144.0): "Port Céleste", Vector2(1696.0, 608.0): "Sanctuaire du Faucon", Vector2(1504.0, 1056.0): "Escalier des Vents", Vector2(608.0, 1376.0): "Forêt suspendue", Vector2(2528.0, 1248.0): "Bassins des Nuées"})
+
+[node name="DepuisAlabasta" type="Marker2D" parent="Arrivees"]
+position = Vector2(1568.0, 2144.0)
+
+[node name="CapitaineVolige" parent="." instance=ExtResource("FerryCeleste")]
+position = Vector2(1760.0, 2144.0)
+paroles = "Redescendre sur Alabasta ? Le Levant des Sables tient des vents contraires après midi. Pell veillera sur ton retour : aucun Roc ne traverse son regard sans y laisser une plume. Bon voyage, moussaillon des cimes."
+destination = "res://scenes/alabasta.tscn"
+arrivee = &"DepuisIleCeleste"
+libelle_traversee = "Embarquer pour Alabasta"
+
+[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
+position = Vector2(1120.0, 2420.0)
+texture = ExtResource("Sloop")
+offset = Vector2(0, -250.0)
+scale = Vector2(0.7, 0.7)
+z_index = -3
+
+[node name="Pell" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1696.0, 608.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String]([])
+nom_affiche = "Pell"
+paroles = "Depuis la chute de Crocodile, je veille sur ce qui reste de Baroque Works : leurs pillards ont fui vers les cimes. Cette île flottante au-dessus d'Alabasta recueille les blessures du désert — le sanctuaire du Faucon y soigne ses ailes. Cueille ce que la terre céleste offre, et garde ton Log Pose pointé vers le vrai nord."
+
+[node name="Sprite2D" type="Sprite2D" parent="Pell"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_pell")
+
+[node name="Area2D" type="Area2D" parent="Pell"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pell/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Pell"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Pell"
+horizontal_alignment = 1
+
+[node name="PiloteDuChenal" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1376.0, 2144.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String]([])
+nom_affiche = "Pilote du Chenal"
+paroles = "Le Chenal des Célestes ne pardonne pas : ton navire montera par l'Escalier des Vents, entre deux remous. Redescends par temps clair — et méfie-toi des Rocs, leurs serres confondent les sloops avec des goélands."
+
+[node name="Sprite2D" type="Sprite2D" parent="PiloteDuChenal"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_pilote")
+
+[node name="Area2D" type="Area2D" parent="PiloteDuChenal"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PiloteDuChenal/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="PiloteDuChenal"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Pilote du Chenal"
+horizontal_alignment = 1
+
+[node name="PanneauDuPort" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1696.0, 2208.0)
+script = ExtResource("Recolte")
+titre = "Port Céleste"
+description = "« Port Céleste, île du Levant des Sables. L'Escalier des Vents est à jour. Interdiction de nourrir les Rocs — ils confondent déjà les sloops avec des goélands. »"
+quete = ""
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDuPort"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDuPort"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BoisDeLaForet" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(608.0, 1376.0)
+script = ExtResource("Recolte")
+titre = "Écorces de la forêt suspendue"
+description = "L'arbre pousse au bord du vide : ses branches portent les nuages, son bois sent la foudre tiède."
+quete = ""
+objet = "817"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BoisDeLaForet"]
+position = Vector2(0, -100.0)
+texture = ExtResource("Chene")
+
+[node name="Etiquette" type="Label" parent="BoisDeLaForet"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="EclatsDuBassin" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2528.0, 1248.0)
+script = ExtResource("Recolte")
+titre = "Cristaux des bassins des Nuées"
+description = "La foudre tombe ici deux fois par orage : le minerai qui en sort chante quand on le frotte."
+quete = ""
+objet = "852"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="EclatsDuBassin"]
+position = Vector2(0, -47.0)
+texture = ExtResource("Rochers")
+
+[node name="Etiquette" type="Label" parent="EclatsDuBassin"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="FibresDuPlateau" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1376.0, 672.0)
+script = ExtResource("Recolte")
+titre = "Fibres du plateau du Faucon"
+description = "Les touffes de coco céleste s'accrochent aux corniches — Pell tresse leurs fibres pour ses bandages d'aile."
+quete = ""
+objet = "793"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="FibresDuPlateau"]
+position = Vector2(0, -36.0)
+texture = ExtResource("Fleurs")
+
+[node name="Etiquette" type="Label" parent="FibresDuPlateau"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="AigleDesNuees" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2272.0, 1632.0)
+nom = "Aigle des Nuées"
+pv_max = 700
+degats_attaque = 36
+portee_attaque = 1
+pm_max = 3
+mob_id = 16
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 36
+groupe = "rapaces_celeste"
+texture_personnalisee = ExtResource("sprite_ile_oiseau")
+
+[node name="AigleDuLarge" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(672.0, 1824.0)
+nom = "Aigle du Large"
+pv_max = 710
+degats_attaque = 37
+portee_attaque = 1
+pm_max = 3
+mob_id = 16
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 36
+groupe = "rapaces_celeste"
+texture_personnalisee = ExtResource("sprite_ile_oiseau")
+
+[node name="CerfDuPlateau" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1120.0, 1184.0)
+nom = "Cerf des Hauteurs"
+pv_max = 620
+degats_attaque = 33
+portee_attaque = 1
+pm_max = 3
+mob_id = 21
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 36
+groupe = "faune_celeste"
+texture_personnalisee = ExtResource("sprite_ile_cerf")
+
+[node name="PillardBaroque" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2144.0, 992.0)
+nom = "Pillard baroque égaré"
+pv_max = 600
+degats_attaque = 35
+portee_attaque = 1
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 37
+groupe = "baroque_celeste"
+texture_personnalisee = ExtResource("sprite_ile_mercenaire")
+
+[node name="ChasseurBaroque" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1184.0, 1696.0)
+nom = "Chasseur de Baroque Works"
+pv_max = 660
+degats_attaque = 38
+portee_attaque = 2
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 38
+groupe = "baroque_celeste"
+texture_personnalisee = ExtResource("sprite_ile_chasseur")
+
+[node name="RocDesNuees" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1888.0, 480.0)
+nom = "Roc des Nuées"
+pv_max = 1200
+degats_attaque = 44
+portee_attaque = 2
+pm_max = 3
+mob_id = 0
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 40
+groupe = ""
+texture_personnalisee = ExtResource("sprite_ile_oiseau")
+attaques_par_tour = 2
+[node name="SanctuaireDuFaucon" type="Sprite2D" parent="Paysage"]
+position = Vector2(1696.0, 580.0)
+texture = ExtResource("Sanctuaire")
+offset = Vector2(0, -190.0)
+scale = Vector2(2.1, 2.1)
+
+[node name="HameauDUne" type="Sprite2D" parent="Paysage"]
+position = Vector2(1400.0, 700.0)
+texture = ExtResource("Hameau")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.3, 1.3)
+
+[node name="HameauDAutre" type="Sprite2D" parent="Paysage"]
+position = Vector2(1900.0, 700.0)
+texture = ExtResource("Hameau")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.2, 1.2)
+flip_h = true
+
+[node name="PinsDuPlateauA" type="Sprite2D" parent="Paysage"]
+position = Vector2(1500.0, 900.0)
+texture = ExtResource("Pin")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.1, 1.1)
+
+[node name="PinsDuPlateauB" type="Sprite2D" parent="Paysage"]
+position = Vector2(1850.0, 950.0)
+texture = ExtResource("Pin")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.05, 1.05)
+flip_h = true
+
+[node name="CheneDeLaForet" type="Sprite2D" parent="Paysage"]
+position = Vector2(620.0, 1300.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(1.2, 1.2)
+
+[node name="FleursDeLOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(900.0, 1450.0)
+texture = ExtResource("Fleurs")
+offset = Vector2(0, -36.0)
+scale = Vector2(0.8, 0.8)
+
+[node name="MonumentDuSanctuaire" type="Sprite2D" parent="Paysage"]
+position = Vector2(1980.0, 640.0)
+texture = ExtResource("Monument")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.1, 1.1)
+
+[node name="LanterneDuPort" type="Sprite2D" parent="Paysage"]
+position = Vector2(1470.0, 2140.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="BorneDUne" type="Sprite2D" parent="Paysage"]
+position = Vector2(1790.0, 2140.0)
+texture = ExtResource("Borne")
+offset = Vector2(0, -60.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="BarqueDUne" type="Sprite2D" parent="Paysage"]
+position = Vector2(2500.0, 2260.0)
+texture = ExtResource("Barque")
+offset = Vector2(0, -70.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="CaissesDuPort" type="Sprite2D" parent="Paysage"]
+position = Vector2(1820.0, 2208.0)
+texture = ExtResource("Caisses")
+offset = Vector2(0, -64.0)
+scale = Vector2(0.7, 0.7)
+

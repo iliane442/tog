@@ -1760,6 +1760,7 @@ const SCENES_RECOLTE := [
 	"res://scenes/baratie.tscn",
 	"res://scenes/coco_village.tscn",
 	"res://scenes/drum.tscn",
+	"res://scenes/ile_celeste.tscn",
 	"res://scenes/little_garden.tscn",
 	"res://scenes/loguetown.tscn",
 	"res://scenes/mont_corvo.tscn",

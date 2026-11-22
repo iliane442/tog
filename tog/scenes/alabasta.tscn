@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_reverse.tscn" id="FerryReverse"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_zou.tscn" id="FerryZou"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_celeste.tscn" id="FerryCeleste"]
 [ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
 [ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/palmier.png" id="Palmier"]
@@ -101,12 +102,22 @@ position = Vector2(576.0, 2304.0)
 [node name="DepuisZou" type="Marker2D" parent="Arrivees"]
 position = Vector2(704.0, 2304.0)
 
+[node name="DepuisIleCeleste" type="Marker2D" parent="Arrivees"]
+position = Vector2(800.0, 2304.0)
+
 [node name="CapitaineHalcion" parent="." instance=ExtResource("FerryReverse")]
 position = Vector2(460.0, 2304.0)
 paroles = "Remonter à Reverse Mountain ? On ne remonte pas la route des caravanes, mon mousse : on la descend en risée. Le col se rejoint par Loguetown, pas par le désert."
 destination = "res://scenes/reverse_mountain.tscn"
 arrivee = &"DepuisAlabasta"
 libelle_traversee = "Remonter vers Reverse Mountain"
+
+[node name="CapitaineAndage" parent="." instance=ExtResource("FerryCeleste")]
+position = Vector2(330.0, 2304.0)
+paroles = "L'Île Céleste ? On n'y va pas en bateau, on y monte : le Chenal des Célestes soulève les coques assez haut pour voir Alubarna depuis les nuages. Pell y soigne son aile au sanctuaire — file voir, le désert te sèchera assez vite ici-bas."
+destination = "res://scenes/ile_celeste.tscn"
+arrivee = &"DepuisIleCeleste"
+libelle_traversee = "Embarquer pour l'Île Céleste"
 
 [node name="CapitaineMistral" parent="." instance=ExtResource("FerryZou")]
 position = Vector2(833.0, 2304.0)
