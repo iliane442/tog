@@ -25,6 +25,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/chasseur_baroque.png" id="sprite_ile_chasseur"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="Rochers"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -88,6 +89,9 @@ reperes = Dictionary[Vector2, String]({Vector2(1568.0, 2144.0): "Port Céleste",
 [node name="DepuisAlabasta" type="Marker2D" parent="Arrivees"]
 position = Vector2(1568.0, 2144.0)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(1648, 2144)
 [node name="CapitaineVolige" parent="." instance=ExtResource("FerryCeleste")]
 position = Vector2(1760.0, 2144.0)
 paroles = "Redescendre sur Alabasta ? Le Levant des Sables tient des vents contraires après midi. Pell veillera sur ton retour : aucun Roc ne traverse son regard sans y laisser une plume. Bon voyage, moussaillon des cimes."

@@ -31,6 +31,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/sheepshead.png" id="sprite_ile_sheepshead"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/cerf_zou.png" id="sprite_ile_cerf_zou"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -88,6 +89,9 @@ reperes = Dictionary[Vector2, String]({Vector2(1344.0, 1900.0): "Quai du Flanc",
 [node name="DepuisAlabasta" type="Marker2D" parent="Arrivees"]
 position = Vector2(1344.0, 1900.0)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(1138, 1900)
 [node name="CapitaineSimoun" parent="." instance=ExtResource("FerryAlabasta")]
 position = Vector2(1250.0, 1900.0)
 paroles = "Redescendre vers Alabasta avant que le désert ne s'endorme ? La marée nous porte sur le chemin du retour, embarque vite."

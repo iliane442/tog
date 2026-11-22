@@ -34,6 +34,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/crocodile.png" id="sprite_ile_crocodile"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/crabe_cotier.png" id="sprite_ile_crabe_cotier"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -105,6 +106,9 @@ position = Vector2(704.0, 2304.0)
 [node name="DepuisIleCeleste" type="Marker2D" parent="Arrivees"]
 position = Vector2(800.0, 2304.0)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(572, 2304)
 [node name="CapitaineHalcion" parent="." instance=ExtResource("FerryReverse")]
 position = Vector2(460.0, 2304.0)
 paroles = "Remonter à Reverse Mountain ? On ne remonte pas la route des caravanes, mon mousse : on la descend en risée. Le col se rejoint par Loguetown, pas par le désert."

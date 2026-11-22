@@ -26,6 +26,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/pilote_du_chenal.png" id="sprite_ile_pilote_du_chenal"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/loup_marin.png" id="sprite_ile_loup_marin"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -95,6 +96,9 @@ position = Vector2(1600.0, 2112.0)
 [node name="DepuisWhiskyPeak" type="Marker2D" parent="Arrivees"]
 position = Vector2(1700.0, 2112.0)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(1257.6, 2080)
 [node name="CapitaineEsturgeon" parent="." instance=ExtResource("FerryLogue")]
 position = Vector2(1369.6, 2080.0)
 paroles = "Redescendre sur Loguetown à la marée qui suit ? Possible, mon mousse. Le courant redescend comme il monte : dans le bon chenal, et jamais sans balises."

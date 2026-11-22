@@ -20,6 +20,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="alba"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="lanterne"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -99,6 +100,9 @@ position = Vector2(544, 1856)
 [node name="DepuisOrangeTown" type="Marker2D" parent="Arrivees"]
 position = Vector2(608, 1632)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(592, 1568)
 [node name="CapitaineBrise" parent="." instance=ExtResource("FerryOrange")]
 position = Vector2(480, 1568)
 

@@ -37,6 +37,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/baggy.png" id="sprite_ile_baggy"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/crabe_cotier.png" id="sprite_ile_crabe_cotier"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -123,6 +124,9 @@ position = Vector2(736.000, 1824.000)
 [node name="CapitaineVolige" parent="." instance=ExtResource("FerrySyrup")]
 position = Vector2(524.800, 1856.000)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(931.2, 1728)
 [node name="CapitaineBrise" parent="." instance=ExtResource("Ferry")]
 position = Vector2(819.200, 1728.000)
 paroles = "Je repars pour Shells Town. La marée remonte et le chenal est libre."

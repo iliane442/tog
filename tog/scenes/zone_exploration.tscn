@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="10_hud"]
 [ext_resource type="PackedScene" path="res://scenes/fenetre_coffre.tscn" id="13_coffreui"]
 [ext_resource type="PackedScene" path="res://scenes/boutique_coffres.tscn" id="14_boutique"]
+[ext_resource type="PackedScene" path="res://scenes/boutique_marchand.tscn" id="19_marchand"]
 [ext_resource type="Script" path="res://scripts/combat/combat_manager.gd" id="16_combat"]
 [ext_resource type="Script" path="res://scripts/combat/overlay.gd" id="17_overlay"]
 [ext_resource type="PackedScene" path="res://scenes/combat_ui.tscn" id="18_combat_ui"]
@@ -169,6 +170,9 @@ text = "Refuser"
 
 
 [node name="BoutiqueUI" parent="." instance=ExtResource("14_boutique")]
+
+
+[node name="MarchandUI" parent="." instance=ExtResource("19_marchand")]
 
 
 [node name="CombatManager" type="Node" parent="."]
