@@ -1,24 +1,118 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=23 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
-[ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="2_theme"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/helmet.png" id="3_personnage"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/sword.png" id="4_sort"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/quest.png" id="5_quest"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/chest.png" id="6_inventaire"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/scroll.png" id="7_wiki"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/gem.png" id="8_metier"]
+[ext_resource type="Theme" path="res://themes/theme_interface_pirate.tres" id="2_theme"]
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/coin.png" id="9_hdv"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/key.png" id="10_equipage"]
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/heart.png" id="11_vie"]
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/xp.png" id="12_xp"]
-[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/key.png" id="13_touches"]
+
+[ext_resource type="Texture2D" path="res://assets/ui/hud/bordure_navire.png" id="bordure"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud/medaillons.png" id="medailles"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud/parchemin_de_bord.png" id="papier"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud/cadre_barre.png" id="bois"]
+
+[ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/key.png" id="touches"]
+
+[sub_resource type="StyleBoxTexture" id="Papier"]
+texture = ExtResource("papier")
+texture_margin_left = 16.0
+content_margin_left = 16.0
+texture_margin_top = 11.0
+content_margin_top = 11.0
+texture_margin_right = 16.0
+content_margin_right = 16.0
+texture_margin_bottom = 11.0
+content_margin_bottom = 11.0
+
+[sub_resource type="StyleBoxTexture" id="Bois"]
+texture = ExtResource("bois")
+texture_margin_left = 26.0
+content_margin_left = 26.0
+texture_margin_top = 22.0
+content_margin_top = 22.0
+texture_margin_right = 26.0
+content_margin_right = 26.0
+texture_margin_bottom = 26.0
+content_margin_bottom = 26.0
+
+[sub_resource type="StyleBoxFlat" id="VoileParchemin"]
+bg_color = Color(1, 0.91, 0.72, 0.88)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[sub_resource type="LabelSettings" id="NumeroSort"]
+font_size = 17
+font_color = Color(1, 0.92, 0.73, 1)
+outline_size = 4
+outline_color = Color(0.18, 0.065, 0.04, 1)
+
+[sub_resource type="StyleBoxEmpty" id="Transparent"]
+
+[sub_resource type="AtlasTexture" id="Medaille0"]
+atlas = ExtResource("medailles")
+region = Rect2(0, 0, 64, 64)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Medaille1"]
+atlas = ExtResource("medailles")
+region = Rect2(64, 0, 64, 64)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Medaille2"]
+atlas = ExtResource("medailles")
+region = Rect2(128, 0, 64, 64)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Medaille3"]
+atlas = ExtResource("medailles")
+region = Rect2(192, 0, 64, 64)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Medaille4"]
+atlas = ExtResource("medailles")
+region = Rect2(256, 0, 64, 64)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Medaille5"]
+atlas = ExtResource("medailles")
+region = Rect2(320, 0, 64, 64)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Medaille6"]
+atlas = ExtResource("medailles")
+region = Rect2(384, 0, 64, 64)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Medaille7"]
+atlas = ExtResource("medailles")
+region = Rect2(448, 0, 64, 64)
+filter_clip = true
 
 [node name="HUD" type="CanvasLayer"]
 layer = 10
 script = ExtResource("1_hud")
 
+[node name="CadreDuMonde" type="NinePatchRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture_filter = 2
+texture = ExtResource("bordure")
+draw_center = false
+patch_margin_left = 24
+patch_margin_top = 22
+patch_margin_right = 24
+patch_margin_bottom = 22
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
 [node name="QuestPanel" type="PanelContainer" parent="."]
+mouse_filter = 2
 custom_minimum_size = Vector2(380, 120)
 anchors_preset = 0
 anchor_right = 0.0
@@ -27,9 +121,16 @@ offset_left = 20.0
 offset_top = 18.0
 offset_right = 400.0
 offset_bottom = 138.0
+theme_override_styles/panel = SubResource("Papier")
 theme = ExtResource("2_theme")
 
+[node name="FondLecture" type="Panel" parent="QuestPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("VoileParchemin")
+
 [node name="Marges" type="MarginContainer" parent="QuestPanel"]
+mouse_filter = 2
 layout_mode = 2
 theme_override_constants/margin_left = 14
 theme_override_constants/margin_top = 10
@@ -37,6 +138,7 @@ theme_override_constants/margin_right = 14
 theme_override_constants/margin_bottom = 10
 
 [node name="Colonne" type="VBoxContainer" parent="QuestPanel/Marges"]
+mouse_filter = 2
 layout_mode = 2
 theme_override_constants/separation = 2
 
@@ -55,9 +157,11 @@ autowrap_mode = 2
 [node name="QuestProgress" type="Label" parent="QuestPanel/Marges/Colonne"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
+autowrap_mode = 2
 text = "Ouvre le carnet pour consulter tes quêtes."
 
 [node name="NavTop" type="HBoxContainer" parent="."]
+mouse_filter = 2
 anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 0.0
@@ -74,8 +178,13 @@ theme_override_constants/separation = 6
 custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
 theme = ExtResource("2_theme")
-theme_type_variation = "CompassButton"
-icon = ExtResource("3_personnage")
+theme_override_styles/normal = SubResource("Transparent")
+theme_override_styles/hover = SubResource("Transparent")
+theme_override_styles/pressed = SubResource("Transparent")
+theme_override_colors/icon_hover_color = Color(1, 0.91, 0.72, 1)
+texture_filter = 2
+icon_alignment = 1
+icon = SubResource("Medaille0")
 expand_icon = true
 tooltip_text = "Carnet du pirate"
 
@@ -83,8 +192,13 @@ tooltip_text = "Carnet du pirate"
 custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
 theme = ExtResource("2_theme")
-theme_type_variation = "CompassButton"
-icon = ExtResource("4_sort")
+theme_override_styles/normal = SubResource("Transparent")
+theme_override_styles/hover = SubResource("Transparent")
+theme_override_styles/pressed = SubResource("Transparent")
+theme_override_colors/icon_hover_color = Color(1, 0.91, 0.72, 1)
+texture_filter = 2
+icon_alignment = 1
+icon = SubResource("Medaille2")
 expand_icon = true
 tooltip_text = "Sorts et techniques"
 
@@ -92,8 +206,13 @@ tooltip_text = "Sorts et techniques"
 custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
 theme = ExtResource("2_theme")
-theme_type_variation = "CompassButton"
-icon = ExtResource("5_quest")
+theme_override_styles/normal = SubResource("Transparent")
+theme_override_styles/hover = SubResource("Transparent")
+theme_override_styles/pressed = SubResource("Transparent")
+theme_override_colors/icon_hover_color = Color(1, 0.91, 0.72, 1)
+texture_filter = 2
+icon_alignment = 1
+icon = SubResource("Medaille6")
 expand_icon = true
 tooltip_text = "Quêtes"
 
@@ -101,8 +220,13 @@ tooltip_text = "Quêtes"
 custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
 theme = ExtResource("2_theme")
-theme_type_variation = "CompassButton"
-icon = ExtResource("6_inventaire")
+theme_override_styles/normal = SubResource("Transparent")
+theme_override_styles/hover = SubResource("Transparent")
+theme_override_styles/pressed = SubResource("Transparent")
+theme_override_colors/icon_hover_color = Color(1, 0.91, 0.72, 1)
+texture_filter = 2
+icon_alignment = 1
+icon = SubResource("Medaille1")
 expand_icon = true
 tooltip_text = "Sac du capitaine"
 
@@ -110,8 +234,13 @@ tooltip_text = "Sac du capitaine"
 custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
 theme = ExtResource("2_theme")
-theme_type_variation = "CompassButton"
-icon = ExtResource("7_wiki")
+theme_override_styles/normal = SubResource("Transparent")
+theme_override_styles/hover = SubResource("Transparent")
+theme_override_styles/pressed = SubResource("Transparent")
+theme_override_colors/icon_hover_color = Color(1, 0.91, 0.72, 1)
+texture_filter = 2
+icon_alignment = 1
+icon = SubResource("Medaille5")
 expand_icon = true
 tooltip_text = "Carnet et bestiaire"
 
@@ -119,8 +248,13 @@ tooltip_text = "Carnet et bestiaire"
 custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
 theme = ExtResource("2_theme")
-theme_type_variation = "CompassButton"
-icon = ExtResource("8_metier")
+theme_override_styles/normal = SubResource("Transparent")
+theme_override_styles/hover = SubResource("Transparent")
+theme_override_styles/pressed = SubResource("Transparent")
+theme_override_colors/icon_hover_color = Color(1, 0.91, 0.72, 1)
+texture_filter = 2
+icon_alignment = 1
+icon = SubResource("Medaille7")
 expand_icon = true
 tooltip_text = "Métiers"
 
@@ -128,8 +262,13 @@ tooltip_text = "Métiers"
 custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
 theme = ExtResource("2_theme")
-theme_type_variation = "CompassButton"
-icon = ExtResource("9_hdv")
+theme_override_styles/normal = SubResource("Transparent")
+theme_override_styles/hover = SubResource("Transparent")
+theme_override_styles/pressed = SubResource("Transparent")
+theme_override_colors/icon_hover_color = Color(1, 0.91, 0.72, 1)
+texture_filter = 2
+icon_alignment = 1
+icon = SubResource("Medaille4")
 expand_icon = true
 tooltip_text = "Hôtel des ventes"
 
@@ -137,8 +276,13 @@ tooltip_text = "Hôtel des ventes"
 custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
 theme = ExtResource("2_theme")
-theme_type_variation = "CompassButton"
-icon = ExtResource("10_equipage")
+theme_override_styles/normal = SubResource("Transparent")
+theme_override_styles/hover = SubResource("Transparent")
+theme_override_styles/pressed = SubResource("Transparent")
+theme_override_colors/icon_hover_color = Color(1, 0.91, 0.72, 1)
+texture_filter = 2
+icon_alignment = 1
+icon = SubResource("Medaille3")
 expand_icon = true
 tooltip_text = "Équipage"
 
@@ -146,8 +290,13 @@ tooltip_text = "Équipage"
 custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
 theme = ExtResource("2_theme")
-theme_type_variation = "CompassButton"
-icon = ExtResource("13_touches")
+theme_override_styles/normal = SubResource("Transparent")
+theme_override_styles/hover = SubResource("Transparent")
+theme_override_styles/pressed = SubResource("Transparent")
+theme_override_colors/icon_hover_color = Color(1, 0.91, 0.72, 1)
+texture_filter = 2
+icon_alignment = 1
+icon = SubResource("Medaille3")
 expand_icon = true
 tooltip_text = "Raccourcis clavier"
 
@@ -159,6 +308,7 @@ text = "MENU"
 tooltip_text = "Ouvrir le carnet"
 
 [node name="BerryPanel" type="PanelContainer" parent="."]
+mouse_filter = 2
 anchors_preset = -1
 anchor_left = 1.0
 anchor_top = 0.0
@@ -169,13 +319,20 @@ offset_top = 92.0
 offset_right = -20.0
 offset_bottom = 148.0
 theme = ExtResource("2_theme")
-theme_type_variation = "ParchmentPanel"
+theme_override_styles/panel = SubResource("Papier")
+
+[node name="FondLecture" type="Panel" parent="BerryPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("VoileParchemin")
 
 [node name="BerryRow" type="HBoxContainer" parent="BerryPanel"]
+mouse_filter = 2
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="BerryIcon" type="TextureRect" parent="BerryPanel/BerryRow"]
+mouse_filter = 2
 custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 texture = ExtResource("9_hdv")
@@ -189,33 +346,42 @@ text = "0 Berry"
 vertical_alignment = 1
 
 [node name="PanneauStats" type="PanelContainer" parent="."]
+mouse_filter = 2
 anchors_preset = -1
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -344.0
-offset_top = -190.0
+offset_top = -148.0
 offset_right = -20.0
 offset_bottom = -18.0
 theme = ExtResource("2_theme")
-theme_type_variation = "ParchmentPanel"
+theme_override_styles/panel = SubResource("Papier")
+
+[node name="FondLecture" type="Panel" parent="PanneauStats"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("VoileParchemin")
 
 [node name="Colonne" type="VBoxContainer" parent="PanneauStats"]
+mouse_filter = 2
 layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="Nom" type="Label" parent="PanneauStats/Colonne"]
 layout_mode = 2
-theme_type_variation = "Nameplate"
+theme_type_variation = "Ribbon"
 theme_override_font_sizes/font_size = 20
 text = "Pirate - Niv. 1"
 
 [node name="LigneVie" type="HBoxContainer" parent="PanneauStats/Colonne"]
+mouse_filter = 2
 layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="VieIcon" type="TextureRect" parent="PanneauStats/Colonne/LigneVie"]
+mouse_filter = 2
 custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 texture = ExtResource("11_vie")
@@ -223,6 +389,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Vie" type="ProgressBar" parent="PanneauStats/Colonne/LigneVie"]
+mouse_filter = 2
 custom_minimum_size = Vector2(150, 24)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -238,10 +405,12 @@ text = "100 / 100"
 horizontal_alignment = 2
 
 [node name="LigneXP" type="HBoxContainer" parent="PanneauStats/Colonne"]
+mouse_filter = 2
 layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="XPIcon" type="TextureRect" parent="PanneauStats/Colonne/LigneXP"]
+mouse_filter = 2
 custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 texture = ExtResource("12_xp")
@@ -249,6 +418,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="XP" type="ProgressBar" parent="PanneauStats/Colonne/LigneXP"]
+mouse_filter = 2
 custom_minimum_size = Vector2(150, 20)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -264,6 +434,7 @@ text = "0 / 100 XP"
 horizontal_alignment = 2
 
 [node name="LigneCombat" type="HBoxContainer" parent="PanneauStats/Colonne"]
+mouse_filter = 2
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
@@ -300,6 +471,7 @@ autowrap_mode = 2
 vertical_alignment = 1
 
 [node name="BoutonsCombat" type="HBoxContainer" parent="PanneauStats/Colonne"]
+mouse_filter = 2
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 6
@@ -311,23 +483,26 @@ size_flags_horizontal = 3
 text = "Fin du tour"
 
 [node name="BarreDeSorts" type="PanelContainer" parent="."]
+mouse_filter = 2
 anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -364.0
-offset_top = -132.0
+offset_top = -159.0
 offset_right = 364.0
 offset_bottom = -16.0
 theme = ExtResource("2_theme")
-theme_type_variation = "ParchmentPanel"
+theme_override_styles/panel = SubResource("Bois")
 
 [node name="Colonne" type="VBoxContainer" parent="BarreDeSorts"]
+mouse_filter = 2
 layout_mode = 2
 theme_override_constants/separation = 2
 
 [node name="Entete" type="HBoxContainer" parent="BarreDeSorts/Colonne"]
+mouse_filter = 2
 layout_mode = 2
 
 [node name="Titre" type="Label" parent="BarreDeSorts/Colonne/Entete"]
@@ -340,10 +515,13 @@ text = "BARRE DE SORTS"
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 18
-text = "Touches 1-0 - clic pour utiliser"
+theme_override_colors/font_color = Color(1, 0.92, 0.76, 1)
+autowrap_mode = 2
+text = "Touches 1–0 ou clic pour utiliser"
 horizontal_alignment = 2
 
 [node name="Emplacements" type="HBoxContainer" parent="BarreDeSorts/Colonne"]
+mouse_filter = 2
 layout_mode = 2
 size_flags_horizontal = 4
 alignment = 1
@@ -362,7 +540,7 @@ offset_left = 2.0
 offset_top = 0.0
 offset_right = 26.0
 offset_bottom = 24.0
-theme_override_font_sizes/font_size = 15
+label_settings = SubResource("NumeroSort")
 text = "1"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -381,7 +559,7 @@ offset_left = 2.0
 offset_top = 0.0
 offset_right = 26.0
 offset_bottom = 24.0
-theme_override_font_sizes/font_size = 15
+label_settings = SubResource("NumeroSort")
 text = "2"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -400,7 +578,7 @@ offset_left = 2.0
 offset_top = 0.0
 offset_right = 26.0
 offset_bottom = 24.0
-theme_override_font_sizes/font_size = 15
+label_settings = SubResource("NumeroSort")
 text = "3"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -419,7 +597,7 @@ offset_left = 2.0
 offset_top = 0.0
 offset_right = 26.0
 offset_bottom = 24.0
-theme_override_font_sizes/font_size = 15
+label_settings = SubResource("NumeroSort")
 text = "4"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -438,7 +616,7 @@ offset_left = 2.0
 offset_top = 0.0
 offset_right = 26.0
 offset_bottom = 24.0
-theme_override_font_sizes/font_size = 15
+label_settings = SubResource("NumeroSort")
 text = "5"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -457,7 +635,7 @@ offset_left = 2.0
 offset_top = 0.0
 offset_right = 26.0
 offset_bottom = 24.0
-theme_override_font_sizes/font_size = 15
+label_settings = SubResource("NumeroSort")
 text = "6"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -476,7 +654,7 @@ offset_left = 2.0
 offset_top = 0.0
 offset_right = 26.0
 offset_bottom = 24.0
-theme_override_font_sizes/font_size = 15
+label_settings = SubResource("NumeroSort")
 text = "7"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -495,7 +673,7 @@ offset_left = 2.0
 offset_top = 0.0
 offset_right = 26.0
 offset_bottom = 24.0
-theme_override_font_sizes/font_size = 15
+label_settings = SubResource("NumeroSort")
 text = "8"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -514,7 +692,7 @@ offset_left = 2.0
 offset_top = 0.0
 offset_right = 26.0
 offset_bottom = 24.0
-theme_override_font_sizes/font_size = 15
+label_settings = SubResource("NumeroSort")
 text = "9"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -533,7 +711,7 @@ offset_left = 2.0
 offset_top = 0.0
 offset_right = 26.0
 offset_bottom = 24.0
-theme_override_font_sizes/font_size = 15
+label_settings = SubResource("NumeroSort")
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 1

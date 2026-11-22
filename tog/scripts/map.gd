@@ -43,6 +43,8 @@ func _ready() -> void:
 		carte.hide()
 		$CreationPerso.tree_exited.connect(carte.show, CONNECT_ONE_SHOT)
 	$MenuUI.menu_ouvert.connect(carte.hide)
+	$MenuUI.menu_ouvert.connect($player._arreter_exploration)
+	$MenuUI.menu_ouvert.connect($CombatManager._quitter_survol_ennemi)
 	$MenuUI.menu_ferme.connect(_afficher_carte_en_exploration)
 	$CombatManager.placement_commence.connect(carte.hide)
 	$CombatManager.combat_termine.connect(func(_victoire: bool):

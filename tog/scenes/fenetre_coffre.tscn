@@ -1,22 +1,23 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/coffres_ui.gd" id="1_coffreui"]
-[ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="2_theme"]
+[ext_resource type="Theme" path="res://themes/theme_interface_pirate.tres" id="2_theme"]
 
 [node name="CoffreUI" type="CanvasLayer" groups=["coffres_ui"]]
-layer = 30
+layer = 42
 script = ExtResource("1_coffreui")
 
 [node name="Fenetre" type="PanelContainer" parent="."]
+visible = false
 anchors_preset = -1
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 50.0
-offset_top = 40.0
-offset_right = -50.0
-offset_bottom = -40.0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -530.0
+offset_top = -346.0
+offset_right = 530.0
+offset_bottom = 346.0
 theme = ExtResource("2_theme")
 
 [node name="VBox" type="VBoxContainer" parent="Fenetre"]
@@ -25,14 +26,16 @@ theme_override_constants/separation = 20
 
 [node name="Titre" type="Label" parent="Fenetre/VBox"]
 layout_mode = 2
-theme_type_variation = "Title"
+theme_type_variation = "Ribbon"
 text = "Coffre"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 40
+theme_override_font_sizes/font_size = 30
 
 [node name="Defilement" type="ScrollContainer" parent="Fenetre/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
+follow_focus = true
 
 [node name="Liste" type="VBoxContainer" parent="Fenetre/VBox/Defilement"]
 layout_mode = 2

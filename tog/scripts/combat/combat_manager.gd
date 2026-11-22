@@ -76,7 +76,7 @@ var _marqueur_tour: Node2D
 var _hasard := RandomNumberGenerator.new()
 const SCENE_COMBAT_UI := preload("res://scenes/combat_ui.tscn")
 const SCRIPT_ADVERSAIRE_PVP := preload("res://scripts/combat/adversaire_pvp.gd")
-const THEME_COMBAT := preload("res://themes/theme_pirate.tres")
+const THEME_COMBAT := preload("res://themes/theme_interface_pirate.tres")
 
 func _ready() -> void:
 	_hasard.randomize()
@@ -265,12 +265,13 @@ func _construire_interface() -> void:
 	# le joueur s'approche d'un ennemi)
 	_bouton_combattre = Button.new()
 	_bouton_combattre.text = "Combattre"
+	_bouton_combattre.theme = THEME_COMBAT
 	_bouton_combattre.custom_minimum_size = Vector2(160, 44)
 	_bouton_combattre.pressed.connect(_on_bouton_combattre_presse)
 	_ui.add_child(_bouton_combattre)
 	_bouton_combattre.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_bouton_combattre.offset_top -= 110.0
-	_bouton_combattre.offset_bottom -= 110.0
+	_bouton_combattre.offset_top -= 176.0
+	_bouton_combattre.offset_bottom -= 176.0
 	_bouton_combattre.hide()
 	_construire_roster()
 	# les pv du joueur changent souvent (coups reçus, soins) : la
@@ -671,7 +672,7 @@ func _positionner_fiche_ennemi() -> void:
 		position_fiche.x = souris.x - taille_fiche.x - 18
 	if position_fiche.y + taille_fiche.y > taille_vue.y:
 		position_fiche.y = souris.y - taille_fiche.y - 18
-	_fiche_ennemi.position = position_fiche
+	_fiche_ennemi.position = position_fiche.clamp(Vector2.ZERO, (taille_vue - taille_fiche).max(Vector2.ZERO))
 
 func _process(_delta: float) -> void:
 	if _fiche_ennemi != null and _fiche_ennemi.visible:

@@ -1,9 +1,10 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/creation_perso.gd" id="1_creation"]
-[ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="2_theme"]
+[ext_resource type="Theme" path="res://themes/theme_interface_pirate.tres" id="2_theme"]
 
 [node name="CreationPerso" type="CanvasLayer"]
+layer = 43
 script = ExtResource("1_creation")
 
 [node name="Fond" type="ColorRect" parent="."]
@@ -40,8 +41,8 @@ theme_override_constants/separation = 12
 
 [node name="Titre" type="Label" parent="Panneau/VBoxContainer"]
 layout_mode = 2
-theme_type_variation = "Title"
-theme_override_font_sizes/font_size = 38
+theme_type_variation = "Ribbon"
+theme_override_font_sizes/font_size = 32
 text = "Création de personnage"
 horizontal_alignment = 1
 
