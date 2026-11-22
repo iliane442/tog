@@ -24,6 +24,7 @@ const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 @onready var label_progression_quete: Label = $QuestPanel/Marges/Colonne/QuestProgress
 @onready var panneau_quete: PanelContainer = $QuestPanel
 @onready var panneau_berry: PanelContainer = $BerryPanel
+@onready var cadre_du_monde: NinePatchRect = $CadreDuMonde
 @onready var navigation_haute: HBoxContainer = $NavTop
 @onready var bouton_touches: Button = $NavTop/Touches
 
@@ -61,8 +62,7 @@ func _ready() -> void:
 		bouton_fin_tour.pressed.connect(_on_bouton_fin_tour_presse)
 	_menu = get_tree().current_scene.get_node_or_null("MenuUI")
 	if _menu != null:
-		_menu.connect("menu_ouvert", _masquer_hud_menu)
-		_menu.connect("menu_ferme", _retour_menu)
+		_menu.get_node("Fenetre").visibility_changed.connect(_actualiser_visibilite_menu)
 		_connecter_navigation(_menu)
 	bouton_touches.pressed.connect(_basculer_parametres_touches)
 	for index in range(barre_sorts.get_child_count()):
@@ -160,6 +160,7 @@ func _formater_nombre(nombre: int) -> String:
 func maj_barre_sorts() -> void:
 	for index in range(barre_sorts.get_child_count()):
 		var bouton: Button = barre_sorts.get_child(index) as Button
+		bouton.get_node("Badge").text = _raccourci(index)
 		var id_sort: String = Personnage.barre_sorts[index] if index < Personnage.barre_sorts.size() else ""
 		if id_sort != "" and Personnage.sorts.has(id_sort):
 			var sort: Dictionary = Personnage.sorts[id_sort]
@@ -271,7 +272,14 @@ func _afficher_stats_combat(actif: bool) -> void:
 	ligne_xp.visible = not actif
 	panneau_stats.offset_top = -234.0 - label_etats_joueur.custom_minimum_size.y if actif else -190.0
 
+func _actualiser_visibilite_menu() -> void:
+	if _menu.get_node("Fenetre").visible:
+		_masquer_hud_menu()
+	else:
+		_retour_menu()
+
 func _masquer_hud_menu() -> void:
+	cadre_du_monde.hide()
 	_animer_visibilite_sorts(false)
 	panneau_stats.hide()
 	panneau_quete.hide()
@@ -288,6 +296,7 @@ func _afficher_barre_sorts(_victoire: bool) -> void:
 	_animer_visibilite_sorts(true)
 
 func _retour_menu() -> void:
+	cadre_du_monde.show()
 	panneau_stats.show()
 	panneau_quete.show()
 	panneau_berry.show()
@@ -308,6 +317,7 @@ func _basculer_parametres_touches() -> void:
 		_parametres_touches = null
 		return
 	_parametres_touches = SCRIPT_PARAMETRES_TOUCHES.new()
+	_parametres_touches.theme_panneau = panneau_sorts.theme
 	_parametres_touches.fermee.connect(_on_parametres_touches_ferme)
 	add_child(_parametres_touches)
 
@@ -354,6 +364,8 @@ func _construire_barre_objets() -> void:
 	panneau_objets.name = "BarreDObjets"
 	panneau_objets.theme = panneau_sorts.theme
 	panneau_objets.theme_type_variation = panneau_sorts.theme_type_variation
+	panneau_objets.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panneau_objets.add_theme_stylebox_override("panel", panneau_sorts.get_theme_stylebox("panel"))
 	# même place que la barre de sorts : ancres et marges identiques
 	for ancre in ["anchor_left", "anchor_right", "anchor_top", "anchor_bottom",
 			"offset_left", "offset_right", "offset_top", "offset_bottom"]:
@@ -377,6 +389,8 @@ func _construire_barre_objets() -> void:
 	label_action_objets = Label.new()
 	label_action_objets.text = "Touches 1-0 - clic pour utiliser"
 	label_action_objets.add_theme_font_size_override("font_size", 18)
+	label_action_objets.add_theme_color_override("font_color", label_action.get_theme_color("font_color"))
+	label_action_objets.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label_action_objets.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label_action_objets.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	entete.add_child(label_action_objets)
@@ -392,7 +406,13 @@ func _construire_barre_objets() -> void:
 		bouton.tooltip_text = "Objet %d" % (index + 1)
 		bouton.disabled = true
 		bouton.pressed.connect(_on_emplacement_objet_clique.bind(index))
+		var modele := barre_sorts.get_child(index) as Button
+		bouton.theme_type_variation = modele.theme_type_variation
+		for etat in ["normal", "hover", "pressed", "disabled"]:
+			bouton.add_theme_stylebox_override(etat, modele.get_theme_stylebox(etat))
 		var badge := Label.new()
+		badge.name = "Badge"
+		badge.label_settings = modele.get_node("Badge").label_settings
 		badge.text = str((index + 1) % 10)
 		badge.offset_left = 2.0
 		badge.offset_top = 0.0
@@ -422,6 +442,7 @@ func maj_barre_objets() -> void:
 		return
 	for index in range(barre_objets_emplacements.get_child_count()):
 		var bouton: Button = barre_objets_emplacements.get_child(index) as Button
+		bouton.get_node("Badge").text = _raccourci(index)
 		var id: String = Personnage.barre_objets[index] if index < Personnage.barre_objets.size() else ""
 		var possede := int(Inventaire.objets.get(id, 0)) > 0
 		if id != "" and possede:
@@ -483,7 +504,7 @@ func _label_action_actif() -> Label:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
-	if get_tree().paused or (_parametres_touches != null and is_instance_valid(_parametres_touches)):
+	if get_tree().paused or not navigation_haute.visible or (_parametres_touches != null and is_instance_valid(_parametres_touches)):
 		return
 	var action: String = Touches.action_de_evenement(event)
 	if action == "":

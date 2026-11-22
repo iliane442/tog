@@ -96,9 +96,14 @@ func fermer() -> void:
 
 # capte la touche pressée pour l'action en cours de réassignation
 func _input(event: InputEvent) -> void:
-	if _action_ecoute == "":
-		return
 	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	if _action_ecoute == "":
+		if event.keycode == KEY_ESCAPE:
+			get_viewport().set_input_as_handled()
+			fermer()
+		elif event.keycode in [KEY_M, KEY_C]:
+			get_viewport().set_input_as_handled()
 		return
 	get_viewport().set_input_as_handled()
 	var action := _action_ecoute
