@@ -311,6 +311,13 @@ func basculer_roster() -> void:
 	_bouton_roster.text = ("▾ Combattants" if _roster_deplie else "▸ Combattants")
 	_marquer_tour(_combattant_actif)
 
+# ouvre la liste des combattants en début de combat : les vies de
+# toutes les entités présentes restent visibles d'un coup d'œil
+# (repliable à tout moment depuis le bouton)
+func defplier_roster() -> void:
+	if not _roster_deplie:
+		basculer_roster()
+
 # reconstruit la liste des combattants (alliés puis ennemis), avec le
 # tour actif surligné
 func _rafraichir_roster() -> void:
@@ -340,24 +347,74 @@ func _ajouter_titre_roster(texte: String) -> void:
 	titre.add_theme_color_override("font_color", Color("#ffd166"))
 	_liste_roster.add_child(titre)
 
+# une ligne du roster : nom (et attaque/défense), puis une barre de
+# vie colorée d'un coup d'œil (vert, orange puis rouge) et les valeurs
 func _ajouter_ligne_roster(entite: Node2D) -> void:
 	var stats := _stats_combattant(entite)
 	if stats.is_empty():
 		return
-	var ligne := Label.new()
-	ligne.add_theme_font_size_override("font_size", 15)
-	var texte := "%s — PV %d/%d" % [str(stats["nom"]), int(stats["pv"]), int(stats["pv_max"])]
+	var pv_max := maxi(int(stats["pv_max"]), 1)
+	var pv := clampi(int(stats["pv"]), 0, pv_max)
+	var ligne := HBoxContainer.new()
+	ligne.add_theme_constant_override("separation", 8)
+	var nom := Label.new()
+	nom.add_theme_font_size_override("font_size", 15)
+	var texte_nom := str(stats["nom"])
 	if stats.has("attaque"):
-		texte += " — ATT %d" % int(stats["attaque"])
+		texte_nom += " — ATT %d" % int(stats["attaque"])
 	if stats.has("defense"):
-		texte += " — DEF %d" % int(stats["defense"])
+		texte_nom += " — DEF %d" % int(stats["defense"])
 	if entite == _combattant_actif:
-		texte = "▸ " + texte
-		ligne.add_theme_color_override("font_color", Color("#ffd166"))
+		texte_nom = "▸ " + texte_nom
+		nom.add_theme_color_override("font_color", Color("#ffd166"))
 	else:
-		ligne.add_theme_color_override("font_color", Color.WHITE)
-	ligne.text = texte
+		nom.add_theme_color_override("font_color", Color.WHITE)
+	nom.text = texte_nom
+	nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ligne.add_child(nom)
+	ligne.add_child(_creer_barre_vie_roster(pv, pv_max))
+	var valeurs := Label.new()
+	valeurs.text = "%d/%d" % [pv, pv_max]
+	valeurs.add_theme_font_size_override("font_size", 14)
+	valeurs.add_theme_color_override("font_color", Color.WHITE)
+	valeurs.add_theme_color_override("font_shadow_color", Color.BLACK)
+	valeurs.add_theme_constant_override("shadow_offset_x", 1)
+	valeurs.add_theme_constant_override("shadow_offset_y", 1)
+	valeurs.custom_minimum_size = Vector2(64, 0)
+	valeurs.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	ligne.add_child(valeurs)
 	_liste_roster.add_child(ligne)
+
+# petite barre de vie du roster : verte au-delà de la moitié, orange
+# jusqu'au quart, rouge en dessous
+func _creer_barre_vie_roster(pv: int, pv_max: int) -> ProgressBar:
+	var barre := ProgressBar.new()
+	barre.custom_minimum_size = Vector2(90, 10)
+	barre.min_value = 0
+	barre.max_value = pv_max
+	barre.value = pv
+	barre.show_percentage = false
+	var proportion := float(pv) / float(pv_max)
+	var couleur := Color("#e53935")
+	if proportion > 0.5:
+		couleur = Color("#4caf50")
+	elif proportion > 0.25:
+		couleur = Color("#ffa726")
+	var fond := StyleBoxFlat.new()
+	fond.bg_color = Color(0.0, 0.0, 0.0, 0.55)
+	fond.corner_radius_top_left = 3
+	fond.corner_radius_top_right = 3
+	fond.corner_radius_bottom_left = 3
+	fond.corner_radius_bottom_right = 3
+	var remplissage := StyleBoxFlat.new()
+	remplissage.bg_color = couleur
+	remplissage.corner_radius_top_left = 3
+	remplissage.corner_radius_top_right = 3
+	remplissage.corner_radius_bottom_left = 3
+	remplissage.corner_radius_bottom_right = 3
+	barre.add_theme_stylebox_override("background", fond)
+	barre.add_theme_stylebox_override("fill", remplissage)
+	return barre
 
 # stats affichables d'un combattant (joueur local depuis Personnage,
 # ennemis et miroirs depuis leurs propriétés)
@@ -684,6 +741,7 @@ func lancer_combat(groupe = null) -> void:
 	# jusqu'à la première annonce (le placement n'est le tour de personne)
 	_combattant_actif = null
 	_retirer_marqueur_tour()
+	defplier_roster()
 	_rafraichir_roster()
 	# monde partagé : annoncer le combat contre ce camp (lookup au
 	# runtime : Reseau n'est pas chargé dans l'éditeur)
@@ -741,6 +799,7 @@ func lancer_duel(adversaire: SCRIPT_ADVERSAIRE_PVP, premier: bool) -> void:
 	# jusqu'à la première annonce
 	_combattant_actif = null
 	_retirer_marqueur_tour()
+	defplier_roster()
 	_rafraichir_roster()
 
 # une action de l'adversaire distant, relayée par le serveur, rejouée
