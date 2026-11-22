@@ -71,6 +71,10 @@ func _ready() -> void:
 	_preparer_navigation()
 	_ennemi = get_tree().current_scene.find_child("ennemy", true, false)
 	_overlay = get_tree().current_scene.find_child("Overlay", true, false)
+	# l'overlay demande à chaque changement de survol quelles cases la
+	# figure du sort de zone couvrirait autour de l'ennemi survolé
+	if _overlay != null and _overlay.has_method("definir_apercu_zone"):
+		_overlay.call("definir_apercu_zone", Callable(self, "_apercu_zone_sort"))
 	_combat_manager = get_tree().current_scene.get_node_or_null("CombatManager")
 	_sort_boule_de_feu = SORT_BOULE_DE_FEU.new()
 	_sort_boule_de_feu.nom = "Boule de feu"
@@ -564,20 +568,8 @@ const SORTS_ZONE_BARRE := ["21"]
 func _degats_zone(id_sort: String, cible_principale: Node2D, degats: int, sort: Dictionary) -> void:
 	if degats <= 0 or cible_principale == null or not is_instance_valid(cible_principale) or _combat_manager == null:
 		return
-	var case_centre := _case_de(cible_principale.global_position)
-	var cases: Array[Vector2i] = []
-	if SORTS_ZONE_CROIX.has(id_sort):
-		cases = [
-			case_centre + Vector2i.UP, case_centre + Vector2i.DOWN,
-			case_centre + Vector2i.LEFT, case_centre + Vector2i.RIGHT,
-		]
-	elif SORTS_ZONE_BARRE.has(id_sort):
-		# la barre traverse la ligne de tir : les deux cases latérales
-		# sont prises perpendiculairement à la direction du lanceur
-		var direction := case_centre - ma_case()
-		var lateral := Vector2i(0, 1) if absi(direction.x) >= absi(direction.y) else Vector2i(1, 0)
-		cases = [case_centre + lateral, case_centre - lateral]
-	else:
+	var cases := _cases_zone_sort(id_sort, _case_de(cible_principale.global_position))
+	if cases.is_empty():
 		return
 	var touches := 0
 	for ennemi in _combat_manager.ennemis_actifs():
@@ -591,6 +583,43 @@ func _degats_zone(id_sort: String, cible_principale: Node2D, degats: int, sort: 
 			touches += 1
 	if touches > 0:
 		_combat_manager.afficher_message("La zone du sort touche %d ennemi(s) de plus." % touches)
+
+# cases couvertes par la figure du sort autour d'une case centrale :
+# croix (245) ou barre perpendiculaire au tir (21) ; vide si le sort
+# n'a pas de figure
+func _cases_zone_sort(id_sort: String, case_centre: Vector2i) -> Array[Vector2i]:
+	var cases: Array[Vector2i] = []
+	if SORTS_ZONE_CROIX.has(id_sort):
+		cases = [
+			case_centre + Vector2i.UP, case_centre + Vector2i.DOWN,
+			case_centre + Vector2i.LEFT, case_centre + Vector2i.RIGHT,
+		]
+	elif SORTS_ZONE_BARRE.has(id_sort):
+		# la barre traverse la ligne de tir : les deux cases latérales
+		# sont prises perpendiculairement à la direction du lanceur
+		var direction := case_centre - ma_case()
+		var lateral := Vector2i(0, 1) if absi(direction.x) >= absi(direction.y) else Vector2i(1, 0)
+		cases = [case_centre + lateral, case_centre - lateral]
+	return cases
+
+# aperçu de la figure autour de l'ennemi survolé (case de la cible
+# comprise) : ce que le sort touchera si on le lance maintenant
+func _apercu_zone_sort() -> Array[Vector2i]:
+	var vides: Array[Vector2i] = []
+	if _sol == null or _combat_manager == null or not _combat_manager.en_combat or not _sort_selectionne:
+		return vides
+	if not SORTS_ZONE_CROIX.has(_sort_selectionne_id) and not SORTS_ZONE_BARRE.has(_sort_selectionne_id):
+		return vides
+	var sort: Dictionary = Personnage.sorts.get(_sort_selectionne_id, {})
+	var portee := int(sort.get("portee", 1))
+	var curseur := _case_combat_sous_souris()
+	for ennemi in _combat_manager.ennemis_actifs():
+		var case_ennemi := _case_de(ennemi.global_position)
+		if case_ennemi == curseur and _distance_depuis(ennemi) <= portee and _combat_manager.ligne_de_vue_libre(ma_case(), case_ennemi):
+			var cases := _cases_zone_sort(_sort_selectionne_id, case_ennemi)
+			cases.append(case_ennemi)
+			return cases
+	return vides
 
 # le sort consommé part en recharge : base_cooldown tours séparent
 # deux lancements (1 = jouable à chaque tour, la recharge est
