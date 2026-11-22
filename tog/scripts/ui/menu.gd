@@ -524,8 +524,8 @@ func maj_personnage() -> void:
 		valeur_stat.text = str(int(Personnage.caracteristiques[cle]) + int(points_en_attente.get(cle, 0)))
 		bouton_ajouter.disabled = restants <= 0
 
-# résumé du navire sous l'identité : solidité et résistance des
-# pièces installées, avec leurs bonus effectifs
+# résumé du navire sous l'identité : pièces installées emplacement
+# par emplacement, puis solidité et résistance avec leurs bonus
 func _maj_resume_navire() -> void:
 	if label_navire == null:
 		return
@@ -533,10 +533,18 @@ func _maj_resume_navire() -> void:
 	if int(stats["solidite"]) <= 0 and float(stats["tempete"]) <= 0.0:
 		label_navire.text = "Navire : aucune pièce installée"
 		return
-	label_navire.text = "Navire : solidité %d · %d%% tempête — +%d PV, +%d DEF, +%d%% vitesse" % [
-		int(stats["solidite"]), int(stats["tempete"]),
+	var lignes := PackedStringArray()
+	for emplacement in Personnage.EMPLACEMENTS_NAVIRE.values():
+		var id_piece := str(Personnage.bateau.get(emplacement, ""))
+		lignes.append("%s : %s" % [
+			emplacement,
+			Inventaire.nom_objet(id_piece) if id_piece != "" else "vide",
+		])
+	label_navire.text = "Navire — %s\nBonus : +%d PV, +%d DEF, +%d%% vitesse d'exploration (%d solidité · %d%% tempête)" % [
+		" · ".join(lignes),
 		int(stats["solidite"]) / 20, int(stats["solidite"]) / 200,
-		roundi(float(stats["tempete"]))]
+		roundi(float(stats["tempete"])), int(stats["solidite"]), int(stats["tempete"]),
+	]
 
 func _sur_personnage_modifie() -> void:
 	if not fenetre.visible:
