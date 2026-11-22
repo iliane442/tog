@@ -100,6 +100,7 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var liste_quetes: VBoxContainer = $Fenetre/Corps/ContenuQuetes/DefilementQuetes/ListeQuetes
 @onready var label_aucune_quete: Label = $Fenetre/Corps/ContenuQuetes/Aucune
 @onready var liste_sorts: VBoxContainer = $Fenetre/Corps/ContenuSorts/DefilementSorts/ListeSorts
+@onready var contenu_sorts: VBoxContainer = $Fenetre/Corps/ContenuSorts
 @onready var label_nom: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Nom
 @onready var label_race_classe: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/RaceClasse
 @onready var label_niveau: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Niveau
@@ -328,6 +329,7 @@ func _ready() -> void:
 	btn_vue_equipement.toggled.connect(_basculer_vue_equipement)
 	btn_vue_navire.toggled.connect(_basculer_vue_navire)
 	_construire_onglets_metiers()
+	_construire_onglets_sorts()
 	_appliquer_vue_colonne()
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	btn_valider.pressed.connect(_on_valider_points)
@@ -742,6 +744,12 @@ func _on_debug_niveau_200() -> void:
 const TAILLE_CASE_SORT := Vector2(56, 56)
 const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 
+# --- sous-onglets des sorts : classe d'un côté, fruit du démon de l'autre ---
+var _vue_sorts := "classe"
+var _rangee_onglets_sorts: HBoxContainer
+var _btn_onglet_sorts_classe: Button
+var _btn_onglet_sorts_fruit: Button
+
 func maj_sorts() -> void:
 	_sorts_sales = false
 	_niveau_sorts = Personnage.niveau
@@ -750,33 +758,42 @@ func maj_sorts() -> void:
 		liste_sorts.remove_child(enfant)
 		enfant.queue_free()
 	_construire_barre_sorts()
+	_maj_onglets_sorts()
 	var ids_classe: Array[String] = Personnage.sorts_de_classe()
-	var ids_combat: Array[String] = []
 	# sorts disponibles hors classe (pouvoirs du fruit mangé débloqués
-	# par son niveau d'utilisation)
+	# par leur niveau d'utilisation)
+	var ids_fruit: Array[String] = []
 	for id_sort in Personnage.sorts_disponibles():
 		if not ids_classe.has(id_sort):
-			ids_combat.append(id_sort)
+			ids_fruit.append(id_sort)
 	var verrous_classe := Personnage.sorts_de_classe_verrouilles()
 	var verrous_fruit := Personnage.sorts_fruit_verrouilles()
-	if ids_classe.is_empty() and ids_combat.is_empty() and verrous_classe.is_empty() and verrous_fruit.is_empty():
+	# la vue « fruit » ne se tient qu'avec un fruit dans l'estomac :
+	# sans lui, l'onglet n'existe pas et la classe occupe tout
+	var vue_fruit := _vue_sorts == "fruit" and Personnage.fruit_id != ""
+	if vue_fruit:
+		if ids_fruit.is_empty() and verrous_fruit.is_empty():
+			var vide_fruit := Label.new()
+			vide_fruit.text = "Aucun pouvoir n'est encore débloqué."
+			liste_sorts.add_child(vide_fruit)
+			return
+		_ajouter_titre_section_sorts("Pouvoirs du fruit du démon")
+		for id_fruit in ids_fruit:
+			_construire_carte_sort(id_fruit)
+		for verrou in verrous_fruit:
+			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du fruit du démon." % int(verrou["niveau"]))
+		return
+	if ids_classe.is_empty() and verrous_classe.is_empty():
 		var vide := Label.new()
 		vide.text = "Aucun sort n'est disponible pour le moment."
 		liste_sorts.add_child(vide)
 		return
-	if not ids_classe.is_empty() or not verrous_classe.is_empty():
-		_ajouter_titre_section_sorts("Sorts de classe")
-		for id_classe in ids_classe:
-			if Personnage.sorts.has(id_classe):
-				_construire_carte_sort(id_classe)
-		for verrou in verrous_classe:
-			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du personnage." % int(verrou["niveau"]))
-	if not ids_combat.is_empty() or not verrous_fruit.is_empty():
-		_ajouter_titre_section_sorts("Pouvoirs du fruit du démon")
-		for id_combat in ids_combat:
-			_construire_carte_sort(id_combat)
-		for verrou in verrous_fruit:
-			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du fruit du démon." % int(verrou["niveau"]))
+	_ajouter_titre_section_sorts("Sorts de classe")
+	for id_classe in ids_classe:
+		if Personnage.sorts.has(id_classe):
+			_construire_carte_sort(id_classe)
+	for verrou in verrous_classe:
+		_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du personnage." % int(verrou["niveau"]))
 
 func _ajouter_titre_section_sorts(texte: String) -> void:
 	var titre_section := Label.new()
@@ -784,6 +801,40 @@ func _ajouter_titre_section_sorts(texte: String) -> void:
 	titre_section.theme_type_variation = "Ribbon"
 	titre_section.add_theme_font_size_override("font_size", 24)
 	liste_sorts.add_child(titre_section)
+
+# la rangée de sous-onglets des sorts : classe d'un côté, pouvoirs du
+# fruit mangé de l'autre ; elle n'apparaît qu'avec un fruit dans
+# l'estomac, sinon la liste de classe occupe tout l'onglet
+func _construire_onglets_sorts() -> void:
+	_rangee_onglets_sorts = HBoxContainer.new()
+	_rangee_onglets_sorts.add_theme_constant_override("separation", 8)
+	_btn_onglet_sorts_classe = Button.new()
+	_btn_onglet_sorts_classe.text = "Sorts de classe"
+	_btn_onglet_sorts_classe.toggle_mode = true
+	_btn_onglet_sorts_classe.button_pressed = true
+	_btn_onglet_sorts_classe.pressed.connect(_sur_onglet_sorts.bind("classe"))
+	_btn_onglet_sorts_fruit = Button.new()
+	_btn_onglet_sorts_fruit.text = "Fruit du démon"
+	_btn_onglet_sorts_fruit.toggle_mode = true
+	_btn_onglet_sorts_fruit.pressed.connect(_sur_onglet_sorts.bind("fruit"))
+	_rangee_onglets_sorts.add_child(_btn_onglet_sorts_classe)
+	_rangee_onglets_sorts.add_child(_btn_onglet_sorts_fruit)
+	contenu_sorts.add_child(_rangee_onglets_sorts)
+	contenu_sorts.move_child(_rangee_onglets_sorts, 0)
+
+func _sur_onglet_sorts(vue: String) -> void:
+	_vue_sorts = vue
+	maj_sorts()
+
+func _maj_onglets_sorts() -> void:
+	if _rangee_onglets_sorts == null:
+		return
+	var a_fruit := Personnage.fruit_id != ""
+	_rangee_onglets_sorts.visible = a_fruit
+	if not a_fruit:
+		_vue_sorts = "classe"
+	_btn_onglet_sorts_classe.button_pressed = _vue_sorts == "classe"
+	_btn_onglet_sorts_fruit.button_pressed = _vue_sorts == "fruit"
 
 # barre de sorts : un bouton par emplacement ; les emplacements vides
 # sont grisés, cliquer un sort placé le retire de la barre
