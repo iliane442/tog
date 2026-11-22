@@ -2047,14 +2047,14 @@ func maj_panneau_navire() -> void:
 		if id_piece == "":
 			bouton.text = "%s\n· vide ·" % emplacement
 			bouton.icon = null
-			bouton.disabled = true
-			bouton.tooltip_text = "Emplacement libre : installe une pièce depuis le sac (bouton « Installer sur le navire »)."
+			bouton.disabled = false
+			bouton.tooltip_text = "Emplacement libre : clic pour filtrer le sac sur les pièces de cette place."
 			continue
 		var details := Inventaire.details_objet(id_piece)
 		bouton.text = "%s\n%s" % [emplacement, Inventaire.nom_objet(id_piece)]
 		bouton.icon = _icone_objet(details)
 		bouton.disabled = false
-		bouton.tooltip_text = "%s\nClic pour examiner la pièce et la retirer." % str(details.get("description", ""))
+		bouton.tooltip_text = "%s\nClic pour filtrer le sac sur cette place et examiner la pièce." % str(details.get("description", ""))
 	var stats := Personnage.stats_bateau()
 	if int(stats["solidite"]) <= 0 and float(stats["tempete"]) <= 0.0:
 		bonus_navire.text = "Aucune pièce installée."
