@@ -1085,6 +1085,13 @@ visible = false
 layout_mode = 2
 text = "Placer dans la barre d'objets"
 
+[node name="BtnVendre" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem"]
+visible = false
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Vendre"
+
 [node name="ZoneInventaireCompacte" type="ScrollContainer" parent="Fenetre/Corps/ContenuInventaire"]
 visible = false
 layout_mode = 2

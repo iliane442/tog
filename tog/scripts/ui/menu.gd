@@ -143,6 +143,7 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var btn_auto_equipement: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BtnAutoEquipement
 @onready var btn_ouvrir_coffre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnOuvrirCoffre
 @onready var btn_ouvrir_tous: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnOuvrirTous
+@onready var btn_vendre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnVendre
 @onready var panneau_personnage_inventaire: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette
 @onready var panneau_sac: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac
 @onready var panneau_detail: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem
@@ -300,6 +301,7 @@ func _ready() -> void:
 	btn_auto_equipement.pressed.connect(_on_auto_equipement)
 	btn_ouvrir_coffre.pressed.connect(_on_bouton_ouvrir_coffre)
 	btn_ouvrir_tous.pressed.connect(_on_bouton_ouvrir_tous)
+	btn_vendre.pressed.connect(_on_bouton_vendre)
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
@@ -527,7 +529,9 @@ func _sur_personnage_modifie() -> void:
 		_maj_resume_personnage()
 		_maj_monnaie_et_compteur()
 		if detail_id_courant != "":
-			_maj_bouton_equiper(Inventaire.details_objet(detail_id_courant), detail_id_courant)
+			var details_inventaire := Inventaire.details_objet(detail_id_courant)
+			_maj_bouton_equiper(details_inventaire, detail_id_courant)
+			_maj_bouton_vendre(details_inventaire)
 
 func _maj_resume_personnage() -> void:
 	_maj_portrait_equipement()
@@ -1091,6 +1095,7 @@ func maj_detail_item(id: String) -> void:
 	_maj_bouton_equiper(details, id)
 	_maj_bouton_utiliser(details)
 	_maj_bouton_barre_objets(details)
+	_maj_bouton_vendre(details)
 
 func maj_detail_aucun() -> void:
 	detail_id_courant = ""
@@ -1109,6 +1114,7 @@ func maj_detail_aucun() -> void:
 	btn_barre_objets.hide()
 	btn_ouvrir_coffre.visible = false
 	btn_ouvrir_tous.visible = false
+	btn_vendre.visible = false
 
 # construit le paperdoll : portrait du personnage au centre, un slot
 # cliquable par emplacement positionné sur le corps
@@ -1737,6 +1743,41 @@ func _construire_recettes(id_profession: String) -> void:
 func _on_fabriquer(id_recette: String) -> void:
 	Personnage.artisaner(id_recette)
 	maj_metiers()
+
+# --- Vente rapide ---
+
+# bouton de vente directe : moitié du prix de base, sans hôtel ni
+# confirmation ; masqué si l'objet ne vaut même pas 1 Berry à la revente
+func _maj_bouton_vendre(details: Dictionary) -> void:
+	var possedes := int(Inventaire.objets.get(detail_id_courant, 0))
+	var demi_prix := int(details.get("prix", 0)) / 2
+	btn_vendre.visible = possedes > 0 and demi_prix >= 1
+	if btn_vendre.visible:
+		btn_vendre.text = "Vendre · %d Berry" % demi_prix
+		btn_vendre.tooltip_text = "Vend une unité, moitié du prix de base."
+
+# vend une unité de l'objet sélectionné : le Berry est crédité
+# aussitôt, l'hôtel des ventes reste la voie du prix fort
+func _on_bouton_vendre() -> void:
+	if detail_id_courant == "":
+		return
+	var details := Inventaire.details_objet(detail_id_courant)
+	var restants := int(Inventaire.objets.get(detail_id_courant, 0))
+	var demi_prix := int(details.get("prix", 0)) / 2
+	if restants <= 0 or demi_prix < 1:
+		return
+	var nom := Inventaire.nom_objet(detail_id_courant)
+	Inventaire.retirer_objet(detail_id_courant, 1)
+	Personnage.ajouter_berry(demi_prix)
+	if restants == 1:
+		# dernière unité : l'objet quitte aussi la barre d'objets
+		Personnage.filtrer_barre_objets()
+		maj_detail_aucun()
+	else:
+		maj_detail_item(detail_id_courant)
+	# retour immédiat : la monnaie et la quantité se rafraîchissent,
+	# pas de popup au milieu d'une série de ventes
+	prix_detail.text = "+%d Berry — %s vendu." % [demi_prix, nom]
 
 # --- Hôtel des ventes ---
 
