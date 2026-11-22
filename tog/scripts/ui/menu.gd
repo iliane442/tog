@@ -57,6 +57,9 @@ var _tri_par_rarete := false
 @onready var btn_barre_objets: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnBarreObjets
 @onready var retour_accueil: Button = $Fenetre/RetourAccueil
 var filtre_portables := false
+# clic sur un emplacement du paperdoll : la grille ne montre plus
+# que ce qui peut prendre cette place ("" = pas de filtre)
+var filtre_emplacement := ""
 var _fruit_wiki_visible := false
 var _niveau_sorts := -1
 @onready var info_ventes_joueurs: Label = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/InfoVentesJoueurs
@@ -495,6 +498,9 @@ func maj_section() -> void:
 	for section in contenus:
 		contenus[section].visible = section == section_actuelle
 	titre.text = noms_sections[section_actuelle]
+	# filtre d'emplacement actif : l'onglet le dit
+	if section_actuelle == "inventaire" and filtre_emplacement != "":
+		titre.text += " — %s seulement" % TEXTES_EMPLACEMENTS.get(filtre_emplacement, filtre_emplacement)
 	match section_actuelle:
 		"personnage":
 			maj_personnage()
@@ -1010,14 +1016,32 @@ func _rafraichir_sac() -> void:
 		maj_equipement()
 
 func _objet_visible(id: String, type_choisi: Variant) -> bool:
-	if filtre_portables and not _est_portable(id):
-		return false
-	# recherche par nom (cumulée aux filtres portables et catégorie) :
-	# insensible à la casse, sur le nom affiché de l'objet
+	# recherche par nom (cumulée aux autres filtres) : insensible à
+	# la casse, sur le nom affiché de l'objet
 	var filtre_nom := champ_recherche_sac.text.strip_edges().to_lower()
 	if filtre_nom != "" and not Inventaire.nom_objet(id).to_lower().contains(filtre_nom):
 		return false
+	# filtre par emplacement (clic sur le paperdoll) : il prime sur la
+	# catégorie et les portables, seuls les objets de cette place restent
+	if filtre_emplacement != "":
+		return _objet_pour_emplacement(id, filtre_emplacement)
+	if filtre_portables and not _est_portable(id):
+		return false
 	return type_choisi == null or Inventaire.details_objet(id).get("type", "") == type_choisi
+
+# l'objet peut-il prendre la place visée ? les catégories « arme » et
+# « anneau » couvrent leurs deux emplacements (principal/secondaire,
+# anneau1/anneau2)
+func _objet_pour_emplacement(id: String, emplacement: String) -> bool:
+	var details := Inventaire.details_objet(id)
+	var cible := Personnage.emplacement_equipement(str(details.get("type", "")), str(details.get("sous_type", "")))
+	if cible == "":
+		return false
+	if emplacement == "arme" or emplacement == "arme2":
+		return cible == "arme"
+	if emplacement == "anneau1" or emplacement == "anneau2":
+		return cible == "anneau"
+	return cible == emplacement
 
 func maj_grille() -> void:
 	_grille_sale = false
@@ -1496,10 +1520,18 @@ func _on_debug_berry() -> void:
 	Personnage.ajouter_berry(1_000_000)
 
 func _on_emplacement_clique(evenement: InputEvent, emplacement: String) -> void:
-	if _activation_case(evenement):
-		var id: String = Personnage.equipement.get(emplacement, "")
-		if id != "":
-			maj_detail_item(id)
+	if not _activation_case(evenement):
+		return
+	# un clic filtre la grille sur ce qui peut prendre cette place,
+	# un second clic la lève ; le papier équipé s'affiche toujours
+	if filtre_emplacement == emplacement:
+		filtre_emplacement = ""
+	else:
+		filtre_emplacement = emplacement
+	maj_grille()
+	var id: String = Personnage.equipement.get(emplacement, "")
+	if id != "":
+		maj_detail_item(id)
 
 # rafraîchit les emplacements du paperdoll (icône, cadre de rareté, tooltip)
 func maj_equipement() -> void:
