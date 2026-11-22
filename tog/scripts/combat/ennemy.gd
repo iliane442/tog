@@ -256,9 +256,13 @@ func durcir(facteur_pv: float, facteur_degats: float) -> void:
 	if _pv_max_original == 0:
 		_pv_max_original = pv_max
 		_degats_originaux = degats_attaque
+	# la proportion de vie est conservée, comme dans assouplir : un
+	# ennemi au maximum entre dans l'arène à son maximum durci, un
+	# blessé garde sa blessure en proportion
+	var proportion := float(pv) / float(pv_max)
 	pv_max = maxi(int(round(_pv_max_original * facteur_pv)), 1)
 	degats_attaque = maxi(int(round(_degats_originaux * facteur_degats)), 1)
-	pv = mini(pv, pv_max)
+	pv = clampi(int(round(proportion * pv_max)), 0, pv_max)
 	sante_modifiee.emit(pv, pv_max)
 
 # sort du mode combat durci : retour aux stats d'origine, la barre de
