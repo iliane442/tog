@@ -33,6 +33,7 @@ func _enter_tree() -> void:
 		Reseau.appliquer_position_memorisee(scene_file_path, $player)
 
 func _ready() -> void:
+	_styliser_notification()
 	var terrain := get_node_or_null("TerrainZone")
 	if terrain != null:
 		var mini_carte := $CarteFushia/PanneauCarte/Marges/Colonne/Carte
@@ -107,3 +108,21 @@ func afficher_info_fushia(texte: String) -> void:
 	_animation_notification.tween_interval(2.1)
 	_animation_notification.tween_property(notification, "modulate:a", 0.0, 0.28)
 	_animation_notification.tween_callback(notification.hide)
+
+# la récolte doit se lire d'un coup d'œil par-dessus la carte : le
+# brun du thème parchemin se fondait dans le décor
+func _styliser_notification() -> void:
+	var fond := StyleBoxFlat.new()
+	fond.bg_color = Color(0.07, 0.045, 0.02, 0.94)
+	fond.border_color = Color(1.0, 0.78, 0.32)
+	fond.set_border_width_all(2)
+	fond.set_corner_radius_all(8)
+	fond.content_margin_left = 14.0
+	fond.content_margin_right = 14.0
+	fond.content_margin_top = 10.0
+	fond.content_margin_bottom = 10.0
+	notification.add_theme_stylebox_override("panel", fond)
+	texte_notification.add_theme_font_size_override("font_size", 22)
+	texte_notification.add_theme_color_override("font_color", Color(1.0, 0.94, 0.7))
+	texte_notification.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	texte_notification.add_theme_constant_override("outline_size", 6)
