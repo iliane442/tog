@@ -203,7 +203,8 @@ func _on_placement_commence() -> void:
 	_afficher_stats_combat(true)
 	bouton_fin_tour.text = "Placement OK"
 	bouton_fin_tour.show()
-	label_action.text = "Place-toi, puis valide le placement."
+	label_action.text = "Place-toi, puis valide le placement : %s" % [
+		Touches.libelle_action("fin_tour")]
 
 func _on_combat_commence() -> void:
 	maj_barre_sorts()
@@ -323,14 +324,15 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if _gestionnaire_combat == null or not _gestionnaire_combat.en_combat:
 		return
 	match action:
-		"valider_placement":
+		"fin_tour":
+			# la même touche sert aux deux phases : valider son placement
+			# pendant la phase de placement, finir son tour pendant le
+			# combat (comme le bouton)
 			if _gestionnaire_combat.en_placement:
 				_gestionnaire_combat.demander_validation_placement()
-				get_viewport().set_input_as_handled()
-		"fin_tour":
-			if not _gestionnaire_combat.en_placement:
+			else:
 				_gestionnaire_combat.demander_fin_tour()
-				get_viewport().set_input_as_handled()
+			get_viewport().set_input_as_handled()
 		"cible_suivante":
 			_gestionnaire_combat.cible_suivante()
 			get_viewport().set_input_as_handled()
