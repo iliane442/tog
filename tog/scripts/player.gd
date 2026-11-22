@@ -45,6 +45,7 @@ var _derniere_seconde_tour := -1
 var _sort_selectionne := false
 var _sort_selectionne_id := "boule_de_feu"
 var _sort_preselectionne_combat := ""
+var _recharges_sorts: Dictionary = {}  # id_sort -> tours de recharge restants
 var _pa := 0
 var _pm := 0
 var _cases_placement: Array[Vector2i] = []
@@ -359,6 +360,8 @@ func _faire_face_a_la_cible() -> void:
 		_ligne = _ligne_cardinale(cible.global_position - global_position)
 
 func _on_combat_commence() -> void:
+	# un combat neuf repart sans recharges
+	_recharges_sorts.clear()
 	if _combat_manager.pvp_actif:
 		# duel : pas de jet d'initiative — le joueur qui a défié ouvre
 		# toujours (l'autre attend notre fin de tour par le réseau, un
@@ -413,6 +416,8 @@ func _on_combat_termine(_victoire: bool) -> void:
 	_tour_joueur = false
 	_arreter_chrono_tour()
 	_sort_selectionne = false
+	# plus de combat : plus de recharges, la barre redevient blanche
+	_recharges_sorts.clear()
 	_cases_placement.clear()
 	_sol = get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
 	target = global_position
@@ -451,6 +456,10 @@ func _selectionner_sort(id_sort: String) -> void:
 	if id_sort != "boule_de_feu" and not Personnage.sorts.has(id_sort):
 		return
 	var sort: Dictionary = Personnage.sorts.get(id_sort, {})
+	if int(_recharges_sorts.get(id_sort, 0)) > 0:
+		_combat_manager.afficher_message("%s se recharge encore (%d tour(s))." % [
+			str(sort.get("nom", "Sort")), int(_recharges_sorts[id_sort])])
+		return
 	var cout: int = int(_sort_boule_de_feu.cout_pa) if id_sort == "boule_de_feu" else int(sort.get("cout_pa", 2))
 	var portee: int = int(_sort_boule_de_feu.portee_max) if id_sort == "boule_de_feu" else int(sort.get("portee", 1))
 	if _pa < cout:
@@ -487,6 +496,7 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		return false
 	if not _combat_manager.precision_reussie(self):
 		_pa -= cout
+		_demarrer_recharge_sort(_id_sort, sort)
 		_combat_manager.afficher_message("Le sort rate sa cible.")
 		_emettre_action_duel({"t": "manque"})
 	else:
@@ -520,6 +530,7 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 				evenement["index"] = _combat_manager.ennemis_actifs().find(cible)
 			_emettre_action_duel(evenement)
 		_pa -= cout
+		_demarrer_recharge_sort(_id_sort, sort)
 		_combat_manager.afficher_message("%s lancé." % str(sort.get("nom", "Sort")))
 		# le fruit mangé progresse à chaque pouvoir utilisé : ses sorts
 		# se débloquent par son niveau (voir Personnage.fruit_xp)
@@ -531,6 +542,20 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 	_maj_affichage()
 	_afficher_cases()
 	return true
+
+# le sort consommé part en recharge : base_cooldown tours séparent
+# deux lancements (1 = jouable à chaque tour, la recharge est
+# simplement ignorée)
+func _demarrer_recharge_sort(id_sort: String, sort: Dictionary) -> void:
+	var recharge := maxi(int(sort.get("recharge", 1)), 1)
+	if recharge > 1:
+		_recharges_sorts[id_sort] = recharge
+	else:
+		_recharges_sorts.erase(id_sort)
+
+# recharge restante d'un sort, pour la barre de sorts du HUD
+func recharge_restante_sort(id_sort: String) -> int:
+	return int(_recharges_sorts.get(id_sort, 0))
 
 # distance de Manhattan jusqu'à une cible précise
 func _distance_depuis(cible: Node2D) -> int:
@@ -789,6 +814,9 @@ func _commencer_mon_tour(numero: int) -> void:
 		if _combat_manager.en_combat and numero == _combat_manager.numero_combat:
 			_fin_du_tour()
 		return
+	# chaque reprise de notre tour fait descendre les recharges d'un cran
+	for id_recharge in _recharges_sorts.keys():
+		_recharges_sorts[id_recharge] = maxi(int(_recharges_sorts[id_recharge]) - 1, 0)
 	_tour_joueur = true
 	_pa = pa_max
 	_pm = _combat_manager.points_mouvement(self, pm_max)

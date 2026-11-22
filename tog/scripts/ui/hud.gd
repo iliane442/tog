@@ -174,18 +174,28 @@ func maj_barre_sorts() -> void:
 			var sort: Dictionary = Personnage.sorts[id_sort]
 			bouton.icon = ICONES_SORTS.pour_sort(id_sort, str(sort.get("type", "")))
 			bouton.disabled = false
+			# sort en recharge : grisé, la durée restante rend le
+			# bouton muet mais visible
+			var recharge := 0
+			if _joueur != null and is_instance_valid(_joueur) and _joueur.has_method("recharge_restante_sort"):
+				recharge = int(_joueur.call("recharge_restante_sort", id_sort))
+			bouton.modulate = Color(0.45, 0.45, 0.5) if recharge > 0 else Color.WHITE
 			# la caractéristique qui renforce ce sort suit son type :
 			# Force au corps à corps, Intelligence à distance et en soin
 			var stat_boost: String = Personnage.stat_booster_sort(sort)
 			var texte_boost := ""
 			if stat_boost != "":
 				texte_boost = "Boost : %s (actuel : +%d)\n" % [stat_boost, roundi(Personnage.bonus_sort_actuel(sort))]
-			bouton.tooltip_text = "%s\n%s\n%sTouche %s" % [
+			var texte_recharge := ""
+			if recharge > 0:
+				texte_recharge = "En recharge : %d tour(s)\n" % recharge
+			bouton.tooltip_text = "%s\n%s\n%s%sTouche %s" % [
 				str(sort.get("nom", "Sort")), str(sort.get("description", "")),
-				texte_boost, _raccourci(index)]
+				texte_boost, texte_recharge, _raccourci(index)]
 		else:
 			bouton.icon = null
 			bouton.disabled = true
+			bouton.modulate = Color.WHITE
 			bouton.tooltip_text = "Ouvre Menu > Sorts pour équiper un sort."
 
 func _animer_case(bouton: Control, echelle: Vector2) -> void:
@@ -275,6 +285,9 @@ func maj_ressources_combat(pa: int, pa_max: int, pm: int, pm_max: int) -> void:
 	label_pa.text = "PA %d / %d" % [pa, pa_max]
 	label_pm.text = "PM %d / %d" % [pm, pm_max]
 	ligne_combat.visible = _gestionnaire_combat != null and _gestionnaire_combat.en_combat
+	# le joueur vient d'agir ou de reprendre son tour : les recharges
+	# de sorts ont pu bouger, la barre suit
+	maj_barre_sorts()
 
 # compte à rebours du tour du joueur : effacé quand ce n'est pas son
 # tour, rouge pendant les cinq dernières secondes
