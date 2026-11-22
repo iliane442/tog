@@ -381,6 +381,8 @@ func _valider_placement() -> void:
 	_room_tours_restants = 0
 	if _overlay != null and _overlay.has_method("effacer_salle"):
 		_overlay.call("effacer_salle")
+	if _combat_manager.has_method("effacer_salle"):
+		_combat_manager.effacer_salle()
 	_combat_manager.valider_placement()
 
 func _faire_face_a_la_cible() -> void:
@@ -450,6 +452,8 @@ func _on_combat_termine(_victoire: bool) -> void:
 	_room_tours_restants = 0
 	if _overlay != null and _overlay.has_method("effacer_salle"):
 		_overlay.call("effacer_salle")
+	if _combat_manager != null and _combat_manager.has_method("effacer_salle"):
+		_combat_manager.effacer_salle()
 	# combat gagné : la bénédiction de la tablette des Flots Calmes
 	# s'est consommée (en cas de fuite elle attend le prochain combat)
 	if _victoire and Personnage.prochain_combat_double:
@@ -667,7 +671,7 @@ func _lancer_room(sort: Dictionary) -> bool:
 		_combat_manager.afficher_message("La Room exige plus de sang que tu n'en as.")
 		return false
 	_jouer_effet_sort(SORT_ROOM_CLE, self)
-	var touches := _room_couvrir_allies(sort)
+	var touches := _room_couvrir_allies()
 	Personnage.blesser(paiement)
 	_pa -= cout_pa
 	# la salle reste au sol, visible tant que la Room vit : sa
@@ -680,20 +684,25 @@ func _lancer_room(sort: Dictionary) -> bool:
 	_room_tours_restants = maxi(duree, 1)
 	if _overlay != null and _overlay.has_method("afficher_salle"):
 		_overlay.call("afficher_salle", _room_cases)
-	_combat_manager.afficher_message("Room dressée : %d allié(s) opéré(s) (+25 %%, 3 tours) — %d PV versés." % [touches, paiement])
+	# la salle vit aussi dans le gestionnaire : le renfort suit la
+	# position à chaque coup, il ne vaut que dans la zone
+	if _combat_manager.has_method("definir_salle"):
+		_combat_manager.call("definir_salle", _room_cases)
+	_combat_manager.afficher_message("Room dressée : %d allié(s) dans la salle (+25 %%, 3 tours) — %d PV versés." % [touches, paiement])
 	_scruter_fruit(SORT_ROOM_CLE)
 	_sort_selectionne = false
 	_maj_affichage()
 	_afficher_cases()
 	return true
 
-# chaque allié dans le losange de la salle d'opération reçoit les
-# états du sort (le joueur lui-même comme les miroirs du groupe)
-func _room_couvrir_allies(sort: Dictionary) -> int:
+# les alliés pris dans le losange de la salle d'opération (le joueur
+# lui-même comme les miroirs du groupe) : plus aucun état posé, le
+# renfort compte la position à chaque coup (voir CombatManager)
+func _room_couvrir_allies() -> int:
 	var centre := ma_case()
-	var touches := 0
 	if not _combat_manager.has_method("allies_actifs"):
-		return 0
+		return 1
+	var touches := 0
 	for allie in _combat_manager.allies_actifs():
 		var noeud := allie as Node2D
 		if noeud == null or not is_instance_valid(noeud):
@@ -702,7 +711,6 @@ func _room_couvrir_allies(sort: Dictionary) -> int:
 		var distance := absi(case_allie.x - centre.x) + absi(case_allie.y - centre.y)
 		if distance > ROOM_RAYON:
 			continue
-		_combat_manager.appliquer_effets_sort(noeud, sort)
 		touches += 1
 	return touches
 
@@ -1005,6 +1013,8 @@ func _commencer_mon_tour(numero: int) -> void:
 			_room_cases.clear()
 			if _overlay != null and _overlay.has_method("effacer_salle"):
 				_overlay.call("effacer_salle")
+			if _combat_manager != null and _combat_manager.has_method("effacer_salle"):
+				_combat_manager.effacer_salle()
 			_combat_manager.afficher_message("La Room se dissipe.")
 	_tour_joueur = true
 	_pa = pa_max

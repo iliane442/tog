@@ -23,9 +23,15 @@ const POSITION_ARENE := Vector2(-16384, -16384)
 const DIFFICULTE_PV := 1.5
 const DIFFICULTE_DEGATS := 1.25
 const DEGATS_PAR_NIVEAU := 0.15
+# renfort de la salle d'opération (Room du bistouri) : +25 % infligés,
+# -25 % encaissés, seulement pour ses occupants alliés
+const MODIFICATEUR_SALLE := 0.25
 
 var en_combat := false
 var en_placement := false
+# cases de la salle d'opération active (Room du bistouri) : ses
+# occupants alliés frappent plus fort et encaissent mieux, sans état
+var cases_salle: Array[Vector2i] = []
 var numero_combat := 0
 var _arene: ARENE_COMBAT
 var _camera_exploration: Camera2D
@@ -1250,6 +1256,8 @@ func terminer_combat(victoire: bool, fuite := false) -> void:
 		return
 	en_combat = false
 	en_placement = false
+	# plus de combat : la salle d'opération, si elle restait dressée, ferme
+	effacer_salle()
 	groupe_actif = false
 	# le combat est fini : plus personne ne joue, le roster et le
 	# marqueur de tour disparaissent
@@ -1378,6 +1386,39 @@ func demander_fuite() -> void:
 func est_allie(sort: Dictionary) -> bool:
 	return str(sort.get("type", "")) in ["buff", "defense", "heal", "healing"]
 
+# alliés engagés dans le combat : le joueur et les miroirs de son
+# groupe encore présents
+func allies_actifs() -> Array:
+	var allies := [_joueur]
+	for miroir in _miroirs_groupe.values():
+		if miroir is Node and is_instance_valid(miroir):
+			allies.append(miroir)
+	return allies
+
+# la salle d'opération se dresse pour plusieurs tours : son renfort
+# suit la position à chaque coup, aucun état n'est posé sur les alliés
+func definir_salle(cases: Array[Vector2i]) -> void:
+	cases_salle = cases.duplicate()
+
+func effacer_salle() -> void:
+	cases_salle.clear()
+
+func _dans_salle(noeud: Node) -> bool:
+	if noeud == null or not is_instance_valid(noeud) or cases_salle.is_empty():
+		return false
+	return cases_salle.has(case_sous_point(noeud.global_position, false))
+
+# le camp servi par la salle : le joueur et les miroirs de son groupe
+func _est_allie_local(noeud: Node) -> bool:
+	if noeud == null or not is_instance_valid(noeud):
+		return false
+	if noeud == _joueur:
+		return true
+	for miroir in _miroirs_groupe.values():
+		if miroir is Node and is_instance_valid(miroir) and miroir == noeud:
+			return true
+	return false
+
 func appliquer_effets_sort(cible: Node, sort: Dictionary) -> Array:
 	var appliques: Array = []
 	if cible == null or not is_instance_valid(cible):
@@ -1485,6 +1526,13 @@ func calculer_degats(lanceur: Node, cible: Node, degats_base: int, type_sort: St
 		degats *= 1.2
 	if a_etat(cible, 17):
 		degats *= 1.0 + float(_valeur_etat(cible, 17)) * _piles_etat(cible, 17)
+	# la salle d'opération de la Room : aucun état, seuls les alliés
+	# qui se tiennent dans la zone au moment du coup en profitent
+	if not cases_salle.is_empty():
+		if _est_allie_local(lanceur) and _dans_salle(lanceur):
+			degats *= 1.0 + MODIFICATEUR_SALLE
+		if _est_allie_local(cible) and _dans_salle(cible):
+			degats *= 1.0 - MODIFICATEUR_SALLE
 	# la défense réduit un pourcentage du coup reçu, comme l'armure de
 	# League of Legends : dégâts x 100 / (100 + défense). Chaque point
 	# de défense rapproche l'absorption de 100 % sans jamais
