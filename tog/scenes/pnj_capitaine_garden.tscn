@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/world/capitaine_ferry.gd" id="1_cap"]
-[ext_resource type="Texture2D" path="res://assets/sprites/fishman_pirate/Idle/rotations/south.png" id="2_cap"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/capitaine_garden.png" id="sprite_ile_capitaine_garden"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_cap"]
 radius = 24.020824
@@ -25,8 +25,8 @@ text = "Capitaine Orme"
 horizontal_alignment = 1
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-position = Vector2(0.000, -44.500)
-texture = ExtResource("2_cap")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_capitaine_garden")
 
 [node name="Area2D" type="Area2D" parent="."]
 

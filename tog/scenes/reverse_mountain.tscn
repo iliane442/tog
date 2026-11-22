@@ -20,11 +20,11 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
 [ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/phare.png" id="Van"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="pnj_alba"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/malo.png" id="pnj_malo"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/goon_pirate.png" id="tex_goon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/moussaillon.png" id="tex_moussaillon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/officier_marine.png" id="tex_officier"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/crocus.png" id="sprite_ile_crocus"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/lao.png" id="sprite_ile_lao"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/remorqueur_vigie.png" id="sprite_ile_remorqueur_vigie"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pilote_du_chenal.png" id="sprite_ile_pilote_du_chenal"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/loup_marin.png" id="sprite_ile_loup_marin"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -200,12 +200,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["trm_c6_courant", "trm_c6_remorqueurs", "trm_c6_pilote", "trm_c6_logpose"])
-nom_affiche = "Houle, veilleuse du cap"
-paroles = "La montagne ne se franchit pas, elle se lit. Corvus avait gravé ses marques dans le chenal : chaque trait dit au navire où le courant porte, où il rejette. Les gris les recouvrent une à une. Relis-les avant qu'ils ne les effacent toutes."
+nom_affiche = "Crocus"
+paroles = "Je veille sur le cap des Jumeaux et sur Laboon, la baleine qui y attend ses compagnons. Les marques de Corvus indiquent aux équipages où le courant porte. Des hommes de la Vigie les recouvrent. Relis-les avant la prochaine marée."
 
 [node name="Sprite2D" type="Sprite2D" parent="Houle"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_alba")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_crocus")
 
 [node name="Area2D" type="Area2D" parent="Houle"]
 
@@ -222,7 +222,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Houle, veilleuse du cap"
+text = "Crocus"
 horizontal_alignment = 1
 
 [node name="Lao" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -231,12 +231,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["reverse_balises", "reverse_lignes"])
-nom_affiche = "Lao le charpentier"
+nom_affiche = "Lao"
 paroles = "Je répare les barques qui redescendent du col — quand il en redescend. Les balises défaillantes, c'est pour les autres ; les nasses pleines, c'est pour nous. Aide la baie, la baie t'aidera."
 
 [node name="Sprite2D" type="Sprite2D" parent="Lao"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_malo")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_lao")
 
 [node name="Area2D" type="Area2D" parent="Lao"]
 
@@ -253,7 +253,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Lao le charpentier"
+text = "Lao"
 horizontal_alignment = 1
 
 [node name="MarqueDeLaBase" type="Node2D" parent="." groups=["points_fushia"]]
@@ -528,7 +528,7 @@ horizontal_alignment = 1
 
 [node name="RemorqueurDeLaBase" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1750.0, 1900.0)
-nom = "RemorqueurDeLaBase"
+nom = "Remorqueur de la Vigie"
 pv_max = 450
 degats_attaque = 28
 portee_attaque = 1
@@ -537,11 +537,11 @@ mob_id = 1
 quetes_a_progresser = Array[String](["trm_c6_remorqueurs"])
 niveau_personnalise = 30
 groupe = "remorqueurs_vigie"
-texture_personnalisee = ExtResource("tex_goon")
+texture_personnalisee = ExtResource("sprite_ile_remorqueur_vigie")
 
 [node name="RemorqueurDeLaVanne" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1360.0, 1450.0)
-nom = "RemorqueurDeLaVanne"
+nom = "Guetteur de la Vigie"
 pv_max = 470
 degats_attaque = 29
 portee_attaque = 2
@@ -550,11 +550,11 @@ mob_id = 3
 quetes_a_progresser = Array[String](["trm_c6_remorqueurs"])
 niveau_personnalise = 31
 groupe = "remorqueurs_vigie"
-texture_personnalisee = ExtResource("tex_moussaillon")
+texture_personnalisee = ExtResource("sprite_ile_remorqueur_vigie")
 
 [node name="RemorqueurDuCol" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1000.0, 900.0)
-nom = "RemorqueurDuCol"
+nom = "Gabier de la Vigie"
 pv_max = 480
 degats_attaque = 30
 portee_attaque = 2
@@ -563,11 +563,11 @@ mob_id = 4
 quetes_a_progresser = Array[String](["trm_c6_remorqueurs"])
 niveau_personnalise = 31
 groupe = "remorqueurs_vigie"
-texture_personnalisee = ExtResource("tex_officier")
+texture_personnalisee = ExtResource("sprite_ile_remorqueur_vigie")
 
 [node name="PiloteDuChenal" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1520.0, 700.0)
-nom = "PiloteDuChenal"
+nom = "Pilote de la Vigie"
 pv_max = 800
 degats_attaque = 36
 portee_attaque = 2
@@ -576,29 +576,31 @@ mob_id = 0
 quetes_a_progresser = Array[String](["trm_c6_pilote"])
 niveau_personnalise = 32
 groupe = ""
-texture_personnalisee = ExtResource("tex_officier")
+texture_personnalisee = ExtResource("sprite_ile_pilote_du_chenal")
 attaques_par_tour = 3
 
 [node name="LoupMarinDeLEst" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2650.0, 2300.0)
-nom = "LoupMarinDeLEst"
+nom = "Loup marin de l'est"
 pv_max = 135
 degats_attaque = 16
 portee_attaque = 1
 pm_max = 3
 mob_id = 5
 quetes_a_progresser = Array[String]([])
-niveau_personnalise = 16
+niveau_personnalise = 4
 groupe = "loups_baie"
+texture_personnalisee = ExtResource("sprite_ile_loup_marin")
 
 [node name="LoupMarinDeLOuest" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(950.0, 2450.0)
-nom = "LoupMarinDeLOuest"
+nom = "Loup marin de l'ouest"
 pv_max = 135
 degats_attaque = 16
 portee_attaque = 1
 pm_max = 3
 mob_id = 5
 quetes_a_progresser = Array[String]([])
-niveau_personnalise = 16
+niveau_personnalise = 4
 groupe = "loups_baie"
+texture_personnalisee = ExtResource("sprite_ile_loup_marin")

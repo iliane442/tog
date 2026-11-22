@@ -29,13 +29,16 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-statue-de-place.png" id="Statue"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/nojiko.png" id="pnj_nojiko"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/nils.png" id="pnj_nils"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="pnj_alba"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/compteuse.png" id="pnj_compteuse"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/arlong.png" id="tex_arlong"]
-[ext_resource type="Texture2D" path="res://assets/sprites/fishman_pirate/Idle/rotations/south.png" id="tex_homme_poisson"]
 [ext_resource type="Texture2D" path="res://assets/sprites/fauna/chien-statique.png" id="tex_chien"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/nojiko.png" id="sprite_ile_nojiko"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/genzo.png" id="sprite_ile_genzo"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/nako.png" id="sprite_ile_nako"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/hachi.png" id="sprite_ile_hachi"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/kuroobi.png" id="sprite_ile_kuroobi"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/chew.png" id="sprite_ile_chew"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/arlong.png" id="sprite_ile_arlong"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pelagie.png" id="sprite_ile_pelagie"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/crabe_cotier.png" id="sprite_ile_crabe_cotier"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -377,8 +380,8 @@ nom_affiche = "Nojiko"
 paroles = "Ma mère disait que la mer reprend toujours ce qu'on lui prend. Elle a laissé une bouteille scellée « pour le jour où quelqu'un viendrait avec l'Aiguille ». Le jardin est derrière la maison. Descend la racine de mandarine — et fais attention : même les cartes ont des créanciers, ici."
 
 [node name="Sprite2D" type="Sprite2D" parent="Nojiko"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_nojiko")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_nojiko")
 
 [node name="Area2D" type="Area2D" parent="Nojiko"]
 
@@ -404,12 +407,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["coco_panneaux", "coco_patrouille"])
-nom_affiche = "Genzo le maire"
-paroles = "Maire au sens large du terme : je tiens les registres, les panneaux, et ce qui reste d'espoir. Lis la ville, elle te dira tout. Et si la patrouille d'Arlong te cherche, cherche-la un peu aussi."
+nom_affiche = "Genzo"
+paroles = "Je suis le shérif de Coco. Les panneaux indiquent les chemins que les hommes d'Arlong surveillent : le quai, la route et le mur du parc. Nojiko saura te dire ce que nous avons caché pour protéger le village."
 
 [node name="Sprite2D" type="Sprite2D" parent="Genzo"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_nils")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_genzo")
 
 [node name="Area2D" type="Area2D" parent="Genzo"]
 
@@ -426,7 +429,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Genzo le maire"
+text = "Genzo"
 horizontal_alignment = 1
 
 [node name="Lina" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -435,12 +438,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["coco_mandarines"])
-nom_affiche = "Lina l'orangeraie"
-paroles = "L'orangeraie de Bellemère, c'est le seul bien que Arlong n'a pas osé confisquer. Trois paniers sont mûrs : la terrasse du verger, la clairière du sud et le contrebas de la grille. Ils ne paieront pas la dîme cette année."
+nom_affiche = "Dr Nako"
+paroles = "Ces mandarines de l'orangeraie de Bellemère aideront mes patients à reprendre des forces. J'en ai repéré sur la terrasse, dans la clairière du sud et en contrebas de la grille."
 
 [node name="Sprite2D" type="Sprite2D" parent="Lina"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_alba")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_nako")
 
 [node name="Area2D" type="Area2D" parent="Lina"]
 
@@ -457,7 +460,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Lina l'orangeraie"
+text = "Dr Nako"
 horizontal_alignment = 1
 
 [node name="PanneauDuQuai" type="Node2D" parent="." groups=["points_fushia"]]
@@ -678,7 +681,7 @@ horizontal_alignment = 1
 
 [node name="HommePoissonDuQuai" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(668.0, 2100.0)
-nom = "HommePoissonDuQuai"
+nom = "Hachi"
 pv_max = 230
 degats_attaque = 24
 portee_attaque = 1
@@ -687,11 +690,11 @@ mob_id = 0
 quetes_a_progresser = Array[String](["coco_patrouille"])
 niveau_personnalise = 21
 groupe = "patrouille_arlong"
-texture_personnalisee = ExtResource("tex_homme_poisson")
+texture_personnalisee = ExtResource("sprite_ile_hachi")
 
 [node name="HommePoissonDeLaRoute" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1856.0, 1280.0)
-nom = "HommePoissonDeLaRoute"
+nom = "Kuroobi"
 pv_max = 245
 degats_attaque = 26
 portee_attaque = 2
@@ -700,11 +703,11 @@ mob_id = 0
 quetes_a_progresser = Array[String](["coco_patrouille"])
 niveau_personnalise = 22
 groupe = "patrouille_arlong"
-texture_personnalisee = ExtResource("tex_homme_poisson")
+texture_personnalisee = ExtResource("sprite_ile_kuroobi")
 
 [node name="HommePoissonDuMur" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2700.0, 1150.0)
-nom = "HommePoissonDuMur"
+nom = "Chew"
 pv_max = 260
 degats_attaque = 27
 portee_attaque = 2
@@ -713,7 +716,7 @@ mob_id = 0
 quetes_a_progresser = Array[String](["coco_patrouille"])
 niveau_personnalise = 23
 groupe = "patrouille_arlong"
-texture_personnalisee = ExtResource("tex_homme_poisson")
+texture_personnalisee = ExtResource("sprite_ile_chew")
 
 [node name="Arlong" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2816.0, 704.0)
@@ -726,12 +729,12 @@ mob_id = 12
 quetes_a_progresser = Array[String](["trm_c4_arlong"])
 niveau_personnalise = 25
 groupe = "arlong"
-texture_personnalisee = ExtResource("tex_arlong")
+texture_personnalisee = ExtResource("sprite_ile_arlong")
 attaques_par_tour = 3
 
 [node name="LaCompteuse" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(3264.0, 1980.0)
-nom = "LaCompteuse"
+nom = "Pélagie, la Compteuse"
 pv_max = 380
 degats_attaque = 28
 portee_attaque = 2
@@ -740,11 +743,11 @@ mob_id = 0
 quetes_a_progresser = Array[String](["trm_c4_compteuse"])
 niveau_personnalise = 23
 groupe = "vigie"
-texture_personnalisee = ExtResource("pnj_compteuse")
+texture_personnalisee = ExtResource("sprite_ile_pelagie")
 
 [node name="CrabeDeLaPlage" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1300.0, 2600.0)
-nom = "CrabeDeLaPlage"
+nom = "Crabe de la plage"
 pv_max = 95
 degats_attaque = 11
 portee_attaque = 1
@@ -753,10 +756,11 @@ mob_id = 6
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 6
 groupe = "crabes_du_sud"
+texture_personnalisee = ExtResource("sprite_ile_crabe_cotier")
 
 [node name="CrabeDuRessac" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1500.0, 2590.0)
-nom = "CrabeDuRessac"
+nom = "Crabe du ressac"
 pv_max = 95
 degats_attaque = 11
 portee_attaque = 1
@@ -765,3 +769,4 @@ mob_id = 6
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 6
 groupe = "crabes_du_sud"
+texture_personnalisee = ExtResource("sprite_ile_crabe_cotier")

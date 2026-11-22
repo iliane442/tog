@@ -19,12 +19,14 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-planches-ressource-grandline-baies.png" id="Baies"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/dorry.png" id="pnj_dorry"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/goon_pirate.png" id="tex_goon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/moussaillon.png" id="tex_moussaillon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/officier_marine.png" id="tex_officier"]
-[ext_resource type="Texture2D" path="res://assets/sprites/fauna/roi-des-os-statique.png" id="tex_gardien"]
 [ext_resource type="Texture2D" path="res://assets/sprites/fauna/cerf-statique.png" id="tex_cerf"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/dorry.png" id="sprite_ile_dorry"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/agent_baroque.png" id="sprite_ile_agent_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/eclaireur_baroque.png" id="sprite_ile_eclaireur_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/chasseur_baroque.png" id="sprite_ile_chasseur_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/mr3.png" id="sprite_ile_mr3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/brouteur_little_garden.png" id="sprite_ile_brouteur_little_garden"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/ankylosaure.png" id="sprite_ile_ankylosaure"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -209,15 +211,15 @@ scale = Vector2(0.7, 0.7)
 [node name="Dorry" type="Node2D" parent="." groups=["pnj_fushia"]]
 position = Vector2(900.0, 850.0)
 script = ExtResource("PNJ")
-largeur_zone_clic = 86.0
-hauteur_zone_clic = 111.0
+largeur_zone_clic = 134.0
+hauteur_zone_clic = 164.0
 chain_quetes = Array[String](["trm_lg_duel", "trm_lg_ramasseurs", "trm_lg_depot", "trm_lg_gardien", "trm_lg_toast"])
-nom_affiche = "Dorry le géant"
-paroles = "GAGAGA ! Un petit dans mon île ? Brogy et moi nous battons depuis cent ans, et aucun de nous n'a encore eu raison de l'autre. Mais des petits-gris furetent autour des racines, et un dépôt que le monde a oublié. Aide les géants, petit : la jungle se souviendra de toi."
+nom_affiche = "Dorry le Bleu"
+paroles = "GAGAGA ! Brogy et moi nous battons depuis cent ans. Ces temps-ci, des hommes de Baroque Works fouillent la jungle et coulent de la cire près de notre arène. Aide-moi à dégager le dépôt enfoui sous les racines, petit."
 
 [node name="Sprite2D" type="Sprite2D" parent="Dorry"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_dorry")
+position = Vector2(0, -72)
+texture = ExtResource("sprite_ile_dorry")
 
 [node name="Area2D" type="Area2D" parent="Dorry"]
 
@@ -226,15 +228,15 @@ shape = SubResource("RayonDialogue")
 
 [node name="Nom" type="Label" parent="Dorry"]
 offset_left = -135.0
-offset_top = -117.0
+offset_top = -168.0
 offset_right = 135.0
-offset_bottom = -92.0
+offset_bottom = -144.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Dorry le géant"
+text = "Dorry le Bleu"
 horizontal_alignment = 1
 
 [node name="ReperDeDorry" type="Node2D" parent="." groups=["points_fushia"]]
@@ -590,7 +592,7 @@ horizontal_alignment = 1
 
 [node name="RamasseurDeLaJungle" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2200.0, 1800.0)
-nom = "RamasseurDeLaJungle"
+nom = "Agent de Baroque Works"
 pv_max = 640
 degats_attaque = 35
 portee_attaque = 1
@@ -599,11 +601,11 @@ mob_id = 1
 quetes_a_progresser = Array[String](["trm_lg_ramasseurs"])
 niveau_personnalise = 35
 groupe = "ramasseurs_vigie"
-texture_personnalisee = ExtResource("tex_goon")
+texture_personnalisee = ExtResource("sprite_ile_agent_baroque")
 
 [node name="RamasseurDeLArene" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2750.0, 1500.0)
-nom = "RamasseurDeLArene"
+nom = "Éclaireur de Baroque Works"
 pv_max = 660
 degats_attaque = 36
 portee_attaque = 2
@@ -612,11 +614,11 @@ mob_id = 3
 quetes_a_progresser = Array[String](["trm_lg_ramasseurs"])
 niveau_personnalise = 35
 groupe = "ramasseurs_vigie"
-texture_personnalisee = ExtResource("tex_moussaillon")
+texture_personnalisee = ExtResource("sprite_ile_eclaireur_baroque")
 
 [node name="RamasseurDesCimes" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1500.0, 2200.0)
-nom = "RamasseurDesCimes"
+nom = "Chasseur de Baroque Works"
 pv_max = 680
 degats_attaque = 37
 portee_attaque = 2
@@ -625,11 +627,11 @@ mob_id = 4
 quetes_a_progresser = Array[String](["trm_lg_ramasseurs"])
 niveau_personnalise = 36
 groupe = "ramasseurs_vigie"
-texture_personnalisee = ExtResource("tex_officier")
+texture_personnalisee = ExtResource("sprite_ile_chasseur_baroque")
 
 [node name="GardienDesOs" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1900.0, 1250.0)
-nom = "GardienDesOs"
+nom = "Mr. 3"
 pv_max = 1050
 degats_attaque = 40
 portee_attaque = 2
@@ -638,29 +640,31 @@ mob_id = 15
 quetes_a_progresser = Array[String](["trm_lg_gardien"])
 niveau_personnalise = 36
 groupe = ""
-texture_personnalisee = ExtResource("tex_gardien")
+texture_personnalisee = ExtResource("sprite_ile_mr3")
 attaques_par_tour = 3
 
 [node name="BrouteurColossal1" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2500.0, 2200.0)
-nom = "BrouteurColossal1"
+nom = "Sauropode de Little Garden"
 pv_max = 110
 degats_attaque = 16
 portee_attaque = 1
 pm_max = 3
 mob_id = 19
 quetes_a_progresser = Array[String]([])
-niveau_personnalise = 24
+niveau_personnalise = 3
 groupe = "faune_garden"
+texture_personnalisee = ExtResource("sprite_ile_brouteur_little_garden")
 
 [node name="BrouteurColossal2" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1200.0, 2150.0)
-nom = "BrouteurColossal2"
+nom = "Ankylosaure de Little Garden"
 pv_max = 110
 degats_attaque = 16
 portee_attaque = 1
 pm_max = 3
 mob_id = 19
 quetes_a_progresser = Array[String]([])
-niveau_personnalise = 24
+niveau_personnalise = 3
 groupe = "faune_garden"
+texture_personnalisee = ExtResource("sprite_ile_ankylosaure")

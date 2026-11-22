@@ -24,13 +24,12 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tonneaux.png" id="Tonneaux"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-statue-de-place.png" id="Statue"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/nils.png" id="pnj_nils"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="pnj_alba"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/compteuse.png" id="pnj_compteuse"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/fourgant.png" id="tex_fourgant"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/goon_pirate.png" id="tex_goon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/moussaillon.png" id="tex_moussaillon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/pirate_ivre.png" id="tex_ivre"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/tashigi.png" id="sprite_ile_tashigi"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pelagie.png" id="sprite_ile_pelagie"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/ipponmatsu.png" id="sprite_ile_ipponmatsu"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/voleur_loguetown.png" id="sprite_ile_voleur_loguetown"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/mistral.png" id="sprite_ile_mistral"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/poule_du_quai.png" id="sprite_ile_poule_du_quai"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -250,12 +249,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["trm_c5b_registre", "trm_c5b_comptoir", "trm_c5b_fourgant", "trm_c5b_visa"])
-nom_affiche = "L'Officier des Départs"
-paroles = "Chaque capitaine qui monte le courant laisse une page de son journal ici, sur la Grand-Place. C'est la règle depuis l'Ancien : une route n'existe que si quelqu'un peut la relire. Or depuis un mois, les pages partent au pilon avant d'être recopiées. Aide-moi à comprendre qui les emporte."
+nom_affiche = "Tashigi"
+paroles = "Je suis Tashigi, de la Marine. Des feuilles disparaissent du registre des départs avant d'être recopiées. Rapporte-moi les pages que tu trouveras sur la place, au marché et au phare. Je veux savoir qui achète ces témoignages."
 
 [node name="Sprite2D" type="Sprite2D" parent="OfficierDesDeparts"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_nils")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_tashigi")
 
 [node name="Area2D" type="Area2D" parent="OfficierDesDeparts"]
 
@@ -272,7 +271,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "L'Officier des Départs"
+text = "Tashigi"
 horizontal_alignment = 1
 
 [node name="Pelage" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -285,8 +284,8 @@ nom_affiche = "Pélagie la colporteuse"
 paroles = "J'achète des adieux, moi, pas des cartes. Des lettres de départ, des pages de journal, ce que les marins laissent quand ils veulent oublier. Vous partez aussi ? Alors laissez-moi compter sur mes doigts : trois îles secouées, un comptoir démantelé, un courtier perdu. Vous allez vite. C'est le seul compliment que je sais faire."
 
 [node name="Sprite2D" type="Sprite2D" parent="Pelage"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_compteuse")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_pelagie")
 
 [node name="Area2D" type="Area2D" parent="Pelage"]
 
@@ -312,12 +311,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["logue_panneaux", "logue_vivres"])
-nom_affiche = "Aveline du marché"
-paroles = "On ne quitte pas Loguetown sans relire la ville une dernière fois : les panneaux disent mieux que moi qui est parti d'ici. Et embarque des vivres : le courant ne pardonne pas un sac oublié."
+nom_affiche = "Ipponmatsu"
+paroles = "Une lame bien choisie sauve une vie, et une cale bien chargée sauve un équipage. Si tu embarques, il reste des caisses au quai, à l'entrepôt du Nord et près du phare."
 
 [node name="Sprite2D" type="Sprite2D" parent="Aveline"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_alba")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_ipponmatsu")
 
 [node name="Area2D" type="Area2D" parent="Aveline"]
 
@@ -334,7 +333,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Aveline du marché"
+text = "Ipponmatsu"
 horizontal_alignment = 1
 
 [node name="PlateformeDeRoger" type="Node2D" parent="." groups=["points_fushia"]]
@@ -503,7 +502,7 @@ horizontal_alignment = 1
 position = Vector2(1440.0, 1600.0)
 script = ExtResource("Recolte")
 titre = "Le guichet des Départs"
-description = "L'Officier visse le sceau du port sur ton journal : « Autorisé à remonter le courant. » Il ajoute, à la main, un nom au registre des secours — le tien. La première page de ton journal de bord d'East Blue est complète : le courant qui remonte est ouvert."
+description = "Tashigi appose le sceau du port sur ton journal : « Autorisé à remonter le courant. » Elle ajoute à la main, un nom au registre des secours — le tien. La première page de ton journal de bord d'East Blue est complète : le courant qui remonte est ouvert."
 quete = "trm_c5b_visa"
 objet = ""
 quantite = 1
@@ -690,7 +689,7 @@ horizontal_alignment = 1
 
 [node name="FilouDeLaPromenade" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1970.0, 2000.0)
-nom = "FilouDeLaPromenade"
+nom = "Voleur de la promenade"
 pv_max = 300
 degats_attaque = 26
 portee_attaque = 1
@@ -699,11 +698,11 @@ mob_id = 1
 quetes_a_progresser = Array[String](["logue_filous"])
 niveau_personnalise = 26
 groupe = "filous_logue"
-texture_personnalisee = ExtResource("tex_goon")
+texture_personnalisee = ExtResource("sprite_ile_voleur_loguetown")
 
 [node name="FilouDeLaRuelle" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1150.0, 1350.0)
-nom = "FilouDeLaRuelle"
+nom = "Voleur de la ruelle"
 pv_max = 310
 degats_attaque = 27
 portee_attaque = 1
@@ -712,11 +711,11 @@ mob_id = 3
 quetes_a_progresser = Array[String](["logue_filous"])
 niveau_personnalise = 26
 groupe = "filous_logue"
-texture_personnalisee = ExtResource("tex_moussaillon")
+texture_personnalisee = ExtResource("sprite_ile_voleur_loguetown")
 
 [node name="FilouDuQuai" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(900.0, 2050.0)
-nom = "FilouDuQuai"
+nom = "Voleur du quai"
 pv_max = 320
 degats_attaque = 28
 portee_attaque = 1
@@ -725,11 +724,11 @@ mob_id = 2
 quetes_a_progresser = Array[String](["logue_filous"])
 niveau_personnalise = 27
 groupe = "filous_logue"
-texture_personnalisee = ExtResource("tex_ivre")
+texture_personnalisee = ExtResource("sprite_ile_voleur_loguetown")
 
 [node name="Fourgant" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1504.0, 576.0)
-nom = "Fourgant"
+nom = "Agent Mistral"
 pv_max = 640
 degats_attaque = 34
 portee_attaque = 2
@@ -738,12 +737,12 @@ mob_id = 0
 quetes_a_progresser = Array[String](["trm_c5b_fourgant"])
 niveau_personnalise = 28
 groupe = ""
-texture_personnalisee = ExtResource("tex_fourgant")
+texture_personnalisee = ExtResource("sprite_ile_mistral")
 attaques_par_tour = 3
 
 [node name="PouleDeLaPlace" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1880.0, 1450.0)
-nom = "PouleDeLaPlace"
+nom = "Poule de la place"
 pv_max = 34
 degats_attaque = 5
 portee_attaque = 1
@@ -752,10 +751,11 @@ mob_id = 17
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 1
 groupe = "volailles_logue"
+texture_personnalisee = ExtResource("sprite_ile_poule_du_quai")
 
 [node name="PouleDuQuai" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1250.0, 2100.0)
-nom = "PouleDuQuai"
+nom = "Poule du quai"
 pv_max = 34
 degats_attaque = 5
 portee_attaque = 1
@@ -764,3 +764,4 @@ mob_id = 17
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 1
 groupe = "volailles_logue"
+texture_personnalisee = ExtResource("sprite_ile_poule_du_quai")

@@ -26,12 +26,12 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-sacs-de-cale.png" id="Sacs"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/interprete.png" id="pnj_interprete"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/nils.png" id="pnj_nils"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/don_krieg.png" id="tex_gds"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/goon_pirate.png" id="tex_goon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/moussaillon.png" id="tex_moussaillon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/pirate_ivre.png" id="tex_ivre"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/robin.png" id="sprite_ile_robin"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pell.png" id="sprite_ile_pell"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pillard_alabasta.png" id="sprite_ile_pillard_alabasta"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/mercenaire_alabasta.png" id="sprite_ile_mercenaire_alabasta"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/crocodile.png" id="sprite_ile_crocodile"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/crabe_cotier.png" id="sprite_ile_crabe_cotier"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -293,12 +293,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["trm_c6_releve", "trm_c6_pillards", "trm_c6_gds", "trm_c6_inscription"])
-nom_affiche = "L'Interprète"
-paroles = "Je traduis des pierres, pas des rumeurs. Une inscription se vérifie avec un relevé — jamais avec une confiance. Prête-moi tes pas : les bornes de Corvus répondent à ton aiguille, et le royaume cache хуже que des antiquaires. Ceux qui creusent Alubarna ne collectionnent pas : ils effacent."
+nom_affiche = "Nico Robin"
+paroles = "Je suis Nico Robin. Trois bornes de Corvus réagissent à ton aiguille. Relève leurs inscriptions pour moi. Crocodile a envoyé Baroque Works fouiller sous Alubarna et compte effacer les traces de ce qu'il y trouve."
 
 [node name="Sprite2D" type="Sprite2D" parent="Interprete"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_interprete")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_robin")
 
 [node name="Area2D" type="Area2D" parent="Interprete"]
 
@@ -315,7 +315,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "L'Interprète"
+text = "Nico Robin"
 horizontal_alignment = 1
 
 [node name="Pompeo" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -324,12 +324,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["alab_panneaux", "alab_outres"])
-nom_affiche = "Pompeo le caravanié"
-paroles = "Le désert pardonne aux caravanes prévoyantes : lis les panneaux du royaume, ils disent où l'eau veille. Et remplis mes outres — Yuba en vend, mais le puits du plateau donne la meilleure eau des deux mers."
+nom_affiche = "Pell le Faucon"
+paroles = "Je protège les routes du royaume. Les caravanes de Yuba manquent d'eau. Suis les panneaux, puis rapporte trois outres pleines de la palmeraie, du plateau et des abords du Sphinx."
 
 [node name="Sprite2D" type="Sprite2D" parent="Pompeo"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_nils")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_pell")
 
 [node name="Area2D" type="Area2D" parent="Pompeo"]
 
@@ -346,7 +346,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Pompeo le caravanié"
+text = "Pell le Faucon"
 horizontal_alignment = 1
 
 [node name="SphinxDeNanohana" type="Node2D" parent="." groups=["points_fushia"]]
@@ -434,7 +434,7 @@ horizontal_alignment = 1
 position = Vector2(2450.0, 780.0)
 script = ExtResource("Recolte")
 titre = "L'inscription d'Alubarna"
-description = "L'interprète relit la grande inscription que le sable recouvrait : « Route qui se ferme, cœur qui s'ouvre. La mer qui monte garde les noms de ceux qui sauvent. » — Puis, dans un dialecte des pierres : un point, une route, et des lettres antiques. La première coordonnée tient dans ta main : elle désigne un navire-bûche au bout du monde."
+description = "Nico Robin relit la grande inscription que le sable recouvrait : « Route qui se ferme, cœur qui s'ouvre. La mer qui monte garde les noms de ceux qui sauvent. » — Puis, dans un dialecte des pierres : un point, une route, et des lettres antiques. La première coordonnée tient dans ta main : elle désigne un navire-bûche au bout du monde."
 quete = "trm_c6_inscription"
 objet = ""
 quantite = 1
@@ -621,7 +621,7 @@ horizontal_alignment = 1
 
 [node name="PillardDesColonnes" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2600.0, 850.0)
-nom = "PillardDesColonnes"
+nom = "Pillard de Baroque Works"
 pv_max = 520
 degats_attaque = 30
 portee_attaque = 1
@@ -630,11 +630,11 @@ mob_id = 1
 quetes_a_progresser = Array[String](["trm_c6_pillards"])
 niveau_personnalise = 33
 groupe = "pillards_plateau"
-texture_personnalisee = ExtResource("tex_goon")
+texture_personnalisee = ExtResource("sprite_ile_pillard_alabasta")
 
 [node name="PillardDeLArche" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2350.0, 1100.0)
-nom = "PillardDeLArche"
+nom = "Mercenaire de Baroque Works"
 pv_max = 540
 degats_attaque = 31
 portee_attaque = 2
@@ -643,11 +643,11 @@ mob_id = 3
 quetes_a_progresser = Array[String](["trm_c6_pillards"])
 niveau_personnalise = 34
 groupe = "pillards_plateau"
-texture_personnalisee = ExtResource("tex_moussaillon")
+texture_personnalisee = ExtResource("sprite_ile_mercenaire_alabasta")
 
 [node name="PillardDuMonument" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2800.0, 780.0)
-nom = "PillardDuMonument"
+nom = "Pillard de Baroque Works"
 pv_max = 560
 degats_attaque = 32
 portee_attaque = 2
@@ -656,11 +656,11 @@ mob_id = 2
 quetes_a_progresser = Array[String](["trm_c6_pillards"])
 niveau_personnalise = 34
 groupe = "pillards_plateau"
-texture_personnalisee = ExtResource("tex_ivre")
+texture_personnalisee = ExtResource("sprite_ile_pillard_alabasta")
 
 [node name="GantDeSable" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2400.0, 880.0)
-nom = "GantDeSable"
+nom = "Crocodile (Mr. 0)"
 pv_max = 900
 degats_attaque = 38
 portee_attaque = 2
@@ -669,12 +669,12 @@ mob_id = 0
 quetes_a_progresser = Array[String](["trm_c6_gds"])
 niveau_personnalise = 35
 groupe = ""
-texture_personnalisee = ExtResource("tex_gds")
+texture_personnalisee = ExtResource("sprite_ile_crocodile")
 attaques_par_tour = 3
 
 [node name="CrabeDeNanohana" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(950.0, 2420.0)
-nom = "CrabeDeNanohana"
+nom = "Crabe de Nanohana"
 pv_max = 95
 degats_attaque = 11
 portee_attaque = 1
@@ -683,10 +683,11 @@ mob_id = 6
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 6
 groupe = "crabes_alabasta"
+texture_personnalisee = ExtResource("sprite_ile_crabe_cotier")
 
 [node name="CrabeDuRecif" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1450.0, 2380.0)
-nom = "CrabeDuRecif"
+nom = "Crabe du récif"
 pv_max = 95
 degats_attaque = 11
 portee_attaque = 1
@@ -695,3 +696,4 @@ mob_id = 6
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 6
 groupe = "crabes_alabasta"
+texture_personnalisee = ExtResource("sprite_ile_crabe_cotier")

@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_shells.tscn" id="Ferry"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/yosaku.png" id="Brise"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/capitaine_brise.png" id="sprite_ile_capitaine_brise"]
 
 [node name="CapitaineBrise" instance=ExtResource("Ferry")]
 nom_affiche = "Capitaine Brise"
@@ -14,5 +14,5 @@ libelle_traversee = "Embarquer pour Orange Town"
 text = "Capitaine Brise"
 
 [node name="Sprite2D" parent="." index="1"]
-position = Vector2(0, -48.5)
-texture = ExtResource("Brise")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_capitaine_brise")

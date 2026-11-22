@@ -38,7 +38,7 @@ func _ready() -> void:
 	_calque.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_calque.draw.connect(_dessiner_marqueurs)
 	_creer_legende()
-	_creer_bouton_agrandir()
+	_creer_bouton_agrandir.call_deferred()
 	_actualiser_marqueurs.call_deferred()
 
 # bouton d'accès à la vue agrandie, juste sous la carte du panneau

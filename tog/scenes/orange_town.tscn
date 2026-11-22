@@ -29,11 +29,13 @@
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/fleurs_medicinales.png" id="Fleurs"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tonneaux.png" id="Tonneaux"]
-[ext_resource type="Texture2D" path="res://assets/sprites/fauna/chien-statique.png" id="Chouchou"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/iris.png" id="Iris"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/buggy_clown.png" id="Baggy"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/goon_pirate.png" id="Flibustier"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/moussaillon.png" id="Moussaillon"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/chouchou.png" id="sprite_ile_chouchou"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/boodle.png" id="sprite_ile_boodle"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/cabaji.png" id="sprite_ile_cabaji"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/mohji.png" id="sprite_ile_mohji"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/richie.png" id="sprite_ile_richie"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/baggy.png" id="sprite_ile_baggy"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/crabe_cotier.png" id="sprite_ile_crabe_cotier"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -712,8 +714,8 @@ nom_affiche = "Chouchou"
 paroles = "Chouchou s’assied devant la porte et remue la queue. Sur le seuil, une gamelle vide attend encore sa ration."
 
 [node name="Sprite2D" type="Sprite2D" parent="Chouchou"]
-texture = ExtResource("Chouchou")
-offset = Vector2(0, -34.0)
+texture = ExtResource("sprite_ile_chouchou")
+position = Vector2(0, -32)
 
 [node name="Area2D" type="Area2D" parent="Chouchou"]
 
@@ -739,12 +741,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["orange_patrouille", "orange_baggy"])
-nom_affiche = "Iris"
-paroles = "Le grand chemin vers le nord-est longe la falaise. La patrouille est dans la montée et Baggy campe juste derrière."
+nom_affiche = "Boodle"
+paroles = "Je suis le maire de cette ville. Chouchou a gardé sa boutique quand nous avons dû évacuer. Baggy a dressé son chapiteau sur la falaise : Cabaji, Mohji et son lion gardent le grand chemin."
 
 [node name="Sprite2D" type="Sprite2D" parent="Iris"]
-texture = ExtResource("Iris")
-offset = Vector2(0, -46.5)
+texture = ExtResource("sprite_ile_boodle")
+position = Vector2(0, -48)
 
 [node name="Area2D" type="Area2D" parent="Iris"]
 
@@ -761,7 +763,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Iris"
+text = "Boodle"
 horizontal_alignment = 1
 
 [node name="PanierDeLaLisiere" type="Node2D" parent="." groups=["points_fushia"]]
@@ -841,7 +843,7 @@ horizontal_alignment = 1
 
 [node name="FilouDuChapiteau" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2438.400, 1440.000)
-nom = "Filou du chapiteau"
+nom = "Cabaji l'Acrobate"
 pv_max = 90
 degats_attaque = 10
 portee_attaque = 1
@@ -850,11 +852,11 @@ mob_id = 1
 quetes_a_progresser = Array[String](["orange_patrouille"])
 niveau_personnalise = 8
 groupe = "patrouille_baggy"
-texture_personnalisee = ExtResource("Flibustier")
+texture_personnalisee = ExtResource("sprite_ile_cabaji")
 
 [node name="VoltigeurDuChapiteau" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2560.000, 1376.000)
-nom = "Voltigeur du chapiteau"
+nom = "Mohji le Dresseur"
 pv_max = 95
 degats_attaque = 11
 portee_attaque = 1
@@ -863,11 +865,11 @@ mob_id = 3
 quetes_a_progresser = Array[String](["orange_patrouille"])
 niveau_personnalise = 9
 groupe = "patrouille_baggy"
-texture_personnalisee = ExtResource("Moussaillon")
+texture_personnalisee = ExtResource("sprite_ile_mohji")
 
 [node name="GuetteurDuChapiteau" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2681.600, 1312.000)
-nom = "Guetteur du chapiteau"
+nom = "Richie le Lion"
 pv_max = 120
 degats_attaque = 13
 portee_attaque = 2
@@ -876,7 +878,7 @@ mob_id = 1
 quetes_a_progresser = Array[String](["orange_patrouille"])
 niveau_personnalise = 10
 groupe = "patrouille_baggy"
-texture_personnalisee = ExtResource("Flibustier")
+texture_personnalisee = ExtResource("sprite_ile_richie")
 
 [node name="Baggy" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2924.800, 1136.000)
@@ -889,11 +891,11 @@ mob_id = 8
 quetes_a_progresser = Array[String](["orange_baggy"])
 niveau_personnalise = 15
 groupe = "baggy"
-texture_personnalisee = ExtResource("Baggy")
+texture_personnalisee = ExtResource("sprite_ile_baggy")
 
 [node name="CrabeDuRessac" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1056.000, 2272.000)
-nom = "Crabe géant"
+nom = "Crabe du ressac"
 pv_max = 95
 degats_attaque = 11
 portee_attaque = 1
@@ -902,10 +904,11 @@ mob_id = 6
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 6
 groupe = "crabes_du_ressac"
+texture_personnalisee = ExtResource("sprite_ile_crabe_cotier")
 
 [node name="CrabeDuBancDeSable" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1164.800, 2374.400)
-nom = "Crabe géant"
+nom = "Crabe du banc de sable"
 pv_max = 95
 degats_attaque = 11
 portee_attaque = 1
@@ -914,3 +917,4 @@ mob_id = 6
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 6
 groupe = "crabes_du_ressac"
+texture_personnalisee = ExtResource("sprite_ile_crabe_cotier")

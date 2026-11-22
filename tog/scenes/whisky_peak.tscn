@@ -23,12 +23,13 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tonneaux.png" id="Tonneaux"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/nils.png" id="pnj_nils"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="pnj_alba"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/vermouth.png" id="tex_vermouth"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/goon_pirate.png" id="tex_goon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/moussaillon.png" id="tex_moussaillon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/officier_marine.png" id="tex_officier"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/igaram.png" id="sprite_ile_igaram"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/miss_monday.png" id="sprite_ile_miss_monday"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/mr5.png" id="sprite_ile_mr5"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/chasseur_baroque.png" id="sprite_ile_chasseur_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/eclaireur_baroque.png" id="sprite_ile_eclaireur_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/agent_baroque.png" id="sprite_ile_agent_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/poule_du_quai.png" id="sprite_ile_poule_du_quai"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -238,12 +239,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["trm_wp_fete", "trm_wp_disparus", "trm_wp_vermouth", "trm_wp_toast"])
-nom_affiche = "Fermirin l'échevin"
-paroles = "Chaque équipage qui remonte le courant a droit à sa fête : lanternes, rhum, musiques jusqu'au lever du brume. Mais depuis trois lunes, certains invités fatigués ne redescendent pas de l'étage — et leurs journaux de bord descendent seuls, par la porte de service. Permet-moi de te servir une autre histoire que celle du comptoir."
+nom_affiche = "Igaram (Mr. 8)"
+paroles = "On m'appelle Igaram. Ici, les fêtes accueillent surtout des équipages que Baroque Works veut dépouiller. Des invités disparaissent à l'étage et l'on revend leurs journaux de bord. Aide-moi à découvrir ce que Mr. 5 en fait."
 
 [node name="Sprite2D" type="Sprite2D" parent="Fermirin"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_nils")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_igaram")
 
 [node name="Area2D" type="Area2D" parent="Fermirin"]
 
@@ -260,7 +261,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Fermirin l'échevin"
+text = "Igaram (Mr. 8)"
 horizontal_alignment = 1
 
 [node name="Toria" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -269,12 +270,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["whisky_panneaux", "whisky_rhum"])
-nom_affiche = "Toria l'aubergiste"
-paroles = "La taverne tient la ville et la ville tient la fête. Lis les pancartes avant de trinquer, elles sont plus sobres que mes clients. Et si tu montes au cellier : trois cubes de rhum, pas un de plus — le maître des fêtes compte les tonneaux comme un corbeau compte les plumes."
+nom_affiche = "Miss Monday"
+paroles = "On me connaît sous le nom de Miss Monday. Je tiens la taverne pendant les arrivées. Si tu passes au cellier, trois cubes de rhum suffiront. Sur le chemin, méfie-toi des chasseurs qui s'intéressent à ta prime."
 
 [node name="Sprite2D" type="Sprite2D" parent="Toria"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_alba")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_miss_monday")
 
 [node name="Area2D" type="Area2D" parent="Toria"]
 
@@ -291,7 +292,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Toria l'aubergiste"
+text = "Miss Monday"
 horizontal_alignment = 1
 
 [node name="PalmierDesToastes" type="Node2D" parent="." groups=["points_fushia"]]
@@ -460,7 +461,7 @@ horizontal_alignment = 1
 position = Vector2(1450.0, 2100.0)
 script = ExtResource("Recolte")
 titre = "Le toast du départ"
-description = "Sur le pont des Soupirs, Fermirin rend aux disparus leurs journaux. Le port lève son verre d'une seule voix : « Que la mer te garde long comme la fête. » Le Log Pose s'étalonne, le cap désigne la jungle de Little Garden."
+description = "Sur le pont des Soupirs, Igaram rend aux disparus leurs journaux. Le port lève son verre d'une seule voix : « Que la mer te garde long comme la fête. » Le Log Pose s'étalonne, le cap désigne la jungle de Little Garden."
 quete = "trm_wp_toast"
 objet = ""
 quantite = 1
@@ -595,7 +596,7 @@ horizontal_alignment = 1
 position = Vector2(2500.0, 2000.0)
 script = ExtResource("Recolte")
 titre = "Cube de rhum du cellier"
-description = "Le meilleur : douze ans de fûts, dit Toria."
+description = "Le meilleur : douze ans de fûts, dit Miss Monday."
 quete = "whisky_rhum"
 objet = "14"
 quantite = 2
@@ -647,7 +648,7 @@ horizontal_alignment = 1
 
 [node name="ChasseurDeLaRuelle" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1050.0, 1850.0)
-nom = "ChasseurDeLaRuelle"
+nom = "Chasseur de primes de Baroque Works"
 pv_max = 540
 degats_attaque = 34
 portee_attaque = 1
@@ -656,11 +657,11 @@ mob_id = 1
 quetes_a_progresser = Array[String](["whisky_chasseurs"])
 niveau_personnalise = 32
 groupe = "chasseurs_whisky"
-texture_personnalisee = ExtResource("tex_goon")
+texture_personnalisee = ExtResource("sprite_ile_chasseur_baroque")
 
 [node name="ChasseurDuPont" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1550.0, 1950.0)
-nom = "ChasseurDuPont"
+nom = "Éclaireur de Baroque Works"
 pv_max = 560
 degats_attaque = 35
 portee_attaque = 2
@@ -669,11 +670,11 @@ mob_id = 3
 quetes_a_progresser = Array[String](["whisky_chasseurs"])
 niveau_personnalise = 33
 groupe = "chasseurs_whisky"
-texture_personnalisee = ExtResource("tex_moussaillon")
+texture_personnalisee = ExtResource("sprite_ile_eclaireur_baroque")
 
 [node name="ChasseurDuCellier" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2100.0, 1650.0)
-nom = "ChasseurDuCellier"
+nom = "Agent de Baroque Works"
 pv_max = 580
 degats_attaque = 36
 portee_attaque = 2
@@ -682,11 +683,11 @@ mob_id = 4
 quetes_a_progresser = Array[String](["whisky_chasseurs"])
 niveau_personnalise = 33
 groupe = "chasseurs_whisky"
-texture_personnalisee = ExtResource("tex_officier")
+texture_personnalisee = ExtResource("sprite_ile_agent_baroque")
 
 [node name="Vermouth" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1700.0, 1150.0)
-nom = "Vermouth"
+nom = "Mr. 5"
 pv_max = 780
 degats_attaque = 38
 portee_attaque = 2
@@ -695,12 +696,12 @@ mob_id = 0
 quetes_a_progresser = Array[String](["trm_wp_vermouth"])
 niveau_personnalise = 34
 groupe = ""
-texture_personnalisee = ExtResource("tex_vermouth")
+texture_personnalisee = ExtResource("sprite_ile_mr5")
 attaques_par_tour = 3
 
 [node name="PouleDeLaPlace" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1550.0, 1700.0)
-nom = "PouleDeLaPlace"
+nom = "Poule de la place"
 pv_max = 34
 degats_attaque = 5
 portee_attaque = 1
@@ -709,10 +710,11 @@ mob_id = 17
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 1
 groupe = "volailles_whisky"
+texture_personnalisee = ExtResource("sprite_ile_poule_du_quai")
 
 [node name="PouleDuQuai" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1250.0, 1900.0)
-nom = "PouleDuQuai"
+nom = "Poule du quai"
 pv_max = 34
 degats_attaque = 5
 portee_attaque = 1
@@ -721,3 +723,4 @@ mob_id = 17
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 1
 groupe = "volailles_whisky"
+texture_personnalisee = ExtResource("sprite_ile_poule_du_quai")

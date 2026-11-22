@@ -25,15 +25,15 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
 [ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/phare.png" id="Poste"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/kaya.png" id="pnj_kaya"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/nils.png" id="pnj_nils"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="pnj_alba"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/compteuse.png" id="pnj_compteuse"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/kuro.png" id="tex_kuro"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/goon_pirate.png" id="tex_goon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/moussaillon.png" id="tex_moussaillon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/officier_marine.png" id="tex_officier"]
-[ext_resource type="Texture2D" path="res://assets/sprites/fauna/chien-statique.png" id="tex_chien"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/kaya.png" id="sprite_ile_kaya"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/usopp.png" id="sprite_ile_usopp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/merry.png" id="sprite_ile_merry"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pelagie.png" id="sprite_ile_pelagie"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/jango.png" id="sprite_ile_jango"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/sham.png" id="sprite_ile_sham"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/buchi.png" id="sprite_ile_buchi"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/kuro.png" id="sprite_ile_kuro"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/chien_du_manoir.png" id="sprite_ile_chien_du_manoir"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -298,8 +298,8 @@ nom_affiche = "Kaya"
 paroles = "Chaque carte que l'on dessine est une promesse. La vôtre, on l'a faite avant vous : mon grand-père gardait déjà la montre d'un cartographe. Montez voir mes longues-vues — elles ne mentent pas, elles. Si le manoir vous fait peur après ça, c'est qu'il faut."
 
 [node name="Sprite2D" type="Sprite2D" parent="Kaya"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_kaya")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_kaya")
 
 [node name="Area2D" type="Area2D" parent="Kaya"]
 
@@ -325,12 +325,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["syrup_panneaux", "syrup_guet"])
-nom_affiche = "Ganbak"
-paroles = "Le village tient par ses panneaux, pas par ses murs. Lis-les : c'est moi qui les repeins chaque printemps. Et si tu croises des gris qui notent nos allées sur des carnets, ne les laisse pas finir leur page."
+nom_affiche = "Usopp"
+paroles = "Pirates en vue ! Cette fois, je les ai vraiment vus près du manoir. Suis mes repères : du quai à la place, puis à la montée de chez Kaya. Les trois guetteurs ignorent que le grand capitaine Usopp les surveille !"
 
 [node name="Sprite2D" type="Sprite2D" parent="Ganbak"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_nils")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_usopp")
 
 [node name="Area2D" type="Area2D" parent="Ganbak"]
 
@@ -347,7 +347,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Ganbak"
+text = "Usopp"
 horizontal_alignment = 1
 
 [node name="Mira" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -356,12 +356,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["syrup_herbes"])
-nom_affiche = "Mira l'herboriste"
-paroles = "Des fleurs médicinales, jeune homme ? J'en tisse des tisanes pour la maisonnée. Cueilles-en trois touffes, tu me laisseras le bouquet. Les plus fraîches poussent contre la lisière et près de la source."
+nom_affiche = "Merry"
+paroles = "Mademoiselle Kaya se fatigue vite. Je lui prépare une tisane, mais il me manque trois touffes de fleurs médicinales. Tu en trouveras dans le verger, près de la lisière et à la source."
 
 [node name="Sprite2D" type="Sprite2D" parent="Mira"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_alba")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_merry")
 
 [node name="Area2D" type="Area2D" parent="Mira"]
 
@@ -378,7 +378,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Mira l'herboriste"
+text = "Merry"
 horizontal_alignment = 1
 
 [node name="Pelagie" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -391,8 +391,8 @@ nom_affiche = "Pélagie la colporteuse"
 paroles = "Des cartes ? J'en achète toutes, moi, même déchirées, même fausses. Vous seriez étonné de ce que les gens jettent. Moi, je compte. On paie ce qu'on prend, on recommande ce qu'on vend. Vous ne m'avez pas vue. Personne ne me voit jamais."
 
 [node name="Sprite2D" type="Sprite2D" parent="Pelagie"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_compteuse")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_pelagie")
 
 [node name="Area2D" type="Area2D" parent="Pelagie"]
 
@@ -765,7 +765,7 @@ horizontal_alignment = 1
 
 [node name="GuetteurDuChemin" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1520.0, 1152.0)
-nom = "GuetteurDuChemin"
+nom = "Jango l'Hypnotiseur"
 pv_max = 155
 degats_attaque = 16
 portee_attaque = 1
@@ -774,11 +774,11 @@ mob_id = 1
 quetes_a_progresser = Array[String](["syrup_guet"])
 niveau_personnalise = 15
 groupe = "guet_vigie"
-texture_personnalisee = ExtResource("tex_goon")
+texture_personnalisee = ExtResource("sprite_ile_jango")
 
 [node name="GuetteurDesCretes" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2048.0, 1152.0)
-nom = "GuetteurDesCretes"
+nom = "Sham, des Nyaban"
 pv_max = 165
 degats_attaque = 17
 portee_attaque = 2
@@ -787,11 +787,11 @@ mob_id = 3
 quetes_a_progresser = Array[String](["syrup_guet"])
 niveau_personnalise = 16
 groupe = "guet_vigie"
-texture_personnalisee = ExtResource("tex_moussaillon")
+texture_personnalisee = ExtResource("sprite_ile_sham")
 
 [node name="GuetteurDeLaLisiere" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2368.0, 1472.0)
-nom = "GuetteurDeLaLisiere"
+nom = "Buchi, des Nyaban"
 pv_max = 190
 degats_attaque = 18
 portee_attaque = 2
@@ -800,11 +800,11 @@ mob_id = 4
 quetes_a_progresser = Array[String](["syrup_guet"])
 niveau_personnalise = 17
 groupe = "guet_vigie"
-texture_personnalisee = ExtResource("tex_officier")
+texture_personnalisee = ExtResource("sprite_ile_buchi")
 
 [node name="KuroLeTailleur" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1600.0, 640.0)
-nom = "KuroLeTailleur"
+nom = "Kuro aux Cent Plans"
 pv_max = 400
 degats_attaque = 26
 portee_attaque = 2
@@ -813,12 +813,12 @@ mob_id = 10
 quetes_a_progresser = Array[String](["trm_c3_kuro"])
 niveau_personnalise = 20
 groupe = ""
-texture_personnalisee = ExtResource("tex_kuro")
+texture_personnalisee = ExtResource("sprite_ile_kuro")
 attaques_par_tour = 3
 
 [node name="ChienDesClotures" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(640.0, 1440.0)
-nom = "ChienDesClotures"
+nom = "Chien des clôtures"
 pv_max = 64
 degats_attaque = 8
 portee_attaque = 1
@@ -827,11 +827,11 @@ mob_id = 18
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 3
 groupe = "meute_ouest"
-texture_personnalisee = ExtResource("tex_chien")
+texture_personnalisee = ExtResource("sprite_ile_chien_du_manoir")
 
 [node name="ChienDuVerger" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(851.2, 1696.0)
-nom = "ChienDuVerger"
+nom = "Chien du verger"
 pv_max = 64
 degats_attaque = 8
 portee_attaque = 1
@@ -840,4 +840,4 @@ mob_id = 18
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 3
 groupe = "meute_ouest"
-texture_personnalisee = ExtResource("tex_chien")
+texture_personnalisee = ExtResource("sprite_ile_chien_du_manoir")

@@ -23,11 +23,13 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/malo.png" id="pnj_dalton"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="pnj_alba"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/pirate_ivre.png" id="tex_wapol"]
-[ext_resource type="Texture2D" path="res://assets/sprites/fauna/ours-brun-statique.png" id="tex_ours"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/officier_marine.png" id="tex_officier"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/dalton.png" id="sprite_ile_dalton"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/kureha.png" id="sprite_ile_kureha"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/lapahn.png" id="sprite_ile_lapahn"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/wapol.png" id="sprite_ile_wapol"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/chess.png" id="sprite_ile_chess"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/renne.png" id="sprite_ile_renne"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/oiseau_des_neiges.png" id="sprite_ile_oiseau_des_neiges"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -259,12 +261,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["trm_drum_retour", "trm_drum_ours", "trm_drum_wapol", "trm_drum_pavillon"])
-nom_affiche = "Dalton, garde du royaume"
+nom_affiche = "Dalton"
 paroles = "Drum fut le royaume de la médecine, monsieur — jusqu'à ce que Wapol s'enfuie, revienne et se mette à manger le trésor du pays pièce par pièce. Il laisse même la Vigie racheter nos cartes de plaines. Aide-moi à tenir ce que le peuple n'a pas cessé d'espérer."
 
 [node name="Sprite2D" type="Sprite2D" parent="Dalton"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_dalton")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_dalton")
 
 [node name="Area2D" type="Area2D" parent="Dalton"]
 
@@ -281,7 +283,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Dalton, garde du royaume"
+text = "Dalton"
 horizontal_alignment = 1
 
 [node name="Kureha" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -290,12 +292,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["drum_panneaux", "drum_plantes"])
-nom_affiche = "Docteur Kureha"
+nom_affiche = "Dr Kureha"
 paroles = "Écoute la vieille : ce royaume guérira le jour où on cessera de payer des taxes pour respirer. Les panneaux disent notre histoire mieux que les échevins, et mes remèdes manquent de fleurs. Va, cueille, et ne t'enrhume pas — je déteste soigner les distraits."
 
 [node name="Sprite2D" type="Sprite2D" parent="Kureha"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_alba")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_kureha")
 
 [node name="Area2D" type="Area2D" parent="Kureha"]
 
@@ -312,7 +314,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Docteur Kureha"
+text = "Dr Kureha"
 horizontal_alignment = 1
 
 [node name="PortDeBighorn" type="Node2D" parent="." groups=["points_fushia"]]
@@ -427,7 +429,7 @@ horizontal_alignment = 1
 position = Vector2(1300.0, 2200.0)
 script = ExtResource("Recolte")
 titre = "Port de Bighorn"
-description = "« Port de Bighorn, royaume de Drum. Attention aux avalanches. Les ours des cimes descendent : nourrissez-les de loin. La taxe de débarquement vient d'être révoquée — personne ne sait pour combien de temps. »"
+description = "« Port de Bighorn, royaume de Drum. Attention aux avalanches. Des Lapahn quittent les cimes. Gardez vos distances. La taxe de débarquement vient d'être révoquée — personne ne sait pour combien de temps. »"
 quete = "drum_panneaux"
 objet = ""
 quantite = 1
@@ -587,7 +589,7 @@ horizontal_alignment = 1
 
 [node name="OursDeLaPlaine" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2100.0, 1100.0)
-nom = "OursDeLaPlaine"
+nom = "Lapahn de la plaine"
 pv_max = 700
 degats_attaque = 38
 portee_attaque = 1
@@ -596,11 +598,11 @@ mob_id = 22
 quetes_a_progresser = Array[String](["trm_drum_ours"])
 niveau_personnalise = 37
 groupe = "ours_cimes"
-texture_personnalisee = ExtResource("tex_ours")
+texture_personnalisee = ExtResource("sprite_ile_lapahn")
 
 [node name="OursDuVallon" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(800.0, 1400.0)
-nom = "OursDuVallon"
+nom = "Lapahn du vallon"
 pv_max = 710
 degats_attaque = 39
 portee_attaque = 1
@@ -609,11 +611,11 @@ mob_id = 22
 quetes_a_progresser = Array[String](["trm_drum_ours"])
 niveau_personnalise = 37
 groupe = "ours_cimes"
-texture_personnalisee = ExtResource("tex_ours")
+texture_personnalisee = ExtResource("sprite_ile_lapahn")
 
 [node name="OursDuSentier" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2650.0, 1900.0)
-nom = "OursDuSentier"
+nom = "Lapahn du sentier"
 pv_max = 720
 degats_attaque = 40
 portee_attaque = 2
@@ -622,7 +624,7 @@ mob_id = 22
 quetes_a_progresser = Array[String](["trm_drum_ours"])
 niveau_personnalise = 38
 groupe = "ours_cimes"
-texture_personnalisee = ExtResource("tex_ours")
+texture_personnalisee = ExtResource("sprite_ile_lapahn")
 
 [node name="Wapol" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1470.0, 760.0)
@@ -635,12 +637,12 @@ mob_id = 0
 quetes_a_progresser = Array[String](["trm_drum_wapol"])
 niveau_personnalise = 38
 groupe = ""
-texture_personnalisee = ExtResource("tex_wapol")
+texture_personnalisee = ExtResource("sprite_ile_wapol")
 attaques_par_tour = 3
 
 [node name="BouffonChess" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1350.0, 700.0)
-nom = "BouffonChess"
+nom = "Chess"
 pv_max = 500
 degats_attaque = 30
 portee_attaque = 2
@@ -649,23 +651,24 @@ mob_id = 3
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 36
 groupe = "bouffons_wapol"
-texture_personnalisee = ExtResource("tex_officier")
+texture_personnalisee = ExtResource("sprite_ile_chess")
 
 [node name="ElanDesCimes" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2800.0, 2200.0)
-nom = "ElanDesCimes"
+nom = "Renne des cimes"
 pv_max = 160
 degats_attaque = 20
 portee_attaque = 1
 pm_max = 3
 mob_id = 21
 quetes_a_progresser = Array[String]([])
-niveau_personnalise = 26
+niveau_personnalise = 5
 groupe = "faune_drum"
+texture_personnalisee = ExtResource("sprite_ile_renne")
 
 [node name="ColombeDeBighorn" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1500.0, 1950.0)
-nom = "ColombeDeBighorn"
+nom = "Oiseau des neiges"
 pv_max = 20
 degats_attaque = 4
 portee_attaque = 1
@@ -674,3 +677,4 @@ mob_id = 16
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 1
 groupe = "volatils_drum"
+texture_personnalisee = ExtResource("sprite_ile_oiseau_des_neiges")

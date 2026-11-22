@@ -6,6 +6,7 @@ extends Node2D
 @export var objet: String
 @export var quantite := 1
 @export var retour_secondes := 45.0
+@export var interlocuteur := false
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var etiquette: Label = $Etiquette
@@ -15,7 +16,12 @@ var _disponible := true
 func _ready() -> void:
 	if objet != "":
 		add_to_group("entites_minicarte")
-	etiquette.text = ("Récolter · " if objet != "" else "Lire · ") + titre
+	var action := "Lire · "
+	if objet != "":
+		action = "Récolter · "
+	elif interlocuteur:
+		action = "Parler à "
+	etiquette.text = action + titre
 	etiquette.hide()
 
 func repere_minicarte() -> Dictionary:

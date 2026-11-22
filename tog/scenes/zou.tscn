@@ -23,13 +23,13 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-planches-ressource-grandline-baies.png" id="Baies"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/interprete.png" id="pnj_interprete"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="pnj_alba"]
-[ext_resource type="Texture2D" path="res://assets/sprites/mink_pirate/Idle/rotations/south.png" id="tex_mink"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/goon_pirate.png" id="tex_goon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/moussaillon.png" id="tex_moussaillon"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/pirate_ivre.png" id="tex_ivre"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/alvida.png" id="tex_margol"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/wanda.png" id="sprite_ile_wanda"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/carrot.png" id="sprite_ile_carrot"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/robin.png" id="sprite_ile_robin"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pirate_cent_betes.png" id="sprite_ile_pirate_cent_betes"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pirate_cent_betes_fourrure.png" id="sprite_ile_pirate_cent_betes_fourrure"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/sheepshead.png" id="sprite_ile_sheepshead"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/cerf_zou.png" id="sprite_ile_cerf_zou"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -90,7 +90,7 @@ position = Vector2(1344.0, 1900.0)
 
 [node name="CapitaineSimoun" parent="." instance=ExtResource("FerryAlabasta")]
 position = Vector2(1250.0, 1900.0)
-paroles = "Redescendre vers Alabasta avant que le désert ne s'endorme ? Je garde le mistral pour le retour, embarque vite."
+paroles = "Redescendre vers Alabasta avant que le désert ne s'endorme ? La marée nous porte sur le chemin du retour, embarque vite."
 destination = "res://scenes/alabasta.tscn"
 arrivee = &"DepuisZou"
 libelle_traversee = "Embarquer pour Alabasta"
@@ -233,12 +233,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["trm_c7_deblais", "trm_c7_traqueurs", "trm_c7_margol", "trm_c7_pierre"])
-nom_affiche = "Amaru, cheffe des secours"
-paroles = "Le duché de Mokomo paie ses dettes en actes, pas en promesses. Nos réserves sont coupées par un éboulis, et des traqueurs rôdent autour de la pierre rouge pour un commanditaire que même eux n'ont jamais vu. Aide-nous, et le duché te conduira là où nous n'amenons personne."
+nom_affiche = "Wanda"
+paroles = "Je suis Wanda, une mousquetaire du duché de Mokomo. Un éboulis nous coupe des réserves et les hommes de Jack fouillent la forêt de la Baleine. Aide-nous à rouvrir nos chemins et à protéger la pierre que le duché garde."
 
 [node name="Sprite2D" type="Sprite2D" parent="Amaru"]
-position = Vector2(0, -46.5)
-texture = ExtResource("tex_mink")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_wanda")
 
 [node name="Area2D" type="Area2D" parent="Amaru"]
 
@@ -255,7 +255,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Amaru, cheffe des secours"
+text = "Wanda"
 horizontal_alignment = 1
 
 [node name="Pekora" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -264,12 +264,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["zou_panneaux", "zou_baies"])
-nom_affiche = "Pékora du flanc"
+nom_affiche = "Carrot"
 paroles = "Bienvenue sur le flanc ! Les pancartes du duché sont des lianes d'humeur : elles bougent avec l'île. Lis-les quand même, elles disent où l'île porte. Et cueille des baies pour nos guérisseurs : la forêt de la Baleine les donne à ceux qui la respectent."
 
 [node name="Sprite2D" type="Sprite2D" parent="Pekora"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_alba")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_carrot")
 
 [node name="Area2D" type="Area2D" parent="Pekora"]
 
@@ -286,7 +286,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Pékora du flanc"
+text = "Carrot"
 horizontal_alignment = 1
 
 [node name="InterpreteZou" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -295,12 +295,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String]([])
-nom_affiche = "L'Interprète"
+nom_affiche = "Nico Robin"
 paroles = "La pierre rouge parle une langue plus vieille que les cloches. J'en ai lu des fragments au désert : ici, elle est entière. Faites relire les tracés, pas les rumeurs — la pierre ne ment pas, elle se tait. C'est différent."
 
 [node name="Sprite2D" type="Sprite2D" parent="InterpreteZou"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_interprete")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_robin")
 
 [node name="Area2D" type="Area2D" parent="InterpreteZou"]
 
@@ -317,7 +317,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "L'Interprète"
+text = "Nico Robin"
 horizontal_alignment = 1
 
 [node name="EbuliDuSentier" type="Node2D" parent="." groups=["points_fushia"]]
@@ -567,7 +567,7 @@ horizontal_alignment = 1
 position = Vector2(1450.0, 560.0)
 script = ExtResource("Recolte")
 titre = "La pierre rouge"
-description = "Le ponéglyphe veille au cœur du bosquet sacré. L'Interprète relit à voix haute, Amaru tient l'équipage : la première coordonnée est inscrite au journal de bord. Entre les racines, une lettre de convoi pliée en quatre situe la seconde pierre « chez la maman des gâteaux » — Big Mom garde aussi un tracé."
+description = "Le ponéglyphe veille au cœur du bosquet sacré. Nico Robin lit à voix haute pendant que Wanda monte la garde : la première coordonnée est inscrite au journal de bord. Entre les racines, une lettre de convoi pliée en quatre situe la seconde pierre « chez la maman des gâteaux » — Big Mom garde aussi un tracé."
 quete = "trm_c7_pierre"
 objet = ""
 quantite = 1
@@ -592,7 +592,7 @@ horizontal_alignment = 1
 
 [node name="TraqueurDeLaLisiere" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(600.0, 1500.0)
-nom = "TraqueurDeLaLisiere"
+nom = "Éclaireur des Cent Bêtes"
 pv_max = 580
 degats_attaque = 33
 portee_attaque = 1
@@ -601,11 +601,11 @@ mob_id = 1
 quetes_a_progresser = Array[String](["trm_c7_traqueurs"])
 niveau_personnalise = 36
 groupe = "traqueurs_baleine"
-texture_personnalisee = ExtResource("tex_goon")
+texture_personnalisee = ExtResource("sprite_ile_pirate_cent_betes")
 
 [node name="TraqueurDeLaSource" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(950.0, 1250.0)
-nom = "TraqueurDeLaSource"
+nom = "Traqueur des Cent Bêtes"
 pv_max = 600
 degats_attaque = 34
 portee_attaque = 2
@@ -614,11 +614,11 @@ mob_id = 3
 quetes_a_progresser = Array[String](["trm_c7_traqueurs"])
 niveau_personnalise = 36
 groupe = "traqueurs_baleine"
-texture_personnalisee = ExtResource("tex_moussaillon")
+texture_personnalisee = ExtResource("sprite_ile_pirate_cent_betes_fourrure")
 
 [node name="TraqueurDuFlanc" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2100.0, 1800.0)
-nom = "TraqueurDuFlanc"
+nom = "Pirate des Cent Bêtes"
 pv_max = 620
 degats_attaque = 35
 portee_attaque = 2
@@ -627,11 +627,11 @@ mob_id = 2
 quetes_a_progresser = Array[String](["trm_c7_traqueurs"])
 niveau_personnalise = 37
 groupe = "traqueurs_baleine"
-texture_personnalisee = ExtResource("tex_ivre")
+texture_personnalisee = ExtResource("sprite_ile_pirate_cent_betes")
 
 [node name="Margol" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1650.0, 620.0)
-nom = "Margol"
+nom = "Sheepshead"
 pv_max = 980
 degats_attaque = 39
 portee_attaque = 2
@@ -640,29 +640,31 @@ mob_id = 0
 quetes_a_progresser = Array[String](["trm_c7_margol"])
 niveau_personnalise = 38
 groupe = ""
-texture_personnalisee = ExtResource("tex_margol")
+texture_personnalisee = ExtResource("sprite_ile_sheepshead")
 attaques_par_tour = 3
 
 [node name="ElanDeLaCanopee" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2450.0, 1200.0)
-nom = "ElanDeLaCanopee"
+nom = "Cerf de la canopée"
 pv_max = 150
 degats_attaque = 18
 portee_attaque = 1
 pm_max = 3
 mob_id = 21
 quetes_a_progresser = Array[String]([])
-niveau_personnalise = 20
+niveau_personnalise = 5
 groupe = "faune_zou"
+texture_personnalisee = ExtResource("sprite_ile_cerf_zou")
 
 [node name="ElanDuFlancEst" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2650.0, 1600.0)
-nom = "ElanDuFlancEst"
+nom = "Cerf du flanc est"
 pv_max = 150
 degats_attaque = 18
 portee_attaque = 1
 pm_max = 3
 mob_id = 21
 quetes_a_progresser = Array[String]([])
-niveau_personnalise = 20
+niveau_personnalise = 5
 groupe = "faune_zou"
+texture_personnalisee = ExtResource("sprite_ile_cerf_zou")

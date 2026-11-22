@@ -19,13 +19,14 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tonneaux.png" id="Tonneaux"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-brig-v1.png" id="Brig"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/zeff.png" id="pnj_zeff"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/malo.png" id="pnj_malo"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/compteuse.png" id="pnj_compteuse"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/johnny.png" id="pnj_johnny"]
-[ext_resource type="Texture2D" path="res://assets/sprites/pnj/yosaku.png" id="pnj_yosaku"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ennemis/pirate_ivre.png" id="tex_ivre"]
 [ext_resource type="Texture2D" path="res://assets/sprites/fauna/colombe-statique.png" id="Mouette"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/zeff.png" id="sprite_ile_zeff"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/carne.png" id="sprite_ile_carne"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pelagie.png" id="sprite_ile_pelagie"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/johnny.png" id="sprite_ile_johnny"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/yosaku.png" id="sprite_ile_yosaku"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pirate_krieg.png" id="sprite_ile_pirate_krieg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pirate_krieg_cuirasse.png" id="sprite_ile_pirate_krieg_cuirasse"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
@@ -223,8 +224,8 @@ nom_affiche = "Zeff"
 paroles = "J'ai vu la carte entière, une nuit, entre deux vagues. Je n'ai plus jamais eu faim depuis. Et je n'ai plus jamais eu faim non plus, tu vois ? Assieds-toi, marmaille. La mer ne paie pas en pièces, elle paie en souvenirs — et j'ai déjà tout pris."
 
 [node name="Sprite2D" type="Sprite2D" parent="Zeff"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_zeff")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_zeff")
 
 [node name="Area2D" type="Area2D" parent="Zeff"]
 
@@ -250,12 +251,12 @@ script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String](["baratie_galopins", "baratie_epices"])
-nom_affiche = "Carne le second"
-paroles = "La cuisine est sacrée, le ponton aussi. Trois ivrognes réclament du vin à crédit et la cargaison de poivre dort à même les planches. Aide-moi, ou je te cuisine dans le ragoût."
+nom_affiche = "Carne"
+paroles = "La cuisine est sacrée, le ponton aussi. Trois hommes de Krieg réclament du vin à crédit et notre poivre dort à même les planches. Un coup de main et le Baratie saura te remercier."
 
 [node name="Sprite2D" type="Sprite2D" parent="Carne"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_malo")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_carne")
 
 [node name="Area2D" type="Area2D" parent="Carne"]
 
@@ -272,7 +273,7 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Carne le second"
+text = "Carne"
 horizontal_alignment = 1
 
 [node name="Pelagie" type="Node2D" parent="." groups=["pnj_fushia"]]
@@ -285,8 +286,8 @@ nom_affiche = "Pélagie la colporteuse"
 paroles = "Monsieur le cuisinier refuse de me vendre ses vieilles cartes de cuisine. Moi qui collectionne les choses avec écrits dessus... Et vous, voyageur ? Vous portez de belles histoires. On se recroisera, j'en tiens le compte."
 
 [node name="Sprite2D" type="Sprite2D" parent="Pelagie"]
-position = Vector2(0, -46.5)
-texture = ExtResource("pnj_compteuse")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_pelagie")
 
 [node name="Area2D" type="Area2D" parent="Pelagie"]
 
@@ -309,22 +310,23 @@ horizontal_alignment = 1
 [node name="JohnnySurLePonton" type="Node2D" parent="." groups=["points_fushia"]]
 position = Vector2(1856.0, 1088.0)
 script = ExtResource("Recolte")
-titre = "Johnny, à flanc de ponton"
+titre = "Johnny"
 description = "Johnny saute sur ses pieds et frappe du poing : « Frère ! On embarque avec lui ! » — Johnny et Yosaku se rallient à toi : deux épées fauchées valent mieux qu'une."
 quete = "trm_c4_baratie"
 objet = ""
 quantite = 1
 retour_secondes = 0.0
+interlocuteur = true
 
 [node name="Sprite2D" type="Sprite2D" parent="JohnnySurLePonton"]
-position = Vector2(0, -48.0)
-texture = ExtResource("pnj_johnny")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_johnny")
 
 [node name="Etiquette" type="Label" parent="JohnnySurLePonton"]
 offset_left = -135.0
-offset_top = -80.0
+offset_top = -118.0
 offset_right = 135.0
-offset_bottom = -55.0
+offset_bottom = -93.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
@@ -336,22 +338,23 @@ horizontal_alignment = 1
 [node name="YosakuSurLePonton" type="Node2D" parent="." groups=["points_fushia"]]
 position = Vector2(1960.0, 1216.0)
 script = ExtResource("Recolte")
-titre = "Yosaku, au bout du quai"
+titre = "Yosaku"
 description = "Yosaku hoche la tête, maladroit : « Johnny a déjà dit oui pour nous deux, frère. » — Les deux chasseurs rejoignent l'équipage du héros."
 quete = "trm_c4_baratie"
 objet = ""
 quantite = 1
 retour_secondes = 0.0
+interlocuteur = true
 
 [node name="Sprite2D" type="Sprite2D" parent="YosakuSurLePonton"]
-position = Vector2(0, -48.0)
-texture = ExtResource("pnj_yosaku")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_yosaku")
 
 [node name="Etiquette" type="Label" parent="YosakuSurLePonton"]
 offset_left = -135.0
-offset_top = -80.0
+offset_top = -118.0
 offset_right = 135.0
-offset_bottom = -55.0
+offset_bottom = -93.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
@@ -470,7 +473,7 @@ horizontal_alignment = 1
 
 [node name="PirateIvreDuSud" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1600.0, 1250.0)
-nom = "PirateIvreDuSud"
+nom = "Matelot de Krieg"
 pv_max = 175
 degats_attaque = 18
 portee_attaque = 1
@@ -479,11 +482,11 @@ mob_id = 2
 quetes_a_progresser = Array[String](["baratie_galopins"])
 niveau_personnalise = 17
 groupe = "ivrognes_baratie"
-texture_personnalisee = ExtResource("tex_ivre")
+texture_personnalisee = ExtResource("sprite_ile_pirate_krieg")
 
 [node name="PirateIvreDeLEst" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1850.0, 950.0)
-nom = "PirateIvreDeLEst"
+nom = "Pirate cuirassé de Krieg"
 pv_max = 185
 degats_attaque = 19
 portee_attaque = 1
@@ -492,11 +495,11 @@ mob_id = 2
 quetes_a_progresser = Array[String](["baratie_galopins"])
 niveau_personnalise = 18
 groupe = "ivrognes_baratie"
-texture_personnalisee = ExtResource("tex_ivre")
+texture_personnalisee = ExtResource("sprite_ile_pirate_krieg_cuirasse")
 
 [node name="PirateIvreDuBar" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(900.0, 1080.0)
-nom = "PirateIvreDuBar"
+nom = "Pirate de Krieg"
 pv_max = 195
 degats_attaque = 20
 portee_attaque = 1
@@ -505,4 +508,4 @@ mob_id = 2
 quetes_a_progresser = Array[String](["baratie_galopins"])
 niveau_personnalise = 18
 groupe = "ivrognes_baratie"
-texture_personnalisee = ExtResource("tex_ivre")
+texture_personnalisee = ExtResource("sprite_ile_pirate_krieg")

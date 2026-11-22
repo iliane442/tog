@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/world/capitaine_ferry.gd" id="1_cap"]
-[ext_resource type="Texture2D" path="res://assets/sprites/fishman_pirate/Idle/rotations/south.png" id="2_cap"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/capitaine_volige.png" id="sprite_ile_capitaine_volige"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_cap"]
 radius = 24.020824
@@ -9,7 +9,7 @@ radius = 24.020824
 [node name="CapitaineVolige" type="Node2D"]
 script = ExtResource("1_cap")
 nom_affiche = "Capitaine Volige"
-paroles = "Syrup Village ? Haute sur sa colline, la maison des Kaya veille sur tout l'East Blue. Méfie-toi des gens en gris qui lisent les pancartes plus longtemps que les voyageurs. La côte est calme — montez à bord avant la brise."
+paroles = "Syrup Village ? Haute sur sa colline, le manoir de Kaya veille sur tout l'East Blue. Méfie-toi des gens en gris qui lisent les pancartes plus longtemps que les voyageurs. La côte est calme — montez à bord avant la brise."
 destination = "res://scenes/syrup_village.tscn"
 arrivee = &"DepuisOrangeTown"
 libelle_traversee = "Embarquer pour Syrup Village"
@@ -25,8 +25,8 @@ text = "Capitaine Volige"
 horizontal_alignment = 1
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-position = Vector2(0.000, -44.500)
-texture = ExtResource("2_cap")
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_capitaine_volige")
 
 [node name="Area2D" type="Area2D" parent="."]
 

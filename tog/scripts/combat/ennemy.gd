@@ -33,6 +33,7 @@ const COULEUR_SURBRILLANCE := Color(0.95, 0.16, 0.16, 1.0)
 var pv := 100
 var _combat_manager
 var _deplacement_combat: Tween
+var _etiquette_mob: Label
 # joueur présent dans la zone de détection
 var _zone_contient_joueur := false
 # engagement différé au clic : le joueur marche vers cet ennemi et le
@@ -94,12 +95,19 @@ func _appliquer_surbrillance(surligne: bool) -> void:
 func _clic_sur_ennemi(point: Vector2) -> bool:
 	if sprite.texture == null:
 		return false
+	var point_local := to_local(point)
+	if (
+		_etiquette_mob != null
+		and _etiquette_mob.visible
+		and _etiquette_mob.get_rect().has_point(point_local)
+	):
+		return true
 	var taille := sprite.texture.get_size() * sprite.scale
 	var coin := Vector2(
 		-taille.x / 2.0 - 16.0,
 		sprite.position.y - taille.y / 2.0 - 26.0)
 	return Rect2(coin, Vector2(taille.x + 32.0, taille.y + 40.0)).has_point(
-		point - global_position)
+		point_local)
 
 # données visuelles du mob : sprite statique (colonne sprite_path, le loup
 # par défaut si absent) et étiquette nom + niveau au-dessus du sprite
@@ -178,14 +186,14 @@ func _ajouter_etiquette(nom_mob: String, niveau_mob: int) -> void:
 	etiquette.add_theme_color_override("font_color", Color.WHITE)
 	etiquette.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	etiquette.add_theme_constant_override("outline_size", 6)
-	etiquette.custom_minimum_size = Vector2(150, 0)
-	etiquette.size = Vector2(150, 0)
 	etiquette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var hauteur: float = 100.0
 	if sprite.texture != null:
 		hauteur = float(sprite.texture.get_height())
-	etiquette.position = Vector2(-75, sprite.position.y - hauteur / 2.0 - 22.0)
 	add_child(etiquette)
+	etiquette.reset_size()
+	etiquette.position = Vector2(-etiquette.size.x / 2.0, sprite.position.y - hauteur / 2.0 - 22.0)
+	_etiquette_mob = etiquette
 
 func _on_zone_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player") and _combat_manager != null:

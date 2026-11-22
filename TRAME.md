@@ -8,7 +8,7 @@ Ton personnage et Luffy ont grandi dans le même village, Fushia, sous le même 
 
 **L’objectif de la quête principale est de trouver le One Piece à Laugh Tale et d’en ouvrir le coffre soi-même.** Le voyage traverse East Blue, remonte Reverse Mountain, longe le Paradis puis le Nouveau Monde à la recherche des quatre **Road Ponéglyphes** — le Sillon complet indiquant, lui, comment accoster la dernière île une fois les quatre points croisés. Et sur chaque île, le monde du manga vit son histoire : l’équipage au chapeau de paille prend la mer presque en même temps que toi, et les deux équipages de Fushia se croisent, s’entraident et se talonnent d’escale en escale.
 
-Le jeu est un MMO : chaque joueur incarne l’un des capitaines que cette ère a jetés sur la mer, et chaque équipage vit sa propre traversée de la grande histoire — le mécanisme de rencontres scénarisées rejouables déjà en place gère cette coexistence. Les personnages de la série cohabitent avec les habitants propres au jeu (Lise, Iris, Genzo, Ganbak, Mira…) : l’intrigue personnelle est originale, mais les îles, les personnages et les conséquences suivent le manga.
+Le jeu est un MMO : chaque joueur incarne l’un des capitaines que cette ère a jetés sur la mer, et chaque équipage vit sa propre traversée de la grande histoire — le mécanisme de rencontres scénarisées rejouables déjà en place gère cette coexistence. Les personnages de la série cohabitent avec les habitants propres au jeu (Lise, Pélagie, Lao…) : l’intrigue personnelle est originale, mais les îles, les personnages et les conséquences suivent le manga.
 
 ### Ce qui relie les quêtes
 
@@ -75,7 +75,7 @@ Orange Town est vide : ses habitants se cachent depuis que l’équipage de Bagg
 | Quête | Action et conséquence |
 |---|---|
 | **Le chien sait quelque chose** · `trm_c2_chien` | Constater que Chouchou garde un magasin vide, et que les pirates de Baggy veulent raser le bâtiment. Tenir le seuil avec le chien — Luffy, dans la même rue, fait la même chose à sa fenêtre. |
-| **Les pirates du chapiteau** · `orange_patrouille` | Repousser la patrouille qui garde la montée du camp. Iris met les marchands à l’abri, dont un qui fournit un accès à l’arrière du chapiteau. |
+| **Les pirates du chapiteau** · `orange_patrouille` | Repousser la patrouille qui garde la montée du camp. Boodle met les marchands à l’abri, dont un qui fournit un accès à l’arrière du chapiteau. |
 | **La voleuse aux cartes** · `trm_c2_nami` | Nami joue les alliées le temps d’un raid et vole tout ce qui l’intéresse pour le revendre aux pirates. Le joueur récupère la carte de Grand Line et comprend qu’il devra la mériter : elle ne fait équipe avec personne pour de bon. |
 | **Le dernier numéro de Baggy** · `orange_baggy` | Vaincre Baggy — Luffy encaisse les détonants d’un côté, le joueur ferme l’autre. Dans le butin, une page d’écriture soignée ressort des cartes volées : **la deuxième page du Sillon**, prise par l’apprenti parti trop tôt. Baggy, à terre, hurle qu’il l’avait gardée « pour la vente ». |
 
@@ -126,13 +126,13 @@ Nami n’a jamais trahi pour l’or. Huit ans plus tôt, l’homme-poisson **Arl
 
 *Loguetown · zone jouable*
 
-Tout équipage qui monte vers Grand Line s’arrête à Loguetown : la ville où Roger est né, où il a été exécuté, et d’où sa dernière phrase a déclenché l’ère de la piraterie. Le capitaine **Smoker** y tient garnison avec la capitaine Tashigi : aucun pirate n’est reparti par le port depuis qu’il y est affecté. Et dans les ruelles, un homme en gris lit les registres des vendeurs de souvenirs : il cherche, lui aussi, une trace de l’équipage de Roger.
+Tout équipage qui monte vers Grand Line s’arrête à Loguetown : la ville où Roger est né, où il a été exécuté, et d’où sa dernière phrase a déclenché l’ère de la piraterie. Le capitaine **Smoker** y tient garnison avec Tashigi : aucun pirate n’est reparti par le port depuis qu’il y est affecté. Et dans les ruelles, un homme en gris lit les registres des vendeurs de souvenirs : il cherche, lui aussi, une trace de l’équipage de Roger.
 
 | Quête | Action et conséquence |
 |---|---|
 | **L’échafaud du Roi des pirates** · `trm_c5b_registre` | Monter sur la plateforme où Roger est mort, y lire les dernières paroles gravées et signer le journal de bord à l’endroit même de l’exécution. La foudre frappe l’échafaud pendant que Buggy fait son numéro — la légende locale tient à un éclat, et le monde y verra un signe. |
 | **Le marché des Cartes** · `trm_c5b_comptoir` | Suivre la piste des souvenirs de l’équipage de Roger : un calepin du gala de l’Oro Jackson dort chez un brocanteur de la Grand-Place. Récupérer **la troisième page** avant l’homme en gris, **Mistral**, agent du Gouvernement : venu confisquer tout ce qui raconte la route interdite, il repart avec les autres lots aux enchères. Le Sillon a un ennemi, et il a un visage. |
-| **La fumée qui ne lâche pas** · `trm_c5b_fougant` | Smoker bloque le quai — deux voiles de Fushia prises au même piège. Le combat est une évasion : indestructible, le capitaine ne peut être semé qu’en gagnant les toits, puis le pont, puis le large — jusqu’à ce qu’une bourrasque aveugle le coupe des deux équipages. Un homme au long manteau vert veillait sur la place ; la bourrasque porte sa signature. |
+| **La fumée qui ne lâche pas** · `trm_c5b_fourgant` | Smoker bloque le quai — deux voiles de Fushia prises au même piège. Le combat est une évasion : indestructible, le capitaine ne peut être semé qu’en gagnant les toits, puis le pont, puis le large — jusqu’à ce qu’une bourrasque aveugle le coupe des deux équipages. Un homme au long manteau vert veillait sur la place ; la bourrasque porte sa signature. |
 | **Le grand départ** · `trm_c5b_visa` | Viser le journal de bord, hisser la Lanterne dans la tempête et franchir le cap vers Reverse Mountain. Sur l’échafaud vide, Mistral relit sa liste : le veilleur de Fushia a un élève. |
 
 **À côté de la trame.** Les panneaux de la ville, le chargement de vivres et les filous du quai restent des quêtes secondaires. Coby et Helmeppo, affectés ici, permettent de saluer la première recrue de Shells Town dans la garnison de Smoker.
@@ -335,7 +335,7 @@ Tous les identifiants existants sont conservés ; leur nouveau contenu est défi
 | `trm_c2_chien` | Chouchou et sa boutique : la fidélité à un disparu. |
 | `trm_c3_kaya`, `trm_c3_atelier`, `trm_c3_kuro`, `trm_c3_argent` | Les courses d’Usopp ; les caches de Kuro ; le plan de trois ans ; les adieux de Kaya — le Vogue Merry pour Luffy, la réfection de la Lanterne pour le joueur. |
 | `trm_c4_baratie`, `trm_c4_bouteille`, `trm_c4_compteuse`, `trm_c4_arlong`, `trm_c4_sel` | Zeff reconnaît la main du veilleur ; les mandariniers de Bellemère ; le bureau du rat Nezumi ; Arlong Park ; le parallèle du moment du chapeau. |
-| `trm_c5b_registre`, `trm_c5b_comptoir`, `trm_c5b_fougant`, `trm_c5b_visa` | L’échafaud de Roger ; la troisième page arrachée à Mistral au marché des Cartes ; la fuite devant Smoker et le souffle de l’homme au manteau vert ; le grand départ dans la tempête. |
+| `trm_c5b_registre`, `trm_c5b_comptoir`, `trm_c5b_fourgant`, `trm_c5b_visa` | L’échafaud de Roger ; la troisième page arrachée à Mistral au marché des Cartes ; la fuite devant Smoker et le souffle de l’homme au manteau vert ; le grand départ dans la tempête. |
 | `trm_c6_courant`, `trm_c6_remorqueurs`, `trm_c6_pilote`, `trm_c6_logpose` | La montée du courant ; les épaves du cap ; la promesse de Laboon à deux emblèmes ; la page du docteur et le Log Pose de Crocus. |
 | `trm_wp_fete`, `trm_wp_disparus`, `trm_wp_vermouth`, `trm_wp_toast` | La fête-piège ; l’embuscade des chasseurs ; Mr. 5 et Miss Valentine ; Miss All Sunday et l’escorte à deux voiles. |
 | `trm_lg_duel`, `trm_lg_ramasseurs`, `trm_lg_depot`, `trm_lg_gardien`, `trm_lg_toast` | Le duel de cent ans ; les agents de Mr. 3 ; le piège de la cire ; Mr. 3 et Miss Golden Week ; le toast des géants. |
