@@ -570,6 +570,11 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.25, 0.25, 1)
 text = "Effacer le perso (debug)"
 
+[node name="BtnDebugNiveau" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+text = "Niveau 200 (debug)"
+
 [node name="ContenuSorts" type="VBoxContainer" parent="Fenetre/Corps"]
 visible = false
 layout_mode = 2
@@ -726,6 +731,11 @@ text = "Type"
 [node name="OptionTypeInventaire" type="OptionButton" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire"]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="ChampRechercheInventaire" type="LineEdit" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Rechercher..."
 
 [node name="CasePortables" type="CheckBox" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire"]
 layout_mode = 2

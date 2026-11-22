@@ -1015,6 +1015,16 @@ func gagner_xp(montant: int) -> void:
 		barre_sorts_modifiee.emit()
 	caracteristiques_modifiees.emit()
 
+# debug : mène le perso au niveau indiqué d'un coup, en enchaînant les
+# montées de niveau normales (points, vie, sorts débloqués inclus) ;
+# sans effet si le niveau demandé n'excède pas le courant
+func monter_niveau(cible: int) -> void:
+	var garde := 0
+	while niveau < cible and garde < 1000:
+		gagner_xp(xp_prochain_niveau() - xp)
+		garde += 1
+	sauvegarder()
+
 # Dépense un point de caractéristique ; renvoie true si réussi
 func depenser_point(cle: String) -> bool:
 	if points_statistique <= 0 or not caracteristiques.has(cle):

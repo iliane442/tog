@@ -969,7 +969,7 @@ func pvp_appliquer_etats(cible: Node, etats: Array) -> void:
 			# frais pour notre joueur (il vient d'être appliqué) et
 			# pour un miroir : décompte à la fin du tour de son
 			# propriétaire, pas à la nôtre
-			"frais": cible == _joueur or bool(cible.get("distante")),
+			"frais": cible == _joueur or cible.get("distante") == true,
 		}
 		if id_etat == 8 or id_etat == 9:
 			_deplacer_par_etat(cible, int(float(etat.get("valeur", 1.0))), id_etat == 8)
@@ -1383,7 +1383,7 @@ func appliquer_effets_sort(cible: Node, sort: Dictionary) -> Array:
 		# un état posé sur un combattant distant (miroir) est frais : il
 		# ne se décompte qu'à la prochaine fin de tour de son
 		# propriétaire, exactement comme dans le client où il vit
-		par_cible[cle] = {"duree": maxi(int(effet.get("duree", 1)), 1), "valeur": float(effet.get("valeur", 0.0)), "piles": piles, "frais": cible == _joueur or bool(cible.get("distante"))}
+		par_cible[cle] = {"duree": maxi(int(effet.get("duree", 1)), 1), "valeur": float(effet.get("valeur", 0.0)), "piles": piles, "frais": cible == _joueur or cible.get("distante") == true}
 		_etats_actifs[cible.get_instance_id()] = par_cible
 		appliques.append({"id": id_etat,
 			"duree": maxi(int(effet.get("duree", 1)), 1),

@@ -29,6 +29,7 @@ const LIBELLES_TYPES_INVENTAIRE := {
 @onready var btn_menu: Button = $BoutonMenu
 @onready var titre: Label = $Fenetre/Entete/Titre
 @onready var option_type_inventaire: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire/OptionTypeInventaire
+@onready var champ_recherche_inventaire: LineEdit = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire/ChampRechercheInventaire
 @onready var case_portables: CheckBox = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/LigneFiltreInventaire/CasePortables
 @onready var defilement_inventaire: ScrollContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/CoteDroit/DefilementInventaire
 @onready var grille: GridContainer = defilement_inventaire.get_node("Grille")
@@ -46,6 +47,7 @@ const LIBELLES_TYPES_INVENTAIRE := {
 @onready var btn_valider: Button = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats/BtnValider
 @onready var btn_reinitialiser: Button = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats/BtnReinitialiser
 @onready var btn_effacer_perso: Button = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats/BtnEffacerPerso
+@onready var btn_debug_niveau: Button = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/ActionsStats/BtnDebugNiveau
 @onready var grille_stats: VBoxContainer = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid
 @onready var valeur_vie_max: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/VieMax/VieMax/Valeur
 @onready var valeur_attaque: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsDerivees/Attaque/Attaque/Valeur
@@ -261,6 +263,7 @@ func _ready() -> void:
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
 	btn_effacer_perso.pressed.connect(_on_effacer_perso)
+	btn_debug_niveau.pressed.connect(_on_debug_niveau_200)
 	for cle: String in lignes_stats:
 		var ligne_stat: Dictionary = lignes_stats[cle]
 		var bouton_ajouter: Button = ligne_stat["ajouter"] as Button
@@ -288,6 +291,7 @@ func _ready() -> void:
 	$Fenetre/Corps/NavigationPirate/BarreCascade/Equipage.pressed.connect(ouvrir.bind("equipage"))
 	option_type_inventaire.item_selected.connect(_on_type_inventaire_selectionne)
 	case_portables.toggled.connect(_on_portables_toggle)
+	champ_recherche_inventaire.text_changed.connect(_on_recherche_inventaire)
 	Inventaire.inventaire_modifie.connect(maj_grille)
 	Inventaire.inventaire_modifie.connect(_maj_filtre_types_wiki)
 	QuestManager.quete_acceptee.connect(maj_quetes)
@@ -464,6 +468,12 @@ func _on_valider_points() -> void:
 
 func _on_reinitialiser_points() -> void:
 	points_en_attente = {}
+	maj_personnage()
+
+# debug : mène le perso au niveau 200 (montées de niveau normales :
+# points, vie, sorts débloqués inclus)
+func _on_debug_niveau_200() -> void:
+	Personnage.monter_niveau(200)
 	maj_personnage()
 
 # debug : efface le perso (fichier + mémoire), remet quêtes et inventaire
@@ -692,8 +702,13 @@ func maj_grille() -> void:
 		enfant.queue_free()
 
 	var ids_par_type := {}
+	# recherche par nom (cumulée avec les filtres type et portables) :
+	# insensible à la casse, sur le nom affiché de l'objet
+	var filtre_nom := champ_recherche_inventaire.text.strip_edges().to_lower()
 	for id: String in Inventaire.objets:
 		if filtre_portables and not _est_portable(id):
+			continue
+		if filtre_nom != "" and not Inventaire.nom_objet(id).to_lower().contains(filtre_nom):
 			continue
 		var type_item := str(Inventaire.details_objet(id).get("type", ""))
 		if not ids_par_type.has(type_item):
@@ -705,8 +720,8 @@ func maj_grille() -> void:
 	var type_choisi: Variant = _maj_types_inventaire(types)
 	var types_affiches := types if type_choisi == null else [type_choisi]
 
-	if filtre_portables:
-		label_vide.text = "Aucun équipement portable à ton niveau."
+	if filtre_portables or filtre_nom != "":
+		label_vide.text = "Aucun objet ne correspond aux filtres."
 		label_vide.visible = ids_par_type.is_empty()
 	else:
 		label_vide.text = "Inventaire vide"
@@ -745,6 +760,11 @@ func _on_type_inventaire_selectionne(_index: int) -> void:
 
 func _on_portables_toggle(coche: bool) -> void:
 	filtre_portables = coche
+	defilement_inventaire.scroll_vertical = 0
+	maj_grille()
+
+# frappe dans le champ de recherche : la grille suit immédiatement
+func _on_recherche_inventaire(_texte: String) -> void:
 	defilement_inventaire.scroll_vertical = 0
 	maj_grille()
 

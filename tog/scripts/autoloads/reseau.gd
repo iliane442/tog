@@ -1091,7 +1091,7 @@ func demande_hdvente(action: String, offre_id: int, item: String, quantite: int,
 	if session.is_empty():
 		return
 	var peer_id := int(session["peer_id"])
-	var pseudo := str(session["pseudo"])
+	var pseudo_pair := str(session["pseudo"])
 	match action:
 		"vendre":
 			quantite = clampi(quantite, 1, 999)
@@ -1101,7 +1101,7 @@ func demande_hdvente(action: String, offre_id: int, item: String, quantite: int,
 				return
 			_sql("INSERT INTO mmo_hdventes (vendeur, item_id, quantite, prix_unite)"
 				+ " VALUES ('%s', '%s', %d, %d);" % [
-				_echapper_texte(pseudo), _echapper_texte(item), quantite, prix])
+				_echapper_texte(pseudo_pair), _echapper_texte(item), quantite, prix])
 			rpc_id(peer_id, "message_hdvente", "Objet en vente : visible par tous les joueurs du serveur.")
 			_diffuser_hdventes()
 		"retirer":
@@ -1109,7 +1109,7 @@ func demande_hdvente(action: String, offre_id: int, item: String, quantite: int,
 				"SELECT vendeur, item_id, quantite FROM mmo_hdventes WHERE id = %d;" % offre_id)
 			if lignes.is_empty():
 				return
-			if str(lignes[0]["vendeur"]) != pseudo:
+			if str(lignes[0]["vendeur"]) != pseudo_pair:
 				rpc_id(peer_id, "message_hdvente", "Cette mise en vente n'est pas la tienne.")
 				return
 			_sql("DELETE FROM mmo_hdventes WHERE id = %d;" % offre_id)
@@ -1118,22 +1118,22 @@ func demande_hdvente(action: String, offre_id: int, item: String, quantite: int,
 				"quantite": int(lignes[0]["quantite"])}))
 			_diffuser_hdventes()
 		"acheter":
-			_acheter_mise_hdvente(peer_id, pseudo, offre_id)
+			_acheter_mise_hdvente(peer_id, pseudo_pair, offre_id)
 
 # achat d'une mise en vente : le serveur débite l'acheteur, crédite le
 # vendeur (connecté ou non), livre les objets et rafraîchit tout le monde
-func _acheter_mise_hdvente(peer_id: int, pseudo: String, offre_id: int) -> void:
+func _acheter_mise_hdvente(peer_id: int, pseudo_acheteur: String, offre_id: int) -> void:
 	var lignes := _lire(
 		"SELECT vendeur, item_id, quantite, prix_unite FROM mmo_hdventes WHERE id = %d;" % offre_id)
 	if lignes.is_empty():
 		rpc_id(peer_id, "message_hdvente", "Cette offre a déjà disparu.")
 		return
 	var vendeur := str(lignes[0]["vendeur"])
-	if vendeur == pseudo:
+	if vendeur == pseudo_acheteur:
 		rpc_id(peer_id, "message_hdvente", "On n'achète pas sa propre mise en vente.")
 		return
 	var total := int(lignes[0]["prix_unite"]) * int(lignes[0]["quantite"])
-	var compte_acheteur := _compte(pseudo)
+	var compte_acheteur := _compte(pseudo_acheteur)
 	var perso_acheteur := _perso_json_serveur(compte_acheteur)
 	if perso_acheteur.is_empty():
 		rpc_id(peer_id, "message_hdvente", "Personnage introuvable")
@@ -1479,7 +1479,7 @@ func demande_equipage(action: String, argument: String, montant: int) -> void:
 	if session.is_empty():
 		return
 	var peer_id := int(session["peer_id"])
-	var pseudo := str(session["pseudo"])
+	var pseudo_pair := str(session["pseudo"])
 	# l'identité des équipages est le nom du personnage : un compte
 	# sans perso ne peut pas encore agir sur un équipage
 	var nom_joueur := str(_sessions[peer_id].get("nom_personnage", ""))
@@ -1550,9 +1550,9 @@ func demande_equipage(action: String, argument: String, montant: int) -> void:
 			elif not Equipages.mon_equipage.is_empty():
 				_diffuser_equipage(int(Equipages.mon_equipage["id"]))
 		"deposer":
-			_equipage_deposer(peer_id, pseudo, montant)
+			_equipage_deposer(peer_id, pseudo_pair, montant)
 		"retirer":
-			_equipage_retirer(peer_id, pseudo, montant)
+			_equipage_retirer(peer_id, pseudo_pair, montant)
 		"alliance":
 			_conclure_alliance_equipage(peer_id, argument)
 		"rompre":
@@ -1626,8 +1626,8 @@ func reponse_equipage_recruit(accepte: bool) -> void:
 
 # versement à la caisse : le Berry en ligne vit dans le perso serveur,
 # c'est lui qu'on débite (jamais Personnage dans le processus serveur)
-func _equipage_deposer(peer_id: int, pseudo: String, montant: int) -> void:
-	var compte := _compte(pseudo)
+func _equipage_deposer(peer_id: int, pseudo_pair: String, montant: int) -> void:
+	var compte := _compte(pseudo_pair)
 	var perso := _perso_json_serveur(compte)
 	if perso.is_empty():
 		rpc_id(peer_id, "message_equipage", "Personnage introuvable")
@@ -1647,8 +1647,8 @@ func _equipage_deposer(peer_id: int, pseudo: String, montant: int) -> void:
 		_diffuser_equipage(int(Equipages.mon_equipage["id"]))
 
 # retrait de la caisse vers la bourse du perso serveur du joueur
-func _equipage_retirer(peer_id: int, pseudo: String, montant: int) -> void:
-	var compte := _compte(pseudo)
+func _equipage_retirer(peer_id: int, pseudo_pair: String, montant: int) -> void:
+	var compte := _compte(pseudo_pair)
 	var perso := _perso_json_serveur(compte)
 	if perso.is_empty():
 		rpc_id(peer_id, "message_equipage", "Personnage introuvable")
@@ -2229,10 +2229,10 @@ func rejoindre_combat(groupe: String) -> void:
 
 # RPC client : un joueur nous défie en duel
 @rpc("any_peer", "call_remote", "reliable")
-func invite_duel(pseudo: String) -> void:
+func invite_duel(pseudo_defiant: String) -> void:
 	if multiplayer.is_server():
 		return
-	_montrer_invite_duel(pseudo)
+	_montrer_invite_duel(pseudo_defiant)
 
 # RPC client : le duel démarre, notre miroir de l'adversaire apparaît
 @rpc("any_peer", "call_remote", "reliable")
@@ -2369,11 +2369,11 @@ func _demarrer_duel_local(pseudo_adv: String, _adversaire_id: int, premier: bool
 # popup d'invitation au duel (Accepter / Refuser)
 var _panneau_duel: PanelContainer
 
-func _montrer_invite_duel(pseudo: String) -> void:
+func _montrer_invite_duel(pseudo_defiant: String) -> void:
 	if _panneau_duel == null:
 		_construire_invite_duel()
 	var etiquette: Label = _panneau_duel.get_meta("etiquette")
-	etiquette.text = "%s te défie en duel !" % pseudo
+	etiquette.text = "%s te défie en duel !" % pseudo_defiant
 	_panneau_duel.show()
 
 func _cacher_invite_duel() -> void:
