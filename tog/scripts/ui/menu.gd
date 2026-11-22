@@ -2096,6 +2096,10 @@ func _basculer_vue_equipement(vue_active: bool) -> void:
 func _basculer_vue_navire(vue_active: bool) -> void:
 	btn_vue_equipement.set_pressed_no_signal(not vue_active)
 	_vue_navire = vue_active
+	# le filtre d'emplacement appartient à la vue quittée (équipement
+	# ou navire) : on le lève pour retrouver le sac complet
+	filtre_emplacement = ""
+	maj_grille()
 	_appliquer_vue_colonne()
 	maj_panneau_navire()
 
