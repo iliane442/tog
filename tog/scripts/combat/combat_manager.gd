@@ -12,10 +12,13 @@ const ARENE_COMBAT := preload("res://scripts/combat/arene_combat.gd")
 const POSITION_ARENE := Vector2(-16384, -16384)
 # difficulté des combats : PV et dégâts des ennemis sont multipliés à
 # l'ouverture de l'arène (ennemis classiques uniquement — les duels PvP
-# gardent les vraies stats des joueurs) ; les attaques par tour se
-# règlent sur chaque ennemi (attaques_par_tour, 2 par défaut)
+# gardent les vraies stats des joueurs) ; les dégâts suivent en plus
+# le niveau du joueur (attaque et défense croissent avec lui, les dégâts
+# des scènes restent fixes) ; les attaques par tour se règlent sur
+# chaque ennemi (attaques_par_tour, 2 par défaut)
 const DIFFICULTE_PV := 1.5
 const DIFFICULTE_DEGATS := 1.25
+const DEGATS_PAR_NIVEAU := 0.15
 
 var en_combat := false
 var en_placement := false
@@ -784,10 +787,12 @@ func lancer_combat(groupe = null) -> void:
 		return
 	_ennemis = ennemis
 	# difficulté : les ennemis entrent dans l'arène durcis (les ennemis
-	# qui survivent à un combat perdu retrouvent leurs stats en_sortie)
+	# qui survivent à un combat perdu retrouvent leurs stats en_sortie) ;
+	# les dégâts montent avec le niveau du joueur pour suivre sa défense
+	var facteur_degats := DIFFICULTE_DEGATS * (1.0 + float(maxi(Personnage.niveau - 1, 0)) * DEGATS_PAR_NIVEAU)
 	for ennemi_durci in _ennemis:
 		if ennemi_durci.has_method("durcir"):
-			ennemi_durci.durcir(DIFFICULTE_PV, DIFFICULTE_DEGATS)
+			ennemi_durci.durcir(DIFFICULTE_PV, facteur_degats)
 	_etats_actifs.clear()
 	_raz_recompenses()
 	numero_combat += 1
@@ -1425,10 +1430,14 @@ func calculer_degats(lanceur: Node, cible: Node, degats_base: int, type_sort: St
 		degats *= 1.2
 	if a_etat(cible, 17):
 		degats *= 1.0 + float(_valeur_etat(cible, 17)) * _piles_etat(cible, 17)
+	# la défense absorbe au plus la moitié du coup : un ennemi (ou un
+	# duelliste) frappe toujours un peu, quelle que soit l'écart de
+	# stats — sans ce plafond, une défense élevée annulait chaque
+	# attaque et les ennemis semblaient ne plus attaquer du tout
 	if cible == _joueur:
-		degats -= float(Personnage.defense)
+		degats -= minf(float(Personnage.defense), degats * 0.5)
 	elif _pvp_adversaire != null and is_instance_valid(_pvp_adversaire) and cible == _pvp_adversaire:
-		degats -= float(_pvp_adversaire.defense_pvp)
+		degats -= minf(float(_pvp_adversaire.defense_pvp), degats * 0.5)
 	return maxi(int(round(degats)), 0)
 
 # réussite d'une attaque : précision de base, bonus du lanceur s'il est
