@@ -982,6 +982,12 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 16
 placeholder_text = "Rechercher..."
 
+[node name="TriSac" type="OptionButton" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac"]
+custom_minimum_size = Vector2(148, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+tooltip_text = "Ordre d'affichage des objets"
+
 [node name="Monnaie" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac"]
 custom_minimum_size = Vector2(132, 42)
 layout_mode = 2

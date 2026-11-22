@@ -50,6 +50,9 @@ var _cache_icones_objets: Dictionary = {}
 @onready var option_type_inventaire: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/Categorie
 @onready var case_portables: CheckBox = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/CasePortables
 @onready var champ_recherche_sac: LineEdit = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/ChampRechercheSac
+@onready var tri_sac: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/TriSac
+# ordre d'affichage du sac : par nom (défaut) ou par rareté décroissante
+var _tri_par_rarete := false
 @onready var btn_manger_fruit: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnMangerFruit
 @onready var btn_barre_objets: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnBarreObjets
 @onready var retour_accueil: Button = $Fenetre/RetourAccueil
@@ -302,6 +305,10 @@ func _ready() -> void:
 	option_type_inventaire.item_selected.connect(_on_type_inventaire_selectionne)
 	case_portables.toggled.connect(_on_portables_toggle)
 	champ_recherche_sac.text_changed.connect(_on_recherche_sac)
+	tri_sac.add_item("Tri : nom")
+	tri_sac.add_item("Tri : rareté")
+	tri_sac.select(0)
+	tri_sac.item_selected.connect(_on_tri_sac_choisi)
 	btn_utiliser.pressed.connect(_on_bouton_utiliser)
 	btn_manger_fruit.pressed.connect(_on_bouton_manger_fruit)
 	btn_barre_objets.pressed.connect(_on_bouton_barre_objets)
@@ -601,6 +608,21 @@ func _maj_portrait_equipement() -> void:
 	portrait.region = Rect2(Vector2.ZERO, taille_case)
 	portrait_equipement.texture = portrait
 	_race_portrait_chargee = identifiant_race
+
+# rang de tri d'un objet par rareté : suit l'ordre réel des paliers
+# (commun < peu commun < rare < épique < légendaire < mythique), les
+# ids de rareté de la base n'étant pas numériquement croissants
+const PALIERS_RARETE_TRI := [1, 5, 2, 3, 4, 6]
+
+func _rang_rarete(id: String) -> int:
+	var id_rarete := int(Inventaire.details_objet(id).get("id_rarete", 1))
+	var rang := PALIERS_RARETE_TRI.find(id_rarete)
+	return rang if rang >= 0 else PALIERS_RARETE_TRI.size()
+
+# l'utilisateur choisit l'ordre du sac : par nom ou par rareté
+func _on_tri_sac_choisi(index: int) -> void:
+	_tri_par_rarete = index == 1
+	maj_grille()
 
 func _maj_monnaie_et_compteur() -> void:
 	monnaie.text = "%s Berry" % _formater_nombre(Personnage.berry)
@@ -1001,8 +1023,17 @@ func maj_grille() -> void:
 	_grille_sale = false
 	var types: Array[String] = []
 	var ids: Array = Inventaire.objets.keys()
-	ids.sort_custom(func(id_a: String, id_b: String) -> bool:
-		return Inventaire.nom_objet(id_a).naturalnocasecmp_to(Inventaire.nom_objet(id_b)) < 0)
+	if _tri_par_rarete:
+		# la plus haute rareté d'abord, égalité départagée par le nom
+		ids.sort_custom(func(id_a: String, id_b: String) -> bool:
+			var rang_a := _rang_rarete(id_a)
+			var rang_b := _rang_rarete(id_b)
+			if rang_a != rang_b:
+				return rang_a > rang_b
+			return Inventaire.nom_objet(id_a).naturalnocasecmp_to(Inventaire.nom_objet(id_b)) < 0)
+	else:
+		ids.sort_custom(func(id_a: String, id_b: String) -> bool:
+			return Inventaire.nom_objet(id_a).naturalnocasecmp_to(Inventaire.nom_objet(id_b)) < 0)
 	# le menu des catégories ne propose que les types des objets qui
 	# passent aussi la recherche par nom
 	var filtre_nom_types := champ_recherche_sac.text.strip_edges().to_lower()
