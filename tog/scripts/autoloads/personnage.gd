@@ -1342,8 +1342,36 @@ func ajouter_berry(montant: int) -> void:
 	caracteristiques_modifiees.emit()
 
 func blesser(montant: int) -> void:
+	# le bouclier d'absorption paie d'abord, les PV ensuite
+	montant = absorber_bouclier(montant)
 	vie = clampi(vie - montant, 0, vie_max)
 	caracteristiques_modifiees.emit()
+
+# points de bouclier actifs (Égide des anciens) : un pool temporaire
+# qui encaisse les dégâts à la place des PV, pendant quelques tours
+var bouclier: int = 0
+
+# ajoute des points de bouclier (se cumule avec l'existant)
+func gagner_bouclier(montant: int) -> void:
+	if montant <= 0:
+		return
+	bouclier += montant
+	caracteristiques_modifiees.emit()
+
+# fait payer les dégâts au bouclier d'abord ; renvoie la part qui
+# déborde et ira aux PV
+func absorber_bouclier(montant: int) -> int:
+	if bouclier <= 0 or montant <= 0:
+		return montant
+	var absorb := mini(bouclier, montant)
+	bouclier -= absorb
+	return montant - absorb
+
+# dissipe le bouclier (fin de durée ou nouveau départ)
+func perdre_bouclier() -> void:
+	if bouclier != 0:
+		bouclier = 0
+		caracteristiques_modifiees.emit()
 
 # --- Métiers et artisanat ---
 

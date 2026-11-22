@@ -45,6 +45,10 @@ var _sort_selectionne := false
 var _sort_selectionne_id := "boule_de_feu"
 var _sort_preselectionne_combat := ""
 var _recharges_sorts: Dictionary = {}  # id_sort -> tours de recharge restants
+# sorts qui posent un bouclier d'absorption : id -> part des PV max
+const SORTS_BOUCLIER := {"247": 0.30}
+# tours restants au bouclier posé par une Égide (0 : aucun)
+var _tours_bouclier_restants := 0
 var _pa := 0
 var _pm := 0
 var _cases_placement: Array[Vector2i] = []
@@ -355,6 +359,10 @@ func _valider_placement() -> void:
 	_cases_placement.clear()
 	if _overlay != null:
 		_overlay.effacer()
+	# un nouveau combat repart à zéro : aucun bouclier ne survit à
+	# l'embarquement (il ne fraude pas de rencontre en rencontre)
+	Personnage.perdre_bouclier()
+	_tours_bouclier_restants = 0
 	_combat_manager.valider_placement()
 
 func _faire_face_a_la_cible() -> void:
@@ -521,6 +529,13 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		var etats_appliques: Array = []
 		if _combat_manager.en_combat:
 			etats_appliques = _combat_manager.appliquer_effets_sort(cible, sort)
+		# l'Égide des anciens couvre son capitaine d'un bouclier
+		# d'absorption proportionnel à ses PV, valable deux tours
+		if SORTS_BOUCLIER.has(_id_sort):
+			var pool := maxi(roundi(float(SORTS_BOUCLIER[_id_sort]) * float(Personnage.vie_max)), 1)
+			Personnage.gagner_bouclier(pool)
+			_tours_bouclier_restants = 2
+			_combat_manager.afficher_message("L’Égide te couvre d’un bouclier de %d points (2 tours)." % pool)
 		if _combat_manager.pvp_actif or _combat_manager.groupe_actif:
 			evenement["nom"] = str(sort.get("nom", "Sort"))
 			evenement["etats"] = etats_appliques
@@ -843,6 +858,12 @@ func _commencer_mon_tour(numero: int) -> void:
 	# chaque reprise de notre tour fait descendre les recharges d'un cran
 	for id_recharge in _recharges_sorts.keys():
 		_recharges_sorts[id_recharge] = maxi(int(_recharges_sorts[id_recharge]) - 1, 0)
+	# le bouclier d'absorption vit quelques tours puis se dissipe
+	if _tours_bouclier_restants > 0:
+		_tours_bouclier_restants -= 1
+		if _tours_bouclier_restants == 0 and Personnage.bouclier > 0:
+			Personnage.perdre_bouclier()
+			_combat_manager.afficher_message("Ton bouclier se dissipe.")
 	_tour_joueur = true
 	_pa = pa_max
 	_pm = _combat_manager.points_mouvement(self, pm_max)
@@ -857,7 +878,15 @@ func _commencer_mon_tour(numero: int) -> void:
 	_combat_manager.definir_combattant_actif(self)
 
 func recevoir_degats(degats: int) -> void:
+	# le bouclier d'absorption encaisse sa part : on l'annonce avant
+	# que blesser() ne continue vers les PV
+	var absorbable := mini(maxi(degats, 0), Personnage.bouclier)
 	Personnage.blesser(maxi(degats, 0))
+	if absorbable > 0 and _combat_manager != null:
+		if Personnage.bouclier > 0:
+			_combat_manager.afficher_message("Ton bouclier absorbe %d dégâts (reste %d)." % [absorbable, Personnage.bouclier])
+		else:
+			_combat_manager.afficher_message("Ton bouclier se brise en encaissant %d dégâts." % absorbable)
 	_maj_affichage()
 	if Personnage.vie <= 0 and _combat_manager != null:
 		if _combat_manager.groupe_actif:
