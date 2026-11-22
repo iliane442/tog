@@ -782,7 +782,6 @@ func charger_perso() -> void:
 		for buff in buffs_lus:
 			if buff is Dictionary:
 				buffs.append(buff)
-	_filtrer_barre_sorts()
 	var equip = cfg.get_value("perso", "equipement", {})
 	if equip is Dictionary:
 		# re-mappe chaque objet équipé vers son emplacement (compatibilité avec
@@ -799,6 +798,10 @@ func charger_perso() -> void:
 				equipement[cible] = id_equipe
 	niveau = int(cfg.get_value("perso", "niveau", 1))
 	xp = int(cfg.get_value("perso", "xp", 0))
+	# filtrer la barre seulement ici : le niveau est connu, les sorts de
+	# classe débloqués au fil des niveaux ne quittent pas la barre au
+	# chargement (fruit et classe sont déjà lus à ce stade)
+	_filtrer_barre_sorts()
 	# classe remappée : les sorts de l'ancienne classe ont quitté la
 	# barre (_filtrer_barre_sorts), ceux de la nouvelle la remplissent
 	# s'il reste de la place — ici le niveau est chargé, les déblocages
