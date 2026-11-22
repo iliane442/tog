@@ -35,8 +35,10 @@ const INTERVALLE_MEMOIRE_POSITION := 10.0
 # sauvegarde du perso sur le serveur)
 var position_memorisee: Dictionary = {}
 var _temps_memoire_position := 0.0
-# délai avant qu'une rencontre vaincue réapparaisse pour tous
-const RESPAWN_RENCONTRES_S := 300.0
+# une rencontre vaincue reste masquée pour tous les joueurs de la map
+# pendant cette fenêtre (en secondes), puis le serveur la fait
+# reparaître partout : une minute, comme les camps en solo
+const RESPAWN_RENCONTRES_S := 60.0
 const ITERATIONS_HASH := 24000
 # lettres/decorations autorisées dans les pseudos
 const CARACTERES_PSEUDO := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ éèêëàâäîïôöùûüçÉÈÊËÀÂÄÎÏÔÖÙÛÜÇ"

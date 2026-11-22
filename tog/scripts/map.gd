@@ -53,11 +53,23 @@ func _ready() -> void:
 			_afficher_carte_en_exploration())
 	for pnj in get_tree().get_nodes_in_group("pnj_fushia"):
 		pnj.dialogue_opened.connect($DialogueUI.ouvrir)
+	# tous les camps de monstres reviennent : les rencontres de la
+	# scène rejoignent les renforts historiques de Fushia
+	var sentinelles: Array = []
 	for ennemi in get_tree().get_nodes_in_group("fushia_renforts"):
+		sentinelles.append(ennemi)
+	for ennemi in $Rencontres.get_children():
+		if not sentinelles.has(ennemi):
+			sentinelles.append(ennemi)
+	for ennemi in sentinelles:
 		var donnees := {
 			"position": ennemi.position, "nom": ennemi.nom, "mob_id": ennemi.mob_id,
 			"pv_max": ennemi.pv_max, "degats_attaque": ennemi.degats_attaque,
 			"portee_attaque": ennemi.portee_attaque, "pm_max": ennemi.pm_max,
+			"attaques_par_tour": ennemi.attaques_par_tour,
+			"niveau_personnalise": ennemi.niveau_personnalise,
+			"texture_personnalisee": ennemi.texture_personnalisee,
+			"groupe": ennemi.groupe,
 			"quetes_a_progresser": ennemi.quetes_a_progresser,
 		}
 		_surveille_renfort(ennemi, donnees)
@@ -88,7 +100,10 @@ func _surveille_renfort(ennemi: Node2D, donnees: Dictionary) -> void:
 	ennemi.connect("vaincu", _faire_revenir_ennemi.bind(donnees), CONNECT_ONE_SHOT)
 
 func _faire_revenir_ennemi(donnees: Dictionary) -> void:
-	await get_tree().create_timer(45.0, false).timeout
+	# un camp nettoyé renais de ses cendres au bout d'une minute ;
+	# la naissance attend tout de même que le capitaine ait décampé
+	# (la rencontre n'apparaît jamais sur la tête du joueur)
+	await get_tree().create_timer(60.0, false).timeout
 	var joueur: Node2D = $player
 	while joueur.position.distance_to(donnees["position"]) < 125.0:
 		await get_tree().create_timer(5.0, false).timeout
