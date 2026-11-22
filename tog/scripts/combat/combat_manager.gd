@@ -286,10 +286,6 @@ func _construire_roster() -> void:
 	_panneau_roster = PanelContainer.new()
 	_panneau_roster.theme = THEME_COMBAT
 	_panneau_roster.theme_type_variation = "ParchmentPanel"
-	_panneau_roster.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_panneau_roster.offset_left = 12.0
-	_panneau_roster.offset_right = -12.0
-	_panneau_roster.offset_top = 12.0
 	_ui.add_child(_panneau_roster)
 	var colonne := VBoxContainer.new()
 	colonne.add_theme_constant_override("separation", 4)
@@ -302,6 +298,27 @@ func _construire_roster() -> void:
 	_liste_roster.visible = _roster_deplie
 	colonne.add_child(_liste_roster)
 	_panneau_roster.hide()
+	get_viewport().size_changed.connect(_placer_roster)
+
+# positionne le roster en haut à droite, sous la barre de navigation et
+# le panneau de berries du HUD, aligné sur leur marge droite ; sa taille
+# suit le contenu, il est repositionné à chaque rafraîchissement
+func _placer_roster() -> void:
+	if _panneau_roster == null or not is_instance_valid(_panneau_roster):
+		return
+	_panneau_roster.size = _panneau_roster.get_minimum_size()
+	var haut := 160.0
+	var marge_droite := 20.0
+	var scene_courante := get_tree().current_scene
+	if scene_courante != null:
+		var hud: Node = scene_courante.find_child("HUD", true, false)
+		if hud != null:
+			var berry := hud.get_node_or_null("BerryPanel") as Control
+			if berry != null:
+				haut = berry.offset_bottom + 12.0
+				marge_droite = -berry.offset_right
+	var ecran := get_viewport().get_visible_rect().size
+	_panneau_roster.position = Vector2(ecran.x - _panneau_roster.size.x - marge_droite, haut)
 
 # déploie ou replie la liste des combattants ; replié, le tour actif
 # est rappelé sur l'arène par le marqueur doré
@@ -339,6 +356,9 @@ func _rafraichir_roster() -> void:
 	_ajouter_titre_roster("Ennemis")
 	for ennemi in ennemis_actifs():
 		_ajouter_ligne_roster(ennemi)
+	# la taille du panneau dépend des lignes affichées : replacer après
+	# le remplissage pour qu'il reste entier à l'écran
+	_placer_roster()
 
 func _ajouter_titre_roster(texte: String) -> void:
 	var titre := Label.new()
