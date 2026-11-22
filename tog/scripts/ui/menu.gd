@@ -146,8 +146,15 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var btn_ouvrir_tous: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnOuvrirTous
 @onready var btn_vendre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnVendre
 @onready var btn_navire: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnNavire
-@onready var slots_navire: VBoxContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauNavire/ColonneNavire/SlotsNavire
-@onready var bonus_navire: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauNavire/ColonneNavire/BonusNavire
+@onready var slots_navire: VBoxContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/SlotsNavire
+@onready var bonus_navire: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BonusNavire
+@onready var titre_navire_col: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/TitreNavire
+@onready var btn_vue_equipement: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BasculeColonne/BtnVueEquipement
+@onready var btn_vue_navire: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BasculeColonne/BtnVueNavire
+@onready var titre_equipement_col: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/TitreEquipement
+# vue courante de la colonne de gauche de l'inventaire : équipement
+# ou navire, jamais les deux à la fois
+var _vue_navire := false
 # bouton de la colonne NAVIRE, rempli à la première ouverture
 var _boutons_navire: Dictionary = {}
 @onready var panneau_personnage_inventaire: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette
@@ -309,6 +316,9 @@ func _ready() -> void:
 	btn_ouvrir_tous.pressed.connect(_on_bouton_ouvrir_tous)
 	btn_vendre.pressed.connect(_on_bouton_vendre)
 	btn_navire.pressed.connect(_on_bouton_navire)
+	btn_vue_equipement.toggled.connect(_basculer_vue_equipement)
+	btn_vue_navire.toggled.connect(_basculer_vue_navire)
+	_appliquer_vue_colonne()
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
@@ -1983,6 +1993,28 @@ func _sur_slot_navire(emplacement: String) -> void:
 	if id_piece == "":
 		return
 	maj_detail_item(id_piece)
+
+# la colonne de gauche de l'inventaire montre l'équipement OU le
+# navire, jamais les deux en même temps : deux boutons couplés
+# tiennent l'état
+func _basculer_vue_equipement(vue_active: bool) -> void:
+	btn_vue_navire.set_pressed_no_signal(not vue_active)
+	_vue_navire = not vue_active
+	_appliquer_vue_colonne()
+
+func _basculer_vue_navire(vue_active: bool) -> void:
+	btn_vue_equipement.set_pressed_no_signal(not vue_active)
+	_vue_navire = vue_active
+	_appliquer_vue_colonne()
+	maj_panneau_navire()
+
+func _appliquer_vue_colonne() -> void:
+	titre_equipement_col.visible = not _vue_navire
+	btn_auto_equipement.visible = not _vue_navire
+	silhouette.visible = not _vue_navire
+	titre_navire_col.visible = _vue_navire
+	slots_navire.visible = _vue_navire
+	bonus_navire.visible = _vue_navire
 
 # --- Hôtel des ventes ---
 

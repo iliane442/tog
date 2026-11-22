@@ -773,6 +773,25 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
+[node name="BasculeColonne" type="HBoxContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="BtnVueEquipement" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BasculeColonne"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_pressed = true
+text = "Équipement"
+
+[node name="BtnVueNavire" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BasculeColonne"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Navire"
+
 [node name="TitreEquipement" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
 custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
@@ -892,6 +911,29 @@ theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 horizontal_alignment = 1
 
+[node name="TitreNavire" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
+visible = false
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+theme_type_variation = "Ribbon"
+theme_override_font_sizes/font_size = 20
+text = "NAVIRE"
+horizontal_alignment = 1
+
+[node name="SlotsNavire" type="VBoxContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="BonusNavire" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 2
+text = "Aucune pièce installée."
+horizontal_alignment = 1
+
 [node name="PanneauSac" type="PanelContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
@@ -974,38 +1016,6 @@ theme_override_font_sizes/font_size = 18
 text = "Aucun objet dans cette catégorie."
 horizontal_alignment = 1
 vertical_alignment = 1
-
-[node name="PanneauNavire" type="PanelContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire"]
-custom_minimum_size = Vector2(300, 0)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_styles/panel = SubResource("InventoryPanel")
-
-[node name="ColonneNavire" type="VBoxContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauNavire"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 6
-
-[node name="TitreNavire" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauNavire/ColonneNavire"]
-custom_minimum_size = Vector2(0, 28)
-layout_mode = 2
-theme_type_variation = "Ribbon"
-theme_override_font_sizes/font_size = 20
-text = "NAVIRE"
-horizontal_alignment = 1
-
-[node name="SlotsNavire" type="VBoxContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauNavire/ColonneNavire"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 6
-
-[node name="BonusNavire" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauNavire/ColonneNavire"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-autowrap_mode = 2
-text = "Aucune pièce installée."
-horizontal_alignment = 1
 
 [node name="DetailItem" type="PanelContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire"]
 custom_minimum_size = Vector2(380, 0)
