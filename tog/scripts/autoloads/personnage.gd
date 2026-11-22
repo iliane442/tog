@@ -138,6 +138,9 @@ var fruit_xp := 0
 # multiplicateur du seuil d'expérience du fruit, ajustable pour la
 # progression voulue (100 -> éveil après 1000 lancements)
 const XP_FRUIT_PAR_PALIER := 100
+# pouvoirs du fruit qui ne sont pas des sorts : capacités hors barre
+# et hors combat, lancées depuis l'onglet du fruit (Greffe de Vie)
+const POUVOIRS_FRUIT_MENU: Array[String] = ["250"]
 
 # Buffs temporaires des consommables utilisés : [{id: str, effets: {},
 # expire: float}] ; expire = temps unix ; les buffs échus sont purgés
@@ -382,9 +385,23 @@ func _sorts_fruit_niveau(niveau: int) -> Array[String]:
 			ids.append(id)
 	return ids
 
-# pouvoirs du fruit débloqués à son niveau actuel (4 sorts + 1 éveil)
+# pouvoirs du fruit débloqués à son niveau actuel (4 sorts + 1 éveil),
+# hors ceux du menu : les sorts de combat seuls peuplent la barre
 func sorts_fruit() -> Array[String]:
-	return _sorts_fruit_niveau(niveau_fruit())
+	var ids: Array[String] = []
+	for id in _sorts_fruit_niveau(niveau_fruit()):
+		if not POUVOIRS_FRUIT_MENU.has(id):
+			ids.append(id)
+	return ids
+
+# pouvoirs de menu du fruit mangé, débloqués à son niveau actuel : ils
+# vivent dans l'onglet Fruit du démon, jamais sur la barre de sorts
+func pouvoirs_fruit_menu() -> Array[String]:
+	var ids: Array[String] = []
+	for id in _sorts_fruit_niveau(niveau_fruit()):
+		if POUVOIRS_FRUIT_MENU.has(id):
+			ids.append(id)
+	return ids
 
 # pouvoirs du fruit mangé pas encore débloqués, du plus tôt au plus
 # tard : [{"id": String, "niveau": int}]

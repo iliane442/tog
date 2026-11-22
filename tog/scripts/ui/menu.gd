@@ -766,6 +766,11 @@ func maj_sorts() -> void:
 	for id_sort in Personnage.sorts_disponibles():
 		if not ids_classe.has(id_sort):
 			ids_fruit.append(id_sort)
+	# les pouvoirs de menu (Greffe de Vie) vivent ici, pas sur la barre :
+	# l'onglet du fruit est leur seul point d'entrée
+	for id_pouvoir in Personnage.pouvoirs_fruit_menu():
+		if not ids_fruit.has(id_pouvoir):
+			ids_fruit.append(id_pouvoir)
 	var verrous_classe := Personnage.sorts_de_classe_verrouilles()
 	var verrous_fruit := Personnage.sorts_fruit_verrouilles()
 	# la vue « fruit » ne se tient qu'avec un fruit dans l'estomac :
@@ -780,9 +785,9 @@ func maj_sorts() -> void:
 			return
 		_ajouter_titre_section_sorts("Pouvoirs du fruit du démon")
 		for id_fruit in ids_fruit:
-			_construire_carte_sort(id_fruit)
+			_construire_carte_sort(id_fruit, "", Personnage.POUVOIRS_FRUIT_MENU.has(id_fruit))
 		for verrou in verrous_fruit:
-			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du fruit du démon." % int(verrou["niveau"]))
+			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du fruit du démon." % int(verrou["niveau"]), Personnage.POUVOIRS_FRUIT_MENU.has(str(verrou["id"])))
 		return
 	if ids_classe.is_empty() and verrous_classe.is_empty():
 		var vide := Label.new()
@@ -935,7 +940,7 @@ func _maj_action_sort(id: String, bouton: Button) -> void:
 
 # carte d'un sort de la classe : nom, icône, infos, description et
 # bouton de placement dans la barre de combat
-func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
+func _construire_carte_sort(id: String, texte_verrou: String = "", hors_combat := false) -> void:
 	if not Personnage.sorts.has(id):
 		return
 	var sort: Dictionary = Personnage.sorts[id]
@@ -956,7 +961,11 @@ func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
 	nom.add_theme_font_size_override("font_size", 26)
 	nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var btn_barre := Button.new()
-	if texte_verrou.is_empty():
+	if hors_combat and texte_verrou.is_empty():
+		btn_barre.text = "Utiliser"
+		btn_barre.tooltip_text = "Hors combat, depuis ce menu : le prochain clic sur la carte désigne le patient."
+		btn_barre.pressed.connect(_on_utiliser_pouvoir_fruit.bind(id))
+	elif texte_verrou.is_empty():
 		_boutons_sorts[id] = btn_barre
 		_maj_action_sort(id, btn_barre)
 		btn_barre.pressed.connect(_basculer_sort_barre.bind(id))
@@ -969,14 +978,20 @@ func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
 	entete.add_child(nom)
 	entete.add_child(btn_barre)
 	var infos := Label.new()
-	var texte_infos := "Type : %s   •   Portée : %d   •   PA : %d   •   Recharge de base : %d" % [
-		sort.get("type", "-"), int(sort.get("portee", 0)), int(sort.get("cout_pa", 2)), int(sort.get("recharge", 0)),
-	]
-	if int(sort.get("degats", 0)) > 0:
-		texte_infos += " | Dégâts : %d" % int(sort["degats"])
-	var stat_boost := Personnage.stat_booster_sort(sort)
-	if not stat_boost.is_empty():
-		texte_infos += " · %s +%d" % [stat_boost, roundi(Personnage.bonus_sort_actuel(sort))]
+	var texte_infos := ""
+	if hors_combat:
+		# pas de stats de combat : un pouvoir du fruit se lit dans sa
+		# description, il vit hors de la barre et des affrontements
+		texte_infos = "Pouvoir hors combat   •   Utilisable uniquement depuis ce menu"
+	else:
+		texte_infos = "Type : %s   •   Portée : %d   •   PA : %d   •   Recharge de base : %d" % [
+			sort.get("type", "-"), int(sort.get("portee", 0)), int(sort.get("cout_pa", 2)), int(sort.get("recharge", 0)),
+		]
+		if int(sort.get("degats", 0)) > 0:
+			texte_infos += " | Dégâts : %d" % int(sort["degats"])
+		var stat_boost := Personnage.stat_booster_sort(sort)
+		if not stat_boost.is_empty():
+			texte_infos += " · %s +%d" % [stat_boost, roundi(Personnage.bonus_sort_actuel(sort))]
 	infos.text = texte_infos
 	infos.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var description := Label.new()
@@ -1014,6 +1029,16 @@ func _basculer_sort_barre(id: String) -> void:
 
 func _on_retirer_sort_barre(id: String) -> void:
 	Personnage.retirer_sort_barre(id)
+
+# un pouvoir du fruit (hors barre, hors combat) se lance ici : on
+# arme le ciblage puis on referme le menu, le patient se désigne d'un
+# clic sur la carte
+func _on_utiliser_pouvoir_fruit(id: String) -> void:
+	var joueur := get_tree().current_scene.find_child("player", true, false) if get_tree().current_scene != null else null
+	if joueur == null or not joueur.has_method("utiliser_pouvoir_fruit_menu"):
+		return
+	joueur.call("utiliser_pouvoir_fruit_menu", id)
+	fermer()
 
 func maj_quetes(_quest_id: String = "") -> void:
 	if not fenetre.visible or section_actuelle != "quetes":
