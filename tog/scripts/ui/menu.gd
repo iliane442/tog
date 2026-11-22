@@ -540,7 +540,9 @@ func maj_personnage() -> void:
 	btn_valider.disabled = en_attente == 0
 	btn_reinitialiser.disabled = en_attente == 0
 	valeur_vie_max.text = str(vie_max_affichee)
-	valeur_attaque.text = str(Personnage.attaque)
+	# l'attaque suit la force du personnage : base + contribution de
+	# la Force (points validés, puis points posés en prévisualisation)
+	valeur_attaque.text = str(Personnage.attaque_effective() + int(points_en_attente.get("force", 0)))
 	# la défense en attente se prévisualise comme la vie (points posés,
 	# pas encore validés)
 	valeur_defense.text = str(int(Personnage.defense) + int(points_en_attente.get("defense", 0)))
@@ -591,7 +593,7 @@ func _maj_resume_personnage() -> void:
 	_maj_portrait_equipement()
 	nom_niveau_inventaire.text = "%s · Niv. %d" % [Personnage.nom, Personnage.niveau]
 	resume_stats_inventaire.text = "PV %d/%d · ATQ %d · DEF %d\n%s Berry" % [
-		Personnage.vie, Personnage.vie_max, Personnage.attaque, Personnage.defense,
+		Personnage.vie, Personnage.vie_max, Personnage.attaque_effective(), Personnage.defense,
 		_formater_nombre(Personnage.berry),
 	]
 

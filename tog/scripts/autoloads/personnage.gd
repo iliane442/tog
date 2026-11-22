@@ -854,6 +854,12 @@ func stats_bateau() -> Dictionary:
 func bonus_vitesse_navire() -> float:
 	return clampf(stats_bateau()["tempete"] * 0.01, 0.0, 0.30)
 
+# attaque totale affichée : la base (race, classe, équipement, buffs)
+# plus la contribution de la Force — c'est exactement ce que chaque
+# coup reçoit dans la formule de dégâts (attaque + bonus de Force)
+func attaque_effective() -> int:
+	return attaque + int(caracteristiques.get("force", 0))
+
 # équipe d'un coup, sur chaque emplacement, le meilleur objet atteignable
 # (score = somme des effets bénéfiques) ; l'arme principale exige une
 # arme accordée à la classe, l'arme secondaire accepte toute classe, les
