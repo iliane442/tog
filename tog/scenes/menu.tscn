@@ -1197,7 +1197,7 @@ theme_override_constants/separation = 8
 [node name="ChampNomMembre" type="LineEdit" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeAjoutMembre"]
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "Nom du joueur à recruter..."
+placeholder_text = "Nom du personnage à recruter..."
 
 [node name="BtnAjouterMembre" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeAjoutMembre"]
 layout_mode = 2

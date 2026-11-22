@@ -26,6 +26,7 @@ var pa_max := 6
 var defense_pvp := 0
 var sorts_noms: Array = []
 var distante := true          # marqueur PvP : jamais pilotée par l'IA locale
+var allie := false
 var visuel := VISUEL_DEFAUT   # planche de sprites du joueur distant
 
 var _sprite: Sprite2D
@@ -44,16 +45,19 @@ func _ready() -> void:
 	_sprite.position.y = -24.0
 	add_child(_sprite)
 	_etiquette = Label.new()
-	_etiquette.text = nom
-	_etiquette.position = Vector2(-64, _sprite.position.y + _sprite.get_rect().position.y - 14.0)
-	_etiquette.custom_minimum_size = Vector2(128, 0)
+	_etiquette.position.y = _sprite.position.y + _sprite.get_rect().position.y - (19.0 if allie else 14.0)
+	_etiquette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_etiquette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_etiquette.add_theme_font_size_override("font_size", 12)
-	_etiquette.add_theme_color_override("font_color", Color("#ff6b6b"))
+	_etiquette.add_theme_font_size_override("font_size", 16 if allie else 12)
+	_etiquette.add_theme_color_override("font_color", Color("#8de8e5") if allie else Color("#ff6b6b"))
+	if allie:
+		_etiquette.add_theme_color_override("font_outline_color", Color("#142433"))
+		_etiquette.add_theme_constant_override("outline_size", 6)
 	_etiquette.add_theme_color_override("font_shadow_color", Color.BLACK)
 	_etiquette.add_theme_constant_override("shadow_offset_x", 1)
 	_etiquette.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_etiquette)
+	_actualiser_nom()
 
 # anime le miroir : planche de marche pendant le trajet rejoué, puis
 # retour à l'animation de repos (dans la direction conservée)
@@ -82,8 +86,13 @@ func appliquer_profil(profil: Dictionary) -> void:
 	pa_max = int(profil.get("pa_max", pa_max))
 	pm_max = int(profil.get("pm_max", pm_max))
 	sorts_noms = profil.get("sorts", [])
-	_etiquette.text = nom
+	_actualiser_nom()
 	sante_modifiee.emit(pv, pv_max)
+
+func _actualiser_nom() -> void:
+	_etiquette.text = ("[G] " if allie else "") + nom
+	_etiquette.reset_size()
+	_etiquette.position.x = -_etiquette.size.x / 2.0
 
 # planche de sprites du joueur distant (race/sexe) : planches de repos
 # et de marche, face sud par défaut

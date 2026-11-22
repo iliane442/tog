@@ -15,6 +15,7 @@ const PORT_DEFAUT := 7777
 const JOUEURS_MAX := 64
 const VISUEL_DEFAUT := "humain_pirate"
 const THEME := preload("res://themes/theme_pirate.tres")
+const GROUPE_UI := preload("res://scripts/ui/groupe_ui.gd")
 const SCRIPT_AVATAR := preload("res://scripts/serveur/joueur_distant.gd")
 const SCRIPT_ADVERSAIRE_PVP := preload("res://scripts/combat/adversaire_pvp.gd")
 const CHEMIN_PREF := "user://serveur.cfg"
@@ -85,8 +86,7 @@ var invitation_en_attente: Array = []
 # notre groupe de joueurs (distinct des équipages) :
 # [{peer: int, pseudo: String, chef: bool}, ...]
 var groupe_local: Array = []
-# panneau des membres du groupe (construit avec le chat)
-var _panneau_groupe: PanelContainer
+var _groupe_ui: GROUPE_UI
 
 # --- client : avatars des autres joueurs ---
 var _avatars := {}
@@ -173,6 +173,7 @@ func demarrer_serveur(port := PORT_DEFAUT) -> bool:
 	# ne jamais mélanger avec le fichier du jeu solo de la machine
 	Equipages.basculer_serveur()
 	creer_tables_mmo()
+	_migrer_equipages_noms_personnage()
 	print("Serveur en écoute sur le port %d (%d joueurs max)." % [port, JOUEURS_MAX])
 	return true
 
@@ -382,7 +383,7 @@ func demande_inscription(nom_pseudo: String, mdp: String) -> void:
 	# nouveau compte : aucun perso n'existe encore, le client doit en
 	# créer un avant de jouer (le perso local n'est jamais importé)
 	rpc_id(peer_id, "reponse_authentification", true, "Compte créé. Crée ton personnage.", "")
-	rpc_id(peer_id, "maj_equipage", _snapshot_equipage(nom_pseudo))
+	rpc_id(peer_id, "maj_equipage", _snapshot_equipage(str(_sessions[peer_id].get("nom_personnage", ""))))
 	rpc_id(peer_id, "maj_hdventes", _snapshot_hdventes())
 
 # RPC serveur : connexion à un compte existant
@@ -399,7 +400,7 @@ func demande_connexion(nom_pseudo: String, mdp: String) -> void:
 	var perso_json := _perso_du_serveur(int(compte["id"]))
 	_ouvrir_session(peer_id, pseudo_final, perso_json)
 	rpc_id(peer_id, "reponse_authentification", true, "Connexion réussie.", perso_json)
-	rpc_id(peer_id, "maj_equipage", _snapshot_equipage(pseudo_final))
+	rpc_id(peer_id, "maj_equipage", _snapshot_equipage(str(_sessions[peer_id].get("nom_personnage", ""))))
 	rpc_id(peer_id, "maj_hdventes", _snapshot_hdventes())
 
 # Les avatars existent uniquement dans la scène où leurs joueurs se trouvent.
@@ -432,11 +433,21 @@ func envoie_sauvegarde_perso(donnees_json: String) -> void:
 	if session.is_empty() or not donnees is Dictionary:
 		return
 	var compte := _compte(str(session["pseudo"]))
-	if compte.is_empty() or not _ecrire_perso_serveur(int(compte["id"]), donnees_json):
+	if compte.is_empty():
 		return
 	var peer_id := int(session["peer_id"])
 	var partie: Dictionary = _sessions[peer_id]
 	var nom := _nom_personnage(donnees)
+	# unicité des noms : un changement de nom (la création comprise)
+	# vers un nom déjà porté par un autre compte est refusé —
+	# l'écran de création vérifie en amont, ceci attrape les
+	# créations simultanées de deux comptes
+	if str(partie["nom_personnage"]) != nom and not _nom_perso_libre(nom, int(compte["id"]), peer_id):
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"Le nom de personnage « %s » est déjà pris — recrée ton perso avec un autre nom." % nom)
+		return
+	if not _ecrire_perso_serveur(int(compte["id"]), donnees_json):
+		return
 	if partie["nom_personnage"] == nom:
 		return
 	partie["nom_personnage"] = nom
@@ -445,6 +456,45 @@ func envoie_sauvegarde_perso(donnees_json: String) -> void:
 	var groupe := _trouver_groupe(peer_id)
 	if not groupe.is_empty():
 		_annoncer_groupe(int(groupe["id"]))
+
+# RPC serveur : l'écran de création demande si un nom est libre
+@rpc("any_peer", "call_remote", "reliable")
+func verifie_nom_perso(nom: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var session := _pair_authentifie()
+	if session.is_empty():
+		return
+	var nom_nettoye := nom.strip_edges().substr(0, 64)
+	var compte := _compte(str(session["pseudo"]))
+	var compte_id := int(compte["id"]) if not compte.is_empty() else -1
+	rpc_id(int(session["peer_id"]), "reponse_nom_perso",
+		_nom_perso_libre(nom_nettoye, compte_id, int(session["peer_id"])), nom_nettoye)
+
+# un nom de personnage est libre s'il n'est porté ni par un perso
+# sauvegardé d'un autre compte, ni par un personnage en ligne d'un
+# autre joueur (comparaison insensible à la casse) ; le compte et le
+# pair demandeurs ne comptent pas (recréer à l'identique est permis)
+func _nom_perso_libre(nom: String, compte_exclu: int, peer_exclu: int) -> bool:
+	var nom_bas := nom.strip_edges().to_lower()
+	if nom_bas.is_empty():
+		return false
+	for ligne in _lire("SELECT compte_id, donnees FROM mmo_persos;"):
+		if int(ligne["compte_id"]) == compte_exclu:
+			continue
+		var stocke: Variant = JSON.parse_string(str(ligne["donnees"]))
+		if stocke is Dictionary and str(stocke.get("nom", "")).strip_edges().to_lower() == nom_bas:
+			return false
+	var pseudo_demandeur := str(_sessions[peer_exclu]["pseudo"])
+	for pair in _sessions:
+		if int(pair) == peer_exclu:
+			continue
+		var autre: Dictionary = _sessions[pair]
+		if str(autre["pseudo"]) == pseudo_demandeur:
+			continue
+		if str(autre["nom_personnage"]).strip_edges().to_lower() == nom_bas:
+			return false
+	return true
 
 # RPC serveur : position d'un joueur
 @rpc("any_peer", "call_remote", "unreliable")
@@ -772,6 +822,15 @@ func _peer_du_pseudo(pseudo: String) -> int:
 	var cherche := pseudo.to_lower()
 	for peer_id in _sessions:
 		if str(_sessions[peer_id]["pseudo"]).to_lower() == cherche:
+			return int(peer_id)
+	return 0
+
+# pair en ligne portant ce nom de personnage (les équipages identifient
+# leurs membres par personnage, pas par compte)
+func _peer_du_nom_personnage(nom: String) -> int:
+	var cherche := nom.strip_edges().to_lower()
+	for peer_id in _sessions:
+		if str(_sessions[peer_id].get("nom_personnage", "")).strip_edges().to_lower() == cherche:
 			return int(peer_id)
 	return 0
 
@@ -1338,9 +1397,11 @@ func _annoncer_groupe(id_chef: int) -> void:
 
 # instantané complet de l'état équipage d'un joueur : son équipage,
 # les membres, le journal, les autres équipages (avec effectifs) et
-# sa flotte — tout l'onglet Équipage du client en découle
-func _snapshot_equipage(pseudo: String) -> String:
-	Equipages.joueur_courant = pseudo
+# sa flotte — tout l'onglet Équipage du client en découle ; le
+# paramètre est le nom du personnage du joueur (l'identité des
+# équipages, pas le pseudo du compte)
+func _snapshot_equipage(nom_personnage: String) -> String:
+	Equipages.joueur_courant = nom_personnage
 	Equipages._recharger_mon_equipage()
 	var autres: Array = []
 	for ligne in Equipages.autres_equipages():
@@ -1363,11 +1424,39 @@ func _snapshot_equipage(pseudo: String) -> String:
 	return JSON.stringify(instantané)
 
 # pousse son instantané à chaque membre en ligne d'un équipage
+# (les membres sont identifiés par leur nom de personnage)
 func _diffuser_equipage(id_equipage: int) -> void:
-	for pseudo_membre in Equipages.pseudos_de_l_equipage(id_equipage):
-		var peer_membre := _peer_du_pseudo(str(pseudo_membre))
+	for nom_membre in Equipages.noms_de_l_equipage(id_equipage):
+		var peer_membre := _peer_du_nom_personnage(str(nom_membre))
 		if peer_membre != 0:
-			rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(pseudo_membre)))
+			rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(nom_membre)))
+
+# les équipages créés avant l'identification par personnage référençaient
+# le pseudo du compte : une réécriture unique les passe aux noms de
+# personnages (chaque compte qui possède un perso fournit la
+# correspondance pseudo -> nom) ; le marqueur posé en fin évite tout
+# second passage même après redémarrage
+func _migrer_equipages_noms_personnage() -> void:
+	Equipages._ecrire("CREATE TABLE IF NOT EXISTS _meta_equipages (cle TEXT PRIMARY KEY, valeur TEXT);")
+	for ligne in Equipages._lire("SELECT valeur FROM _meta_equipages WHERE cle = 'identite_membres';"):
+		if str(ligne.get("valeur", "")) == "nom_personnage":
+			return
+	var noms: Dictionary = {}
+	for ligne in _lire(
+			"SELECT c.pseudo AS pseudo, p.donnees AS donnees"
+			+ " FROM mmo_comptes c JOIN mmo_persos p ON p.compte_id = c.id;"):
+		var donnees: Variant = JSON.parse_string(str(ligne["donnees"]))
+		if donnees is Dictionary and str(donnees.get("nom", "")) != "":
+			noms[str(ligne["pseudo"])] = str(donnees.get("nom"))
+	if not noms.is_empty():
+		print("Équipages : réécriture vers les noms de personnages (%d comptes migrés)." % noms.size())
+	for pseudo_compte in noms:
+		var nom_perso := str(noms[pseudo_compte])
+		Equipages._ecrire("UPDATE equipages SET capitaine = '%s' WHERE capitaine = '%s';" % [
+			Equipages._echapper(nom_perso), Equipages._echapper(str(pseudo_compte))])
+		Equipages._ecrire("UPDATE equipages_membres SET nom_joueur = '%s' WHERE nom_joueur = '%s';" % [
+			Equipages._echapper(nom_perso), Equipages._echapper(str(pseudo_compte))])
+	Equipages._ecrire("INSERT OR REPLACE INTO _meta_equipages (cle, valeur) VALUES ('identite_membres', 'nom_personnage');")
 
 # JSON du perso serveur d'un compte (dictionnaire vide si absent ou
 # illisible : le joueur n'a pas encore créé son personnage)
@@ -1391,7 +1480,13 @@ func demande_equipage(action: String, argument: String, montant: int) -> void:
 		return
 	var peer_id := int(session["peer_id"])
 	var pseudo := str(session["pseudo"])
-	Equipages.joueur_courant = pseudo
+	# l'identité des équipages est le nom du personnage : un compte
+	# sans perso ne peut pas encore agir sur un équipage
+	var nom_joueur := str(_sessions[peer_id].get("nom_personnage", ""))
+	if nom_joueur.is_empty():
+		rpc_id(peer_id, "message_equipage", "Crée d'abord ton personnage")
+		return
+	Equipages.joueur_courant = nom_joueur
 	Equipages._recharger_mon_equipage()
 	match action:
 		"creer":
@@ -1404,24 +1499,24 @@ func demande_equipage(action: String, argument: String, montant: int) -> void:
 			if Equipages.mon_equipage.is_empty():
 				rpc_id(peer_id, "message_equipage", "Vous n'êtes capitaine d'aucun équipage")
 			else:
-				var membres_dissous := Equipages.pseudos_de_l_equipage(int(Equipages.mon_equipage["id"]))
+				var membres_dissous := Equipages.noms_de_l_equipage(int(Equipages.mon_equipage["id"]))
 				Equipages.dissoudre()
-				for pseudo_membre in membres_dissous:
-					var peer_membre := _peer_du_pseudo(str(pseudo_membre))
+				for nom_membre in membres_dissous:
+					var peer_membre := _peer_du_nom_personnage(str(nom_membre))
 					if peer_membre != 0:
-						rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(pseudo_membre)))
+						rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(nom_membre)))
 		"quitter":
 			if Equipages.mon_equipage.is_empty():
 				rpc_id(peer_id, "message_equipage", "Vous n'êtes dans aucun équipage")
 			else:
-				var membres_quittes := Equipages.pseudos_de_l_equipage(int(Equipages.mon_equipage["id"]))
+				var membres_quittes := Equipages.noms_de_l_equipage(int(Equipages.mon_equipage["id"]))
 				Equipages.quitter()
-				for pseudo_membre in membres_quittes:
-					var peer_membre := _peer_du_pseudo(str(pseudo_membre))
+				for nom_membre in membres_quittes:
+					var peer_membre := _peer_du_nom_personnage(str(nom_membre))
 					if peer_membre != 0:
-						rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(pseudo_membre)))
+						rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(nom_membre)))
 		"ajouter":
-			_inviter_dans_equipage(peer_id, pseudo, argument)
+			_inviter_dans_equipage(peer_id, nom_joueur, argument)
 		"virer":
 			if Equipages.mon_equipage.is_empty():
 				rpc_id(peer_id, "message_equipage", "Vous n'êtes dans aucun équipage")
@@ -1430,12 +1525,12 @@ func demande_equipage(action: String, argument: String, montant: int) -> void:
 				if erreur_virer != "":
 					rpc_id(peer_id, "message_equipage", erreur_virer)
 				else:
-					var membres_vires := Equipages.pseudos_de_l_equipage(int(Equipages.mon_equipage["id"]))
+					var membres_vires := Equipages.noms_de_l_equipage(int(Equipages.mon_equipage["id"]))
 					membres_vires.append(argument.strip_edges())
-					for pseudo_membre in membres_vires:
-						var peer_membre := _peer_du_pseudo(str(pseudo_membre))
+					for nom_membre in membres_vires:
+						var peer_membre := _peer_du_nom_personnage(str(nom_membre))
 						if peer_membre != 0:
-							rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(pseudo_membre)))
+							rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(nom_membre)))
 		"nommer_vice":
 			var erreur_vice := Equipages.nommer_vice(argument)
 			if erreur_vice != "":
@@ -1465,9 +1560,10 @@ func demande_equipage(action: String, argument: String, montant: int) -> void:
 	Equipages.joueur_courant = ""
 
 # le recrutement devient une invitation : la cible reçoit une popup
-func _inviter_dans_equipage(peer_id: int, pseudo_demandeur: String, cible_pseudo: String) -> void:
-	var cible := cible_pseudo.strip_edges()
-	if cible.to_lower() == pseudo_demandeur.to_lower():
+# (l'émetteur et la cible sont identifiés par leur nom de personnage)
+func _inviter_dans_equipage(peer_id: int, nom_demandeur: String, cible_nom: String) -> void:
+	var cible := cible_nom.strip_edges()
+	if cible.to_lower() == nom_demandeur.to_lower():
 		rpc_id(peer_id, "message_equipage", "On ne se recrute pas soi-même !")
 		return
 	var erreur := Equipages._valider_recrutement(cible)
@@ -1477,16 +1573,16 @@ func _inviter_dans_equipage(peer_id: int, pseudo_demandeur: String, cible_pseudo
 	if Equipages._deja_engage(cible):
 		rpc_id(peer_id, "message_equipage", "%s fait déjà partie d'un équipage." % cible)
 		return
-	var peer_cible := _peer_du_pseudo(cible)
+	var peer_cible := _peer_du_nom_personnage(cible)
 	if peer_cible == 0:
 		rpc_id(peer_id, "message_equipage", "%s n'est pas en ligne." % cible)
 		return
 	if _invites_equipage.has(peer_cible):
 		rpc_id(peer_id, "message_equipage", "%s a déjà une invitation en attente." % cible)
 		return
-	_invites_equipage[peer_cible] = {"demandeur": pseudo_demandeur, "cible": cible}
+	_invites_equipage[peer_cible] = {"demandeur": nom_demandeur, "cible": cible}
 	rpc_id(peer_id, "message_equipage", "Invitation envoyée à %s..." % cible)
-	rpc_id(peer_cible, "invite_equipage", str(Equipages.mon_equipage.get("nom", "?")), pseudo_demandeur)
+	rpc_id(peer_cible, "invite_equipage", str(Equipages.mon_equipage.get("nom", "?")), nom_demandeur)
 
 # RPC serveur : réponse à une invitation de recrutement
 @rpc("any_peer", "call_remote", "reliable")
@@ -1497,7 +1593,7 @@ func reponse_equipage_recruit(accepte: bool) -> void:
 	if session.is_empty():
 		return
 	var peer_id := int(session["peer_id"])
-	var pseudo := str(session["pseudo"])
+	var nom_pair := str(_sessions[peer_id].get("nom_personnage", ""))
 	var invitation_lue: Variant = _invites_equipage.get(peer_id, {})
 	_invites_equipage.erase(peer_id)
 	if not invitation_lue is Dictionary:
@@ -1505,11 +1601,11 @@ func reponse_equipage_recruit(accepte: bool) -> void:
 	var invitation: Dictionary = invitation_lue
 	var demandeur := str(invitation["demandeur"])
 	var cible := str(invitation["cible"])
-	var peer_demandeur := _peer_du_pseudo(demandeur)
+	var peer_demandeur := _peer_du_nom_personnage(demandeur)
 	if peer_demandeur == 0:
 		return  # le capitaine s'est déconnecté, l'invitation tombe
 	if not accepte:
-		rpc_id(peer_demandeur, "message_equipage", "%s refuse de rejoindre l'équipage." % pseudo)
+		rpc_id(peer_demandeur, "message_equipage", "%s refuse de rejoindre l'équipage." % nom_pair)
 		return
 	# re-validation côté demandeur puis ajout effectif
 	Equipages.joueur_courant = demandeur
@@ -1524,7 +1620,7 @@ func reponse_equipage_recruit(accepte: bool) -> void:
 		else:
 			_diffuser_equipage(int(Equipages.mon_equipage["id"]))
 			# la cible vient d'entrer dans l'équipage : son état change aussi
-			rpc_id(peer_id, "maj_equipage", _snapshot_equipage(pseudo))
+			rpc_id(peer_id, "maj_equipage", _snapshot_equipage(cible))
 			rpc_id(peer_demandeur, "message_equipage", "%s rejoint l'équipage !" % cible)
 	Equipages.joueur_courant = ""
 
@@ -1782,7 +1878,7 @@ func fermer_connexion() -> void:
 	# le groupe de joueurs ne survit pas à la déconnexion
 	groupe_local = []
 	_maj_panneau_groupe()
-	_cacher_invite_groupe()
+	_groupe_ui.cacher_invite_groupe()
 	_cacher_invite_equipage()
 	_cacher_invite_echange()
 	_fermer_fenetre_echange()
@@ -1969,6 +2065,11 @@ func _client_annoncer_scene() -> void:
 	_cacher_invitation()
 	_scene_locale = nom
 	_chat.show()
+	var combat := scene.get_node_or_null("CombatManager")
+	if combat != null and not combat.placement_commence.is_connected(_sur_placement_groupe):
+		combat.placement_commence.connect(_sur_placement_groupe)
+		combat.combat_termine.connect(_sur_fin_combat_groupe)
+	_groupe_ui.actualiser_actions_combat(_combat_joinable())
 	_derniere_position_envoyee = joueur.global_position
 	if joueur.has_method("_prefixe_visuel_race"):
 		rpc_id(1, "annonce_visuel", str(joueur.call("_prefixe_visuel_race")))
@@ -2080,7 +2181,7 @@ func invitation_combat(chef: String, groupe: String) -> void:
 	if combat_groupe_local != "" or not _combat_joinable():
 		return
 	invitation_en_attente = [chef, groupe]
-	_montrer_invitation(chef, groupe)
+	_groupe_ui.montrer_invite_combat(chef)
 
 # RPC client : le combat du chef est terminé, l'invitation tombe
 @rpc("any_peer", "call_remote", "reliable")
@@ -2802,6 +2903,40 @@ func sauvegarder_perso_immediat() -> void:
 	_temps_sauvegarde = 0.0
 	rpc_id(1, "envoie_sauvegarde_perso", JSON.stringify(serialiser_perso()))
 
+# --- unicité du nom de personnage (création en ligne) ---
+
+# réponse attendue de verifie_nom_perso : { "nom", "ok" } (une seule
+# vérification à la fois : l'écran de création n'en fait qu'une)
+var _attente_nom: Dictionary = {}
+
+# API de l'écran de création : ce nom de personnage est-il libre ?
+# Hors ligne, aucun contrôle (un perso local ne se gêne pas) ; en
+# ligne, réponse du serveur ; sans réponse en 4 s, on laisse passer —
+# la sauvegarde serveur refuse de toute façon un nom déjà pris
+func nom_perso_disponible(nom: String) -> bool:
+	if mode != Mode.CLIENT or pseudo == "":
+		return true
+	var nom_nettoye := nom.strip_edges().substr(0, 64)
+	_attente_nom = {"nom": nom_nettoye, "ok": null}
+	rpc_id(1, "verifie_nom_perso", nom_nettoye)
+	var depart := Time.get_ticks_msec()
+	# ignore_time_pause : l'écran de création met l'arbre en pause,
+	# la vérification doit suivre quand même
+	while _attente_nom.get("nom", "") == nom_nettoye and _attente_nom.get("ok") == null \
+			and Time.get_ticks_msec() - depart < 4000:
+		await get_tree().create_timer(0.05, true).timeout
+	if _attente_nom.get("nom", "") == nom_nettoye and _attente_nom.get("ok") != null:
+		return bool(_attente_nom["ok"])
+	return true
+
+# RPC client : le serveur a répondu, la vérification en attente suit
+@rpc("any_peer", "call_remote", "reliable")
+func reponse_nom_perso(disponible: bool, nom: String) -> void:
+	if multiplayer.is_server():
+		return
+	if str(_attente_nom.get("nom", "")) == nom:
+		_attente_nom["ok"] = disponible
+
 # --- avatars ---
 
 func _conteneur_avatars() -> Node2D:
@@ -2834,7 +2969,7 @@ func _maj_avatar(peer_id: int, nom_recu: String, position: Vector2, visuel := VI
 	avatar.definir_visuel(visuel)
 	avatar.position = conteneur.to_local(position)
 	conteneur.add_child(avatar)
-	# les compagnons de groupe se repèrent en vert sur la map
+	# les compagnons de groupe ont un repère distinct sur la carte
 	avatar.marquer_groupe(est_dans_groupe(peer_id))
 	_avatars[peer_id] = avatar
 
@@ -3105,16 +3240,15 @@ func _construire_chat() -> void:
 	_chat_saisie.text_submitted.connect(_on_chat_envoye)
 	colonne.add_child(_chat_saisie)
 	_fenetre_chat.hide()
-	# panneau des membres de notre groupe de joueurs, au-dessus du chat
-	_panneau_groupe = PanelContainer.new()
-	_panneau_groupe.theme = THEME
-	_panneau_groupe.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	_panneau_groupe.offset_left = 18.0
-	_panneau_groupe.offset_top = -260.0
-	_panneau_groupe.offset_right = 258.0
-	_panneau_groupe.offset_bottom = -156.0
-	_panneau_groupe.hide()
-	_chat.add_child(_panneau_groupe)
+	_groupe_ui = GROUPE_UI.new()
+	_groupe_ui.name = "GroupeUI"
+	_groupe_ui.theme = THEME
+	_groupe_ui.combat_demande.connect(demander_rejoindre_combat)
+	_groupe_ui.groupe_quitte.connect(_quitter_groupe_depuis_panneau)
+	_groupe_ui.invitation_repondue.connect(_repondre_invite_groupe)
+	_groupe_ui.combat_accepte.connect(_on_invitation_rejoint)
+	_groupe_ui.combat_ignore.connect(_cacher_invitation)
+	_chat.add_child(_groupe_ui)
 
 # --- groupes de joueurs (côté client) : distincts des équipages ---
 
@@ -3123,10 +3257,9 @@ func _construire_chat() -> void:
 func invite_groupe(pseudo_inviteur: String) -> void:
 	if multiplayer.is_server():
 		return
-	_montrer_invite_groupe(pseudo_inviteur)
+	_groupe_ui.montrer_invite_groupe(pseudo_inviteur)
 
-# RPC client : composition de notre groupe — panneau des membres et
-# pseudos des compagnons en vert sur la map
+# RPC client : composition du groupe et repérage des compagnons sur la carte
 @rpc("any_peer", "call_remote", "reliable")
 func maj_groupe(membres: Array) -> void:
 	if multiplayer.is_server():
@@ -3144,7 +3277,7 @@ func maj_groupe(membres: Array) -> void:
 # demande au serveur l'autorisation de rejoindre le combat en cours
 # d'un compagnon (bouton « Rejoindre » du panneau GROUPE)
 func demander_rejoindre_combat(peer_cible: int) -> void:
-	if mode != Mode.CLIENT or pseudo == "":
+	if mode != Mode.CLIENT or pseudo == "" or not _combat_joinable():
 		return
 	rpc_id(1, "demande_rejoindre_combat", peer_cible)
 
@@ -3166,104 +3299,16 @@ func est_dans_groupe(peer_id: int) -> bool:
 	return false
 
 func _maj_panneau_groupe() -> void:
-	if _panneau_groupe == null:
-		return
-	for enfant in _panneau_groupe.get_children():
-		enfant.queue_free()
-	if groupe_local.is_empty():
-		_panneau_groupe.hide()
-		return
-	var marges := MarginContainer.new()
-	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
-		marges.add_theme_constant_override(marge, 10)
-	_panneau_groupe.add_child(marges)
-	var colonne := VBoxContainer.new()
-	colonne.add_theme_constant_override("separation", 2)
-	marges.add_child(colonne)
-	var titre := Label.new()
-	titre.text = "GROUPE (%d/%d)" % [groupe_local.size(), GROUPE_TAILLE_MAX]
-	titre.add_theme_font_size_override("font_size", 14)
-	titre.add_theme_color_override("font_color", Color("#ffd166"))
-	colonne.add_child(titre)
-	for membre in groupe_local:
-		var rangee := HBoxContainer.new()
-		rangee.add_theme_constant_override("separation", 6)
-		colonne.add_child(rangee)
-		var ligne := Label.new()
-		ligne.add_theme_font_size_override("font_size", 14)
-		ligne.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var texte := "• " + str(membre.get("pseudo", "?"))
-		if bool(membre.get("chef", false)):
-			texte += " (chef)"
-			ligne.add_theme_color_override("font_color", Color("#ffd166"))
-		else:
-			ligne.add_theme_color_override("font_color", Color("#7bd88f"))
-		ligne.text = texte
-		rangee.add_child(ligne)
-		# compagnon en combat et nous disponibles : on peut le rejoindre
-		if bool(membre.get("combat", false)) and combat_groupe_local == "" \
-				and int(membre.get("peer", 0)) != multiplayer.get_unique_id():
-			var rejoindre := Button.new()
-			rejoindre.text = "Rejoindre"
-			rejoindre.add_theme_font_size_override("font_size", 13)
-			rejoindre.pressed.connect(
-				demander_rejoindre_combat.bind(int(membre.get("peer", 0))))
-			rangee.add_child(rejoindre)
-	_panneau_groupe.show()
-	# le panneau grandit vers le haut avec son contenu (bas fixe)
-	var hauteur := _panneau_groupe.get_combined_minimum_size().y
-	_panneau_groupe.offset_top = _panneau_groupe.offset_bottom - maxi(hauteur, 96.0)
+	var id_local := multiplayer.get_unique_id() if not groupe_local.is_empty() else 0
+	_groupe_ui.afficher_membres(groupe_local, id_local, GROUPE_TAILLE_MAX, _combat_joinable())
 
-# popup d'invitation de groupe
-var _panneau_invite_groupe: PanelContainer
+func _quitter_groupe_depuis_panneau() -> void:
+	if mode == Mode.CLIENT and pseudo != "" and not groupe_local.is_empty():
+		rpc_id(1, "envoie_message_chat", "/groupe quitter")
 
-func _montrer_invite_groupe(pseudo_inviteur: String) -> void:
-	if _panneau_invite_groupe == null:
-		_construire_invite_groupe()
-	var etiquette: Label = _panneau_invite_groupe.get_meta("etiquette")
-	etiquette.text = "%s t'invite dans son groupe !" % pseudo_inviteur
-	_panneau_invite_groupe.show()
-
-func _cacher_invite_groupe() -> void:
-	if _panneau_invite_groupe != null:
-		_panneau_invite_groupe.hide()
-
-func _construire_invite_groupe() -> void:
-	_panneau_invite_groupe = PanelContainer.new()
-	_panneau_invite_groupe.theme = THEME
-	_panneau_invite_groupe.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	_panneau_invite_groupe.offset_top = 230.0
-	_chat.add_child(_panneau_invite_groupe)
-	var marges := MarginContainer.new()
-	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
-		marges.add_theme_constant_override(marge, 16)
-	_panneau_invite_groupe.add_child(marges)
-	var colonne := VBoxContainer.new()
-	colonne.add_theme_constant_override("separation", 10)
-	marges.add_child(colonne)
-	var etiquette := Label.new()
-	etiquette.add_theme_font_size_override("font_size", 17)
-	colonne.add_child(etiquette)
-	_panneau_invite_groupe.set_meta("etiquette", etiquette)
-	var boutons := HBoxContainer.new()
-	boutons.alignment = BoxContainer.ALIGNMENT_CENTER
-	boutons.add_theme_constant_override("separation", 14)
-	colonne.add_child(boutons)
-	var accepter := Button.new()
-	accepter.text = "Rejoindre"
-	accepter.custom_minimum_size = Vector2(0, 42)
-	accepter.pressed.connect(func() -> void:
-		_cacher_invite_groupe()
-		rpc_id(1, "reponse_groupe", true))
-	boutons.add_child(accepter)
-	var refuser := Button.new()
-	refuser.text = "Refuser"
-	refuser.custom_minimum_size = Vector2(0, 42)
-	refuser.pressed.connect(func() -> void:
-		_cacher_invite_groupe()
-		rpc_id(1, "reponse_groupe", false))
-	boutons.add_child(refuser)
-	_panneau_invite_groupe.hide()
+func _repondre_invite_groupe(acceptee: bool) -> void:
+	_groupe_ui.cacher_invite_groupe()
+	rpc_id(1, "reponse_groupe", acceptee)
 
 # --- équipages en ligne (côté client) : le serveur est seul maître ---
 
@@ -3388,56 +3433,19 @@ func _construire_invite_equipage() -> void:
 	boutons.add_child(refuser)
 	_panneau_invite_equipage.hide()
 
-# popup d'invitation au combat, en haut de l'écran
-var _panneau_invitation: PanelContainer
+func _sur_placement_groupe() -> void:
+	_groupe_ui.actualiser_actions_combat(false)
+	invitation_en_attente.clear()
+	_cacher_invitation()
 
-func _montrer_invitation(chef: String, groupe: String) -> void:
-	if _panneau_invitation == null:
-		_construire_invitation()
-	var etiquette: Label = _panneau_invitation.get_meta("etiquette")
-	etiquette.text = "%s engage le groupe [%s]" % [chef, groupe]
-	_panneau_invitation.show()
+func _sur_fin_combat_groupe(_victoire: bool) -> void:
+	_groupe_ui.actualiser_actions_combat(true)
 
 func _cacher_invitation() -> void:
-	if _panneau_invitation != null:
-		_panneau_invitation.hide()
-
-func _construire_invitation() -> void:
-	_panneau_invitation = PanelContainer.new()
-	_panneau_invitation.theme = THEME
-	_panneau_invitation.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	_panneau_invitation.offset_top = 96.0
-	# le popup vit dans la couche du chat, au-dessus du HUD
-	_chat.add_child(_panneau_invitation)
-	var marges := MarginContainer.new()
-	for marge in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
-		marges.add_theme_constant_override(marge, 16)
-	_panneau_invitation.add_child(marges)
-	var colonne := VBoxContainer.new()
-	colonne.add_theme_constant_override("separation", 10)
-	marges.add_child(colonne)
-	var etiquette := Label.new()
-	etiquette.add_theme_font_size_override("font_size", 17)
-	colonne.add_child(etiquette)
-	_panneau_invitation.set_meta("etiquette", etiquette)
-	var boutons := HBoxContainer.new()
-	boutons.alignment = BoxContainer.ALIGNMENT_CENTER
-	boutons.add_theme_constant_override("separation", 14)
-	colonne.add_child(boutons)
-	var rejoindre := Button.new()
-	rejoindre.text = "Rejoindre le combat"
-	rejoindre.custom_minimum_size = Vector2(0, 42)
-	rejoindre.pressed.connect(_on_invitation_rejoint)
-	boutons.add_child(rejoindre)
-	var ignorer := Button.new()
-	ignorer.text = "Ignorer"
-	ignorer.custom_minimum_size = Vector2(0, 42)
-	ignorer.pressed.connect(_cacher_invitation)
-	boutons.add_child(ignorer)
-	_panneau_invitation.hide()
+	_groupe_ui.cacher_invite_combat()
 
 func _on_invitation_rejoint() -> void:
-	if not invitation_en_attente.is_empty():
+	if not invitation_en_attente.is_empty() and _combat_joinable():
 		rejoindre_combat(str(invitation_en_attente[1]))
 
 func _unhandled_key_input(event: InputEvent) -> void:
