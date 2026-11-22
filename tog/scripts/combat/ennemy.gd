@@ -26,6 +26,8 @@ const ID_ETAT_TEST := 5 # Ralentissement
 const DUREE_ETAT_TEST := 2
 
 const EFFET_SORT := preload("res://scripts/combat/effet_sort.gd")
+# nombre de dégâts flottant (chiffre qui jaillit, rebondit, s'envole)
+const DEGATS_FLOTTANTS := preload("res://scripts/combat/degats_flottants.gd")
 
 # surbrillance rouge au survol : même mécanique que les PNJ (shader
 # surlignage.gdshader) mais en rouge pour signaler un camp hostile
@@ -295,6 +297,7 @@ func recevoir_degats(degats: int) -> void:
 		return
 	pv = maxi(pv - maxi(degats, 0), 0)
 	sante_modifiee.emit(pv, pv_max)
+	_nombre_flottant(self, "-%d" % maxi(degats, 0), "degats")
 	if pv > 0:
 		return
 	for quest_id in quetes_a_progresser:
@@ -316,6 +319,18 @@ func recevoir_degats(degats: int) -> void:
 func soigner(montant: int) -> void:
 	pv = mini(pv + maxi(montant, 0), pv_max)
 	sante_modifiee.emit(pv, pv_max)
+	_nombre_flottant(self, "+%d" % maxi(montant, 0), "soin")
+
+# affiche un texte flottant au-dessus d'un combattant : dégâts
+# subis, soin reçu… le chiffre vit sa vie puis se libère seul
+func _nombre_flottant(cible: Node2D, texte: String, type: String) -> void:
+	if not is_inside_tree() or cible == null or not is_instance_valid(cible):
+		return
+	var nombre := DEGATS_FLOTTANTS.new()
+	nombre.texte = texte
+	nombre.type = type
+	nombre.position = cible.global_position + Vector2(0, -26)
+	get_tree().current_scene.add_child(nombre)
 
 # --- animation d'attaque ---
 
@@ -407,6 +422,7 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 					_jouer_animation_attaque(joueur)
 					var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque))
 					joueur.recevoir_degats(degats)
+					_nombre_flottant(joueur, "-%d" % degats, "degats")
 			attaques -= 1
 			# laisser lire la salve : une courte pause entre chaque coup
 			# (le combat peut finir entre-temps : mêmes gardes que le
