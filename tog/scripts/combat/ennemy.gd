@@ -25,12 +25,18 @@ signal vaincu
 const ID_ETAT_TEST := 5 # Ralentissement
 const DUREE_ETAT_TEST := 2
 
+const EFFET_SORT := preload("res://scripts/combat/effet_sort.gd")
+
 # surbrillance rouge au survol : même mécanique que les PNJ (shader
 # surlignage.gdshader) mais en rouge pour signaler un camp hostile
 const shader_surlignage := preload("res://assets/shaders/surlignage.gdshader")
 const COULEUR_SURBRILLANCE := Color(0.95, 0.16, 0.16, 1.0)
 
 var pv := 100
+# ligne d'`animations` de l'attaque : chargée au premier coup puis
+# gardée (liaison mob via `entity_animations`, coup simple sinon)
+var _details_attaque: Dictionary = {}
+var _attaque_chargee := false
 var _combat_manager
 var _deplacement_combat: Tween
 var _etiquette_mob: Label
@@ -311,6 +317,50 @@ func soigner(montant: int) -> void:
 	pv = mini(pv + maxi(montant, 0), pv_max)
 	sante_modifiee.emit(pv, pv_max)
 
+# --- animation d'attaque ---
+
+# définition de l'attaque visuelle : la ligne d'`animations` liée au
+# mob dans `entity_animations` (contexte « attack »), à défaut le
+# coup simple (slash) ; chargée une seule fois puis gardée
+func _animation_attaque() -> Dictionary:
+	if _attaque_chargee:
+		return _details_attaque
+	_attaque_chargee = true
+	if BaseDonnees.disponible:
+		if mob_id > 0:
+			var specifique := BaseDonnees.lire(
+				"SELECT a.sprite_sheet_path, a.frame_width, a.frame_height, a.frame_count, a.frame_delay_ms, a.loop"
+				+ " FROM entity_animations ea JOIN animations a ON a.id = ea.animation_id"
+				+ " WHERE ea.entity_type = 'mob' AND ea.entity_id = %d AND ea.context = 'attack';" % mob_id)
+			if not specifique.is_empty():
+				_details_attaque = specifique[0]
+				return _details_attaque
+		var repli := BaseDonnees.lire(
+			"SELECT sprite_sheet_path, frame_width, frame_height, frame_count, frame_delay_ms, loop"
+			+ " FROM animations WHERE name = 'fx_coup_simple';")
+		if not repli.is_empty():
+			_details_attaque = repli[0]
+	return _details_attaque
+
+# l'effet d'attaque se joue sur la cible touchée, comme les effets de
+# sorts du joueur (instancié et auto-libéré par effet_sort.gd)
+func _jouer_animation_attaque(cible: Node2D) -> void:
+	if cible == null or not is_instance_valid(cible):
+		return
+	var details := _animation_attaque()
+	if details.is_empty():
+		return
+	var effet := EFFET_SORT.new()
+	effet.configure(
+		str(details.get("sprite_sheet_path", "")),
+		int(details.get("frame_count", 1)),
+		int(details.get("frame_delay_ms", 100)),
+		int(details.get("loop", 0)) == 1,
+		int(details.get("frame_width", 32)),
+		int(details.get("frame_height", 32)))
+	get_tree().current_scene.add_child(effet)
+	effet.jouer(cible.global_position)
+
 func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 	if not is_instance_valid(joueur) or sol == null:
 		return
@@ -349,9 +399,17 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 				if not _combat_manager.en_combat:
 					return
 				if _combat_manager.precision_reussie(self, joueur):
+					_jouer_animation_attaque(joueur)
 					var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque))
 					joueur.recevoir_degats(degats)
 			attaques -= 1
+			# laisser lire la salve : une courte pause entre chaque coup
+			# (le combat peut finir entre-temps : mêmes gardes que le
+			# déplacement)
+			if attaques > 0 and is_inside_tree():
+				await get_tree().create_timer(0.25, false).timeout
+				if not is_inside_tree() or (_combat_manager != null and (not _combat_manager.en_combat or _combat_manager.numero_combat != numero)):
+					return
 	if _combat_manager != null and _combat_manager.en_combat and is_inside_tree():
 		_combat_manager.terminer_tour(self)
 

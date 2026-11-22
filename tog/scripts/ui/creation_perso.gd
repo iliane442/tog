@@ -148,6 +148,16 @@ func _on_commencer() -> void:
 	if nouveau_nom == "":
 		label_erreur.text = "Choisissez un nom pour votre personnage."
 		return
+	# en ligne, le nom du personnage est unique sur le serveur — nous
+	# demandons avant de créer (hors ligne, Reseau laisse passer sans
+	# rien demander) ; le bouton est bloqué pendant la vérification
+	# pour ne pas créer deux fois
+	btn_commencer.disabled = true
+	var nom_libre := (not Personnage.en_ligne) or await Reseau.nom_perso_disponible(nouveau_nom)
+	btn_commencer.disabled = false
+	if not nom_libre:
+		label_erreur.text = "Ce nom de personnage est déjà pris."
+		return
 	var id_metier := _metier_de_la_classe()
 	if id_metier == "":
 		label_erreur.text = "Aucun métier lié à cette classe."

@@ -15,6 +15,7 @@ const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 @onready var ligne_combat: HBoxContainer = $PanneauStats/Colonne/LigneCombat
 @onready var label_pa: Label = $PanneauStats/Colonne/LigneCombat/PA
 @onready var label_pm: Label = $PanneauStats/Colonne/LigneCombat/PM
+@onready var label_temps_tour: Label = $PanneauStats/Colonne/LigneCombat/Timer
 @onready var label_etats_joueur: Label = $PanneauStats/Colonne/EtatsJoueur
 @onready var boutons_combat: HBoxContainer = $PanneauStats/Colonne/BoutonsCombat
 @onready var bouton_fin_tour: Button = $PanneauStats/Colonne/BoutonsCombat/FinTour
@@ -59,6 +60,7 @@ func _ready() -> void:
 		_gestionnaire_combat.combat_commence.connect(_on_combat_commence)
 		_gestionnaire_combat.combat_termine.connect(_afficher_barre_sorts)
 		_gestionnaire_combat.ressources_joueur_modifiees.connect(maj_ressources_combat)
+		_gestionnaire_combat.tour_actif_change.connect(_maj_bouton_fin_tour)
 		bouton_fin_tour.pressed.connect(_on_bouton_fin_tour_presse)
 	_menu = get_tree().current_scene.get_node_or_null("MenuUI")
 	if _menu != null:
@@ -89,6 +91,10 @@ func _ready() -> void:
 			_on_placement_commence()
 		else:
 			_on_combat_commence()
+			# le combat est déjà en cours : reprendre l'état du bouton
+			# de fin de tour selon le combattant en cours
+			if _gestionnaire_combat.has_method("combattant_actif"):
+				_maj_bouton_fin_tour(_gestionnaire_combat.combattant_actif())
 
 func _connecter_navigation(menu: Node) -> void:
 	var sections: Dictionary = {
@@ -217,6 +223,15 @@ func _on_bouton_fin_tour_presse() -> void:
 func afficher_message_sort(message: String) -> void:
 	_label_action_actif().text = message
 
+# le bouton de fin de tour ne sert que pendant le tour du joueur
+# local : pendant le placement il reste affiché (il valide le
+# placement), pendant les tours des ennemis ou celui de l'adversaire
+# distant il disparaît
+func _maj_bouton_fin_tour(combattant: Node2D) -> void:
+	if _gestionnaire_combat == null or _gestionnaire_combat.en_placement:
+		return
+	bouton_fin_tour.visible = _gestionnaire_combat.en_combat and combattant != null and combattant == _joueur
+
 func _on_placement_commence() -> void:
 	_animer_visibilite_sorts(false)
 	_synchroniser_etats_joueur()
@@ -245,6 +260,19 @@ func maj_ressources_combat(pa: int, pa_max: int, pm: int, pm_max: int) -> void:
 	label_pa.text = "PA %d / %d" % [pa, pa_max]
 	label_pm.text = "PM %d / %d" % [pm, pm_max]
 	ligne_combat.visible = _gestionnaire_combat != null and _gestionnaire_combat.en_combat
+
+# compte à rebours du tour du joueur : effacé quand ce n'est pas son
+# tour, rouge pendant les cinq dernières secondes
+func maj_temps_tour(secondes: int) -> void:
+	if secondes < 0:
+		label_temps_tour.text = ""
+		label_temps_tour.remove_theme_color_override("font_color")
+		return
+	label_temps_tour.text = "%d s" % secondes
+	if secondes <= 5:
+		label_temps_tour.add_theme_color_override("font_color", Color("#e53935"))
+	else:
+		label_temps_tour.remove_theme_color_override("font_color")
 
 func maj_etats_joueur(texte: String) -> void:
 	if not is_node_ready():
@@ -306,6 +334,10 @@ func _retour_menu() -> void:
 			_on_placement_commence()
 		else:
 			_on_combat_commence()
+			# le combat est déjà en cours : reprendre l'état du bouton
+			# de fin de tour selon le combattant en cours
+			if _gestionnaire_combat.has_method("combattant_actif"):
+				_maj_bouton_fin_tour(_gestionnaire_combat.combattant_actif())
 	else:
 		_afficher_stats_combat(false)
 		_animer_visibilite_sorts(true)

@@ -4,6 +4,8 @@ extends CharacterBody2D
 @export var rayon_placement: int = 2
 @export var pa_max: int = 6
 @export var pm_max: int = 3
+# limite de temps d'un tour du joueur, en secondes (0 = pas de limite)
+@export var temps_tour: float = 30.0
 
 const LIGNES := {"sud": 0, "ouest": 1, "est": 2, "nord": 3}
 const FRAMES_REPOS := 4
@@ -37,6 +39,9 @@ var _visuel_charge := ""
 var _en_deplacement := false
 var _occupe := false
 var _tour_joueur := false
+var _chrono_tour_actif := false
+var _temps_tour_restant := 0.0
+var _derniere_seconde_tour := -1
 var _sort_selectionne := false
 var _sort_selectionne_id := "boule_de_feu"
 var _sort_preselectionne_combat := ""
@@ -198,6 +203,7 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		move_and_slide()
 		_animer(_deplacement_combat != null, delta)
+		_decompter_tour(delta)
 		return
 	var direction := target - global_position
 	if _en_deplacement and direction.length() <= 4.0:
@@ -322,6 +328,7 @@ func _cases_du_sort(portee_max: int = -1, portee_min: int = 1) -> Array[Vector2i
 
 func _on_placement_commence() -> void:
 	_tour_joueur = false
+	_arreter_chrono_tour()
 	_sort_selectionne = false
 	_arreter_exploration()
 	_sol = _combat_manager.sol_combat()
@@ -364,6 +371,7 @@ func _on_combat_commence() -> void:
 				_combat_manager.afficher_message("Ta vitesse te donne +1 PM.")
 			_maj_affichage()
 			_afficher_cases()
+			_demarrer_chrono_tour()
 			_combat_manager.afficher_message("Le duel commence : à toi de jouer !")
 			_combat_manager.definir_combattant_actif(self)
 			if _sort_preselectionne_combat != "":
@@ -394,6 +402,7 @@ func _on_combat_commence() -> void:
 		_combat_manager.afficher_message("Ta vitesse te donne +1 PM.")
 	_maj_affichage()
 	_afficher_cases()
+	_demarrer_chrono_tour()
 	if _sort_preselectionne_combat != "":
 		var sort_choisi := _sort_preselectionne_combat
 		_sort_preselectionne_combat = ""
@@ -401,6 +410,7 @@ func _on_combat_commence() -> void:
 
 func _on_combat_termine(_victoire: bool) -> void:
 	_tour_joueur = false
+	_arreter_chrono_tour()
 	_sort_selectionne = false
 	_cases_placement.clear()
 	_sol = get_tree().current_scene.get_node_or_null("ground") as TileMapLayer
@@ -658,11 +668,56 @@ func arreter_deplacement_combat() -> void:
 		_deplacement_combat = null
 	_occupe = false
 
+# ============================================================
+#  CHRONOMETRE DE TOUR
+# ============================================================
+
+# le tour du joueur est limité en temps (temps_tour secondes, 0 pour
+# désactiver) : à zéro, le tour se termine tout seul — en duel, la fin
+# part au réseau exactement comme une fin manuelle, un joueur absent
+# ne bloque plus son adversaire ; le décompte se met en pause pendant
+# les animations (déplacements, sorts) pour ne pas voler du temps de
+# jeu au joueur actif
+func _demarrer_chrono_tour() -> void:
+	_chrono_tour_actif = temps_tour > 0.0
+	_temps_tour_restant = temps_tour
+	_derniere_seconde_tour = -1
+	_maj_affichage_chrono()
+
+func _arreter_chrono_tour() -> void:
+	_chrono_tour_actif = false
+	_temps_tour_restant = 0.0
+	_derniere_seconde_tour = -1
+	if _combat_manager != null:
+		_combat_manager.maj_temps_tour(-1)
+
+func _decompter_tour(delta: float) -> void:
+	if not _chrono_tour_actif or not _tour_joueur or _occupe:
+		return
+	_temps_tour_restant -= delta
+	_maj_affichage_chrono()
+	if _temps_tour_restant <= 0.0:
+		_arreter_chrono_tour()
+		if _combat_manager != null:
+			_combat_manager.afficher_message("Temps écoulé : fin de ton tour !")
+		_fin_du_tour()
+
+# le HUD ne suit que les secondes entières : une mise à jour par
+# changement de seconde, pas à chaque frame
+func _maj_affichage_chrono() -> void:
+	if _combat_manager == null or not _chrono_tour_actif:
+		return
+	var seconde := maxi(int(ceilf(_temps_tour_restant)), 0)
+	if seconde != _derniere_seconde_tour:
+		_derniere_seconde_tour = seconde
+		_combat_manager.maj_temps_tour(seconde)
+
 func _fin_du_tour() -> void:
 	if _combat_manager == null or not _combat_manager.en_combat or not _tour_joueur or _occupe:
 		return
 	var numero: int = _combat_manager.numero_combat
 	_tour_joueur = false
+	_arreter_chrono_tour()
 	_sort_selectionne = false
 	if _overlay != null:
 		_overlay.effacer()
@@ -716,6 +771,7 @@ func _commencer_mon_tour(numero: int) -> void:
 		_combat_manager.afficher_message("Ta vitesse te donne +1 PM.")
 	_maj_affichage()
 	_afficher_cases()
+	_demarrer_chrono_tour()
 	# suivi des tours : les ennemis ont fini, c'est de nouveau à nous
 	_combat_manager.afficher_message("À toi de jouer !")
 	_combat_manager.definir_combattant_actif(self)

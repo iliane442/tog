@@ -6,6 +6,7 @@ const CATEGORIES := {
 	"ressources": {"libelle": "Ressources", "symbole": "▲", "couleur": Color("#b6d977"), "rayon": 3.5},
 	"pnj": {"libelle": "PNJ", "symbole": "•", "couleur": Color("#d5cdbc"), "rayon": 3.5},
 	"joueurs": {"libelle": "Joueurs", "symbole": "●", "couleur": Color("#b0c7fc"), "rayon": 4.0},
+	"groupe": {"libelle": "Groupe", "symbole": "G", "couleur": Color("#8de8e5"), "rayon": 6.0},
 	"butin": {"libelle": "Butin", "symbole": "×", "couleur": Color("#d6a9fa"), "rayon": 5.5},
 	"voyages": {"libelle": "Passages", "symbole": "›", "couleur": Color("#8ddce3"), "rayon": 5.5},
 	"marchands": {"libelle": "Marchands", "symbole": "B", "couleur": Color("#76deb2"), "rayon": 6.0},
@@ -126,6 +127,8 @@ func _actualiser_marqueurs() -> void:
 			var categorie := str(fiche.get("categorie", ""))
 			if not par_categorie.has(categorie) or _categories_masquees.has(categorie):
 				continue
+			if categorie == "joueurs" and fiche.get("groupe", false):
+				categorie = "groupe"
 			var style: Dictionary = CATEGORIES[categorie]
 			var texte := "%s · %s" % [fiche["nom"], fiche.get("role", style["libelle"])]
 			par_categorie[categorie].append({

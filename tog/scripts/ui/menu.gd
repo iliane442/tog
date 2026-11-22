@@ -49,6 +49,7 @@ var _tweens_cases: Dictionary = {}
 var _cache_icones_objets: Dictionary = {}
 @onready var option_type_inventaire: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/Categorie
 @onready var case_portables: CheckBox = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/CasePortables
+@onready var champ_recherche_sac: LineEdit = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/ChampRechercheSac
 @onready var btn_manger_fruit: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnMangerFruit
 @onready var btn_barre_objets: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnBarreObjets
 @onready var retour_accueil: Button = $Fenetre/RetourAccueil
@@ -283,6 +284,7 @@ func _ready() -> void:
 	$Fenetre/FermerPlanche.pressed.connect(fermer)
 	option_type_inventaire.item_selected.connect(_on_type_inventaire_selectionne)
 	case_portables.toggled.connect(_on_portables_toggle)
+	champ_recherche_sac.text_changed.connect(_on_recherche_sac)
 	btn_utiliser.pressed.connect(_on_bouton_utiliser)
 	btn_manger_fruit.pressed.connect(_on_bouton_manger_fruit)
 	btn_barre_objets.pressed.connect(_on_bouton_barre_objets)
@@ -300,6 +302,7 @@ func _ready() -> void:
 	outils_dev.visible = OS.is_debug_build()
 	outils_dev.get_node("BtnEffacerPerso").pressed.connect(_on_effacer_perso)
 	outils_dev.get_node("BtnBerry").pressed.connect(_on_debug_berry)
+	outils_dev.get_node("BtnDebugNiveau").pressed.connect(_on_debug_niveau_200)
 	for cle: String in lignes_stats:
 		var ligne_stat: Dictionary = lignes_stats[cle]
 		var bouton_ajouter: Button = ligne_stat["ajouter"] as Button
@@ -596,6 +599,12 @@ func _on_effacer_perso() -> void:
 	Coffres.reinitialiser()
 	get_tree().reload_current_scene()
 
+# debug : mène le perso au niveau 200 (montées de niveau normales :
+# points, vie, sorts débloqués inclus)
+func _on_debug_niveau_200() -> void:
+	Personnage.monter_niveau(200)
+	maj_personnage()
+
 const TAILLE_CASE_SORT := Vector2(56, 56)
 const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 
@@ -857,6 +866,11 @@ func _on_portables_toggle(coche: bool) -> void:
 	defilement_inventaire.scroll_vertical = 0
 	maj_grille()
 
+# frappe dans la recherche du sac : la grille suit immédiatement
+func _on_recherche_sac(_texte: String) -> void:
+	defilement_inventaire.scroll_vertical = 0
+	maj_grille()
+
 # true si l'objet est un équipement dont le niveau minimum est atteint
 # (restriction de classe ignorée : une autre classe peut le mettre en arme2)
 func _est_portable(id: String) -> bool:
@@ -883,6 +897,11 @@ func _rafraichir_sac() -> void:
 func _objet_visible(id: String, type_choisi: Variant) -> bool:
 	if filtre_portables and not _est_portable(id):
 		return false
+	# recherche par nom (cumulée aux filtres portables et catégorie) :
+	# insensible à la casse, sur le nom affiché de l'objet
+	var filtre_nom := champ_recherche_sac.text.strip_edges().to_lower()
+	if filtre_nom != "" and not Inventaire.nom_objet(id).to_lower().contains(filtre_nom):
+		return false
 	return type_choisi == null or Inventaire.details_objet(id).get("type", "") == type_choisi
 
 func maj_grille() -> void:
@@ -891,7 +910,12 @@ func maj_grille() -> void:
 	var ids: Array = Inventaire.objets.keys()
 	ids.sort_custom(func(id_a: String, id_b: String) -> bool:
 		return Inventaire.nom_objet(id_a).naturalnocasecmp_to(Inventaire.nom_objet(id_b)) < 0)
+	# le menu des catégories ne propose que les types des objets qui
+	# passent aussi la recherche par nom
+	var filtre_nom_types := champ_recherche_sac.text.strip_edges().to_lower()
 	for id: String in ids:
+		if filtre_nom_types != "" and not Inventaire.nom_objet(id).to_lower().contains(filtre_nom_types):
+			continue
 		var type_item := str(Inventaire.details_objet(id).get("type", ""))
 		if not types.has(type_item) and (not filtre_portables or _est_portable(id)):
 			types.append(type_item)
@@ -932,7 +956,12 @@ func maj_grille() -> void:
 	var grille_vide := grille.get_child_count() == 0
 	defilement_inventaire.visible = not grille_vide
 	label_vide.visible = grille_vide
-	label_vide.text = "Aucun équipement portable à ton niveau." if filtre_portables else "Inventaire vide"
+	if champ_recherche_sac.text.strip_edges() != "":
+		label_vide.text = "Aucun objet ne correspond aux filtres."
+	elif filtre_portables:
+		label_vide.text = "Aucun équipement portable à ton niveau."
+	else:
+		label_vide.text = "Inventaire vide"
 	_maj_monnaie_et_compteur()
 	var detail_disponible := false
 	if detail_id_courant != "" and Inventaire.objets.has(detail_id_courant):

@@ -1,5 +1,6 @@
 # equipages.gd — autoload : équipages (guildes de joueurs), alliances, flottes
-# Prévu pour un MMO : les membres sont des joueurs identifiés par leur nom,
+# Prévu pour un MMO : les membres sont des joueurs identifiés par le nom de
+# leur personnage (unique par compte), et les données vivent dans une base
 # et les données vivent dans une base SQLite dédiée (user://equipages.db),
 # séparée de la base de contenu glo.db réimportable. L'acceptation des
 # invitations et des alliances sera portée par le serveur quand le réseau
@@ -30,8 +31,9 @@ var disponible := false
 # compte connecté : l'équipage vit sur le serveur, l'état local n'est
 # plus lu ni écrit (les lectures servent le miroir reçu par le réseau)
 var en_ligne := false
-# serveur uniquement : pseudo du joueur à l'origine de l'action en
-# cours (les données identifient les joueurs par leur pseudo)
+# serveur uniquement : nom du personnage du joueur à l'origine de
+# l'action en cours (les données identifient les joueurs par le nom
+# de leur personnage)
 var joueur_courant := ""
 # dernier message serveur à afficher dans l'onglet Équipage (erreur
 # ou confirmation d'une opération en ligne)
@@ -66,8 +68,8 @@ func _exit_tree() -> void:
 # --- État local ---
 
 # peuple l'équipage du joueur local : capitaine ou simple membre
-# (le joueur local est identifié par le nom du personnage ; ce sera le
-# compte du serveur en MMO)
+# (le joueur est identifié par le nom de son personnage, en ligne
+# comme en solo)
 func _recharger_mon_equipage() -> void:
 	mon_equipage = {}
 	if en_ligne and joueur_courant == "":
@@ -95,13 +97,13 @@ func _recharger_mon_equipage() -> void:
 		"mon_rang": RANG_CAPITAINE if capitaine else str(ligne.get("mon_rang", RANG_MATELOT)),
 	}
 
-# le joueur local : son compte en ligne, son personnage en solo ; côté
-# serveur, le pseudo du joueur à l'origine de l'action en cours
+# le joueur local : le nom de son personnage, en ligne comme en solo —
+# côté serveur, celui du joueur à l'origine de l'action en cours
 func _joueur() -> String:
 	if joueur_courant != "":
 		return joueur_courant
-	if en_ligne:
-		return Reseau.pseudo
+	# l'identité des équipages est le nom du personnage (unique en
+	# ligne, vérifié à la création)
 	return Personnage.nom
 
 func suis_capitaine() -> bool:
@@ -527,16 +529,17 @@ func equipages_de_la_flotte_de(id_equipage: int) -> Array:
 		ids.append(int(ligne["equipage_id"]))
 	return ids
 
-# pseudos (comptes) de tous les membres d'un équipage, capitaine compris
-func pseudos_de_l_equipage(id_equipage: int) -> Array:
-	var pseudos: Array = []
+# noms de personnages de tous les membres d'un équipage, capitaine
+# compris — le serveur les résout en pairs en ligne pour diffuser
+func noms_de_l_equipage(id_equipage: int) -> Array:
+	var noms: Array = []
 	for ligne in _lire("SELECT capitaine FROM equipages WHERE id = %d;" % id_equipage):
-		pseudos.append(str(ligne["capitaine"]))
+		noms.append(str(ligne["capitaine"]))
 	for ligne in _lire(
 			"SELECT nom_joueur FROM equipages_membres WHERE equipage_id = %d;"
 			% id_equipage):
-		pseudos.append(str(ligne["nom_joueur"]))
-	return pseudos
+		noms.append(str(ligne["nom_joueur"]))
+	return noms
 
 # --- Journal de bord ---
 

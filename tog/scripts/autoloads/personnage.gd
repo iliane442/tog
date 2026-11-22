@@ -509,6 +509,10 @@ func utiliser_objet(id_objet: String) -> String:
 		sauvegarder()
 		return ""
 	var soin := int(effets.get("heal", 0))
+	# un consommable qui soigne ne s'utilise qu'en combat : pas de
+	# restauration gratuite entre deux rencontres
+	if soin > 0 and not _est_en_combat():
+		return "Cet objet ne s’utilise qu’en combat."
 	# clés de bonus durable (hors soin et durée de l'effet)
 	var bonus := {}
 	for cle in effets:
@@ -537,6 +541,14 @@ func points_recuperables() -> int:
 	for cle in caracteristiques:
 		total += maxi(int(points_depenses.get(cle, 0)), 0)
 	return total
+
+# un combat est-il en cours sur la scène courante (CombatManager actif)
+func _est_en_combat() -> bool:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return false
+	var combat := scene.get_node_or_null("CombatManager")
+	return combat != null and bool(combat.get("en_combat"))
 
 func _utiliser_parchemin_reattribution(id_objet: String) -> String:
 	var scene := get_tree().current_scene
@@ -729,6 +741,10 @@ func desequiper(emplacement: String) -> void:
 # Création définitive du personnage (depuis l'interface de création)
 func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 		id_profession: String = "", nouveau_sexe: String = "M") -> void:
+	# le nouveau perso ne garde rien de l'ancien : l'inventaire et
+	# l'historique des quêtes (fichiers locaux) repartent de zéro
+	Inventaire.reinitialiser()
+	QuestManager.reinitialiser()
 	nom = nouveau_nom
 	race_id = nouvelle_race
 	classe_id = nouvelle_classe
@@ -998,6 +1014,16 @@ func gagner_xp(montant: int) -> void:
 	if barre_changee:
 		barre_sorts_modifiee.emit()
 	caracteristiques_modifiees.emit()
+
+# debug : mène le perso au niveau indiqué d'un coup, en enchaînant les
+# montées de niveau normales (points, vie, sorts débloqués inclus) ;
+# sans effet si le niveau demandé n'excède pas le courant
+func monter_niveau(cible: int) -> void:
+	var garde := 0
+	while niveau < cible and garde < 1000:
+		gagner_xp(xp_prochain_niveau() - xp)
+		garde += 1
+	sauvegarder()
 
 # Dépense un point de caractéristique ; renvoie true si réussi
 func depenser_point(cle: String) -> bool:

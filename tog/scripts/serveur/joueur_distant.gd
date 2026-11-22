@@ -12,11 +12,14 @@ const COLONNES_MARCHE := 6
 const FPS_REPOS := 6.0
 const FPS_MARCHE := 10.0
 
-var pseudo := ""
+var pseudo := "":
+	set(valeur):
+		if pseudo == valeur:
+			return
+		pseudo = valeur
+		_actualiser_etiquette()
 var en_combat := false
 var visuel := VISUEL_DEFAUT
-# vrai si ce joueur fait partie de notre groupe : son pseudo se
-# colore en vert sur la map (jaune « en combat » prioritaire)
 var _marque_groupe := false
 
 var _sprite: Sprite2D
@@ -34,18 +37,19 @@ func _ready() -> void:
 	_appliquer_visuel()
 	add_child(_sprite)
 	_etiquette = Label.new()
-	maj_combat(en_combat)
-	_etiquette.position = Vector2(-40, -58)
-	_etiquette.custom_minimum_size = Vector2(128, 0)
+	_etiquette.position.y = -58.0
+	_etiquette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_etiquette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_etiquette.add_theme_font_size_override("font_size", 14)
 	_etiquette.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
 	_etiquette.add_theme_constant_override("shadow_offset_x", 1)
 	_etiquette.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_etiquette)
+	maj_combat(en_combat)
 
 func repere_minicarte() -> Dictionary:
-	return {"categorie": "joueurs", "nom": pseudo, "role": "Dans ton groupe" if _marque_groupe else "Joueur"}
+	return {"categorie": "joueurs", "nom": pseudo, "groupe": _marque_groupe,
+		"role": "Dans ton groupe" if _marque_groupe else "Joueur"}
 
 # anime l'avatar : planche de marche tant que le glissement vers la
 # dernière position reçue dure, puis retour au repos sur place
@@ -87,30 +91,29 @@ func _appliquer_visuel() -> void:
 func maj_combat(actif: bool) -> void:
 	en_combat = actif
 	visible = not actif
-	_appliquer_couleur_pseudo()
-	if _etiquette == null:
-		return
-	if actif:
-		_etiquette.text = "%s  (en combat)" % pseudo
-	else:
-		_etiquette.text = pseudo
+	_actualiser_etiquette()
 
 # marque (ou démarque) un compagnon de notre groupe de joueurs
 func marquer_groupe(actif: bool) -> void:
 	_marque_groupe = actif
-	_appliquer_couleur_pseudo()
+	_actualiser_etiquette()
 
-# couleur du pseudo : jaune en combat, vert pour un compagnon de
-# groupe, couleur du thème sinon
-func _appliquer_couleur_pseudo() -> void:
+func _actualiser_etiquette() -> void:
 	if _etiquette == null:
 		return
-	if en_combat:
-		_etiquette.add_theme_color_override("font_color", Color("#ffd166"))
-	elif _marque_groupe:
-		_etiquette.add_theme_color_override("font_color", Color("#7bd88f"))
+	_etiquette.text = ("[G] " if _marque_groupe else "") + pseudo
+	if _marque_groupe:
+		_etiquette.add_theme_color_override("font_color", Color("#8de8e5"))
+		_etiquette.add_theme_color_override("font_outline_color", Color("#142433"))
+		_etiquette.add_theme_constant_override("outline_size", 6)
+		_etiquette.add_theme_font_size_override("font_size", 17)
 	else:
 		_etiquette.remove_theme_color_override("font_color")
+		_etiquette.remove_theme_color_override("font_outline_color")
+		_etiquette.remove_theme_constant_override("outline_size")
+		_etiquette.add_theme_font_size_override("font_size", 14)
+	_etiquette.reset_size()
+	_etiquette.position.x = -_etiquette.size.x / 2.0
 
 # ligne de direction (sud, ouest, est, nord) d'un vecteur de déplacement
 func _ligne_cardinale(direction: Vector2) -> int:

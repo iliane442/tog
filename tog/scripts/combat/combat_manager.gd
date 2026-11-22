@@ -7,6 +7,9 @@ signal sort_demandee(id_sort: String)
 signal fin_tour_demandee
 signal placement_valide
 signal ressources_joueur_modifiees(pa: int, pa_max: int, pm: int, pm_max: int)
+# annonce qui joue : le HUD n'affiche le bouton de fin de tour que
+# pendant le tour du joueur local
+signal tour_actif_change(combattant: Node2D)
 
 const ARENE_COMBAT := preload("res://scripts/combat/arene_combat.gd")
 const POSITION_ARENE := Vector2(-16384, -16384)
@@ -348,6 +351,7 @@ func _rafraichir_roster() -> void:
 	if not en_combat:
 		return
 	for enfant in _liste_roster.get_children():
+		_liste_roster.remove_child(enfant)
 		enfant.queue_free()
 	_ajouter_titre_roster("Alliés")
 	var allies := [_joueur]
@@ -394,6 +398,8 @@ func _ajouter_ligne_roster(entite: Node2D) -> void:
 	if entite == _combattant_actif:
 		texte_nom = "▸ " + texte_nom
 		nom.add_theme_color_override("font_color", Color("#ffd166"))
+	elif entite is SCRIPT_ADVERSAIRE_PVP and entite.allie:
+		nom.add_theme_color_override("font_color", Color("#164a50"))
 	else:
 		nom.add_theme_color_override("font_color", Color.WHITE)
 	nom.text = texte_nom
@@ -513,6 +519,11 @@ func definir_combattant_actif(entite: Node2D) -> void:
 	_combattant_actif = entite if entite != null and is_instance_valid(entite) and en_combat else null
 	_marquer_tour(_combattant_actif)
 	_rafraichir_roster()
+	tour_actif_change.emit(_combattant_actif)
+
+# qui joue actuellement (null : personne, placement ou combat fini)
+func combattant_actif() -> Node2D:
+	return _combattant_actif
 
 # l'adversaire distant d'un duel (miroir dans notre arène)
 func adversaire_duel() -> Node2D:
@@ -815,6 +826,7 @@ func lancer_combat(groupe = null) -> void:
 	# jusqu'à la première annonce (le placement n'est le tour de personne)
 	_combattant_actif = null
 	_retirer_marqueur_tour()
+	tour_actif_change.emit(_combattant_actif)
 	defplier_roster()
 	_rafraichir_roster()
 	# monde partagé : annoncer le combat contre ce camp (lookup au
@@ -873,6 +885,7 @@ func lancer_duel(adversaire: SCRIPT_ADVERSAIRE_PVP, premier: bool) -> void:
 	# jusqu'à la première annonce
 	_combattant_actif = null
 	_retirer_marqueur_tour()
+	tour_actif_change.emit(_combattant_actif)
 	defplier_roster()
 	_rafraichir_roster()
 
@@ -899,6 +912,9 @@ func pvp_action_recue(evenement: Dictionary) -> void:
 		"fin_tour":
 			if adversaire != null:
 				adversaire.terminer_tour_distant()
+				# ses états se décomptent aussi chez nous : le roster
+				# du haut droit suit leurs durées réelles
+				terminer_tour(adversaire)
 	_mettre_a_jour_etiquette_etats()
 
 func _adversaire_valide() -> SCRIPT_ADVERSAIRE_PVP:
@@ -951,7 +967,10 @@ func pvp_appliquer_etats(cible: Node, etats: Array) -> void:
 			"duree": maxi(int(etat.get("duree", 1)), 1),
 			"valeur": float(etat.get("valeur", 0.0)),
 			"piles": maxi(int(etat.get("piles", 1)), 1),
-			"frais": cible == _joueur,
+			# frais pour notre joueur (il vient d'être appliqué) et
+			# pour un miroir : décompte à la fin du tour de son
+			# propriétaire, pas à la nôtre
+			"frais": cible == _joueur or cible.get("distante") == true,
 		}
 		if id_etat == 8 or id_etat == 9:
 			_deplacer_par_etat(cible, int(float(etat.get("valeur", 1.0))), id_etat == 8)
@@ -1020,6 +1039,11 @@ func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionar
 			_rejouer_sort_groupe(peer_exp, pseudo_exp, evenement)
 		"fin_tour":
 			afficher_message("%s termine son tour." % pseudo_exp)
+			# les états de son miroir se décomptent à sa fin de tour,
+			# comme côté propriétaire (le roster suit les durées)
+			var miroir_fin = _miroirs_groupe.get(peer_exp)
+			if is_instance_valid(miroir_fin):
+				terminer_tour(miroir_fin)
 		"tombe":
 			afficher_message("%s est a terre !" % pseudo_exp)
 			_retirer_miroir_groupe(peer_exp)
@@ -1073,6 +1097,7 @@ func _apparaitre_miroir_groupe(peer_id: int, nom_recu: String, visuel_recu: Stri
 	var miroir := SCRIPT_ADVERSAIRE_PVP.new()
 	miroir.nom = nom_recu
 	miroir.distante = true
+	miroir.allie = true
 	miroir.sante_modifiee.connect(_sur_sante_miroir)
 	get_tree().current_scene.add_child(miroir)
 	miroir.definir_visuel(visuel_recu)
@@ -1080,6 +1105,7 @@ func _apparaitre_miroir_groupe(peer_id: int, nom_recu: String, visuel_recu: Stri
 	if _joueur.has_method("ma_case"):
 		_placer_miroir_sur_case(miroir, _joueur.call("ma_case"))
 	_miroirs_groupe[peer_id] = miroir
+	_rafraichir_roster()
 	afficher_message("%s combat a tes cotes !" % nom_recu)
 	return miroir
 
@@ -1217,6 +1243,7 @@ func terminer_combat(victoire: bool) -> void:
 	# marqueur de tour disparaissent
 	_combattant_actif = null
 	_retirer_marqueur_tour()
+	tour_actif_change.emit(_combattant_actif)
 	_rafraichir_roster()
 	_retirer_tous_miroirs_groupe()
 	if pvp_actif:
@@ -1307,6 +1334,13 @@ func afficher_message(message: String) -> void:
 	if interface_hud != null and interface_hud.has_method("afficher_message_sort"):
 		interface_hud.call("afficher_message_sort", message)
 
+# transmet le compte à rebours du tour au HUD (label Timer de la ligne
+# de combat) ; secondes négatives = tour terminé, label effacé
+func maj_temps_tour(secondes: int) -> void:
+	var interface_hud: Node = get_tree().current_scene.find_child("HUD", true, false)
+	if interface_hud != null and interface_hud.has_method("maj_temps_tour"):
+		interface_hud.call("maj_temps_tour", secondes)
+
 func effacer_message() -> void:
 	var interface_hud: Node = get_tree().current_scene.find_child("HUD", true, false)
 	if interface_hud != null and interface_hud.has_method("afficher_message_sort"):
@@ -1347,7 +1381,10 @@ func appliquer_effets_sort(cible: Node, sort: Dictionary) -> Array:
 			piles = 1
 		elif bool(etat.get("empilable", false)):
 			piles = mini(piles + 1, int(etat.get("max_stacks", 1)))
-		par_cible[cle] = {"duree": maxi(int(effet.get("duree", 1)), 1), "valeur": float(effet.get("valeur", 0.0)), "piles": piles, "frais": cible == _joueur}
+		# un état posé sur un combattant distant (miroir) est frais : il
+		# ne se décompte qu'à la prochaine fin de tour de son
+		# propriétaire, exactement comme dans le client où il vit
+		par_cible[cle] = {"duree": maxi(int(effet.get("duree", 1)), 1), "valeur": float(effet.get("valeur", 0.0)), "piles": piles, "frais": cible == _joueur or cible.get("distante") == true}
 		_etats_actifs[cible.get_instance_id()] = par_cible
 		appliques.append({"id": id_etat,
 			"duree": maxi(int(effet.get("duree", 1)), 1),
