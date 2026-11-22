@@ -3481,6 +3481,96 @@ func maj_equipage(snapshot_json: String) -> void:
 		return
 	Equipages.appliquer_snapshot(snapshot_json)
 
+# --- Greffe de Vie : soin du bistouri hors combat, entre compagnons ---
+
+# le chirurgien opère un compagnon de groupe/équipage : le serveur
+# vérifie qu'ils sont bien ensemble, puis coud la cible elle-même
+func envoie_soin_groupe(nom_cible: String, fraction: float) -> void:
+	if mode != Mode.CLIENT or pseudo == "":
+		return
+	rpc_id(1, "demande_soin_groupe", nom_cible, fraction)
+
+# compagnons de groupe ou d'équipage visibles à portée d'un point :
+# les cibles possibles de la Greffe de Vie hors combat
+func compagnons_proches(reference: Vector2, rayon: float) -> Array:
+	var proches: Array = []
+	if multiplayer.is_server():
+		return proches
+	for peer_id in _avatars.keys():
+		var avatar = _avatars[peer_id]
+		if avatar == null or not is_instance_valid(avatar):
+			continue
+		if not est_dans_groupe(int(peer_id)) and not _est_de_mon_equipage(str(avatar.pseudo)):
+			continue
+		var position_avatar: Vector2 = avatar.global_position
+		if position_avatar.distance_to(reference) > rayon:
+			continue
+		proches.append({"nom": str(avatar.pseudo), "position": position_avatar})
+	return proches
+
+func _est_de_mon_equipage(nom: String) -> bool:
+	for membre in Equipages.liste_membres():
+		if str(membre.get("nom_joueur", "")).to_lower() == nom.to_lower():
+			return true
+	return false
+
+# RPC serveur : le chirurgien demande la greffe pour un compagnon
+@rpc("any_peer", "call_remote", "reliable")
+func demande_soin_groupe(nom_cible: String, fraction: float) -> void:
+	if not multiplayer.is_server():
+		return
+	var session := _pair_authentifie()
+	if session.is_empty():
+		return
+	var demandeur := int(session["peer_id"])
+	var cible := str(nom_cible).strip_edges()
+	var pair_cible := _peer_du_nom_personnage(cible)
+	if pair_cible == 0:
+		rpc_id(demandeur, "message_soin", "%s n'est pas en ligne." % cible)
+		return
+	if not _compagnon_du_pair(demandeur, pair_cible):
+		rpc_id(demandeur, "message_soin", "La Greffe de Vie ne recoud que ton groupe ou ton équipage.")
+		return
+	rpc_id(pair_cible, "soin_groupe_recu", clampf(fraction, 0.0, 1.0),
+		str(_sessions[demandeur].get("nom_personnage", "")))
+	rpc_id(demandeur, "message_soin", "Tu opères %s : la Greffe de Vie lui rend la moitié de ses PV." % cible)
+
+# vrais compagnons du demandeur : même groupe de chasse ou même équipage
+func _compagnon_du_pair(demandeur: int, cible: int) -> bool:
+	var groupe := _trouver_groupe(demandeur)
+	if not groupe.is_empty() and (groupe["membres"] as Dictionary).has(cible):
+		return true
+	Equipages.joueur_courant = str(_sessions[demandeur].get("nom_personnage", ""))
+	Equipages._recharger_mon_equipage()
+	var id_equipage := int(Equipages.mon_equipage.get("id", 0)) if not Equipages.mon_equipage.is_empty() else 0
+	Equipages.joueur_courant = ""
+	if id_equipage == 0:
+		return false
+	for nom_membre in Equipages.noms_de_l_equipage(id_equipage):
+		if _peer_du_nom_personnage(str(nom_membre)) == cible:
+			return true
+	return false
+
+# RPC client : la Greffe de Vie d'un compagnon te recoud
+@rpc("any_peer", "call_remote", "reliable")
+func soin_groupe_recu(fraction: float, nom_operateur: String) -> void:
+	if multiplayer.is_server():
+		return
+	var soin := maxi(roundi(float(Personnage.vie_max) * fraction), 1)
+	Personnage.soigner(soin)
+	var interface_hud := get_tree().current_scene.find_child("HUD", true, false) if get_tree().current_scene != null else null
+	if interface_hud != null:
+		interface_hud.afficher_message_sort("La Greffe de Vie de %s te rend %d PV." % [nom_operateur, soin])
+
+# RPC client : réponse du serveur à la demande de greffe
+@rpc("any_peer", "call_remote", "reliable")
+func message_soin(texte: String) -> void:
+	if multiplayer.is_server():
+		return
+	var interface_hud := get_tree().current_scene.find_child("HUD", true, false) if get_tree().current_scene != null else null
+	if interface_hud != null:
+		interface_hud.afficher_message_sort(texte)
+
 # --- HDV partagé (côté client) ---
 
 # toute action HDV en ligne passe par le serveur (vendre, retirer,

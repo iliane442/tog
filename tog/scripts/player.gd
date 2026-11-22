@@ -57,6 +57,13 @@ const ROOM_COUT_PV := 0.20
 # la Room vit ; le décompte suit les états posés (3 tours)
 var _room_cases: Array[Vector2i] = []
 var _room_tours_restants := 0
+# la Greffe de Vie (250) : pouvoir du bistouri hors combat — la moitié
+# des PV max rendue au chirurgien ou à un compagnon de groupe/équipage
+# juste à côté (le clic désigne le patient)
+const SORT_GREFFE_VIE := "250"
+const GREFFE_FRACTION := 0.5
+const GREFFE_RAYON := 96.0
+var _greffe_armee := false
 # tours restants au bouclier posé par une Égide (0 : aucun)
 var _tours_bouclier_restants := 0
 var _pa := 0
@@ -121,6 +128,11 @@ func utiliser_sort_hors_combat(id_sort: String) -> void:
 		return
 	var sort: Dictionary = Personnage.sorts[id_sort]
 	var interface_hud := get_tree().current_scene.find_child("HUD", true, false)
+	# la Greffe de Vie ne passe pas par le flux générique : hors combat,
+	# elle vise le chirurgien ou un compagnon proche, au clic
+	if id_sort == SORT_GREFFE_VIE:
+		_greffer_vie_hors_combat(interface_hud)
+		return
 	if str(sort.get("type", "")) == "heal":
 		var soin := absi(int(sort.get("degats", 0)))
 		if soin <= 0:
@@ -135,6 +147,43 @@ func utiliser_sort_hors_combat(id_sort: String) -> void:
 	_sort_preselectionne_combat = id_sort
 	if interface_hud != null:
 		interface_hud.afficher_message_sort("%s prêt — approche un ennemi pour l’utiliser." % str(sort.get("nom", "Sort")))
+
+# --- Greffe de Vie (pouvoir du bistouri hors combat) ---
+
+# arme le ciblage : le prochain clic gauche désigne le patient — le
+# chirurgien lui-même ou un compagnon de groupe/équipage à côté de lui
+func _greffer_vie_hors_combat(interface_hud: Node) -> void:
+	_greffe_armee = true
+	if interface_hud != null:
+		interface_hud.afficher_message_sort(
+			"Greffe de Vie : clique sur le blessé à opérer (toi ou un compagnon de groupe/équipage à côté de toi).")
+
+# le clic pendant le ciblage tranche : le plus proche du clic, entre le
+# chirurgien et ses compagnons proches, se fait recoudre
+func _resoudre_greffe() -> void:
+	_greffe_armee = false
+	var point := get_global_mouse_position()
+	var interface_hud := get_tree().current_scene.find_child("HUD", true, false) if get_tree().current_scene != null else null
+	var cible := ""
+	var distance_cible := INF
+	for compagnon in Reseau.compagnons_proches(point, GREFFE_RAYON):
+		var position_compagnon: Vector2 = compagnon["position"]
+		if position_compagnon.distance_to(point) < distance_cible:
+			distance_cible = position_compagnon.distance_to(point)
+			cible = str(compagnon["nom"])
+	var distance_soi := global_position.distance_to(point)
+	if (cible == "" or distance_soi < distance_cible) and distance_soi <= GREFFE_RAYON:
+		var soin := maxi(roundi(float(Personnage.vie_max) * GREFFE_FRACTION), 1)
+		Personnage.soigner(soin)
+		_maj_affichage()
+		if interface_hud != null:
+			interface_hud.afficher_message_sort("Greffe de Vie : +%d PV" % soin)
+		return
+	if cible != "":
+		Reseau.envoie_soin_groupe(cible, GREFFE_FRACTION)
+		return
+	if interface_hud != null:
+		interface_hud.afficher_message_sort("Personne à opérer par ici.")
 
 func _id_technique_race() -> String:
 	return str(Personnage.races.get(Personnage.race_id, {}).get("id_technique", RACE_DEFAUT))
@@ -157,9 +206,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
 	if _combat_manager != null and _combat_manager.en_combat:
+		_greffe_armee = false
 		_gerer_clic_combat()
-	else:
-		_aller_vers(get_global_mouse_position())
+		return
+	if _greffe_armee:
+		_resoudre_greffe()
+		return
+	_aller_vers(get_global_mouse_position())
 
 func _preparer_navigation() -> void:
 	if _sol == null:
@@ -499,6 +552,11 @@ func _selectionner_sort(id_sort: String) -> void:
 		_combat_manager.afficher_message("Le silence t’empêche de lancer un sort.")
 		return
 	if id_sort != "boule_de_feu" and not Personnage.sorts.has(id_sort):
+		return
+	# la Greffe de Vie attend hors des affrontements : le bistouri y
+	# recoud les plaies, jamais en plein combat
+	if id_sort == SORT_GREFFE_VIE:
+		_combat_manager.afficher_message("La Greffe de Vie ne s’emploie que hors combat.")
 		return
 	var sort: Dictionary = Personnage.sorts.get(id_sort, {})
 	if int(_recharges_sorts.get(id_sort, 0)) > 0:
