@@ -772,6 +772,7 @@ func maj_sorts() -> void:
 	# sans lui, l'onglet n'existe pas et la classe occupe tout
 	var vue_fruit := _vue_sorts == "fruit" and Personnage.fruit_id != ""
 	if vue_fruit:
+		_construire_fiche_fruit(ids_fruit, verrous_fruit)
 		if ids_fruit.is_empty() and verrous_fruit.is_empty():
 			var vide_fruit := Label.new()
 			vide_fruit.text = "Aucun pouvoir n'est encore débloqué."
@@ -801,6 +802,47 @@ func _ajouter_titre_section_sorts(texte: String) -> void:
 	titre_section.theme_type_variation = "Ribbon"
 	titre_section.add_theme_font_size_override("font_size", 24)
 	liste_sorts.add_child(titre_section)
+
+# fiche du fruit mangé, en tête de son onglet : nom, niveau, expérience
+# vers le prochain palier et pouvoirs débloqués
+func _construire_fiche_fruit(ids_fruit: Array[String], verrous_fruit: Array[Dictionary]) -> void:
+	var encadre := PanelContainer.new()
+	encadre.add_theme_stylebox_override("panel", FICHE_MENU)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 6)
+	var titre := Label.new()
+	titre.text = Personnage.nom_fruit()
+	titre.add_theme_font_size_override("font_size", 22)
+	colonne.add_child(titre)
+	var niveau := Personnage.niveau_fruit()
+	var seuil_actuel := Personnage.seuil_xp_fruit(niveau)
+	var seuil_suivant := Personnage.seuil_xp_fruit(niveau + 1)
+	var prochain := -1
+	for verrou in verrous_fruit:
+		var niveau_verrou := int(verrou.get("niveau", 0))
+		if prochain < 0 or niveau_verrou < prochain:
+			prochain = niveau_verrou
+	var texte_infos := "Niveau du fruit : %d   •   Pouvoirs débloqués : %d / %d" % [
+		niveau, ids_fruit.size(), ids_fruit.size() + verrous_fruit.size()]
+	if prochain >= 0:
+		texte_infos += "   •   prochain pouvoir au niveau %d du fruit" % prochain
+	var infos := Label.new()
+	infos.text = texte_infos
+	colonne.add_child(infos)
+# l'expérience se lit dans le palier courant : ce que le fruit a
+# gagné depuis son dernier niveau sur ce qu'il lui faut pour le
+# prochain
+	var xp_palier := clampi(Personnage.fruit_xp - seuil_actuel, 0, maxi(seuil_suivant - seuil_actuel, 1))
+	var texte_xp := Label.new()
+	texte_xp.text = "XP du fruit : %d / %d vers le niveau %d" % [xp_palier, seuil_suivant - seuil_actuel, niveau + 1]
+	colonne.add_child(texte_xp)
+	var barre := ProgressBar.new()
+	barre.max_value = maxi(seuil_suivant - seuil_actuel, 1)
+	barre.value = xp_palier
+	barre.show_percentage = false
+	colonne.add_child(barre)
+	encadre.add_child(colonne)
+	liste_sorts.add_child(encadre)
 
 # la rangée de sous-onglets des sorts : classe d'un côté, pouvoirs du
 # fruit mangé de l'autre ; elle n'apparaît qu'avec un fruit dans

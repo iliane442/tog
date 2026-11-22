@@ -352,6 +352,21 @@ func niveau_fruit() -> int:
 		niveau += 1
 	return niveau
 
+# nom commercial du fruit mangé (table des items) ; vide sans fruit
+func nom_fruit() -> String:
+	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
+		return ""
+	var lignes := BaseDonnees.lire("SELECT name FROM items WHERE id = %d;" % fruit_id.to_int())
+	if lignes.is_empty():
+		return ""
+	return str(lignes[0]["name"])
+
+# seuil cumulé d'XP qu'un niveau de fruit exige (montée en niveau de
+# niveau_fruit) : le niveau 0 ne demande rien, le niveau 1 demande
+# XP_FRUIT_PAR_PALIER, le 2 en exige le triple cumulé, etc.
+func seuil_xp_fruit(niveau: int) -> int:
+	return XP_FRUIT_PAR_PALIER * niveau * (niveau + 1) / 2
+
 # ids des pouvoirs du fruit du démon mangé (table `fruit_skills`)
 # débloqués au niveau de fruit donné
 func _sorts_fruit_niveau(niveau: int) -> Array[String]:
