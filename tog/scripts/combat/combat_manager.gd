@@ -13,6 +13,8 @@ signal ressources_joueur_modifiees(pa: int, pa_max: int, pm: int, pm_max: int)
 signal tour_actif_change(combattant: Node2D)
 
 const ARENE_COMBAT := preload("res://scripts/combat/arene_combat.gd")
+const ANIMATION_SORT := preload("res://scripts/combat/animation_sort.gd")
+const VISUELS_SORTS := preload("res://scripts/combat/visuels_sorts.gd")
 const POSITION_ARENE := Vector2(-16384, -16384)
 # difficulté des combats : PV et dégâts des ennemis sont multipliés à
 # l'ouverture de l'arène (ennemis classiques uniquement — les duels PvP
@@ -32,8 +34,11 @@ var en_placement := false
 # cases de la salle d'opération active (Room du bistouri) : ses
 # occupants alliés frappent plus fort et encaissent mieux, sans état
 var cases_salle: Array[Vector2i] = []
+var conclusion_en_cours := false
 var numero_combat := 0
 var _arene: ARENE_COMBAT
+var _dernier_sort_anime: ANIMATION_SORT
+var _planches_sorts := {}
 var _camera_exploration: Camera2D
 var _positions_exploration := {}
 var _joueur: Node
@@ -197,6 +202,35 @@ func _cycle_cible(sens: int) -> void:
 
 func sol_combat() -> TileMapLayer:
 	return _arene.sol if _arene != null else null
+
+func jouer_animation_sort(id_sort: String, lanceur: Node2D, cible: Node2D, touche := true) -> void:
+	if _arene == null or not is_instance_valid(cible) or id_sort.is_empty():
+		return
+	var identifiant := id_sort.to_int() if id_sort.is_valid_int() else -1
+	if id_sort == "boule_de_feu":
+		identifiant = 0
+	var sort: Dictionary = Personnage.sorts.get(id_sort, {})
+	var profil := VISUELS_SORTS.pour_sort(identifiant, str(sort.get("type", "attack")),
+		int(sort.get("portee", 1)))
+	var details := _planche_sort(identifiant) if touche else {}
+	var animation := ANIMATION_SORT.new()
+	_arene.add_child(animation)
+	animation.jouer(identifiant, profil, lanceur if is_instance_valid(lanceur) else cible,
+		cible, details, touche)
+	if touche:
+		_dernier_sort_anime = animation
+
+func _planche_sort(id_sort: int) -> Dictionary:
+	if not _planches_sorts.has(id_sort):
+		var details := {}
+		if BaseDonnees.disponible and id_sort >= 0:
+			var lignes := BaseDonnees.lire(
+				"SELECT sprite_sheet_path, frame_count, frame_delay_ms, loop, frame_width, frame_height"
+				+ " FROM animations WHERE entity_type = 'skill' AND entity_id = %d;" % id_sort)
+			if not lignes.is_empty():
+				details = lignes[0]
+		_planches_sorts[id_sort] = details
+	return _planches_sorts[id_sort]
 
 func case_sous_point(point: Vector2, viser_ennemi: bool) -> Vector2i:
 	var sol := sol_combat()
@@ -912,9 +946,7 @@ func pvp_action_recue(evenement: Dictionary) -> void:
 			var sol := sol_combat()
 			if adversaire != null and sol != null:
 				adversaire.rejouer_trajet(evenement.get("trajet", []), sol)
-		"manque":
-			afficher_message("%s rate son sort." % _nom_adversaire())
-		"sort":
+		"manque", "sort":
 			_rejouer_sort_distant(evenement)
 		"fin_tour":
 			if adversaire != null:
@@ -938,12 +970,16 @@ func _nom_adversaire() -> String:
 # le sort a été entièrement résolu côté lanceur : on applique ici les
 # conséquences sur la victime locale (nous ou notre miroir de lui)
 func _rejouer_sort_distant(evenement: Dictionary) -> void:
+	var touche := str(evenement.get("t", "sort")) != "manque"
+	if not touche:
+		afficher_message("%s rate son sort." % _nom_adversaire())
 	var cible_moi := str(evenement.get("cible", "adv")) == "adv"
 	var cible: Node = _joueur if cible_moi else _adversaire_valide()
 	if cible == null or not is_instance_valid(cible):
 		return
-	if _joueur != null and str(evenement.get("id", "")) != "":
-		_joueur.call("_jouer_effet_sort", str(evenement.get("id", "")), cible)
+	jouer_animation_sort(str(evenement.get("id", "")), _adversaire_valide(), cible as Node2D, touche)
+	if not touche:
+		return
 	var soin := int(evenement.get("soin", 0))
 	if soin > 0:
 		if cible == _joueur:
@@ -1040,9 +1076,7 @@ func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionar
 			var sol := sol_combat()
 			if is_instance_valid(miroir_depl) and sol != null:
 				miroir_depl.rejouer_trajet(evenement.get("trajet", []), sol)
-		"manque":
-			afficher_message("%s rate son sort." % pseudo_exp)
-		"sort":
+		"manque", "sort":
 			_rejouer_sort_groupe(peer_exp, pseudo_exp, evenement)
 		"fin_tour":
 			afficher_message("%s termine son tour." % pseudo_exp)
@@ -1056,20 +1090,26 @@ func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionar
 			_retirer_miroir_groupe(peer_exp)
 	_mettre_a_jour_etiquette_etats()
 
-# un sort de coequipier : soin sur lui-meme, attaque sur l'ennemi partage
+# Un sort de coéquipier cible son miroir ou l'ennemi partagé.
 func _rejouer_sort_groupe(peer_exp: int, pseudo_exp: String, evenement: Dictionary) -> void:
+	var touche := str(evenement.get("t", "sort")) != "manque"
+	if not touche:
+		afficher_message("%s rate son sort." % pseudo_exp)
+	var id_sort := str(evenement.get("id", ""))
+	var lanceur := _miroirs_groupe.get(peer_exp) as Node2D
 	if str(evenement.get("cible", "")) == "soi":
-		var miroir_soi = _miroirs_groupe.get(peer_exp)
-		if is_instance_valid(miroir_soi):
-			if _joueur != null and str(evenement.get("id", "")) != "":
-				_joueur.call("_jouer_effet_sort", str(evenement.get("id", "")), miroir_soi)
+		if is_instance_valid(lanceur):
+			jouer_animation_sort(id_sort, lanceur, lanceur, touche)
+			if not touche:
+				return
 			var soin := int(evenement.get("soin", 0))
 			if soin > 0:
-				miroir_soi.soigner(soin)
+				lanceur.soigner(soin)
 			var etats_soi: Array = evenement.get("etats", [])
 			if not etats_soi.is_empty():
-				pvp_appliquer_etats(miroir_soi, etats_soi)
-		afficher_message("%s se soigne." % pseudo_exp)
+				pvp_appliquer_etats(lanceur, etats_soi)
+		if touche:
+			afficher_message("%s lance %s." % [pseudo_exp, str(evenement.get("nom", "un sort"))])
 		return
 	# attaque : le nom du node désigne le même ennemi chez tous les
 	# coéquipiers (grille et scène identiques) ; l'index ne reste
@@ -1089,8 +1129,9 @@ func _rejouer_sort_groupe(peer_exp: int, pseudo_exp: String, evenement: Dictiona
 			cible = ennemis[index]
 	if cible == null:
 		return
-	if _joueur != null and str(evenement.get("id", "")) != "":
-		_joueur.call("_jouer_effet_sort", str(evenement.get("id", "")), cible)
+	jouer_animation_sort(id_sort, lanceur, cible as Node2D, touche)
+	if not touche:
+		return
 	var degats := int(evenement.get("degats", 0))
 	if degats > 0 and cible.has_method("recevoir_degats"):
 		cible.recevoir_degats(degats)
@@ -1206,12 +1247,30 @@ func ennemi_vaincu(ennemi: Node) -> void:
 	if not en_combat:
 		_maj_propositions()
 	if en_combat and ennemis_actifs().is_empty():
-		terminer_combat(true)
+		terminer_sur_impact(true, ennemi)
+
+func terminer_sur_impact(victoire: bool, cible: Node) -> void:
+	if not en_combat or conclusion_en_cours:
+		return
+	var animation := _dernier_sort_anime
+	if is_instance_valid(animation) and not animation.is_queued_for_deletion() \
+			and animation.cible_id == cible.get_instance_id():
+		conclusion_en_cours = true
+		definir_combattant_actif(null)
+		var numero := numero_combat
+		await animation.tree_exited
+		if not conclusion_en_cours or numero != numero_combat or not is_inside_tree():
+			return
+	terminer_combat(victoire)
 
 func _ouvrir_arene(index_plan: int) -> void:
 	_camera_exploration = get_viewport().get_camera_2d()
 	_arene = ARENE_COMBAT.new()
 	_arene.index_plan = index_plan
+	var terrain := get_tree().current_scene.get_node_or_null("TerrainZone")
+	if terrain != null:
+		_arene.dallage = terrain.dallage
+		_arene.maconnerie = terrain.maconnerie
 	_arene.position = POSITION_ARENE
 	get_tree().current_scene.add_child(_arene)
 
@@ -1254,6 +1313,8 @@ func valider_placement() -> void:
 func terminer_combat(victoire: bool, fuite := false) -> void:
 	if not en_combat:
 		return
+	conclusion_en_cours = false
+	_dernier_sort_anime = null
 	en_combat = false
 	en_placement = false
 	# plus de combat : la salle d'opération, si elle restait dressée, ferme

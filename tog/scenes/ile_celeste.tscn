@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_celeste.tscn" id="FerryCeleste"]
 [ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
+[ext_resource type="Script" path="res://scripts/world/passage_zone.gd" id="Passage"]
 [ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-large-house-v0.png" id="Sanctuaire"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-small-house-v0.png" id="Hameau"]
@@ -17,17 +18,25 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
-[ext_resource type="Texture2D" path="res://assets/sprites/iles/pell.png" id="sprite_ile_pell"]
-[ext_resource type="Texture2D" path="res://assets/sprites/iles/pilote_du_chenal.png" id="sprite_ile_pilote"]
-[ext_resource type="Texture2D" path="res://assets/sprites/iles/oiseau_des_neiges.png" id="sprite_ile_oiseau"]
-[ext_resource type="Texture2D" path="res://assets/sprites/iles/cerf_zou.png" id="sprite_ile_cerf"]
-[ext_resource type="Texture2D" path="res://assets/sprites/iles/mercenaire_alabasta.png" id="sprite_ile_mercenaire"]
-[ext_resource type="Texture2D" path="res://assets/sprites/iles/chasseur_baroque.png" id="sprite_ile_chasseur"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/conis.png" id="Conis"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/pagaya.png" id="Pagaya"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/amazone.png" id="Amazone"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/gan_fall.png" id="GanFall"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/wiper.png" id="Wiper"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/kamakiri.png" id="Kamakiri"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/nola.png" id="Nola"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/aigle_des_nuees.png" id="AigleNuees"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/aigle_du_large.png" id="AigleLarge"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/cerf_des_hauteurs.png" id="Cerf"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/porte_du_tonnerre.png" id="PorteDuTonnerre"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="Rochers"]
 
 [ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
+
+[sub_resource type="RectangleShape2D" id="RayonTonnerre"]
+size = Vector2(116, 50)
 
 [node name="IleCeleste" instance=ExtResource("Zone")]
 
@@ -81,23 +90,47 @@ emprises_decors = Array[Rect2i]([])
 position = Vector2(1568.0, 2144.0)
 
 [node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
-text = "Île Céleste"
+text = "Skypiea"
 
 [node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
-reperes = Dictionary[Vector2, String]({Vector2(1568.0, 2144.0): "Port Céleste", Vector2(1696.0, 608.0): "Sanctuaire du Faucon", Vector2(1504.0, 1056.0): "Escalier des Vents", Vector2(608.0, 1376.0): "Forêt suspendue", Vector2(2528.0, 1248.0): "Bassins des Nuées"})
+reperes = Dictionary[Vector2, String]({Vector2(1568.0, 2144.0): "Plage des Anges", Vector2(1696.0, 608.0): "Sanctuaire de Shandora", Vector2(1504.0, 1056.0): "Sentier d’Upper Yard", Vector2(608.0, 1376.0): "Forêt suspendue", Vector2(2528.0, 1248.0): "Bassins des Nuées"})
 
 [node name="DepuisAlabasta" type="Marker2D" parent="Arrivees"]
 position = Vector2(1568.0, 2144.0)
 
+[node name="DepuisSanctuaireTonnerre" type="Marker2D" parent="Arrivees"]
+position = Vector2(2336, 864)
 
-[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+[node name="Pagaya" parent="." instance=ExtResource("MarchandPnj")]
 position = Vector2(1648, 2144)
-[node name="CapitaineVolige" parent="." instance=ExtResource("FerryCeleste")]
+largeur_zone_clic = 88.0
+hauteur_zone_clic = 112.0
+
+[node name="NomMarchand" parent="Pagaya" index="0"]
+text = "Pagaya"
+
+[node name="Sprite2D" parent="Pagaya" index="1"]
+texture = ExtResource("Pagaya")
+texture_filter = 1
+
+[node name="Amazone" parent="." instance=ExtResource("FerryCeleste")]
 position = Vector2(1760.0, 2144.0)
-paroles = "Redescendre sur Alabasta ? Le Levant des Sables tient des vents contraires après midi. Pell veillera sur ton retour : aucun Roc ne traverse son regard sans y laisser une plume. Bon voyage, moussaillon des cimes."
+largeur_zone_clic = 88.0
+hauteur_zone_clic = 112.0
+nom_affiche = "Amazone"
+paroles = "Je tiens le registre des voyageurs. Tu redescends vers Alabasta ? La mer Blanche est calme. Dis-moi quand le bateau est prêt, je te montrerai le passage."
 destination = "res://scenes/alabasta.tscn"
 arrivee = &"DepuisIleCeleste"
 libelle_traversee = "Embarquer pour Alabasta"
+
+[node name="Nom" parent="Amazone" index="0"]
+position = Vector2(-90, -98)
+text = "Amazone"
+
+[node name="Sprite2D" parent="Amazone" index="1"]
+texture_filter = 1
+position = Vector2(0, -44)
+texture = ExtResource("Amazone")
 
 [node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
 position = Vector2(1120.0, 2420.0)
@@ -106,25 +139,26 @@ offset = Vector2(0, -250.0)
 scale = Vector2(0.7, 0.7)
 z_index = -3
 
-[node name="Pell" type="Node2D" parent="." groups=["pnj_fushia"]]
+[node name="GanFall" type="Node2D" parent="." groups=["pnj_fushia"]]
 position = Vector2(1696.0, 608.0)
 script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String]([])
-nom_affiche = "Pell"
-paroles = "Depuis la chute de Crocodile, je veille sur ce qui reste de Baroque Works : leurs pillards ont fui vers les cimes. Cette île flottante au-dessus d'Alabasta recueille les blessures du désert — le sanctuaire du Faucon y soigne ses ailes. Cueille ce que la terre céleste offre, et garde ton Log Pose pointé vers le vrai nord."
+nom_affiche = "Gan Fall"
+paroles = "Depuis sa défaite contre Luffy, Ener s’est retranché au Sanctuaire du Tonnerre, à l’est d’Upper Yard. J’ai vu deux groupes de sentinelles alimenter le sceau de la salle du trône. Neutralise les deux, puis rejoins Ener avant qu’il ne menace à nouveau Shandora."
 
-[node name="Sprite2D" type="Sprite2D" parent="Pell"]
-position = Vector2(0, -48)
-texture = ExtResource("sprite_ile_pell")
+[node name="Sprite2D" type="Sprite2D" parent="GanFall"]
+texture_filter = 1
+position = Vector2(0, -44)
+texture = ExtResource("GanFall")
 
-[node name="Area2D" type="Area2D" parent="Pell"]
+[node name="Area2D" type="Area2D" parent="GanFall"]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Pell/Area2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GanFall/Area2D"]
 shape = SubResource("RayonDialogue")
 
-[node name="Nom" type="Label" parent="Pell"]
+[node name="Nom" type="Label" parent="GanFall"]
 offset_left = -135.0
 offset_top = -117.0
 offset_right = 135.0
@@ -134,28 +168,29 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Pell"
+text = "Gan Fall"
 horizontal_alignment = 1
 
-[node name="PiloteDuChenal" type="Node2D" parent="." groups=["pnj_fushia"]]
+[node name="Conis" type="Node2D" parent="." groups=["pnj_fushia"]]
 position = Vector2(1376.0, 2144.0)
 script = ExtResource("PNJ")
 largeur_zone_clic = 86.0
 hauteur_zone_clic = 111.0
 chain_quetes = Array[String]([])
-nom_affiche = "Pilote du Chenal"
-paroles = "Le Chenal des Célestes ne pardonne pas : ton navire montera par l'Escalier des Vents, entre deux remous. Redescends par temps clair — et méfie-toi des Rocs, leurs serres confondent les sloops avec des goélands."
+nom_affiche = "Conis"
+paroles = "Bienvenue sur la plage des Anges ! Je m’appelle Conis. Mon père, Pagaya, est au quai si tu as besoin de provisions. Prends le chemin qui monte vers Upper Yard pour rejoindre Gan Fall. Il a vu la foudre frapper près du Sanctuaire du Tonnerre."
 
-[node name="Sprite2D" type="Sprite2D" parent="PiloteDuChenal"]
-position = Vector2(0, -48)
-texture = ExtResource("sprite_ile_pilote")
+[node name="Sprite2D" type="Sprite2D" parent="Conis"]
+texture_filter = 1
+position = Vector2(0, -44)
+texture = ExtResource("Conis")
 
-[node name="Area2D" type="Area2D" parent="PiloteDuChenal"]
+[node name="Area2D" type="Area2D" parent="Conis"]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="PiloteDuChenal/Area2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Conis/Area2D"]
 shape = SubResource("RayonDialogue")
 
-[node name="Nom" type="Label" parent="PiloteDuChenal"]
+[node name="Nom" type="Label" parent="Conis"]
 offset_left = -135.0
 offset_top = -117.0
 offset_right = 135.0
@@ -165,14 +200,14 @@ theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
 theme_override_constants/outline_size = 7
 theme_override_font_sizes/font_size = 19
-text = "Pilote du Chenal"
+text = "Conis"
 horizontal_alignment = 1
 
 [node name="PanneauDuPort" type="Node2D" parent="." groups=["points_fushia"]]
 position = Vector2(1696.0, 2208.0)
 script = ExtResource("Recolte")
-titre = "Port Céleste"
-description = "« Port Céleste, île du Levant des Sables. L'Escalier des Vents est à jour. Interdiction de nourrir les Rocs — ils confondent déjà les sloops avec des goélands. »"
+titre = "Plage des Anges"
+description = "« Bienvenue à Skypiea. Suivez le sentier vers Upper Yard. Pour un départ sur la mer Blanche, faites enregistrer votre bateau auprès d’Amazone. »"
 quete = ""
 objet = ""
 quantite = 1
@@ -252,8 +287,8 @@ horizontal_alignment = 1
 [node name="FibresDuPlateau" type="Node2D" parent="." groups=["points_fushia"]]
 position = Vector2(1376.0, 672.0)
 script = ExtResource("Recolte")
-titre = "Fibres du plateau du Faucon"
-description = "Les touffes de coco céleste s'accrochent aux corniches — Pell tresse leurs fibres pour ses bandages d'aile."
+titre = "Fibres d’Upper Yard"
+description = "De hautes herbes poussent entre les pierres. Pagaya utilise ces fibres pour réparer les voiles qui prennent le vent de la mer Blanche."
 quete = ""
 objet = "793"
 quantite = 2
@@ -287,7 +322,7 @@ mob_id = 16
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 36
 groupe = "rapaces_celeste"
-texture_personnalisee = ExtResource("sprite_ile_oiseau")
+texture_personnalisee = ExtResource("AigleNuees")
 
 [node name="AigleDuLarge" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(672.0, 1824.0)
@@ -300,7 +335,7 @@ mob_id = 16
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 36
 groupe = "rapaces_celeste"
-texture_personnalisee = ExtResource("sprite_ile_oiseau")
+texture_personnalisee = ExtResource("AigleLarge")
 
 [node name="CerfDuPlateau" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1120.0, 1184.0)
@@ -313,11 +348,11 @@ mob_id = 21
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 36
 groupe = "faune_celeste"
-texture_personnalisee = ExtResource("sprite_ile_cerf")
+texture_personnalisee = ExtResource("Cerf")
 
-[node name="PillardBaroque" parent="Rencontres" instance=ExtResource("Ennemi")]
+[node name="Kamakiri" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2144.0, 992.0)
-nom = "Pillard baroque égaré"
+nom = "Kamakiri"
 pv_max = 600
 degats_attaque = 35
 portee_attaque = 1
@@ -325,12 +360,12 @@ pm_max = 3
 mob_id = 3
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 37
-groupe = "baroque_celeste"
-texture_personnalisee = ExtResource("sprite_ile_mercenaire")
+groupe = "entrainement_shandia"
+texture_personnalisee = ExtResource("Kamakiri")
 
-[node name="ChasseurBaroque" parent="Rencontres" instance=ExtResource("Ennemi")]
+[node name="Wiper" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1184.0, 1696.0)
-nom = "Chasseur de Baroque Works"
+nom = "Wiper"
 pv_max = 660
 degats_attaque = 38
 portee_attaque = 2
@@ -338,12 +373,12 @@ pm_max = 3
 mob_id = 3
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 38
-groupe = "baroque_celeste"
-texture_personnalisee = ExtResource("sprite_ile_chasseur")
+groupe = "entrainement_shandia"
+texture_personnalisee = ExtResource("Wiper")
 
-[node name="RocDesNuees" parent="Rencontres" instance=ExtResource("Ennemi")]
+[node name="Nola" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(1888.0, 480.0)
-nom = "Roc des Nuées"
+nom = "Nola"
 pv_max = 1200
 degats_attaque = 44
 portee_attaque = 2
@@ -352,9 +387,40 @@ mob_id = 0
 quetes_a_progresser = Array[String]([])
 niveau_personnalise = 40
 groupe = ""
-texture_personnalisee = ExtResource("sprite_ile_oiseau")
+texture_personnalisee = ExtResource("Nola")
 attaques_par_tour = 2
-[node name="SanctuaireDuFaucon" type="Sprite2D" parent="Paysage"]
+
+[node name="VersSanctuaireTonnerre" type="Area2D" parent="."]
+position = Vector2(2336, 800)
+collision_layer = 0
+script = ExtResource("Passage")
+destination = "res://scenes/donjon_ener.tscn"
+arrivee = &"DepuisSkypiea"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VersSanctuaireTonnerre"]
+shape = SubResource("RayonTonnerre")
+
+[node name="Etiquette" type="Label" parent="VersSanctuaireTonnerre"]
+z_index = 18
+offset_left = -190.0
+offset_top = -187.0
+offset_right = 190.0
+offset_bottom = -153.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.90, 0.70, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.12, 0.18, 1)
+theme_override_constants/outline_size = 9
+theme_override_font_sizes/font_size = 24
+text = "Sanctuaire du Tonnerre"
+horizontal_alignment = 1
+
+[node name="PorteDuTonnerre" type="Sprite2D" parent="Paysage"]
+position = Vector2(2336, 800)
+scale = Vector2(0.83, 0.83)
+texture = ExtResource("PorteDuTonnerre")
+offset = Vector2(0, -95)
+
+[node name="SanctuaireDeShandora" type="Sprite2D" parent="Paysage"]
 position = Vector2(1696.0, 580.0)
 texture = ExtResource("Sanctuaire")
 offset = Vector2(0, -190.0)
@@ -427,4 +493,7 @@ position = Vector2(1820.0, 2208.0)
 texture = ExtResource("Caisses")
 offset = Vector2(0, -64.0)
 scale = Vector2(0.7, 0.7)
+
+[editable path="Pagaya"]
+[editable path="Amazone"]
 

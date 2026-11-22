@@ -9,10 +9,10 @@ radius = 24.020824
 [node name="CapitaineVolige" type="Node2D"]
 script = ExtResource("1_cap")
 nom_affiche = "Capitaine Volige"
-paroles = "L'Île Céleste ? On y monte par le Chenal des Célestes, là où les vents portent l'odeur du désert jusqu'aux nuages. Pell y veille sur ce qui reste de Baroque Works. Accroche ta cape, moussaillon : l'Escalier des Vents secoue plus qu'une tempête d'Alabasta."
+paroles = "Le courant ascendant nous portera jusqu’à la mer Blanche. De là, nous ferons escale sur la plage des Anges, à Skypiea."
 destination = "res://scenes/ile_celeste.tscn"
 arrivee = &"DepuisAlabasta"
-libelle_traversee = "Embarquer pour l'Île Céleste"
+libelle_traversee = "Embarquer pour Skypiea"
 
 [node name="Nom" type="Label" parent="."]
 position = Vector2(-90.000, -121.000)

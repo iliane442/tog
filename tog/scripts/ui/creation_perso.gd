@@ -3,10 +3,14 @@ extends CanvasLayer
 
 @onready var liste_races: ItemList = $Panneau/VBoxContainer/Corps/VBoxRace/ListeRaces
 @onready var liste_classes: ItemList = $Panneau/VBoxContainer/Corps/VBoxClasse/ListeClasses
-@onready var label_details: Label = $Panneau/VBoxContainer/Corps/VBoxDetails/ScrollDescriptions/LabelDescriptions
+@onready var cadre_apercu: PanelContainer = $Panneau/VBoxContainer/Corps/VBoxDetails/DetailsRaceClasse/CadreApercu
+@onready var apercu: TextureRect = cadre_apercu.get_node("Apercu")
+@onready var label_details: Label = $Panneau/VBoxContainer/Corps/VBoxDetails/DetailsRaceClasse/ScrollDescriptions/LabelDescriptions
 @onready var label_resume: Label = $Panneau/VBoxContainer/ZoneBas/LabelResume
 @onready var champ_nom: LineEdit = $Panneau/VBoxContainer/ZoneBas/LigneNom/ChampNom
 @onready var option_sexe: OptionButton = $Panneau/VBoxContainer/ZoneBas/LigneSexe/OptionSexe
+@onready var ligne_apparence: HBoxContainer = $Panneau/VBoxContainer/ZoneBas/LigneSexe/LigneApparence
+@onready var option_apparence: OptionButton = ligne_apparence.get_node("OptionApparence")
 @onready var btn_commencer: Button = $Panneau/VBoxContainer/ZoneBas/BtnCommencer
 @onready var label_erreur: Label = $Panneau/VBoxContainer/ZoneBas/LabelErreur
 
@@ -15,8 +19,6 @@ var ids_classes: Array = []
 var index_race := 0
 var index_classe := 0
 
-# seul choix de personnalisation à la création : le sexe
-# (l'apparence dépendra ensuite de l'équipement porté)
 const LIBELLES_SEXES: Array[String] = ["Masculin", "Féminin"]
 const VALEURS_SEXES: Array[String] = ["M", "F"]
 
@@ -30,13 +32,20 @@ func _ready() -> void:
 	btn_commencer.pressed.connect(_on_commencer)
 	liste_races.item_selected.connect(_on_race_choisie)
 	liste_classes.item_selected.connect(_on_classe_choisie)
-	option_sexe.item_selected.connect(func(_i): _maj_affichage())
+	option_sexe.item_selected.connect(func(_i):
+		_maj_affichage()
+		_maj_apercu())
+	option_apparence.item_selected.connect(func(_i): _maj_apercu())
 	champ_nom.text_changed.connect(func(_texte: String): _maj_affichage())
 	_peupler()
 	for libelle in LIBELLES_SEXES:
 		option_sexe.add_item(libelle)
 	option_sexe.select(0)
+	for apparence in Personnage.APPARENCES_HUMAINES.values():
+		option_apparence.add_item(apparence["nom"])
+	option_apparence.select(0)
 	_maj_affichage()
+	_maj_apercu()
 
 func _peupler() -> void:
 	var cles_races := Personnage.races.keys()
@@ -64,6 +73,18 @@ func _metier_de_la_classe() -> String:
 
 func _sexe_choisi() -> String:
 	return VALEURS_SEXES[option_sexe.selected]
+
+func _apparence_choisie() -> String:
+	return Personnage.APPARENCES_HUMAINES.keys()[option_apparence.selected]
+
+func _maj_apercu() -> void:
+	var humain := not ids_races.is_empty() and Personnage.a_une_apparence_humaine(ids_races[index_race])
+	ligne_apparence.visible = humain
+	cadre_apercu.visible = humain
+	if not humain:
+		return
+	var prefixe := Personnage.prefixe_visuel(ids_races[index_race], _sexe_choisi(), _apparence_choisie())
+	apercu.texture = Personnage.portrait_visuel(prefixe)
 
 func _race_selectionnee() -> Dictionary:
 	if ids_races.is_empty():
@@ -97,6 +118,7 @@ func _texte_sorts(classe: Dictionary) -> String:
 
 func _on_race_choisie(index: int) -> void:
 	index_race = index
+	_maj_apercu()
 	_maj_affichage()
 
 func _on_classe_choisie(index: int) -> void:
@@ -162,7 +184,8 @@ func _on_commencer() -> void:
 	if id_metier == "":
 		label_erreur.text = "Aucun métier lié à cette classe."
 		return
-	Personnage.creer(nouveau_nom, ids_races[index_race], ids_classes[index_classe], id_metier, _sexe_choisi())
+	Personnage.creer(nouveau_nom, ids_races[index_race], ids_classes[index_classe],
+		id_metier, _sexe_choisi(), _apparence_choisie())
 	_donner_ingredients_debug(id_metier)
 	get_tree().paused = false
 	queue_free()

@@ -1,86 +1,120 @@
-# effet_sort.gd — effet visuel d'un sort : spritesheet (atlas PixelLab)
-# joué sur la cible puis auto-libéré. Instancié par player.gd quand un
-# sort touche ; les données viennent de la table `animations`
-# (entity_type = 'skill', entity_id = id du sort).
+# Lecture des planches de VFX. Le lecteur peut être cadencé par la
+# chorégraphie d'un sort ou jouer seul pour les attaques des ennemis.
 extends Node2D
 
-# cycles joués quand l'animation est déclarée en boucle
 const CYCLES_BOUCLE := 2
-# ancre située dans le bas de la cellule -> l'effet se cale aux pieds du
-# personnage (les effets d'aura et de soin sont dessinés pieds alignés)
 const SEUIL_PIEDS := 0.8
-# distance du centre du corps aux pieds (demi-tuile de 32 px)
 const DECALAGE_PIEDS := 16
-# affiché au-dessus des entités
 const Z_INDEX := 50
 
-var _feuille: Texture2D
+static var _cache_planches: Dictionary = {}
+
 var _sprite: Sprite2D
-var _regions: Array = []  # Rect2 de chaque frame, depuis l'atlas json
+var _images: Array[AtlasTexture] = []
 var _ancre := Vector2.ZERO
-var _nb_frames := 1
-var _delai := 0.1
+var _duree := 0.0
 var _boucle := false
 var _en_cours := false
 
 func _ready() -> void:
+	z_index = Z_INDEX
 	_sprite = Sprite2D.new()
-	_sprite.z_index = Z_INDEX
 	_sprite.centered = false
 	add_child(_sprite)
 
-# configure depuis une ligne de `animations` : chemin de spritesheet
-# (avec ou sans préfixe res://), nombre de frames, délai et boucle.
-# L'atlas .json qui accompagne la feuille donne les frames et l'ancre ;
-# sans json, découpe régulière avec les dimensions de frame fournies.
-func configure(chemin: String, nb_frames: int, delai_ms: int, boucle: bool, largeur_frame: int, hauteur_frame: int) -> void:
-	var chemin_png := chemin if chemin.begins_with("res://") else "res://" + chemin
-	_feuille = load(chemin_png)
-	_nb_frames = maxi(nb_frames, 1)
-	_delai = maxf(float(delai_ms) / 1000.0, 0.016)
-	_boucle = boucle
-	var texte := FileAccess.get_file_as_string(chemin_png.get_basename() + ".json")
-	var atlas: Variant = JSON.parse_string(texte)
-	if atlas is Dictionary and atlas.get("frames", []) is Array:
-		var ancre: Dictionary = atlas.get("meta", {}).get("anchor", {})
-		_ancre = Vector2(float(ancre.get("x", 0.0)), float(ancre.get("y", 0.0)))
-		for frame in atlas["frames"]:
-			var f: Dictionary = frame.get("frame", {})
-			_regions.append(Rect2(float(f.get("x", 0.0)), float(f.get("y", 0.0)), float(f.get("w", 0.0)), float(f.get("h", 0.0))))
-	else:
-		# découpe régulière ligne par ligne, sans atlas
-		var colonnes := 1
-		if _feuille != null:
-			colonnes = maxi(int(_feuille.get_width()) / maxi(largeur_frame, 1), 1)
-		for i in _nb_frames:
-			_regions.append(Rect2(
-				(i % colonnes) * largeur_frame, (i / colonnes) * hauteur_frame,
-				largeur_frame, hauteur_frame))
+func configurer_ligne(details: Dictionary) -> void:
+	configure(str(details.get("sprite_sheet_path", "")), int(details.get("frame_count", 1)),
+		int(details.get("frame_delay_ms", 100)), int(details.get("loop", 0)) == 1,
+		int(details.get("frame_width", 32)), int(details.get("frame_height", 32)))
 
-# joue l'effet à la position donnée (centre de la cible) puis se libère
+func configure(chemin: String, nb_frames: int, delai_ms: int, boucle: bool, largeur_frame: int, hauteur_frame: int) -> void:
+	if chemin.is_empty():
+		return
+	var chemin_png := chemin if chemin.begins_with("res://") else "res://" + chemin
+	var coupure := Vector2i(maxi(largeur_frame, 1), maxi(hauteur_frame, 1))
+	var cle := "%s|%d|%d|%d" % [chemin_png, nb_frames, coupure.x, coupure.y]
+	if not _cache_planches.has(cle):
+		_cache_planches[cle] = _lire_planche(chemin_png, maxi(nb_frames, 1), coupure)
+	var planche: Dictionary = _cache_planches[cle]
+	if planche.is_empty():
+		return
+	_images = planche["images"]
+	_ancre = planche["ancre"]
+	_duree = float(_images.size()) * maxf(float(delai_ms) / 1000.0, 0.016)
+	_boucle = boucle
+
+static func _lire_planche(chemin: String, nb_frames: int, coupure: Vector2i) -> Dictionary:
+	if not ResourceLoader.exists(chemin, "Texture2D"):
+		return {}
+	var feuille := load(chemin) as Texture2D
+	if feuille == null:
+		return {}
+	var regions: Array[Rect2] = []
+	var ancre := Vector2(coupure) / 2.0
+	var chemin_atlas := chemin.get_basename() + ".json"
+	var atlas: Variant = null
+	if FileAccess.file_exists(chemin_atlas):
+		atlas = JSON.parse_string(FileAccess.get_file_as_string(chemin_atlas))
+	if atlas is Dictionary and atlas.get("frames") is Array:
+		var point: Dictionary = atlas.get("meta", {}).get("anchor", {})
+		ancre = Vector2(point.get("x", ancre.x), point.get("y", ancre.y))
+		for image: Dictionary in atlas["frames"]:
+			var r: Dictionary = image.get("frame", {})
+			regions.append(Rect2(r.get("x", 0.0), r.get("y", 0.0), r.get("w", 0.0), r.get("h", 0.0)))
+	else:
+		# Les JSON d'atlas peuvent être absents d'un export. Toutes les
+		# planches du jeu ont aussi une grille régulière exploitable.
+		var colonnes := maxi(floori(float(feuille.get_width()) / coupure.x), 1)
+		for index in nb_frames:
+			regions.append(Rect2(
+				(index % colonnes) * coupure.x, floori(float(index) / colonnes) * coupure.y,
+				coupure.x, coupure.y))
+	var images: Array[AtlasTexture] = []
+	var limites := Rect2(Vector2.ZERO, feuille.get_size())
+	for index in mini(nb_frames, regions.size()):
+		var region := regions[index]
+		if not region.has_area() or not limites.encloses(region):
+			continue
+		var texture := AtlasTexture.new()
+		texture.atlas = feuille
+		texture.region = region
+		texture.filter_clip = true
+		images.append(texture)
+	return {"images": images, "ancre": ancre}
+
+func positionner(corps: Vector2, pieds: Vector2, taille_max: float, angle: float, centrer: bool) -> bool:
+	if _images.is_empty():
+		return false
+	var taille := _images[0].get_size()
+	var ancre := _ancre.clamp(Vector2.ZERO, taille) if not centrer else taille / 2.0
+	global_position = pieds if ancre.y > SEUIL_PIEDS * taille.y else corps
+	rotation = angle
+	scale = Vector2.ONE * (taille_max / maxf(taille.x, taille.y))
+	_sprite.offset = -ancre
+	return true
+
+func afficher_progression(progression: float) -> void:
+	if not _images.is_empty():
+		var index := clampi(int(progression * _images.size()), 0, _images.size() - 1)
+		if _sprite.texture != _images[index]:
+			_sprite.texture = _images[index]
+
+func appliquer_materiau(materiau: Material) -> void:
+	_sprite.material = materiau
+
+# Lecture autonome pour les attaques qui utilisent directement une planche.
 func jouer(position_globale: Vector2) -> void:
-	if _feuille == null or _regions.is_empty() or _en_cours:
+	if _en_cours:
+		return
+	if _images.is_empty():
 		queue_free()
 		return
 	_en_cours = true
-	# ancre basse -> cale sur les pieds plutôt que le centre du corps
-	var decal := Vector2.ZERO
-	_ancre = Vector2(minf(_ancre.x, _regions[0].size.x), minf(_ancre.y, _regions[0].size.y))
-	if _ancre.y > SEUIL_PIEDS * _regions[0].size.y:
-		decal = Vector2(0, DECALAGE_PIEDS)
-	global_position = position_globale + decal
-	_sprite.offset = -_ancre
-	var cycles := CYCLES_BOUCLE if _boucle else 1
-	for _c in cycles:
-		for index in mini(_nb_frames, _regions.size()):
-			_appliquer_frame(index)
-			await get_tree().create_timer(_delai).timeout
-			if not is_inside_tree():
-				return
-	queue_free()
-
-func _appliquer_frame(index: int) -> void:
-	var texture := AtlasTexture.new()
-	texture.atlas = _feuille
-	texture.region = _regions[index]
-	_sprite.texture = texture
+	var taille := _images[0].get_size()
+	positionner(position_globale, position_globale + Vector2(0, DECALAGE_PIEDS),
+		maxf(taille.x, taille.y), 0.0, false)
+	afficher_progression(0.0)
+	var lecture := create_tween()
+	for _cycle in (CYCLES_BOUCLE if _boucle else 1):
+		lecture.tween_method(afficher_progression, 0.0, 1.0, _duree)
+	lecture.tween_callback(queue_free)

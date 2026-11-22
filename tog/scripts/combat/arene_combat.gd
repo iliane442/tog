@@ -68,6 +68,8 @@ const PLANS := [
 
 var index_plan: int
 var dimensions: Vector2i
+var dallage: Texture2D
+var maconnerie: Texture2D
 var sol: TileMapLayer
 var obstacles: TileMapLayer
 var _camera: Camera2D
@@ -178,7 +180,11 @@ func _dessiner_plateau() -> void:
 			if obstacles.get_cell_source_id(Vector2i(x, y)) != -1:
 				teinte = teinte.darkened(0.26)
 			_plateau.draw_colored_polygon(contour, teinte)
-			_appliquer_pierre(_plateau, contour, Vector2(0.0, 0.5), 0.42)
+			if dallage == null:
+				_appliquer_pierre(_plateau, contour, Vector2(0.0, 0.5), 0.42)
+			else:
+				var origine := Vector2(x % 2, y % 2) * 0.5
+				_appliquer_pierre(_plateau, contour, origine, 0.68, dallage, Vector2(0.5, 0.5))
 			_plateau.draw_line(contour[0], contour[1], Color(0.86, 0.79, 0.64, 0.4), 1.3)
 
 func _dessiner_mur(bloc: Node2D, case: Vector2i) -> void:
@@ -186,7 +192,10 @@ func _dessiner_mur(bloc: Node2D, case: Vector2i) -> void:
 	var dessus := _decaler(base, Vector2.UP * HAUTEUR_MUR)
 	_dessiner_faces(bloc, dessus, HAUTEUR_MUR, Color("#746759"), Color("#4d4b49"))
 	bloc.draw_colored_polygon(dessus, Color("#888070"))
-	_appliquer_pierre(bloc, dessus, Vector2(1.0 / 3.0, 0.5), 0.48)
+	if maconnerie == null:
+		_appliquer_pierre(bloc, dessus, Vector2(1.0 / 3.0, 0.5), 0.48)
+	else:
+		_appliquer_pierre(bloc, dessus, Vector2.ZERO, 0.70, maconnerie, Vector2(0.5, 0.5))
 	bloc.draw_polyline(PackedVector2Array([dessus[3], dessus[0], dessus[1]]), Color("#b2a38b"), 2.0)
 	bloc.draw_polyline(PackedVector2Array([dessus[1], dessus[2], dessus[3]]), Color("#3d3b37"), 2.0)
 
@@ -202,13 +211,15 @@ func _dessiner_faces(support: Node2D, dessus: PackedVector2Array, hauteur: float
 	support.draw_line(bas[3], bas[2], gauche.darkened(0.28), 2.0)
 	support.draw_line(bas[2], bas[1], droite.darkened(0.28), 2.0)
 
-func _appliquer_pierre(support: Node2D, points: PackedVector2Array, origine: Vector2, opacite: float) -> void:
+func _appliquer_pierre(support: Node2D, points: PackedVector2Array, origine: Vector2,
+		opacite: float, texture: Texture2D = TEXTURE_PIERRE,
+		dimensions_uv := Vector2(1.0 / 3.0, 0.5)) -> void:
 	var marge := Vector2(0.004, 0.006)
-	var taille := Vector2(1.0 / 3.0, 0.5) - 2.0 * marge
+	var taille := dimensions_uv - 2.0 * marge
 	origine += marge
 	support.draw_polygon(points, PackedColorArray([Color(1.0, 0.99, 0.95, opacite)]), PackedVector2Array([
 		origine, origine + Vector2(taille.x, 0.0), origine + taille, origine + Vector2(0.0, taille.y),
-	]), TEXTURE_PIERRE)
+	]), texture)
 
 func _decaler(points: PackedVector2Array, offset: Vector2) -> PackedVector2Array:
 	var resultat := PackedVector2Array()

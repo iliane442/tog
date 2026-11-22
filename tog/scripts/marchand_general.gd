@@ -66,7 +66,7 @@ func _clic_sur_pnj(point: Vector2) -> bool:
 func ouvrir_boutique() -> void:
 	var ui := get_tree().get_first_node_in_group("marchand_ui")
 	if ui != null:
-		ui.ouvrir()
+		ui.ouvrir($NomMarchand.text)
 
 func repere_minicarte() -> Dictionary:
 	return {"categorie": "marchands", "nom": $NomMarchand.text, "role": "Vente de tout le catalogue"}

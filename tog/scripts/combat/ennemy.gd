@@ -460,13 +460,16 @@ func _case_de(sol: TileMapLayer, position_globale: Vector2) -> Vector2i:
 
 # --- récompenses de victoire ---
 
+func _butin_specifique() -> Array:
+	return []
+
 # applique les récompenses du mob vaincu (XP, Berry, drops de la table
 # `mobs`) puis affiche un récapitulatif
 func recompenser_victoire() -> void:
 	var xp := maxi(int(pv_max / 4.0), 5)
 	var berry_min := maxi(int(pv_max / 5.0), 5)
 	var berry_max := maxi(int(pv_max / 2.0), berry_min)
-	var drops: Array = []
+	var drops := _butin_specifique()
 	if BaseDonnees.disponible and mob_id > 0:
 		var lignes := BaseDonnees.lire(
 			"SELECT xp_reward, berry_reward_min, berry_reward_max, drops_json"
@@ -478,7 +481,7 @@ func recompenser_victoire() -> void:
 			berry_max = int(ligne.get("berry_reward_max", berry_max))
 			var liste: Variant = JSON.parse_string(str(ligne.get("drops_json", "[]")))
 			if liste is Array:
-				drops = liste
+				drops.append_array(liste)
 	# la tablette des Flots Calmes honore sa promesse : les gains de ce
 	# combat sont doublés (le drapeau tient jusqu'à la victoire, donc
 	# toutes les rencontres de la même escarmouche profitent du bonus)

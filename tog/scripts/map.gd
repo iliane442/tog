@@ -2,6 +2,8 @@ extends Node2D
 
 const SCENE_ENNEMI := preload("res://scenes/ennemy.tscn")
 
+@export var renouveler_rencontres := true
+
 @onready var notification: PanelContainer = $CarteFushia/Notification
 @onready var texte_notification: Label = $CarteFushia/Notification/Texte
 @onready var carte: CanvasLayer = $CarteFushia
@@ -97,7 +99,8 @@ func _afficher_carte_en_exploration() -> void:
 		carte.show()
 
 func _surveille_renfort(ennemi: Node2D, donnees: Dictionary) -> void:
-	ennemi.connect("vaincu", _faire_revenir_ennemi.bind(donnees), CONNECT_ONE_SHOT)
+	if renouveler_rencontres:
+		ennemi.connect("vaincu", _faire_revenir_ennemi.bind(donnees), CONNECT_ONE_SHOT)
 
 func _faire_revenir_ennemi(donnees: Dictionary) -> void:
 	# un camp nettoyé renais de ses cendres au bout d'une minute ;

@@ -7,6 +7,7 @@ const ICONE_DEFAUT := "res://addons/pixel_ui_fantasy/icons/chest.png"
 const DELAI_RECHERCHE := 0.15
 
 @onready var fenetre: PanelContainer = $Fenetre
+@onready var titre: Label = $Fenetre/VBox/Titre
 @onready var label_argent: Label = $Fenetre/VBox/Argent
 @onready var recherche: LineEdit = $Fenetre/VBox/Recherche
 @onready var compteur: Label = $Fenetre/VBox/Compteur
@@ -31,7 +32,8 @@ func _ready() -> void:
 	add_child(_minuteur)
 	recherche.text_changed.connect(func(_texte: String) -> void: _minuteur.start())
 
-func ouvrir() -> void:
+func ouvrir(nom_marchand: String = "Marchand Ambulant") -> void:
+	titre.text = "%s — Catalogue complet" % nom_marchand
 	_charger_catalogue()
 	fenetre.visible = true
 	_rafraichir()

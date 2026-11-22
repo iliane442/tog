@@ -287,6 +287,7 @@ layout_mode = 2
 theme_type_variation = "InsetPanel"
 
 [node name="Portrait" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/PortraitCadre"]
+texture_filter = 1
 layout_mode = 2
 texture = ExtResource("3_portrait")
 expand_mode = 1
@@ -319,6 +320,18 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 18
 autowrap_mode = 2
 text = "Navire : aucune pièce installée"
+
+[node name="LigneApparence" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LabelApparence" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/LigneApparence"]
+layout_mode = 2
+text = "Apparence"
+
+[node name="OptionApparence" type="OptionButton" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/LigneApparence"]
+layout_mode = 2
 
 [node name="XP" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 custom_minimum_size = Vector2(0, 42)

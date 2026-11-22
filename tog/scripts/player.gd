@@ -12,19 +12,8 @@ const FRAMES_REPOS := 4
 const FRAMES_MARCHE := 6
 const FPS_REPOS := 6.0
 const FPS_MARCHE := 10.0
-const VISUELS_RACES := {
-	"human": "humain_pirate",
-	"mink": "mink_pirate",
-	"fishman": "fishman_pirate",
-	"giant": "geant_pirate",
-}
-const VISUELS_FEMININS := {
-	"human": "humaine_pirate",
-	"mink": "mink_pirate_f",
-	"fishman": "femme_poisson_pirate",
-	"giant": "geante_pirate",
-}
 const RACE_DEFAUT := "human"
+const VISUEL_DEFAUT := "humain_pirate"
 const SORT_BOULE_DE_FEU := preload("res://scripts/combat/sort.gd")
 
 @onready var sprite: Sprite2D = $Sprite2D
@@ -117,9 +106,7 @@ func _connecter_combat() -> void:
 	_combat_manager.placement_valide.connect(_valider_placement)
 
 func _prefixe_visuel_race() -> String:
-	var race := str(Personnage.races.get(Personnage.race_id, {}).get("id_technique", RACE_DEFAUT))
-	var visuels := VISUELS_FEMININS if Personnage.sexe == "F" else VISUELS_RACES
-	return visuels.get(race, VISUELS_RACES[RACE_DEFAUT])
+	return Personnage.prefixe_visuel(Personnage.race_id, Personnage.sexe, Personnage.apparence_humaine)
 
 func utiliser_sort_hors_combat(id_sort: String) -> void:
 	if _combat_manager != null and _combat_manager.en_combat:
@@ -212,7 +199,7 @@ func _maj_visuels_race(visuel: String) -> void:
 	var repos := "res://assets/sprites/%s/%s_idle.png" % [prefixe, prefixe]
 	var marche := "res://assets/sprites/%s/%s_walk.png" % [prefixe, prefixe]
 	if not (ResourceLoader.exists(repos) and ResourceLoader.exists(marche)):
-		prefixe = VISUELS_RACES[RACE_DEFAUT]
+		prefixe = VISUEL_DEFAUT
 		repos = "res://assets/sprites/%s/%s_idle.png" % [prefixe, prefixe]
 		marche = "res://assets/sprites/%s/%s_walk.png" % [prefixe, prefixe]
 	_texture_repos = load(repos)
@@ -628,6 +615,7 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		_emettre_action_duel(_evenement_sort(_id_sort, cible, "manque"))
 	else:
 		var evenement := _evenement_sort(_id_sort, cible, "sort")
+		evenement["nom"] = str(sort.get("nom", "Sort"))
 		_jouer_effet_sort(_id_sort, cible)
 		var soin := absi(int(sort.get("degats", 0))) if str(sort.get("type", "")) == "heal" else 0
 		if soin > 0:
@@ -635,8 +623,10 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 			Personnage.soigner(soin)
 			_maj_affichage()
 		var degats := 0
+		var impact_annonce := false
 		if soin <= 0 and int(sort.get("degats", 0)) > 0:
 			degats = _combat_manager.calculer_degats(self, cible, int(sort.get("degats", 0)), str(sort.get("type", "")), int(sort.get("portee", 1)))
+			impact_annonce = _annoncer_impact_final(evenement, cible, degats)
 			cible.recevoir_degats(degats)
 			_degats_zone(_id_sort, cible, degats, sort)
 		var etats_appliques: Array = []
@@ -649,8 +639,7 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 			Personnage.gagner_bouclier(pool)
 			_tours_bouclier_restants = 2
 			_combat_manager.afficher_message("L’Égide te couvre d’un bouclier de %d points (2 tours)." % pool)
-		if _combat_manager.pvp_actif or _combat_manager.groupe_actif:
-			evenement["nom"] = str(sort.get("nom", "Sort"))
+		if not impact_annonce and (_combat_manager.pvp_actif or _combat_manager.groupe_actif):
 			evenement["etats"] = etats_appliques
 			evenement["soin" if cible == self else "degats"] = soin if cible == self else degats
 			_emettre_action_duel(evenement)
@@ -855,6 +844,17 @@ func _evenement_sort(id_sort: String, cible: Node2D, type: String) -> Dictionary
 		evenement["index"] = _combat_manager.ennemis_actifs().find(cible)
 	return evenement
 
+func _annoncer_impact_final(evenement: Dictionary, cible: Node2D, degats: int) -> bool:
+	if not _combat_manager.groupe_actif or cible == self:
+		return false
+	var pv := int(cible.get("pv"))
+	if pv <= 0 or degats < pv:
+		return false
+	# Le serveur relaie aussi la disparition de l'ennemi. Les coéquipiers
+	# doivent amorcer le visuel avant ce message, qui fait foi pour le KO.
+	_emettre_action_duel(evenement)
+	return true
+
 func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 	var cible: Node2D = cible_visée
 	if cible == null or not is_instance_valid(cible):
@@ -874,12 +874,14 @@ func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 	_pa -= _sort_boule_de_feu.cout_pa
 	if _combat_manager.precision_reussie(self):
 		var evenement := _evenement_sort("boule_de_feu", cible, "sort")
+		evenement["nom"] = "Boule de feu"
 		_jouer_effet_sort("boule_de_feu", cible)
 		var degats: int = _combat_manager.calculer_degats(self, cible, int(_sort_boule_de_feu.degats), "attack", int(_sort_boule_de_feu.portee_max))
+		var impact_annonce := _annoncer_impact_final(evenement, cible, degats)
 		cible.recevoir_degats(degats)
-		evenement["nom"] = "Boule de feu"
-		evenement["degats"] = degats
-		_emettre_action_duel(evenement)
+		if not impact_annonce:
+			evenement["degats"] = degats
+			_emettre_action_duel(evenement)
 		_combat_manager.effacer_message()
 	else:
 		_jouer_effet_sort("boule_de_feu", cible, false)

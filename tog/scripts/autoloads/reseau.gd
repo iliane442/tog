@@ -285,6 +285,11 @@ func _nom_personnage(donnees: Dictionary) -> String:
 	var nom: String = valeur.strip_edges() if valeur is String else ""
 	return nom if not nom.is_empty() else "Héros"
 
+func _visuel_personnage(donnees: Dictionary) -> String:
+	return Personnage.prefixe_visuel(
+		str(donnees.get("race", "1")), str(donnees.get("sexe", "M")),
+		str(donnees.get("apparence_humaine", Personnage.APPARENCE_HUMAINE_DEFAUT)))
+
 func _ouvrir_session(peer_id: int, nom_pseudo: String, perso_json := "") -> void:
 	var donnees: Variant = JSON.parse_string(perso_json) if not perso_json.is_empty() else null
 	_sessions[peer_id] = {
@@ -297,7 +302,7 @@ func _ouvrir_session(peer_id: int, nom_pseudo: String, perso_json := "") -> void
 		# elle qu'un compagnon de groupe rejoint à la demande
 		"combat_groupe": "",
 		"scene": "",
-		"visuel": VISUEL_DEFAUT,
+		"visuel": _visuel_personnage(donnees) if donnees is Dictionary else VISUEL_DEFAUT,
 	}
 	_limiteurs[peer_id] = {"position": 0, "chat": 0}
 	print("Connexion : %s (id %d, %d joueur(s) en ligne)" % [nom_pseudo, peer_id, _sessions.size()])
@@ -450,14 +455,17 @@ func envoie_sauvegarde_perso(donnees_json: String) -> void:
 		return
 	if not _ecrire_perso_serveur(int(compte["id"]), donnees_json):
 		return
-	if partie["nom_personnage"] == nom:
-		return
+	var visuel := _visuel_personnage(donnees)
+	var nom_modifie: bool = partie["nom_personnage"] != nom
+	var visuel_modifie: bool = partie["visuel"] != visuel
 	partie["nom_personnage"] = nom
-	if bool(partie["annonce"]):
+	partie["visuel"] = visuel
+	if (nom_modifie or visuel_modifie) and bool(partie["annonce"]):
 		_annoncer_avatar(peer_id, partie)
-	var groupe := _trouver_groupe(peer_id)
-	if not groupe.is_empty():
-		_annoncer_groupe(int(groupe["id"]))
+	if nom_modifie:
+		var groupe := _trouver_groupe(peer_id)
+		if not groupe.is_empty():
+			_annoncer_groupe(int(groupe["id"]))
 
 # RPC serveur : l'écran de création demande si un nom est libre
 @rpc("any_peer", "call_remote", "reliable")
@@ -3101,6 +3109,7 @@ func serialiser_perso() -> Dictionary:
 	var donnees := {
 		"nom": Personnage.nom, "race": Personnage.race_id, "classe": Personnage.classe_id,
 		"sexe": Personnage.sexe, "niveau": Personnage.niveau, "xp": Personnage.xp,
+		"apparence_humaine": Personnage.apparence_humaine,
 		"vie": Personnage.vie, "berry": Personnage.berry,
 		"points_statistique": Personnage.points_statistique,
 		"points_depenses": Personnage.points_depenses, "equipement": Personnage.equipement,
@@ -3130,6 +3139,8 @@ func _appliquer_perso(perso_json: String) -> void:
 	Personnage.race_id = str(d.get("race", Personnage.race_id))
 	Personnage.classe_id = str(d.get("classe", Personnage.classe_id))
 	Personnage.sexe = str(d.get("sexe", Personnage.sexe))
+	Personnage.apparence_humaine = Personnage.normaliser_apparence_humaine(
+		Personnage.race_id, str(d.get("apparence_humaine", Personnage.APPARENCE_HUMAINE_DEFAUT)))
 	Personnage.niveau = int(d.get("niveau", Personnage.niveau))
 	Personnage.xp = int(d.get("xp", Personnage.xp))
 	Personnage.vie = int(d.get("vie", Personnage.vie))

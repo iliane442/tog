@@ -10,6 +10,7 @@ var cases_zone: Array[Vector2i] = []
 # couches précédentes, elle survit aux rafraîchissements de tour —
 # c'est un décor de combat, pas une indication
 var cases_salle: Array[Vector2i] = []
+var cases_danger: Array[Vector2i] = []
 var _sol: TileMapLayer
 var _lire_case_curseur: Callable
 # fournit les cases de la figure (croix, barre...) selon la case
@@ -50,6 +51,10 @@ func afficher_salle(cases: Array[Vector2i]) -> void:
 # la salle s'est dissipée
 func effacer_salle() -> void:
 	cases_salle.clear()
+	queue_redraw()
+
+func afficher_danger(cases: Array[Vector2i]) -> void:
+	cases_danger = cases.duplicate()
 	queue_redraw()
 
 func afficher(cases: Array[Vector2i]) -> void:
@@ -102,6 +107,15 @@ func _draw() -> void:
 	_dessiner_cases(cases_zone, Color(1.0, 0.75, 0.2, 0.38), Color(1.0, 0.75, 0.35, 0.9), taille)
 	# la Room active : dôme verdâtre qui recouvre tout le reste
 	_dessiner_cases(cases_salle, Color(0.45, 0.95, 0.6, 0.30), Color(0.5, 1.0, 0.7, 0.9), taille)
+	_dessiner_cases(cases_danger, Color("#ff721970"), Color("#ffc45f"), taille, 3.5)
+	for case in cases_danger:
+		var centre := to_local(_sol.to_global(_sol.map_to_local(case)))
+		var eclair := PackedVector2Array([
+			centre + Vector2(4, -15), centre + Vector2(-6, 1),
+			centre + Vector2(4, 1), centre + Vector2(-4, 14),
+		])
+		draw_polyline(eclair, Color("#651f1a"), 6.0)
+		draw_polyline(eclair, Color("#fff0a1"), 3.0)
 
 func _dessiner_cases(cases: Array[Vector2i], remplissage: Color, bordure: Color, taille: Vector2, epaisseur: float = 2.0) -> void:
 	for case in cases:

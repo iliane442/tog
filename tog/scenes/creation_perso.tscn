@@ -96,12 +96,31 @@ theme_override_font_sizes/font_size = 26
 text = "Descriptions"
 horizontal_alignment = 1
 
-[node name="ScrollDescriptions" type="ScrollContainer" parent="Panneau/VBoxContainer/Corps/VBoxDetails"]
+[node name="DetailsRaceClasse" type="HBoxContainer" parent="Panneau/VBoxContainer/Corps/VBoxDetails"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="CadreApercu" type="PanelContainer" parent="Panneau/VBoxContainer/Corps/VBoxDetails/DetailsRaceClasse"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 0
+theme_type_variation = "InsetPanel"
+
+[node name="Apercu" type="TextureRect" parent="Panneau/VBoxContainer/Corps/VBoxDetails/DetailsRaceClasse/CadreApercu"]
+texture_filter = 1
+custom_minimum_size = Vector2(136, 136)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ScrollDescriptions" type="ScrollContainer" parent="Panneau/VBoxContainer/Corps/VBoxDetails/DetailsRaceClasse"]
+layout_mode = 2
+size_flags_horizontal = 3
 horizontal_scroll_mode = 0
 
-[node name="LabelDescriptions" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxDetails/ScrollDescriptions"]
+[node name="LabelDescriptions" type="Label" parent="Panneau/VBoxContainer/Corps/VBoxDetails/DetailsRaceClasse/ScrollDescriptions"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "—"
@@ -134,6 +153,21 @@ layout_mode = 2
 text = "Sexe :"
 
 [node name="OptionSexe" type="OptionButton" parent="Panneau/VBoxContainer/ZoneBas/LigneSexe"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LigneApparence" type="HBoxContainer" parent="Panneau/VBoxContainer/ZoneBas/LigneSexe"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_override_constants/separation = 8
+
+[node name="LabelApparence" type="Label" parent="Panneau/VBoxContainer/ZoneBas/LigneSexe/LigneApparence"]
+layout_mode = 2
+text = "Apparence"
+
+[node name="OptionApparence" type="OptionButton" parent="Panneau/VBoxContainer/ZoneBas/LigneSexe/LigneApparence"]
 layout_mode = 2
 size_flags_horizontal = 3
 

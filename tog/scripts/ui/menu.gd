@@ -16,11 +16,6 @@ const TAILLE_CASE_EQUIP := Vector2(58, 58)
 const ESPACEMENT_CASE_EQUIP := 8.0
 const EMPLACEMENTS_GAUCHE: Array[String] = ["tête", "corps", "cape", "main", "ceinture", "pantalon"]
 const EMPLACEMENTS_DROIT: Array[String] = ["visage", "cou", "arme", "arme2", "anneau1", "anneau2", "pieds"]
-const VISUELS_RACES := {
-	"human": "humain_pirate",
-	"mink": "mink_pirate",
-	"fishman": "fishman_pirate",
-}
 const FONDS := {
 	"personnage": preload("res://assets/ui/planches/carnet.jpg"),
 	"inventaire": preload("res://assets/ui/planches/sac.jpg"),
@@ -44,7 +39,7 @@ var _boutons_sorts: Dictionary = {}
 var _barre_apercu: PanelContainer
 var _mise_a_jour_sac_prevue := false
 var _mode_inventaire_compact := false
-var _race_portrait_chargee := ""
+var _visuel_portrait_charge := ""
 var _tweens_cases: Dictionary = {}
 var _cache_icones_objets: Dictionary = {}
 @onready var option_type_inventaire: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/Categorie
@@ -102,6 +97,10 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var liste_sorts: VBoxContainer = $Fenetre/Corps/ContenuSorts/DefilementSorts/ListeSorts
 @onready var contenu_sorts: VBoxContainer = $Fenetre/Corps/ContenuSorts
 @onready var label_nom: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Nom
+@onready var ligne_apparence: HBoxContainer = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/LigneApparence
+@onready var option_apparence: OptionButton = ligne_apparence.get_node("OptionApparence")
+@onready var portrait_identite: TextureRect = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/PortraitCadre/Portrait
+@onready var portrait_identite_defaut: Texture2D = portrait_identite.texture
 @onready var label_race_classe: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/RaceClasse
 @onready var label_niveau: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Niveau
 @onready var label_navire: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Navire
@@ -306,6 +305,9 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_ajuster_fenetre)
 	$Fenetre/FermerPlanche.pressed.connect(fermer)
 	option_type_inventaire.item_selected.connect(_on_type_inventaire_selectionne)
+	for apparence in Personnage.APPARENCES_HUMAINES.values():
+		option_apparence.add_item(apparence["nom"])
+	option_apparence.item_selected.connect(_sur_apparence_choisie)
 	case_portables.toggled.connect(_on_portables_toggle)
 	champ_recherche_sac.text_changed.connect(_on_recherche_sac)
 	tri_sac.add_item("Tri : nom")
@@ -328,9 +330,9 @@ func _ready() -> void:
 	btn_navire.pressed.connect(_on_bouton_navire)
 	btn_vue_equipement.toggled.connect(_basculer_vue_equipement)
 	btn_vue_navire.toggled.connect(_basculer_vue_navire)
+	_appliquer_vue_colonne()
 	_construire_onglets_metiers()
 	_construire_onglets_sorts()
-	_appliquer_vue_colonne()
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
@@ -530,6 +532,7 @@ func maj_personnage() -> void:
 	var en_attente := _total_points_en_attente()
 	var restants := maxi(Personnage.points_statistique - en_attente, 0)
 	label_nom.text = Personnage.nom
+	_maj_apparence_personnage()
 	label_race_classe.text = "Race : %s | Classe : %s" % [Personnage.nom_race(), Personnage.nom_classe()]
 	label_niveau.text = "Niveau %d" % Personnage.niveau
 	label_xp.text = "Expérience : %d / %d" % [Personnage.xp, Personnage.xp_prochain_niveau()]
@@ -600,24 +603,28 @@ func _maj_resume_personnage() -> void:
 		_formater_nombre(Personnage.berry),
 	]
 
+func _sur_apparence_choisie(index: int) -> void:
+	Personnage.choisir_apparence_humaine(Personnage.APPARENCES_HUMAINES.keys()[index])
+	_maj_apparence_personnage()
+
+func _maj_apparence_personnage() -> void:
+	ligne_apparence.visible = Personnage.a_une_apparence_humaine(Personnage.race_id)
+	if not ligne_apparence.visible:
+		portrait_identite.texture = portrait_identite_defaut
+		return
+	option_apparence.select(Personnage.APPARENCES_HUMAINES.keys().find(Personnage.apparence_humaine))
+	_maj_portrait_equipement()
+	portrait_identite.texture = portrait_equipement.texture
+
 func _maj_portrait_equipement() -> void:
-	var identifiant_race := str(Personnage.races.get(Personnage.race_id, {}).get("id_technique", "human"))
-	if identifiant_race == _race_portrait_chargee:
+	var dossier := Personnage.prefixe_visuel(Personnage.race_id, Personnage.sexe, Personnage.apparence_humaine)
+	if dossier == _visuel_portrait_charge:
 		return
-	var dossier: String = str(VISUELS_RACES.get(identifiant_race, VISUELS_RACES["human"]))
-	var chemin := "res://assets/sprites/%s/%s_idle.png" % [dossier, dossier]
-	if not ResourceLoader.exists(chemin):
-		dossier = str(VISUELS_RACES["human"])
-		chemin = "res://assets/sprites/%s/%s_idle.png" % [dossier, dossier]
-	var planche := load(chemin) as Texture2D
-	if planche == null:
-		return
-	var taille_case := planche.get_size() / Vector2(4.0, 4.0)
-	var portrait := AtlasTexture.new()
-	portrait.atlas = planche
-	portrait.region = Rect2(Vector2.ZERO, taille_case)
+	var portrait := Personnage.portrait_visuel(dossier)
+	if portrait == null:
+		portrait = Personnage.portrait_visuel("humain_pirate")
 	portrait_equipement.texture = portrait
-	_race_portrait_chargee = identifiant_race
+	_visuel_portrait_charge = dossier
 
 # rang de tri d'un objet par rareté : suit l'ordre réel des paliers
 # (commun < peu commun < rare < épique < légendaire < mythique), les
@@ -834,10 +841,12 @@ func _construire_fiche_fruit(ids_fruit: Array[String], verrous_fruit: Array[Dict
 	var infos := Label.new()
 	infos.text = texte_infos
 	colonne.add_child(infos)
-# l'expérience se lit dans le palier courant : ce que le fruit a
-# gagné depuis son dernier niveau sur ce qu'il lui faut pour le
-# prochain
+	# l'expérience se lit dans le palier courant : ce que le fruit a
+	# gagné depuis son dernier niveau sur ce qu'il lui faut pour le
+	# prochain
 	var xp_palier := clampi(Personnage.fruit_xp - seuil_actuel, 0, maxi(seuil_suivant - seuil_actuel, 1))
+	# le prochain palier ne dépend pas du prochain pouvoir : le fruit
+	# monte par ses seuils cumulés, les pouvoirs suivent son niveau
 	var texte_xp := Label.new()
 	texte_xp.text = "XP du fruit : %d / %d vers le niveau %d" % [xp_palier, seuil_suivant - seuil_actuel, niveau + 1]
 	colonne.add_child(texte_xp)
