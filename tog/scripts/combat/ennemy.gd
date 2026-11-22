@@ -388,7 +388,12 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 			global_position = position_cible
 		depart = _case_de(sol, global_position)
 	if _peut_attaquer(depart, cible):
-		_appliquer_ralentissement_test(joueur)
+		# le Sceau du silence (état 7) prive l'ennemi de sa capacité
+		# spéciale, comme il prive le joueur de ses sorts
+		if _combat_manager == null or _combat_manager.sort_autorise(self):
+			_appliquer_ralentissement_test(joueur)
+		else:
+			_combat_manager.afficher_message("L’ennemi est réduit au silence : sa capacité spéciale échoue.")
 		# difficulté : l'ennemi frappe tant qu'il lui reste des attaques
 		# et que sa cible est à portée (chaque coup jette sa précision)
 		var attaques := maxi(attaques_par_tour, 1)
