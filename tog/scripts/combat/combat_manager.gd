@@ -367,14 +367,17 @@ func _ajouter_titre_roster(texte: String) -> void:
 	titre.add_theme_color_override("font_color", Color("#ffd166"))
 	_liste_roster.add_child(titre)
 
-# une ligne du roster : nom (et attaque/défense), puis une barre de
-# vie colorée d'un coup d'œil (vert, orange puis rouge) et les valeurs
+# une ligne du roster : bloc contenant le nom (et attaque/défense),
+# la barre de vie colorée (vert, orange puis rouge) et les valeurs,
+# puis la légende des états actifs (couleur selon le type d'effet)
 func _ajouter_ligne_roster(entite: Node2D) -> void:
 	var stats := _stats_combattant(entite)
 	if stats.is_empty():
 		return
 	var pv_max := maxi(int(stats["pv_max"]), 1)
 	var pv := clampi(int(stats["pv"]), 0, pv_max)
+	var bloc := VBoxContainer.new()
+	bloc.add_theme_constant_override("separation", 0)
 	var ligne := HBoxContainer.new()
 	ligne.add_theme_constant_override("separation", 8)
 	var nom := Label.new()
@@ -403,7 +406,52 @@ func _ajouter_ligne_roster(entite: Node2D) -> void:
 	valeurs.custom_minimum_size = Vector2(64, 0)
 	valeurs.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	ligne.add_child(valeurs)
-	_liste_roster.add_child(ligne)
+	bloc.add_child(ligne)
+	var etats := _etats_roster(entite)
+	if not etats.is_empty():
+		var legende := HBoxContainer.new()
+		legende.add_theme_constant_override("separation", 10)
+		for etat in etats:
+			var badge := Label.new()
+			var texte_etat := "%s · %d" % [str(etat["nom"]), int(etat["duree"])]
+			texte_etat += " tour" if int(etat["duree"]) == 1 else " tours"
+			if int(etat["piles"]) > 1:
+				texte_etat += " (x%d)" % int(etat["piles"])
+			badge.text = texte_etat
+			badge.tooltip_text = "%s\n%s" % [str(etat["nom"]), str(etat["description"])]
+			badge.add_theme_font_size_override("font_size", 12)
+			badge.add_theme_color_override("font_shadow_color", Color.BLACK)
+			badge.add_theme_constant_override("shadow_offset_x", 1)
+			badge.add_theme_constant_override("shadow_offset_y", 1)
+			match str(etat["type"]):
+				"buff":
+					badge.add_theme_color_override("font_color", Color("#81c784"))
+				"control":
+					badge.add_theme_color_override("font_color", Color("#ffd166"))
+				_:
+					badge.add_theme_color_override("font_color", Color("#ff8a80"))
+			legende.add_child(badge)
+		bloc.add_child(legende)
+	_liste_roster.add_child(bloc)
+
+# états actifs d'un combattant pour le roster : nom, type, description,
+# durée restante et piles (même source que la fiche ennemi)
+func _etats_roster(entite: Node2D) -> Array[Dictionary]:
+	var resultat: Array[Dictionary] = []
+	if entite == null or not is_instance_valid(entite):
+		return resultat
+	var effets: Dictionary = _etats_actifs.get(entite.get_instance_id(), {})
+	for cle in effets:
+		var definition: Dictionary = Personnage.etats.get(int(cle), {})
+		var actif: Dictionary = effets[cle]
+		resultat.append({
+			"nom": str(definition.get("nom", "Etat %s" % cle)),
+			"type": str(definition.get("type", "debuff")),
+			"description": str(definition.get("description", "")),
+			"duree": int(actif.get("duree", 1)),
+			"piles": int(actif.get("piles", 1)),
+		})
+	return resultat
 
 # petite barre de vie du roster : verte au-delà de la moitié, orange
 # jusqu'au quart, rouge en dessous
@@ -1350,6 +1398,10 @@ func _mettre_a_jour_etiquette_etats() -> void:
 	var interface_hud: Node = get_tree().current_scene.find_child("HUD", true, false)
 	if interface_hud != null and interface_hud.has_method("maj_etats_joueur"):
 		interface_hud.call("maj_etats_joueur", _texte_etats_cible(_joueur))
+	# le roster affiche aussi les états en cours : il suit chaque
+	# application d'effet et chaque fin de tour (durées décrémentées)
+	if en_combat:
+		_rafraichir_roster()
 
 func etats_joueur_texte() -> String:
 	return _texte_etats_cible(_joueur)
