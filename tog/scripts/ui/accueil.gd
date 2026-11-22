@@ -59,13 +59,20 @@ func _preparer_partie() -> void:
 	_charger_partie.call_deferred()
 
 func _charger_partie() -> void:
+	# le perso reprend là où il a été laissé : la map mémorisée
+	# remplace Fushia quand elle existe ; une map introuvable
+	# retombe sur Fushia
+	var chemin_partie := Reseau.scene_de_reprise()
+	if chemin_partie != "" and get_tree().change_scene_to_file(chemin_partie) == OK:
+		return
+	Reseau.position_memorisee = {}
 	if get_tree().change_scene_to_file(CHEMIN_PARTIE) == OK:
 		return
 	_chargement_partie = false
 	Reseau.jouer_hors_ligne()
 	_ouvrir_multijoueur()
 	_definir_attente(false)
-	_afficher_message("Le jeu n’a pas pu charger Fushia.", true)
+	_afficher_message("Le jeu n’a pas pu charger la partie.", true)
 
 func _ouvrir_multijoueur() -> void:
 	_menu.hide()

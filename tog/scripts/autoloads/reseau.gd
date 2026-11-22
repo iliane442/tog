@@ -3112,8 +3112,9 @@ func serialiser_perso() -> Dictionary:
 	# position d'exploration : pas pendant un combat (le corps vit
 	# alors dans l'arène, pas sur la map)
 	var position := _position_exploration()
-	if position.is_finite() and _scene_locale != "":
-		donnees["position"] = {"scene": _scene_locale, "x": position.x, "y": position.y}
+	var scene_fichier := _nom_fichier_scene()
+	if position.is_finite() and scene_fichier != "":
+		donnees["position"] = {"scene": scene_fichier, "x": position.x, "y": position.y}
 	return donnees
 
 # remplace le perso en mémoire par la version sauvegardée sur le serveur
@@ -3230,6 +3231,14 @@ func _position_exploration() -> Vector2:
 		return Vector2(INF, INF)
 	return joueur.global_position
 
+# nom du fichier de la scène courante ("fushia", "drum"…) : c'est lui
+# qui identifie une map dans la sauvegarde, pas le nom du nœud racine
+func _nom_fichier_scene() -> String:
+	var scene := get_tree().current_scene
+	if scene == null or scene.scene_file_path == "":
+		return ""
+	return scene.scene_file_path.get_file().get_basename()
+
 # mémorise la position d'exploration toutes les 10 s : en mémoire
 # (part au perso serveur à chaque sauvegarde) et, hors ligne, dans le
 # fichier de préférences
@@ -3239,15 +3248,16 @@ func _memoriser_position_periodique(delta: float) -> void:
 		return
 	_temps_memoire_position = 0.0
 	var position := _position_exploration()
-	if not position.is_finite() or _scene_locale == "":
+	var scene_fichier := _nom_fichier_scene()
+	if not position.is_finite() or scene_fichier == "":
 		return
-	position_memorisee = {"scene": _scene_locale, "x": position.x, "y": position.y}
+	position_memorisee = {"scene": scene_fichier, "x": position.x, "y": position.y}
 	if mode != Mode.HORS_LIGNE:
 		return
 	var cfg := ConfigFile.new()
 	if cfg.load(CHEMIN_PREF) != OK:
 		return
-	cfg.set_value("position", "scene", _scene_locale)
+	cfg.set_value("position", "scene", scene_fichier)
 	cfg.set_value("position", "x", position.x)
 	cfg.set_value("position", "y", position.y)
 	cfg.save(CHEMIN_PREF)
@@ -3273,7 +3283,9 @@ func appliquer_position_memorisee(chemin_scene: String, joueur: Node2D) -> bool:
 	if position_memorisee.is_empty() or joueur == null or not is_instance_valid(joueur):
 		return false
 	var scene_attendue := str(position_memorisee.get("scene", ""))
-	if scene_attendue == "" or chemin_scene.get_file().get_basename() != scene_attendue:
+	# comparaison insensible à la casse : les vieilles sauvegardes
+	# retenaient le nom du nœud racine ("Fushia"), pas le fichier
+	if scene_attendue == "" or scene_attendue.to_lower() != chemin_scene.get_file().get_basename().to_lower():
 		return false
 	var position := Vector2(
 		float(position_memorisee.get("x", 0.0)), float(position_memorisee.get("y", 0.0)))
@@ -3282,6 +3294,31 @@ func appliquer_position_memorisee(chemin_scene: String, joueur: Node2D) -> bool:
 	joueur.global_position = position
 	position_memorisee = {}
 	return true
+
+# un nouveau perso ne reprend pas l'exploration de l'ancien : la
+# position mémorisée disparaît de la mémoire et des préférences
+func oublier_position_memorisee() -> void:
+	position_memorisee = {}
+	var cfg := ConfigFile.new()
+	if cfg.load(CHEMIN_PREF) != OK:
+		return
+	if cfg.has_section("position"):
+		cfg.erase_section("position")
+		cfg.save(CHEMIN_PREF)
+
+# scène où le perso a été laissé : chemin complet si le fichier existe
+# ("" pour reprendre au village de départ) ; appelé par l'accueil
+# avant de charger la partie
+func scene_de_reprise() -> String:
+	var nom := str(position_memorisee.get("scene", ""))
+	if nom == "":
+		return ""
+	var chemin := "res://scenes/%s.tscn" % nom
+	if not ResourceLoader.exists(chemin):
+		chemin = "res://scenes/%s.tscn" % nom.to_lower()
+		if not ResourceLoader.exists(chemin):
+			return ""
+	return chemin
 
 func charger_preferences() -> void:
 	var cfg := ConfigFile.new()

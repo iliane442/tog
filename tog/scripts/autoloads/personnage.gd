@@ -879,9 +879,11 @@ func _equiper_sur_emplacement(emplacement: String, id: String) -> bool:
 func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 		id_profession: String = "", nouveau_sexe: String = "M") -> void:
 	# le nouveau perso ne garde rien de l'ancien : l'inventaire et
-	# l'historique des quêtes (fichiers locaux) repartent de zéro
+	# l'historique des quêtes (fichiers locaux) repartent de zéro,
+	# pas plus sa dernière position d'exploration
 	Inventaire.reinitialiser()
 	QuestManager.reinitialiser()
+	Reseau.oublier_position_memorisee()
 	nom = nouveau_nom
 	race_id = nouvelle_race
 	classe_id = nouvelle_classe
