@@ -52,7 +52,12 @@ const SORTS_BOUCLIER := {"247": 0.30}
 # cases (13 cases d'une case à l'autre du plancher)
 const SORT_ROOM_CLE := "110"
 const ROOM_RAYON := 2
-const ROOM_COUT_PV := 0.20# tours restants au bouclier posé par une Égide (0 : aucun)
+const ROOM_COUT_PV := 0.20
+# la salle dressée : ses cases restent au sol et visibles tant que
+# la Room vit ; le décompte suit les états posés (3 tours)
+var _room_cases: Array[Vector2i] = []
+var _room_tours_restants := 0
+# tours restants au bouclier posé par une Égide (0 : aucun)
 var _tours_bouclier_restants := 0
 var _pa := 0
 var _pm := 0
@@ -372,6 +377,10 @@ func _valider_placement() -> void:
 	# l'embarquement (il ne fraude pas de rencontre en rencontre)
 	Personnage.perdre_bouclier()
 	_tours_bouclier_restants = 0
+	_room_cases.clear()
+	_room_tours_restants = 0
+	if _overlay != null and _overlay.has_method("effacer_salle"):
+		_overlay.call("effacer_salle")
 	_combat_manager.valider_placement()
 
 func _faire_face_a_la_cible() -> void:
@@ -436,6 +445,11 @@ func _on_combat_termine(_victoire: bool) -> void:
 	_tour_joueur = false
 	_arreter_chrono_tour()
 	_sort_selectionne = false
+	# plus de combat : plus de salle d'opération au sol
+	_room_cases.clear()
+	_room_tours_restants = 0
+	if _overlay != null and _overlay.has_method("effacer_salle"):
+		_overlay.call("effacer_salle")
 	# combat gagné : la bénédiction de la tablette des Flots Calmes
 	# s'est consommée (en cas de fuite elle attend le prochain combat)
 	if _victoire and Personnage.prochain_combat_double:
@@ -622,6 +636,10 @@ func _apercu_zone_sort() -> Array[Vector2i]:
 	var vides: Array[Vector2i] = []
 	if _sol == null or _combat_manager == null or not _combat_manager.en_combat or not _sort_selectionne:
 		return vides
+	# la Room se dessine autour de son chirurgien dès la sélection,
+	# sans attendre le survol d'une cible
+	if _sort_selectionne_id == SORT_ROOM_CLE:
+		return _cases_room(ma_case())
 	if not SORTS_ZONE_CROIX.has(_sort_selectionne_id) and not SORTS_ZONE_BARRE.has(_sort_selectionne_id):
 		return vides
 	var sort: Dictionary = Personnage.sorts.get(_sort_selectionne_id, {})
@@ -652,6 +670,16 @@ func _lancer_room(sort: Dictionary) -> bool:
 	var touches := _room_couvrir_allies(sort)
 	Personnage.blesser(paiement)
 	_pa -= cout_pa
+	# la salle reste au sol, visible tant que la Room vit : sa
+	# durée est celle des états posés (les plus longs du sort)
+	var duree := 0
+	for effet in sort.get("effets", []):
+		if int(effet.get("duree", 0)) > duree:
+			duree = int(effet.get("duree", 0))
+	_room_cases = _cases_room(ma_case())
+	_room_tours_restants = maxi(duree, 1)
+	if _overlay != null and _overlay.has_method("afficher_salle"):
+		_overlay.call("afficher_salle", _room_cases)
 	_combat_manager.afficher_message("Room dressée : %d allié(s) opéré(s) (+25 %%, 3 tours) — %d PV versés." % [touches, paiement])
 	_scruter_fruit(SORT_ROOM_CLE)
 	_sort_selectionne = false
@@ -677,6 +705,16 @@ func _room_couvrir_allies(sort: Dictionary) -> int:
 		_combat_manager.appliquer_effets_sort(noeud, sort)
 		touches += 1
 	return touches
+
+# les cases de la salle d'opération : le losange de ROOM_RAYON autour
+# d'un centre (13 cases d'un bout à l'autre du plancher)
+func _cases_room(centre: Vector2i) -> Array[Vector2i]:
+	var cases: Array[Vector2i] = []
+	for dx in range(-ROOM_RAYON, ROOM_RAYON + 1):
+		for dy in range(-ROOM_RAYON, ROOM_RAYON + 1):
+			if absi(dx) + absi(dy) <= ROOM_RAYON:
+				cases.append(centre + Vector2i(dx, dy))
+	return cases
 
 # le fruit mangé progresse à chaque pouvoir utilisé : ses sorts se
 # débloquent par son niveau (voir Personnage.fruit_xp)
@@ -959,6 +997,15 @@ func _commencer_mon_tour(numero: int) -> void:
 		if _tours_bouclier_restants == 0 and Personnage.bouclier > 0:
 			Personnage.perdre_bouclier()
 			_combat_manager.afficher_message("Ton bouclier se dissipe.")
+	# la salle d'opération se décompte pareil : quand son dernier tour
+	# passe, le dôme verdâtre quitte le sol
+	if _room_tours_restants > 0:
+		_room_tours_restants -= 1
+		if _room_tours_restants == 0 and not _room_cases.is_empty():
+			_room_cases.clear()
+			if _overlay != null and _overlay.has_method("effacer_salle"):
+				_overlay.call("effacer_salle")
+			_combat_manager.afficher_message("La Room se dissipe.")
 	_tour_joueur = true
 	_pa = pa_max
 	_pm = _combat_manager.points_mouvement(self, pm_max)

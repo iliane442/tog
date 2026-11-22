@@ -6,6 +6,10 @@ var cases_deplacement: Array[Vector2i] = []
 var cases_sort: Array[Vector2i] = []
 # aperçu de la figure du sort de zone autour de la cible survolée
 var cases_zone: Array[Vector2i] = []
+# salle d'opération active (Room du bistouri) : contrairement aux
+# couches précédentes, elle survit aux rafraîchissements de tour —
+# c'est un décor de combat, pas une indication
+var cases_salle: Array[Vector2i] = []
 var _sol: TileMapLayer
 var _lire_case_curseur: Callable
 # fournit les cases de la figure (croix, barre...) selon la case
@@ -35,6 +39,18 @@ func definir_sol(sol: TileMapLayer, lire_case_curseur := Callable()) -> void:
 func definir_apercu_zone(lire_apercu: Callable) -> void:
 	_lire_apercu_zone = lire_apercu
 	_maj_survol()
+
+# la salle d'opération se dresse pour plusieurs tours : elle se
+# redessine au-dessus de tout jusqu'à son effacement explicite
+func afficher_salle(cases: Array[Vector2i]) -> void:
+	cases_salle = cases.duplicate()
+	_maj_survol()
+	queue_redraw()
+
+# la salle s'est dissipée
+func effacer_salle() -> void:
+	cases_salle.clear()
+	queue_redraw()
 
 func afficher(cases: Array[Vector2i]) -> void:
 	cases_deplacement = cases.duplicate()
@@ -84,6 +100,8 @@ func _draw() -> void:
 	_dessiner_cases(cases_sort, Color(1.0, 0.1, 0.1, 0.4), Color(1.0, 0.4, 0.4, 0.9), taille)
 	# la figure de zone recouvre la portée : dorée, pour la distinguer
 	_dessiner_cases(cases_zone, Color(1.0, 0.75, 0.2, 0.38), Color(1.0, 0.75, 0.35, 0.9), taille)
+	# la Room active : dôme verdâtre qui recouvre tout le reste
+	_dessiner_cases(cases_salle, Color(0.45, 0.95, 0.6, 0.30), Color(0.5, 1.0, 0.7, 0.9), taille)
 
 func _dessiner_cases(cases: Array[Vector2i], remplissage: Color, bordure: Color, taille: Vector2, epaisseur: float = 2.0) -> void:
 	for case in cases:
