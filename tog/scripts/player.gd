@@ -186,7 +186,8 @@ func _resoudre_greffe() -> void:
 		interface_hud.afficher_message_sort("Personne à opérer par ici.")
 
 # porte d'entrée des pouvoirs du fruit utilisables depuis l'onglet du
-# fruit (hors barre, hors combat) : la Greffe de Vie pour l'instant
+# fruit (hors barre, hors combat) : la Greffe de Vie se cible au clic,
+# les autres se déclenchent sur place
 func utiliser_pouvoir_fruit_menu(id_sort: String) -> void:
 	var interface_hud := get_tree().current_scene.find_child("HUD", true, false) if get_tree().current_scene != null else null
 	if _combat_manager != null and _combat_manager.en_combat:
@@ -196,6 +197,12 @@ func utiliser_pouvoir_fruit_menu(id_sort: String) -> void:
 		return
 	if id_sort == SORT_GREFFE_VIE:
 		_greffer_vie_hors_combat(interface_hud)
+		return
+	# les autres pouvoirs du menu (Brasier intérieur, Sable mouvant…)
+	# se déclenchent sur place : soin ou buff portés par Personnage
+	var message := Personnage.activer_pouvoir_fruit(id_sort)
+	if interface_hud != null and not message.is_empty():
+		interface_hud.afficher_message_sort(message)
 
 func _id_technique_race() -> String:
 	return str(Personnage.races.get(Personnage.race_id, {}).get("id_technique", RACE_DEFAUT))

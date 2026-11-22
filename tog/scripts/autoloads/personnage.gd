@@ -139,8 +139,37 @@ var fruit_xp := 0
 # progression voulue (100 -> éveil après 1000 lancements)
 const XP_FRUIT_PAR_PALIER := 100
 # pouvoirs du fruit qui ne sont pas des sorts : capacités hors barre
-# et hors combat, lancées depuis l'onglet du fruit (Greffe de Vie)
-const POUVOIRS_FRUIT_MENU: Array[String] = ["250"]
+# et hors combat, lancées depuis l'onglet du fruit (Greffe de Vie et
+# pouvoirs des autres fruits)
+const POUVOIRS_FRUIT_MENU: Array[String] = [
+	"250", "251", "252", "253", "254", "255", "256", "257", "258",
+	"259", "260", "261", "262", "263", "264", "265",
+]
+# effets des pouvoirs de menu, par id de sort : soin (fraction des PV
+# max) ou buff (mêmes clés que les effets de consommables) et durée
+const EFFETS_POUVOIRS_FRUIT := {
+	"251": {"buff": {"agilite": 8}, "duree": 5},
+	"252": {"buff": {"attack": 10}, "duree": 5},
+	"253": {"buff": {"agilite": 6, "chance": 4}, "duree": 5},
+	"254": {"buff": {"defense": 10}, "duree": 5},
+	"255": {"buff": {"force": 8}, "duree": 5},
+	"256": {"buff": {"chance": 10}, "duree": 5},
+	"257": {"buff": {"agilite": 12}, "duree": 3},
+	"258": {"buff": {"attack": 14}, "duree": 3},
+	"259": {"buff": {"intelligence": 8}, "duree": 5},
+	"260": {"buff": {"defense": 6, "agilite": 6}, "duree": 5},
+	"261": {"buff": {"defense": 4, "agilite": 6}, "duree": 5},
+	"262": {"buff": {"force": 12}, "duree": 5},
+	"263": {"buff": {"vitalite": 8}, "duree": 5},
+	"264": {"buff": {"force": 6, "chance": 6}, "duree": 5},
+	"265": {"soin": 0.35},
+}
+# libellés lisibles des clés d'effets (affichage des messages)
+const LIBELLES_EFFETS_FRUIT := {
+	"attack": "attaque", "defense": "défense", "vie": "PV max",
+	"vitalite": "vitalité", "force": "force", "intelligence": "intelligence",
+	"agilite": "agilité", "sagesse": "sagesse", "chance": "chance",
+}
 
 # Buffs temporaires des consommables utilisés : [{id: str, effets: {},
 # expire: float}] ; expire = temps unix ; les buffs échus sont purgés
@@ -402,6 +431,45 @@ func pouvoirs_fruit_menu() -> Array[String]:
 		if POUVOIRS_FRUIT_MENU.has(id):
 			ids.append(id)
 	return ids
+
+# pose (ou rafraîchit) le buff d'un pouvoir du fruit, sans objet : les
+# effets suivent le même format que ceux des consommables
+func poser_buff_fruit(id_pouvoir: String, effets: Dictionary, duree_minutes: int) -> void:
+	var expire := Time.get_unix_time_from_system() + 60.0 * maxi(duree_minutes, 1)
+	# l'id du buff porte un préfixe : il ne frotte jamais avec celui
+	# d'un consommable portant le même numéro
+	var cle_buff := "pouvoir_%s" % id_pouvoir
+	for i in range(buffs.size()):
+		if str(buffs[i].get("id", "")) == cle_buff:
+			buffs.remove_at(i)
+			break
+	buffs.append({"id": cle_buff, "effets": effets, "expire": expire})
+	recalculer_stats(false)
+	sauvegarder()
+
+# active un pouvoir de menu du fruit autre que la Greffe de Vie : un
+# soin ou un buff temporaire selon EFFETS_POUVOIRS_FRUIT ; renvoie le
+# message à montrer au joueur ("" si le pouvoir n'a pas d'effet ici)
+func activer_pouvoir_fruit(id_pouvoir: String) -> String:
+	if not EFFETS_POUVOIRS_FRUIT.has(id_pouvoir) or not sorts.has(id_pouvoir):
+		return ""
+	var effets: Dictionary = EFFETS_POUVOIRS_FRUIT[id_pouvoir]
+	var nom := str(sorts[id_pouvoir].get("nom", "Pouvoir du fruit"))
+	var soin := float(effets.get("soin", 0.0))
+	if soin > 0.0:
+		var montant := maxi(roundi(float(vie_max) * soin), 1)
+		soigner(montant)
+		sauvegarder()
+		return "%s : +%d PV." % [nom, montant]
+	var buff: Dictionary = effets.get("buff", {})
+	if buff.is_empty():
+		return ""
+	var duree_minutes := maxi(int(effets.get("duree", 5)), 1)
+	poser_buff_fruit(id_pouvoir, buff, duree_minutes)
+	var morceaux: Array[String] = []
+	for cle in buff:
+		morceaux.append("+%d %s" % [int(buff[cle]), str(LIBELLES_EFFETS_FRUIT.get(cle, cle))])
+	return "%s : %s pendant %d min." % [nom, " • ".join(morceaux), duree_minutes]
 
 # pouvoirs du fruit mangé pas encore débloqués, du plus tôt au plus
 # tard : [{"id": String, "niveau": int}]
