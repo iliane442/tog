@@ -116,7 +116,7 @@ libelle_traversee = "Remonter vers Reverse Mountain"
 position = Vector2(330.0, 2304.0)
 paroles = "L'Île Céleste ? On n'y va pas en bateau, on y monte : le Chenal des Célestes soulève les coques assez haut pour voir Alubarna depuis les nuages. Pell y soigne son aile au sanctuaire — file voir, le désert te sèchera assez vite ici-bas."
 destination = "res://scenes/ile_celeste.tscn"
-arrivee = &"DepuisIleCeleste"
+arrivee = &"DepuisAlabasta"
 libelle_traversee = "Embarquer pour l'Île Céleste"
 
 [node name="CapitaineMistral" parent="." instance=ExtResource("FerryZou")]
