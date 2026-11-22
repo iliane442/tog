@@ -146,6 +146,10 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var btn_ouvrir_tous: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnOuvrirTous
 @onready var btn_vendre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnVendre
 @onready var btn_navire: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnNavire
+@onready var slots_navire: VBoxContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauNavire/ColonneNavire/SlotsNavire
+@onready var bonus_navire: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauNavire/ColonneNavire/BonusNavire
+# bouton de la colonne NAVIRE, rempli à la première ouverture
+var _boutons_navire: Dictionary = {}
 @onready var panneau_personnage_inventaire: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette
 @onready var panneau_sac: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac
 @onready var panneau_detail: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem
@@ -484,6 +488,7 @@ func maj_section() -> void:
 			maj_quetes()
 		"inventaire":
 			maj_equipement()
+			maj_panneau_navire()
 			if _grille_sale:
 				maj_grille()
 		"wiki":
@@ -554,6 +559,7 @@ func _sur_personnage_modifie() -> void:
 	elif section_actuelle == "inventaire":
 		_maj_resume_personnage()
 		_maj_monnaie_et_compteur()
+		maj_panneau_navire()
 		if detail_id_courant != "":
 			var details_inventaire := Inventaire.details_objet(detail_id_courant)
 			_maj_bouton_equiper(details_inventaire, detail_id_courant)
@@ -1933,7 +1939,50 @@ func _on_bouton_navire() -> void:
 			return
 		prix_detail.text = "%s installé sur le navire." % nom_piece
 	maj_grille()
+	maj_panneau_navire()
 	maj_detail_item(detail_id_courant)
+
+# colonne NAVIRE de l'inventaire : un bouton par emplacement ; cliqué,
+# il ouvre la fiche de la pièce installée (à droite, avec son bouton
+# « Retirer du navire »)
+func maj_panneau_navire() -> void:
+	if _boutons_navire.is_empty():
+		for emplacement in Personnage.EMPLACEMENTS_NAVIRE.values():
+			var bouton := Button.new()
+			bouton.custom_minimum_size = Vector2(0, 52)
+			bouton.expand_icon = true
+			bouton.pressed.connect(_sur_slot_navire.bind(str(emplacement)))
+			slots_navire.add_child(bouton)
+			_boutons_navire[str(emplacement)] = bouton
+	for emplacement in _boutons_navire:
+		var bouton: Button = _boutons_navire[emplacement]
+		var id_piece := str(Personnage.bateau.get(emplacement, ""))
+		if id_piece == "":
+			bouton.text = "%s\n· vide ·" % emplacement
+			bouton.icon = null
+			bouton.disabled = true
+			bouton.tooltip_text = "Emplacement libre : installe une pièce depuis le sac (bouton « Installer sur le navire »)."
+			continue
+		var details := Inventaire.details_objet(id_piece)
+		bouton.text = "%s\n%s" % [emplacement, Inventaire.nom_objet(id_piece)]
+		bouton.icon = _icone_objet(details)
+		bouton.disabled = false
+		bouton.tooltip_text = "%s\nClic pour examiner la pièce et la retirer." % str(details.get("description", ""))
+	var stats := Personnage.stats_bateau()
+	if int(stats["solidite"]) <= 0 and float(stats["tempete"]) <= 0.0:
+		bonus_navire.text = "Aucune pièce installée."
+	else:
+		bonus_navire.text = "%d solidité · %d%% tempête\n+%d PV · +%d DEF · +%d%% vitesse" % [
+			int(stats["solidite"]), int(stats["tempete"]),
+			int(stats["solidite"]) / 20, int(stats["solidite"]) / 200,
+			roundi(float(stats["tempete"]))]
+
+# affiche en détail la pièce installée sur un emplacement du navire
+func _sur_slot_navire(emplacement: String) -> void:
+	var id_piece := str(Personnage.bateau.get(emplacement, ""))
+	if id_piece == "":
+		return
+	maj_detail_item(id_piece)
 
 # --- Hôtel des ventes ---
 
