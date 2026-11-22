@@ -14,6 +14,7 @@ const CATEGORIES := {
 const ORDRE_LEGENDE := ["quetes", "marchands", "pnj", "ennemis", "voyages", "ressources", "butin", "joueurs"]
 const CONTOUR := Color("#231b18")
 const INTERVALLE_ACTUALISATION := 0.12
+const SCRIPT_CARTE_AGRANDIE := preload("res://scripts/world/carte_agrandie.gd")
 
 @export var dimensions_monde := Vector2.ONE
 @export var reperes: Dictionary[Vector2, String] = {}
@@ -21,6 +22,7 @@ const INTERVALLE_ACTUALISATION := 0.12
 @onready var joueur: Node2D = get_tree().get_first_node_in_group("player")
 
 static var _categories_masquees: Dictionary = {}
+static var _agrandie: CanvasLayer = null
 var _calque: Control
 var _font: Font
 var _marqueurs: Array[Dictionary] = []
@@ -36,7 +38,39 @@ func _ready() -> void:
 	_calque.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_calque.draw.connect(_dessiner_marqueurs)
 	_creer_legende()
+	_creer_bouton_agrandir()
 	_actualiser_marqueurs.call_deferred()
+
+# bouton d'accès à la vue agrandie, juste sous la carte du panneau
+func _creer_bouton_agrandir() -> void:
+	var bouton := Button.new()
+	bouton.name = "BoutonAgrandir"
+	bouton.text = "⤢ Agrandir (touche C)"
+	bouton.tooltip_text = "Afficher la carte de la zone en grand."
+	bouton.add_theme_font_size_override("font_size", 14)
+	bouton.pressed.connect(basculer_agrandie)
+	var parent := get_parent()
+	parent.add_child(bouton)
+	parent.move_child(bouton, get_index() + 1)
+
+# la touche C ouvre ou referme la vue agrandie de la carte
+func _unhandled_input(evenement: InputEvent) -> void:
+	if evenement is InputEventKey and evenement.pressed and not evenement.echo \
+			and evenement.keycode == KEY_C:
+		basculer_agrandie()
+		get_viewport().set_input_as_handled()
+
+# ouvre la vue agrandie si elle n'existe pas, la referme sinon ; une
+# seule vue à la fois, quel que soit le panneau qui la demande
+func basculer_agrandie() -> void:
+	if _agrandie != null and is_instance_valid(_agrandie):
+		_agrandie.fermer()
+		return
+	if not is_visible_in_tree():
+		return
+	_agrandie = SCRIPT_CARTE_AGRANDIE.new()
+	get_tree().current_scene.add_child(_agrandie)
+	_agrandie.ouvrir(self)
 
 func _process(delta: float) -> void:
 	if not is_visible_in_tree():
