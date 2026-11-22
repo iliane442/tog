@@ -499,7 +499,7 @@ func maj_section() -> void:
 	titre.text = noms_sections[section_actuelle]
 	# filtre d'emplacement actif : l'onglet le dit
 	if section_actuelle == "inventaire" and filtre_emplacement != "":
-		titre.text += " — %s seulement" % TEXTES_EMPLACEMENTS.get(filtre_emplacement, filtre_emplacement)
+		titre.text += " — %s seulement" % _libelle_emplacement_filtre(filtre_emplacement)
 	match section_actuelle:
 		"personnage":
 			maj_personnage()
@@ -628,6 +628,17 @@ func _rang_rarete(id: String) -> int:
 func _on_tri_sac_choisi(index: int) -> void:
 	_tri_par_rarete = index == 1
 	maj_grille()
+
+# libellé affiché d'un emplacement de filtre : paperdoll ou navire
+const LIBELLES_EMPLACEMENTS_NAVIRE := {
+	"planche": "Planches", "gouvernail": "Gouvernails", "mat": "Mâts",
+	"coque": "Coques", "proue": "Figures de proue",
+}
+
+func _libelle_emplacement_filtre(emplacement: String) -> String:
+	if LIBELLES_EMPLACEMENTS_NAVIRE.has(emplacement):
+		return LIBELLES_EMPLACEMENTS_NAVIRE[emplacement]
+	return str(TEXTES_EMPLACEMENTS.get(emplacement, emplacement))
 
 func _maj_monnaie_et_compteur() -> void:
 	monnaie.text = "%s Berry" % _formater_nombre(Personnage.berry)
@@ -1030,8 +1041,12 @@ func _objet_visible(id: String, type_choisi: Variant) -> bool:
 
 # l'objet peut-il prendre la place visée ? les catégories « arme » et
 # « anneau » couvrent leurs deux emplacements (principal/secondaire,
-# anneau1/anneau2)
+# anneau1/anneau2) ; un emplacement de navire n'accepte que sa pièce
 func _objet_pour_emplacement(id: String, emplacement: String) -> bool:
+	if Personnage.EMPLACEMENTS_NAVIRE.values().has(emplacement):
+		return Personnage.emplacement_navire(id) == emplacement
+	if Personnage.emplacement_navire(id) != "":
+		return false
 	var details := Inventaire.details_objet(id)
 	var cible := Personnage.emplacement_equipement(str(details.get("type", "")), str(details.get("sous_type", "")))
 	if cible == "":
@@ -2049,12 +2064,18 @@ func maj_panneau_navire() -> void:
 			int(stats["solidite"]) / 20, int(stats["solidite"]) / 200,
 			roundi(float(stats["tempete"]))]
 
-# affiche en détail la pièce installée sur un emplacement du navire
+# affiche en détail la pièce installée sur un emplacement du navire ;
+# un clic filtre la grille sur les pièces de cette place, un second
+# clic la lève - le même geste que sur le paperdoll d'équipement
 func _sur_slot_navire(emplacement: String) -> void:
+	if filtre_emplacement == emplacement:
+		filtre_emplacement = ""
+	else:
+		filtre_emplacement = emplacement
+	maj_grille()
 	var id_piece := str(Personnage.bateau.get(emplacement, ""))
-	if id_piece == "":
-		return
-	maj_detail_item(id_piece)
+	if id_piece != "":
+		maj_detail_item(id_piece)
 
 # la colonne de gauche de l'inventaire montre l'équipement OU le
 # navire, jamais les deux en même temps : deux boutons couplés
