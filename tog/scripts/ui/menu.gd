@@ -1588,7 +1588,10 @@ func maj_detail_wiki(id: String) -> void:
 	var details := Inventaire.details_objet(id)
 	# l'encyclopédie des fruits du démon révèle leur fiche sans rencontre
 	var fruit_revele := str(details.get("type", "")) == "fruit_demon" and _encyclopedie_fruits_possedee()
-	if not Inventaire.est_connu(id) and not fruit_revele:
+	# les ressources sont des repères de terrain : leur fiche est
+	# publique dès le départ
+	var ressource_revelee := str(details.get("type", "")) == "ressource"
+	if not Inventaire.est_connu(id) and not fruit_revele and not ressource_revelee:
 		icone_wiki.texture = load(ICONE_CADENAS)
 		type_wiki.text = ""
 		description_wiki.text = "Objet non encore rencontré. Ses caractéristiques apparaîtront quand vous le trouverez."
@@ -1614,7 +1617,91 @@ func maj_detail_wiki(id: String) -> void:
 			texte_stats = (texte_pouvoirs + "\n" + texte_stats) if texte_stats != "" else texte_pouvoirs
 	stats_wiki.text = texte_stats
 	stats_wiki.visible = texte_stats != ""
+	# pour une ressource, la fiche dit où la récupérer : points de
+	# récolte des zones et ennemis qui la laisse tomber
+	if ressource_revelee:
+		var sources := _sources_ressource(id)
+		if sources != "":
+			var texte_sources := "Récupération : %s" % sources
+			stats_wiki.text = (texte_stats + "\n" + texte_sources) if texte_stats != "" else texte_sources
+			stats_wiki.show()
 	prix_wiki.text = "Prix : %d Berry" % int(details.get("prix", 0))
+
+# --- sources des ressources (wiki) ---
+
+# scènes qui portent des points de récolte : leurs nœuds « point_fushia »
+# avec une propriété `objet` non vide donnent des ressources
+const SCENES_RECOLTE := [
+	"res://scenes/fushia_decors.tscn",
+	"res://scenes/alabasta.tscn",
+	"res://scenes/baratie.tscn",
+	"res://scenes/coco_village.tscn",
+	"res://scenes/drum.tscn",
+	"res://scenes/little_garden.tscn",
+	"res://scenes/loguetown.tscn",
+	"res://scenes/mont_corvo.tscn",
+	"res://scenes/orange_town.tscn",
+	"res://scenes/reverse_mountain.tscn",
+	"res://scenes/shells_town.tscn",
+	"res://scenes/syrup_village.tscn",
+	"res://scenes/whisky_peak.tscn",
+	"res://scenes/zou.tscn",
+]
+
+# id d'item -> [nom de zone] : rempli une fois au premier wiki ouvert
+static var _recoltes_par_item: Dictionary = {}
+
+# nom lisible d'une scène de récolte ("mont_corvo" → "Mont Corvo") :
+# underscores en espaces, première lettre capitale
+func _nom_zone_recolte(chemin_scene: String) -> String:
+	var base := chemin_scene.get_file().get_basename()
+	base = base.replace("_decors", "").replace("_", " ")
+	return base.capitalize()
+
+# relit les scènes de récolte une fois par session : pour chaque
+# nœud porteur d'un objet, la zone offre cet id
+func _recenser_recoltes() -> void:
+	if not _recoltes_par_item.is_empty():
+		return
+	for chemin in SCENES_RECOLTE:
+		if not ResourceLoader.exists(chemin):
+			continue
+		var scene := load(chemin) as PackedScene
+		if scene == null:
+			continue
+		var zone := _nom_zone_recolte(chemin)
+		var etat := scene.get_state()
+		for index_noeud in range(etat.get_node_count()):
+			for index_propriete in range(etat.get_node_property_count(index_noeud)):
+				if etat.get_node_property_name(index_noeud, index_propriete) != &"objet":
+					continue
+				var id_objet := str(etat.get_node_property_value(index_noeud, index_propriete))
+				if not id_objet.is_valid_int() or id_objet == "":
+					break
+				if not _recoltes_par_item.has(id_objet):
+					_recoltes_par_item[id_objet] = []
+				var zones: Array = _recoltes_par_item[id_objet]
+				if not zones.has(zone):
+					zones.append(zone)
+
+# phrase « où récupérer » d'une ressource : zones de récolte et
+# ennemis qui la laissent tomber ; "" si rien de connu
+func _sources_ressource(id: String) -> String:
+	var fragments: Array[String] = []
+	_recenser_recoltes()
+	var zones: Array = _recoltes_par_item.get(id, [])
+	if not zones.is_empty():
+		zones.sort()
+		fragments.append("récolte à %s" % " ; ".join(PackedStringArray(zones)))
+	if BaseDonnees.disponible and id.is_valid_int():
+		var butins: Array[String] = []
+		for ligne in BaseDonnees.lire(
+			"SELECT DISTINCT entity_name FROM drop_rates WHERE item_id = %d AND is_active = 1;" % int(id)):
+			butins.append(str(ligne["entity_name"]))
+		if not butins.is_empty():
+			butins.sort()
+			fragments.append("butin de : %s" % " ; ".join(butins))
+	return " | ".join(fragments)
 
 # pouvoirs d'un fruit du démon (tables `fruit_skills` + `skills`),
 # au format "Nom (coût PA)" ; vide si le fruit n'a aucun pouvoir rattaché
