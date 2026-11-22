@@ -517,6 +517,7 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		if soin <= 0 and int(sort.get("degats", 0)) > 0:
 			degats = _combat_manager.calculer_degats(self, cible, int(sort.get("degats", 0)), str(sort.get("type", "")), int(sort.get("portee", 1)))
 			cible.recevoir_degats(degats)
+			_degats_zone_croix(_id_sort, cible, degats)
 		var etats_appliques: Array = []
 		if _combat_manager.en_combat:
 			etats_appliques = _combat_manager.appliquer_effets_sort(cible, sort)
@@ -538,6 +539,30 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 	_maj_affichage()
 	_afficher_cases()
 	return true
+
+# sorts de zone : l'attaque frappe aussi les cases au contact de la
+# cible (croix : haut, bas, gauche, droite) — les figures actuelles
+const SORTS_ZONE_CROIX := ["245"]
+
+func _degats_zone_croix(id_sort: String, cible_principale: Node2D, degats: int) -> void:
+	if degats <= 0 or not SORTS_ZONE_CROIX.has(id_sort):
+		return
+	if cible_principale == null or not is_instance_valid(cible_principale) or _combat_manager == null:
+		return
+	var case_centre := _case_de(cible_principale.global_position)
+	var cases_contact: Array[Vector2i] = [
+		case_centre + Vector2i.UP, case_centre + Vector2i.DOWN,
+		case_centre + Vector2i.LEFT, case_centre + Vector2i.RIGHT,
+	]
+	var touches := 0
+	for ennemi in _combat_manager.ennemis_actifs():
+		if ennemi == cible_principale:
+			continue
+		if cases_contact.has(_case_de(ennemi.global_position)):
+			ennemi.recevoir_degats(degats)
+			touches += 1
+	if touches > 0:
+		_combat_manager.afficher_message("La zone de stèle touche %d ennemi(s) au contact." % touches)
 
 # le sort consommé part en recharge : base_cooldown tours séparent
 # deux lancements (1 = jouable à chaque tour, la recharge est
