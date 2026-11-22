@@ -51,7 +51,30 @@ func _ready() -> void:
 	btn_tout_afficher.pressed.connect(_on_tout_afficher)
 	btn_tout.pressed.connect(_on_tout_prendre)
 	btn_fermer.pressed.connect(fermer)
+	# monde partagé : nos prises online ne sont créditées qu'après
+	# confirmation du serveur (annonce à la réception), et les prises
+	# des autres joueurs retirent les objets de la fenêtre ouverte
+	Coffres.prise_distante.connect(_sur_prise_distante)
+	Coffres.coffre_modifie.connect(_sur_coffre_modifie)
 	popup.modulate.a = 0.0
+
+# prises confirmées par le serveur (objet demandé ou vidage) : annonce
+# et rafraîchissement une fois créditées à l'inventaire
+func _sur_prise_distante(prises: Array) -> void:
+	if not fenetre.visible:
+		return
+	_annonce_pris(prises)
+	_rafraichir()
+
+# un coffre affiché évolue (état serveur, prise par un autre joueur) :
+# la fenêtre reflète son contenu restant
+func _sur_coffre_modifie(coffre_id: String) -> void:
+	if not fenetre.visible:
+		return
+	for source in _sources:
+		if str(source["coffre_id"]) == str(coffre_id):
+			_rafraichir()
+			return
 
 # coffre posé sur la carte
 func ouvrir(coffre: Node2D, contenu: Array) -> void:

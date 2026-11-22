@@ -28,6 +28,7 @@ var equipement: Dictionary = {
 var metiers: Dictionary = {}
 
 const POINTS_PAR_NIVEAU := 5
+const EFFET_REATTRIBUTION := "reset_stats"
 
 # impacts des points de caractéristiques (la vitalité donne +5 PV par
 # point, cf. recalculer_stats / depenser_point) ; la caractéristique
@@ -62,6 +63,10 @@ const CLASSES_REMPLACEMENT := {
 var sexe: String = "M"
 const VALEURS_SEXES_VALIDES: Array[String] = ["M", "F"]
 var perso_cree := false
+# vrai quand le perso vit sur le serveur (compte connecté) : chaque
+# sauvegarde part immédiatement au serveur et le fichier local
+# perso.cfg n'est plus lu ni écrit (il ne sert qu'en mode hors ligne)
+var en_ligne := false
 
 # Caractéristiques (style Dofus)
 var caracteristiques: Dictionary = {
@@ -78,6 +83,12 @@ var caracteristiques: Dictionary = {
 # Utilisée par les combats ; composée dans l'onglet Sorts du menu.
 const TAILLE_BARRE_SORTS := 10
 var barre_sorts: Array[String] = []
+
+# barre d'objets : ids d'items consommables placés par le joueur (dans
+# l'ordre) ; seuls les consommables possédés peuvent y figurer, les
+# emplacements se vident quand la quantité tombe à zéro
+const TAILLE_BARRE_OBJETS := 10
+var barre_objets: Array[String] = []
 
 # Fruit du démon mangé (id de l'item, table `items`) ; "" si aucun.
 # Manger un fruit est définitif : un seul fruit par personnage.
@@ -116,11 +127,15 @@ var classes: Dictionary = {
 signal caracteristiques_modifiees
 signal metiers_modifies
 signal barre_sorts_modifiee
+signal barre_objets_modifiee
 
 func _ready() -> void:
 	# sauvegarde automatique du perso à chaque changement de stats
 	caracteristiques_modifiees.connect(_auto_sauvegarder)
 	metiers_modifies.connect(_auto_sauvegarder)
+	# inventaire : un consommable vendu ou consommé jusqu'à la dernière
+	# unité quitte la barre d'objets
+	Inventaire.inventaire_modifie.connect(filtrer_barre_objets)
 	# les données viennent de la base SQLite ; les dictionnaires au-dessus
 	# servent de repli si la base est indisponible
 	if BaseDonnees.disponible:
@@ -336,6 +351,8 @@ func utiliser_pouvoir_fruit(id_sort: String) -> Array[String]:
 					barre_sorts.append(id)
 		caracteristiques_modifiees.emit()
 	sauvegarder()
+	if not debloques.is_empty():
+		barre_sorts_modifiee.emit()
 	return debloques
 
 # sorts plaçables dans la barre de combat : ceux de la classe, plus
@@ -378,6 +395,50 @@ func _filtrer_barre_sorts() -> void:
 		if not sorts_disponibles().has(id_sort):
 			barre_sorts.erase(id_sort)
 
+# --- barre d'objets (consommables) ---
+
+func objet_dans_barre(id: String) -> bool:
+	return id in barre_objets
+
+func barre_objets_pleine() -> bool:
+	return barre_objets.size() >= TAILLE_BARRE_OBJETS
+
+# place un consommable possédé dans le premier emplacement libre de
+# la barre d'objets ; renvoie false si l'objet ne s'y prête pas (pas
+# consommable, pas possédé, déjà placé ou barre pleine)
+func ajouter_objet_barre(id: String) -> bool:
+	if int(Inventaire.objets.get(id, 0)) <= 0:
+		return false
+	if str(Inventaire.details_objet(id).get("type", "")) != "consumable":
+		return false
+	if objet_dans_barre(id) or barre_objets_pleine():
+		return false
+	barre_objets.append(id)
+	sauvegarder()
+	barre_objets_modifiee.emit()
+	return true
+
+# retire un consommable de la barre d'objets (rien ne se passe s'il
+# n'y figure pas)
+func retirer_objet_barre(id: String) -> void:
+	if barre_objets.has(id):
+		barre_objets.erase(id)
+		sauvegarder()
+		barre_objets_modifiee.emit()
+
+# garde en barre uniquement les consommables encore possédés : vendus,
+# consommés jusqu'à la dernière unité ou perdus, un emplacement se
+# vide ; les autres quantités rafraîchissent l'affichage
+func filtrer_barre_objets() -> void:
+	var modification := false
+	for id_objet in barre_objets.duplicate():
+		if int(Inventaire.objets.get(id_objet, 0)) <= 0:
+			barre_objets.erase(id_objet)
+			modification = true
+	if modification:
+		sauvegarder()
+		barre_objets_modifiee.emit()
+
 # Mange un fruit du démon de l'inventaire : ses pouvoirs sont débloqués
 # définitivement, ses bonus passifs s'appliquent et le fruit ne peut plus
 # être trouvé dans le monde (unique_items). Renvoie "" si réussi, sinon
@@ -400,11 +461,15 @@ func manger_fruit(id_fruit: String) -> String:
 			"UPDATE unique_items SET is_consumed = 1 WHERE item_id = %d;" % id_fruit.to_int())
 	# les pouvoirs du fruit déjà débloqués rejoignent la barre s'il reste
 	# de la place ; les suivants suivront au fil des niveaux (gagner_xp)
+	var barre_changee := false
 	for id in sorts_fruit():
 		if sorts.has(id) and not sort_dans_barre(id) and not barre_sorts_pleine():
 			barre_sorts.append(id)
+			barre_changee = true
 	recalculer_stats()
 	sauvegarder()
+	if barre_changee:
+		barre_sorts_modifiee.emit()
 	return ""
 
 # ids des sorts de ce fruit en base (sans dépendre du fruit mangé)
@@ -426,12 +491,14 @@ func sorts_fruit_disponibles_pour(id_fruit: String) -> bool:
 # même potion rafraîchit son buff au lieu de le cumuler. Renvoie ""
 # si réussi, sinon un message d'erreur expliquant le refus.
 func utiliser_objet(id_objet: String) -> String:
-	if not Inventaire.objets.has(id_objet):
+	if int(Inventaire.objets.get(id_objet, 0)) <= 0:
 		return "Tu ne possèdes pas cet objet."
 	var details := Inventaire.details_objet(id_objet)
 	if str(details.get("type", "")) != "consumable":
 		return "Cet objet ne se consomme pas."
 	var effets: Dictionary = details.get("effets", {})
+	if bool(effets.get(EFFET_REATTRIBUTION, false)):
+		return _utiliser_parchemin_reattribution(id_objet)
 	# carte au trésor : elle se déchiffre et plante une croix sur la
 	# carte du monde (aucun soin ni buff)
 	if str(details.get("sous_type", "")) == "carte_tresor":
@@ -465,9 +532,29 @@ func utiliser_objet(id_objet: String) -> String:
 	sauvegarder()
 	return ""
 
+func points_recuperables() -> int:
+	var total := 0
+	for cle in caracteristiques:
+		total += maxi(int(points_depenses.get(cle, 0)), 0)
+	return total
+
+func _utiliser_parchemin_reattribution(id_objet: String) -> String:
+	var scene := get_tree().current_scene
+	var combat := scene.get_node_or_null("CombatManager") if scene != null else null
+	if combat != null and combat.en_combat:
+		return "Ce parchemin s’utilise hors combat."
+	var points := points_recuperables()
+	if points == 0:
+		return "Tu n’as aucun point investi à récupérer."
+	points_statistique += points
+	points_depenses.clear()
+	Inventaire.retirer_objet(id_objet, 1)
+	recalculer_stats(false)
+	return ""
+
 # Applique les bonus de la race et de la classe sur les stats de base,
 # puis réapplique les points de caractéristiques dépensés
-func recalculer_stats() -> void:
+func recalculer_stats(remplir_vie := true) -> void:
 	vie_max = 100
 	attaque = 0
 	defense = 0
@@ -510,7 +597,7 @@ func recalculer_stats() -> void:
 	for buff in actifs:
 		_appliquer_effets_objet(buff.get("effets", {}))
 	vie_max = maxi(vie_max, 1)
-	vie = vie_max
+	vie = vie_max if remplir_vie else clampi(vie, 0, vie_max)
 	caracteristiques_modifiees.emit()
 
 # applique les effets d'un objet (paires clé -> valeur de effects_json)
@@ -651,6 +738,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	berry = 0
 	points_statistique = 0
 	barre_sorts = []
+	barre_objets = []
 	fruit_id = ""
 	fruit_xp = 0
 	buffs = []
@@ -670,16 +758,23 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 		"anneau1": "", "anneau2": "",
 	}
 	recalculer_stats()
-	_ecrire_fichier_perso()
+	perso_cree = true
+	sauvegarder()
+	barre_sorts_modifiee.emit()
 
 func sauvegarder() -> void:
+	# en ligne, le serveur est l'unique référence du perso : la
+	# sauvegarde locale n'est plus touchée pendant la session
+	if en_ligne:
+		Reseau.sauvegarder_perso_immediat()
+		return
 	_ecrire_fichier_perso()
 
 # connecté à caracteristiques_modifiees : le perso existant se sauvegarde
 # tout seul à chaque changement (XP, Berry, points, vie...)
 func _auto_sauvegarder() -> void:
 	if perso_cree:
-		_ecrire_fichier_perso()
+		sauvegarder()
 
 func _ecrire_fichier_perso() -> void:
 	var cfg := ConfigFile.new()
@@ -696,12 +791,17 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "equipement", equipement)
 	cfg.set_value("perso", "metiers", metiers)
 	cfg.set_value("perso", "barre_sorts", barre_sorts)
+	cfg.set_value("perso", "barre_objets", barre_objets)
 	cfg.set_value("perso", "fruit", fruit_id)
 	cfg.set_value("perso", "fruit_xp", fruit_xp)
 	cfg.set_value("perso", "buffs", buffs)
 	perso_cree = cfg.save(CHEMIN_PERSO) == OK
 
 func charger_perso() -> void:
+	# en ligne, la référence est le perso serveur : ne jamais reprendre
+	# le perso.cfg local par-dessus
+	if en_ligne:
+		return
 	var cfg := ConfigFile.new()
 	if cfg.load(CHEMIN_PERSO) != OK:
 		return
@@ -730,6 +830,14 @@ func charger_perso() -> void:
 			var id := str(id_sort)
 			if not barre_sorts.has(id):
 				barre_sorts.append(id)
+	var barre_objets_lue = cfg.get_value("perso", "barre_objets", [])
+	if barre_objets_lue is Array:
+		barre_objets = []
+		for id_objet in barre_objets_lue:
+			var id_item := str(id_objet)
+			if not barre_objets.has(id_item):
+				barre_objets.append(id_item)
+	filtrer_barre_objets()
 	fruit_id = str(cfg.get_value("perso", "fruit", ""))
 	fruit_xp = maxi(int(cfg.get_value("perso", "fruit_xp", 0)), 0)
 	buffs = []
@@ -738,7 +846,6 @@ func charger_perso() -> void:
 		for buff in buffs_lus:
 			if buff is Dictionary:
 				buffs.append(buff)
-	_filtrer_barre_sorts()
 	var equip = cfg.get_value("perso", "equipement", {})
 	if equip is Dictionary:
 		# re-mappe chaque objet équipé vers son emplacement (compatibilité avec
@@ -755,6 +862,10 @@ func charger_perso() -> void:
 				equipement[cible] = id_equipe
 	niveau = int(cfg.get_value("perso", "niveau", 1))
 	xp = int(cfg.get_value("perso", "xp", 0))
+	# filtrer la barre seulement ici : le niveau est connu, les sorts de
+	# classe débloqués au fil des niveaux ne quittent pas la barre au
+	# chargement (fruit et classe sont déjà lus à ce stade)
+	_filtrer_barre_sorts()
 	# classe remappée : les sorts de l'ancienne classe ont quitté la
 	# barre (_filtrer_barre_sorts), ceux de la nouvelle la remplissent
 	# s'il reste de la place — ici le niveau est chargé, les déblocages
@@ -768,8 +879,12 @@ func charger_perso() -> void:
 	# un seul métier par personnage — les sauvegardes à plusieurs métiers
 	# (ancien bouton Apprendre) ou sans métier sont normalisées
 	perso_cree = true
+	# la barre a pu changer (filtre, remap de classe) : le HUD suit
+	barre_sorts_modifiee.emit()
 
-func supprimer_perso() -> void:
+# remet le perso en mémoire à zéro, sans toucher à la sauvegarde locale :
+# un compte serveur sans perso repart d'une création à neuf
+func reinitialiser() -> void:
 	perso_cree = false
 	nom = "Héros"
 	race_id = "1"
@@ -779,6 +894,7 @@ func supprimer_perso() -> void:
 	berry = 0
 	points_statistique = 0
 	barre_sorts = []
+	barre_objets = []
 	fruit_id = ""
 	fruit_xp = 0
 	buffs = []
@@ -790,6 +906,11 @@ func supprimer_perso() -> void:
 		"anneau1": "", "anneau2": "",
 	}
 	recalculer_stats()
+	# la barre repart à vide : l'interface suit
+	barre_sorts_modifiee.emit()
+
+func supprimer_perso() -> void:
+	reinitialiser()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(CHEMIN_PERSO))
 
 func xp_prochain_niveau() -> int:
@@ -809,6 +930,27 @@ func bonus_degats_sort(type_sort: String, portee_sort: int) -> float:
 # soin ajouté aux sorts de type heal (intelligence)
 func bonus_soin_sort() -> float:
 	return float(caracteristiques.get("intelligence", 0)) * SOIN_PAR_INTELLIGENCE
+
+# la caractéristique qui augmente les effets d'un sort ("" si aucune) :
+# la Force muscle le corps à corps, l'Intelligence la distance et les
+# soins — c'est elle qu'il faut améliorer pour renforcer ce sort
+func stat_booster_sort(sort: Dictionary) -> String:
+	var type := str(sort.get("type", "")).to_lower()
+	if type == "attack":
+		return "Force" if int(sort.get("portee", 1)) <= 1 else "Intelligence"
+	if type == "heal" or type == "healing":
+		return "Intelligence"
+	return ""
+
+# bonus actuel de la caractéristique du sort sur ses effets (dégâts ou
+# soin), avec les stats courantes du personnage
+func bonus_sort_actuel(sort: Dictionary) -> float:
+	var type := str(sort.get("type", "")).to_lower()
+	if type == "attack":
+		return bonus_degats_sort(type, int(sort.get("portee", 1)))
+	if type == "heal" or type == "healing":
+		return bonus_soin_sort()
+	return 0.0
 
 # récompense d'XP avec le bonus de sagesse appliqué (pour gagner_xp
 # et l'affichage des récompenses de victoire)
@@ -846,10 +988,15 @@ func gagner_xp(montant: int) -> void:
 	# un nouveau sort de classe s'est débloqué -> placé dans la barre
 	# s'il reste de la place ; les pouvoirs du fruit suivent une autre
 	# progression : le niveau du fruit (utiliser_pouvoir_fruit)
+	var barre_changee := false
 	if niveau > niveau_avant:
 		for id_sort in sorts_de_classe():
 			if not sort_dans_barre(id_sort) and not barre_sorts_pleine():
 				barre_sorts.append(id_sort)
+				barre_changee = true
+	# la barre a bougé : le HUD et le menu se resynchronisent
+	if barre_changee:
+		barre_sorts_modifiee.emit()
 	caracteristiques_modifiees.emit()
 
 # Dépense un point de caractéristique ; renvoie true si réussi

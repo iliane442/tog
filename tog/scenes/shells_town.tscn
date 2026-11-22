@@ -1,0 +1,483 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_fushia.tscn" id="Capitaine"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_orange.tscn" id="FerryOrange"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="pnj"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="PointFushia"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-marine-building-v0.png" id="marine"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-medium-house-v0.png" id="maison_moyenne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-small-house-v0.png" id="petite_maison"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-tavern-v0.png" id="taverne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-warehouse-v0.png" id="entrepot"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-market-stall-v0.png" id="etal"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-statue-de-place.png" id="statue"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="caisses"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="panneau"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="bateau"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pnj/coby.png" id="coby"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="alba"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="lanterne"]
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[node name="ShellsTown" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"####################################################################",
+	"####################################################################",
+	"#####..........................................................#####",
+	"#####..........................................................#####",
+	"#####..........................................................#####",
+	"#####..........................................................#####",
+	"#####...........................................FFF,FFFF,FFFF..#####",
+	"#####...........................=============...FFFF,FFFF,FFF..#####",
+	"#####...........................=============...,FFFF,FFFF,FF..#####",
+	"#####...........................=============...F,FFFF,FFFF,F..#####",
+	"#####.......FFFFFFFF............=============...FF,,,,,,,FFF,..#####",
+	"#####.......FFFFFFFF............=============...FFF,,,,,,FFFF..#####",
+	"#####.......FFFFFFFF............=============...FFF,,,,,,,FFF..#####",
+	"#####.......FFFFFFFF..................::........,FF,,,,,,F,FF..#####",
+	"#####.......FFFFFFFF..................::........F,F,,,,,,FF,F..#####",
+	"~~~~~,......FFFFFFFF..................::........FF,FFFF,FFFF,..#####",
+	"~~~~~,......FFFFFFFF..................::........FFF,FFFF,FFFF..#####",
+	"~~~~~,................................::........FFFF,FFFF,FFF..#####",
+	"~~~~~,................................::........,FFFF,FFFF,FF..#####",
+	"~~~~~,................................::........F,FFFF,FFFF,F..#####",
+	"~~~~~,................................::........FF,FFFF,FFFF,..#####",
+	"~~~~~,................................::.......................#####",
+	"~~~~~,==..............................::............,FFFF,FFF..#####",
+	"~~~~~,==......................===============.......F,FFFF,FF..#####",
+	"~~~~~,==......................===============.......FF,FFFF,F..#####",
+	"~~~~~,==......................===============.......FFF,FFFF,..#####",
+	"~~~~~,====....................===============.......FFFF,FFFF..#####",
+	"~~~~~,====....................===============..................#####",
+	"~~~~~,==::::::::::::::::::::::===============::::::............#####",
+	"~~~~~,==::::::::::::::::::::::===============::::::............#####",
+	"~~~~~,====....................===============..................#####",
+	"~~~~~,====....................===============..................#####",
+	"~~~~~,==......................===============..................#####",
+	"~~~~~,==......................===============..................#####",
+	"~~~~~,==..............................::.......................#####",
+	"~~~~~,==..............................::.......................#####",
+	"~~~~~,==..............................::........FFF,FFFF,FFFF..#####",
+	"~~~~~,................................::........FFFF,FFFF,FFF..#####",
+	"~~~~~,................................::........,FFFF,FFFF,FF..#####",
+	"~~~~~,................................::........F,FFFF,FFFF,F..#####",
+	"~~~~~,................................::........FF,,,,,,,FFF,..#####",
+	"~~~~~,................................::........FFF,,,,,,FFFF..#####",
+	"#####.........................,,,,,,,,,,,,,,,,,,FFF,,,,,,,FFF..#####",
+	"#####.........................,,,,,,,,,,,,,,,,,,,FF,,,,,,F,FF..#####",
+	"#####.........................,,,,,,,,,,,,,,,,,,F,F,,,,,,FF,F..#####",
+	"#####.........................,,,,,,,,,,,,,,,,,,FF,,,,,,,FFF,..#####",
+	"#####.........................,,,,,,,,,,,,,,,,,,FFF,FFFF,FFFF..#####",
+	"#####.........................,,,,,,,,,,,,,,,,,,FFFF,FFFF,FFF..#####",
+	"#####.........................,,,,,,,,,,,,,,,,,,,FFFF,FFFF,FF..#####",
+	"#####.........................,,,,,,,,,,,,,,,,,,F,FFFF,FFFF,F..#####",
+	"#####.........................,,,,,,,,,,,,,,,,,,FF,FFFF,FFFF,..#####",
+	"#####..........................................................#####",
+	"#####..........................................................#####",
+	"#####..........................................................#####",
+	"####################################################################",
+	"####################################################################",
+)
+[node name="player" parent="." index="5"]
+position = Vector2(544, 1856)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Shells Town"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(512, 1856): "Quai de Shells Town", Vector2(480, 1568): "Ferry pour Orange Town", Vector2(2368, 1830): "Place du Marché", Vector2(2432, 640): "Base de la Marine", Vector2(3320, 860): "Forêt de l'Est", Vector2(2750, 2900): "Champs du Sud"})
+
+[node name="DepuisFushia" type="Marker2D" parent="Arrivees"]
+position = Vector2(544, 1856)
+
+[node name="DepuisOrangeTown" type="Marker2D" parent="Arrivees"]
+position = Vector2(608, 1632)
+
+[node name="CapitaineBrise" parent="." instance=ExtResource("FerryOrange")]
+position = Vector2(480, 1568)
+
+[node name="capitaine_ferry" parent="." instance=ExtResource("Capitaine")]
+position = Vector2(448, 2256)
+
+[node name="PatrouilleurGolfe" type="Sprite2D" parent="."]
+position = Vector2(150, 2100)
+z_index = -2
+scale = Vector2(1.1, 1.1)
+texture = ExtResource("bateau")
+offset = Vector2(0, -48)
+
+[node name="BaseDeLaMarine" type="Sprite2D" parent="Paysage"]
+position = Vector2(2432, 640)
+scale = Vector2(2.1, 2.1)
+texture = ExtResource("marine")
+offset = Vector2(0, -138)
+
+[node name="EntrepotDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(800, 1500)
+scale = Vector2(1.7, 1.7)
+texture = ExtResource("entrepot")
+offset = Vector2(0, -100)
+
+[node name="TavernePlace" type="Sprite2D" parent="Paysage"]
+position = Vector2(2750, 1750)
+scale = Vector2(1.8, 1.8)
+texture = ExtResource("taverne")
+offset = Vector2(0, -110)
+
+[node name="MaisonRueNord" type="Sprite2D" parent="Paysage"]
+position = Vector2(950, 1640)
+scale = Vector2(1.7, 1.7)
+texture = ExtResource("maison_moyenne")
+offset = Vector2(0, -120)
+
+[node name="MaisonRueNord2" type="Sprite2D" parent="Paysage"]
+position = Vector2(1450, 1620)
+scale = Vector2(1.6, 1.6)
+texture = ExtResource("petite_maison")
+offset = Vector2(0, -85)
+
+[node name="MaisonRueSud" type="Sprite2D" parent="Paysage"]
+position = Vector2(1000, 2080)
+scale = Vector2(1.6, 1.6)
+texture = ExtResource("petite_maison")
+offset = Vector2(0, -85)
+
+[node name="MaisonRueSud2" type="Sprite2D" parent="Paysage"]
+position = Vector2(1550, 2090)
+scale = Vector2(1.7, 1.7)
+texture = ExtResource("maison_moyenne")
+offset = Vector2(0, -120)
+
+[node name="EtalDeLaPlace" type="Sprite2D" parent="Paysage"]
+position = Vector2(2180, 2160)
+scale = Vector2(1.7, 1.7)
+texture = ExtResource("etal")
+offset = Vector2(0, -85)
+
+[node name="StatueDeLaPlace" type="Sprite2D" parent="Paysage"]
+position = Vector2(2368, 1830)
+scale = Vector2(1.2, 1.2)
+texture = ExtResource("statue")
+offset = Vector2(0, -96)
+
+[node name="LanterneQuaiNord" type="Sprite2D" parent="Paysage"]
+position = Vector2(448, 1470)
+texture = ExtResource("lanterne")
+offset = Vector2(0, -67)
+
+[node name="LanterneQuaiSud" type="Sprite2D" parent="Paysage"]
+position = Vector2(448, 2330)
+texture = ExtResource("lanterne")
+offset = Vector2(0, -67)
+
+[node name="LanternePlaceOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(1980, 1820)
+texture = ExtResource("lanterne")
+offset = Vector2(0, -67)
+
+[node name="LanternePlaceEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(2820, 1820)
+texture = ExtResource("lanterne")
+offset = Vector2(0, -67)
+
+[node name="Coby" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1792, 1830)
+script = ExtResource("pnj")
+largeur_zone_clic = 88.0
+hauteur_zone_clic = 120.0
+chain_quetes = Array[String](["shells_patrouille", "shells_morgan"])
+nom_affiche = "Coby"
+paroles = "Morgan s'est proclamé roi de cette base, et personne n'ose le contredire. Sa patrouille rôde entre la rue et l'esplanade. Repousse-la d'abord. Ensuite... il faudra bien que quelqu'un lui rende son galon. Ça ne sera pas moi."
+
+[node name="Sprite2D" type="Sprite2D" parent="Coby"]
+position = Vector2(0, -55)
+texture = ExtResource("coby")
+
+[node name="Area2D" type="Area2D" parent="Coby"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Coby/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Coby"]
+z_index = 16
+offset_left = -140.0
+offset_top = -139.0
+offset_right = 140.0
+offset_bottom = -113.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = "Coby"
+horizontal_alignment = 1
+
+[node name="Lise" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(2200, 2210)
+script = ExtResource("pnj")
+largeur_zone_clic = 88.0
+hauteur_zone_clic = 120.0
+chain_quetes = Array[String](["shells_panneaux", "shells_ravitaillement"])
+nom_affiche = "Lise du marché"
+paroles = "Bienvenue à Shells Town, marin. Les panneaux du quai, de la place et de l'esplanade te remettront le nord. Et si tu descends au port : trois caisses de ravitaillement attendent d'être embarquées — Morgan les réclame, mais je connais un meilleur usage."
+
+[node name="Sprite2D" type="Sprite2D" parent="Lise"]
+position = Vector2(0, -55)
+texture = ExtResource("alba")
+
+[node name="Area2D" type="Area2D" parent="Lise"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Lise/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Lise"]
+z_index = 16
+offset_left = -140.0
+offset_top = -139.0
+offset_right = 140.0
+offset_bottom = -113.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = "Lise du marché"
+horizontal_alignment = 1
+
+[node name="PanneauDuQuai" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(590, 1780)
+script = ExtResource("PointFushia")
+titre = "Quai de Shells Town"
+description = "« Le port de Shells Town dessert tout l'East Blue. Marins en permission : présenter son grade à la base. Contrevenants : quatre heures de quai. »"
+quete = "shells_panneaux"
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDuQuai"]
+position = Vector2(0, -55)
+texture = ExtResource("panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDuQuai"]
+z_index = 16
+offset_left = -140.0
+offset_top = -87.0
+offset_right = 140.0
+offset_bottom = -61.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 15
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDeLaPlace" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2900, 1930)
+script = ExtResource("PointFushia")
+titre = "Place du Marché"
+description = "« Place du Marché. Interdiction de nourrir les cerfs des champs du Sud — ils mordent. La taverne sert à crédit, le forgeron, lui, n'en a plus. »"
+quete = "shells_panneaux"
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDeLaPlace"]
+position = Vector2(0, -55)
+texture = ExtResource("panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDeLaPlace"]
+z_index = 16
+offset_left = -140.0
+offset_top = -87.0
+offset_right = 140.0
+offset_bottom = -61.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 15
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDeLaBase" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2432, 1500)
+script = ExtResource("PointFushia")
+titre = "Esplanade de la Marine"
+description = "« Base navale de Shells Town. Accès interdit aux personnes non accréditées. Le capitaine Morgan veille sur la ville. La ville veille sur ses arêtes. »"
+quete = "shells_panneaux"
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDeLaBase"]
+position = Vector2(0, -55)
+texture = ExtResource("panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDeLaBase"]
+z_index = 16
+offset_left = -140.0
+offset_top = -87.0
+offset_right = 140.0
+offset_bottom = -61.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 15
+text = ""
+horizontal_alignment = 1
+
+[node name="CaissesDuQuaiNord" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(448, 1500)
+script = ExtResource("PointFushia")
+titre = "Caisses de ravitaillement"
+description = ""
+quete = "shells_ravitaillement"
+objet = "16"
+quantite = 2
+
+[node name="Sprite2D" type="Sprite2D" parent="CaissesDuQuaiNord"]
+position = Vector2(0, -40)
+texture = ExtResource("caisses")
+
+[node name="Etiquette" type="Label" parent="CaissesDuQuaiNord"]
+z_index = 16
+offset_left = -140.0
+offset_top = -87.0
+offset_right = 140.0
+offset_bottom = -61.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 15
+text = ""
+horizontal_alignment = 1
+
+[node name="CaissesDeLEmbarcadere" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(600, 2000)
+script = ExtResource("PointFushia")
+titre = "Caisses de ravitaillement"
+description = ""
+quete = "shells_ravitaillement"
+objet = "16"
+quantite = 2
+
+[node name="Sprite2D" type="Sprite2D" parent="CaissesDeLEmbarcadere"]
+position = Vector2(0, -40)
+texture = ExtResource("caisses")
+
+[node name="Etiquette" type="Label" parent="CaissesDeLEmbarcadere"]
+z_index = 16
+offset_left = -140.0
+offset_top = -87.0
+offset_right = 140.0
+offset_bottom = -61.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 15
+text = ""
+horizontal_alignment = 1
+
+[node name="CaissesDuQuaiSud" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(448, 2120)
+script = ExtResource("PointFushia")
+titre = "Caisses de ravitaillement"
+description = ""
+quete = "shells_ravitaillement"
+objet = "16"
+quantite = 2
+
+[node name="Sprite2D" type="Sprite2D" parent="CaissesDuQuaiSud"]
+position = Vector2(0, -40)
+texture = ExtResource("caisses")
+
+[node name="Etiquette" type="Label" parent="CaissesDuQuaiSud"]
+z_index = 16
+offset_left = -140.0
+offset_top = -87.0
+offset_right = 140.0
+offset_bottom = -61.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 15
+text = ""
+horizontal_alignment = 1
+
+[node name="CapitaineMorgan" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2432, 860)
+nom = "Capitaine Morgan"
+pv_max = 230
+degats_attaque = 17
+portee_attaque = 2
+quetes_a_progresser = Array[String](["shells_morgan"])
+mob_id = 4
+groupe = "morgan"
+niveau_personnalise = 12
+
+[node name="MarinPatrouilleOuest" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1950, 1040)
+nom = "Marin de la patrouille"
+pv_max = 70
+degats_attaque = 8
+portee_attaque = 2
+quetes_a_progresser = Array[String](["shells_patrouille"])
+mob_id = 3
+groupe = "patrouille_morgan"
+niveau_personnalise = 5
+
+[node name="MarinPatrouilleEst" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2900, 1150)
+nom = "Marin de la patrouille"
+pv_max = 70
+degats_attaque = 8
+portee_attaque = 2
+quetes_a_progresser = Array[String](["shells_patrouille"])
+mob_id = 3
+groupe = "patrouille_morgan"
+niveau_personnalise = 5
+
+[node name="SergentDeMorgan" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2450, 1300)
+nom = "Sergent de Morgan"
+pv_max = 110
+degats_attaque = 12
+portee_attaque = 2
+quetes_a_progresser = Array[String](["shells_patrouille"])
+mob_id = 4
+groupe = "patrouille_morgan"
+niveau_personnalise = 8
+
+[node name="ChienDeLEst" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(3320, 830)
+nom = "Chien errant"
+pv_max = 58
+degats_attaque = 7
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+mob_id = 18
+groupe = "meute_est"
+niveau_personnalise = 2
+
+[node name="ChienDeLaCrique" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(3480, 930)
+nom = "Chien errant"
+pv_max = 58
+degats_attaque = 7
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+mob_id = 18
+groupe = "meute_est"
+niveau_personnalise = 2
+
+[node name="CerfDesChamps" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2750, 2900)
+nom = "Cerf des champs"
+pv_max = 75
+degats_attaque = 9
+portee_attaque = 1
+quetes_a_progresser = Array[String]([])
+mob_id = 19
+niveau_personnalise = 3

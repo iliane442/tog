@@ -1,0 +1,726 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_reverse.tscn" id="FerryReverse"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_garden.tscn" id="FerryGarden"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-tavern-v0.png" id="Taverne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-medium-house-v0.png" id="MaisonMoyenne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-small-house-v0.png" id="PetiteMaison"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/palmier.png" id="Palmier"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="Rochers"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/chene_ancien.png" id="Chene"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="Borne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/fleurs_medicinales.png" id="Massif"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/stele_de_la_vague.png" id="Stele"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/colonne_brisee.png" id="Colonne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tonneaux.png" id="Tonneaux"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/igaram.png" id="sprite_ile_igaram"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/miss_monday.png" id="sprite_ile_miss_monday"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/mr5.png" id="sprite_ile_mr5"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/chasseur_baroque.png" id="sprite_ile_chasseur_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/eclaireur_baroque.png" id="sprite_ile_eclaireur_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/agent_baroque.png" id="sprite_ile_agent_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/poule_du_quai.png" id="sprite_ile_poule_du_quai"]
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[node name="WhiskyPeak" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;+#########++++++++++++++++++++++++++;;~~",
+	"~~;;+##;;;;;##++++++++++++++++++++++++++;;~~",
+	"~~;;+##;;;;;##++++++++++++++++++++++++++;;~~",
+	"~~;;+##;;;;;##++++++++++++++++++++++++++;;~~",
+	"~~;;+##;;;;;##++++++++++++++++++++++++++;;~~",
+	"~~;;+#########++++++++++++++++++++++++++;;~~",
+	"~~;;+#########++++++++++++++++++++++++++;;~~",
+	"~~;;++++++++++++++:+++:+++++++++++++++++;;~~",
+	"~~;;++++++++++++++:+++:+++++++++++++++++;;~~",
+	"~~;;++++++========:===:========+++++++++;;~~",
+	"~~;;++++++========:===:========+++++++++;;~~",
+	"~~;;++++++========:===:========+++++++++;;~~",
+	"~~;;++++++========:===:========+++++++++;;~~",
+	"~~;;++++++======:::::::::======+++++++++;;~~",
+	"~~;;++++++======:::::::::======+++++++++;;~~",
+	"~~;;++++++======:::::::::======+++++++++;;~~",
+	"~~;;++++++======:::::::::======+++++++++;;~~",
+	"~~;;++++++========:===:========+++++++++;;~~",
+	"~~;;++++++++++++++:+++:+++++++++++++++++;;~~",
+	"~~;;++++=============+:+++===========+++;;~~",
+	"~~;;++++=============+:+++===========+++;;~~",
+	"~~;;++++=============+:+++===========+++;;~~",
+	"~~;;++++=============+:+++===========+++;;~~",
+	"~~;;++++++++++++++:+++:+++++++++++++++++;;~~",
+	"~~;;++++++++++++++:+++:+++++++++++++++++;;~~",
+	"~~;;++++++:::::::::::::::::::::::::::::+;;~~",
+	"~~;;;;=================================;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+)
+littoral = true
+emprises_decors = Array[Rect2i]([])
+
+[node name="player" parent="." index="5"]
+position = Vector2(1310.0, 2010.0)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Whisky Peak"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1300.0, 2010.0): "Quai des Toasts", Vector2(1700.0, 1150.0): "Grand'taverne", Vector2(2280.0, 1520.0): "Comptoir des primes", Vector2(1250.0, 1500.0): "Place aux lanternes", Vector2(450.0, 1000.0): "Le Pic", Vector2(1950.0, 1750.0): "Faubourg des chasseurs"})
+
+[node name="DepuisReverseMountain" type="Marker2D" parent="Arrivees"]
+position = Vector2(1300.0, 2010.0)
+
+[node name="DepuisLittleGarden" type="Marker2D" parent="Arrivees"]
+position = Vector2(1440.0, 2010.0)
+
+[node name="CapitaineHalcion" parent="." instance=ExtResource("FerryReverse")]
+position = Vector2(1150.0, 2010.0)
+paroles = "Redescendre au col de Reverse Mountain ? Le courant rend mieux qu'il ne prend : dans le bon chenal, avec les balises, on y va. Embarque."
+destination = "res://scenes/reverse_mountain.tscn"
+arrivee = &"DepuisWhiskyPeak"
+libelle_traversee = "Remonter vers Reverse Mountain"
+
+[node name="CapitaineOrme" parent="." instance=ExtResource("FerryGarden")]
+position = Vector2(1590.0, 2010.0)
+paroles = "Little Garden, plus à l'est : la jungle y a cent ans de retard sur le monde, et deux géants y fêtent leur duel depuis toujours. Évite de te mettre entre eux."
+destination = "res://scenes/little_garden.tscn"
+arrivee = &"DepuisWhiskyPeak"
+libelle_traversee = "Embarquer pour Little Garden"
+
+[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
+position = Vector2(900.0, 2340.0)
+texture = ExtResource("Sloop")
+offset = Vector2(0, -250.0)
+scale = Vector2(0.7, 0.7)
+z_index = -3
+
+[node name="PraoEchoue" type="Sprite2D" parent="Paysage"]
+position = Vector2(2400.0, 2240.0)
+texture = ExtResource("Barque")
+offset = Vector2(0, -70.0)
+scale = Vector2(1.25, 1.25)
+flip_h = true
+z_index = -3
+
+[node name="BorneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1360.0, 2060.0)
+texture = ExtResource("Borne")
+offset = Vector2(0, -31.5)
+scale = Vector2(0.75, 0.75)
+
+[node name="BorneDuQuaiEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1700.0, 2080.0)
+texture = ExtResource("Borne")
+offset = Vector2(0, -31.5)
+scale = Vector2(0.75, 0.75)
+
+[node name="LanterneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1220.0, 2080.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+scale = Vector2(0.78, 0.78)
+
+[node name="LanterneDeLaPlace1" type="Sprite2D" parent="Paysage"]
+position = Vector2(1500.0, 1420.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+scale = Vector2(0.8, 0.8)
+
+[node name="LanterneDeLaPlace2" type="Sprite2D" parent="Paysage"]
+position = Vector2(1850.0, 1420.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+scale = Vector2(0.8, 0.8)
+flip_h = true
+
+[node name="GrandTaverne" type="Sprite2D" parent="Paysage"]
+position = Vector2(1700.0, 1150.0)
+texture = ExtResource("Taverne")
+offset = Vector2(0, -117.0)
+scale = Vector2(1.5, 1.5)
+
+[node name="MaisonDeLEchevin" type="Sprite2D" parent="Paysage"]
+position = Vector2(1150.0, 1250.0)
+texture = ExtResource("MaisonMoyenne")
+offset = Vector2(0, -128.0)
+scale = Vector2(1.4, 1.4)
+
+[node name="MaisonDesChasseurs" type="Sprite2D" parent="Paysage"]
+position = Vector2(1000.0, 1650.0)
+texture = ExtResource("PetiteMaison")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.35, 1.35)
+
+[node name="ComptoirDesPrimes" type="Sprite2D" parent="Paysage"]
+position = Vector2(2250.0, 1550.0)
+texture = ExtResource("MaisonMoyenne")
+offset = Vector2(0, -128.0)
+scale = Vector2(1.5, 1.5)
+flip_h = true
+
+[node name="MaisonDuCellier" type="Sprite2D" parent="Paysage"]
+position = Vector2(2500.0, 1920.0)
+texture = ExtResource("MaisonMoyenne")
+offset = Vector2(0, -128.0)
+scale = Vector2(1.45, 1.45)
+
+[node name="PalmierDesToastes1" type="Sprite2D" parent="Paysage"]
+position = Vector2(950.0, 1950.0)
+texture = ExtResource("Palmier")
+offset = Vector2(0, -95.0)
+scale = Vector2(0.9, 0.9)
+
+[node name="PalmierDesToastes2" type="Sprite2D" parent="Paysage"]
+position = Vector2(2050.0, 1000.0)
+texture = ExtResource("Palmier")
+offset = Vector2(0, -95.0)
+scale = Vector2(0.85, 0.85)
+flip_h = true
+
+[node name="PalmierDuPic" type="Sprite2D" parent="Paysage"]
+position = Vector2(450.0, 1000.0)
+texture = ExtResource("Palmier")
+offset = Vector2(0, -95.0)
+scale = Vector2(0.8, 0.8)
+
+[node name="RochersDuPic" type="Sprite2D" parent="Paysage"]
+position = Vector2(900.0, 850.0)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="SteleDeLaFete" type="Sprite2D" parent="Paysage"]
+position = Vector2(1450.0, 1550.0)
+texture = ExtResource("Stele")
+offset = Vector2(0, -51.5)
+scale = Vector2(0.9, 0.9)
+
+[node name="TonneauxDeLaFete" type="Sprite2D" parent="Paysage"]
+position = Vector2(1750.0, 1450.0)
+texture = ExtResource("Tonneaux")
+offset = Vector2(0, -32.0)
+scale = Vector2(0.85, 0.85)
+
+[node name="CaissesDuComptoir" type="Sprite2D" parent="Paysage"]
+position = Vector2(2300.0, 1450.0)
+texture = ExtResource("Caisses")
+offset = Vector2(0, -64.0)
+scale = Vector2(0.7, 0.7)
+
+[node name="MassifDeLaPlace" type="Sprite2D" parent="Paysage"]
+position = Vector2(1600.0, 1650.0)
+texture = ExtResource("Massif")
+offset = Vector2(0, -36.0)
+scale = Vector2(0.7, 0.7)
+
+[node name="Fermirin" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1250.0, 1500.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["trm_wp_fete", "trm_wp_disparus", "trm_wp_vermouth", "trm_wp_toast"])
+nom_affiche = "Igaram (Mr. 8)"
+paroles = "On m'appelle Igaram. Ici, les fêtes accueillent surtout des équipages que Baroque Works veut dépouiller. Des invités disparaissent à l'étage et l'on revend leurs journaux de bord. Aide-moi à découvrir ce que Mr. 5 en fait."
+
+[node name="Sprite2D" type="Sprite2D" parent="Fermirin"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_igaram")
+
+[node name="Area2D" type="Area2D" parent="Fermirin"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fermirin/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Fermirin"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Igaram (Mr. 8)"
+horizontal_alignment = 1
+
+[node name="Toria" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1620.0, 1380.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["whisky_panneaux", "whisky_rhum"])
+nom_affiche = "Miss Monday"
+paroles = "On me connaît sous le nom de Miss Monday. Je tiens la taverne pendant les arrivées. Si tu passes au cellier, trois cubes de rhum suffiront. Sur le chemin, méfie-toi des chasseurs qui s'intéressent à ta prime."
+
+[node name="Sprite2D" type="Sprite2D" parent="Toria"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_miss_monday")
+
+[node name="Area2D" type="Area2D" parent="Toria"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Toria/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Toria"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Miss Monday"
+horizontal_alignment = 1
+
+[node name="PalmierDesToastes" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(950.0, 2000.0)
+script = ExtResource("Recolte")
+titre = "Le palmier des Toasts"
+description = "Sous le palmier du quai, les rookies trinquent à leur arrivée. Sur l'écorce, une liste gravée au couteau : des noms rayés les uns après les autres. Aucun n'est reparti en mer."
+quete = "trm_wp_fete"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PalmierDesToastes"]
+position = Vector2(0, -95.0)
+texture = ExtResource("Palmier")
+
+[node name="Etiquette" type="Label" parent="PalmierDesToastes"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="GrandTavernePoint" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1620.0, 1250.0)
+script = ExtResource("Recolte")
+titre = "La grand'taverne"
+description = "Au-dessus du bar, la robe des capitaines accueillis : douze accrochées, et pour chacune un journal de bord vendu au comptoir des primes avant l'aube. La fête commence quand la mémoire s'arrête."
+quete = "trm_wp_fete"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="GrandTavernePoint"]
+position = Vector2(0, -51.5)
+texture = ExtResource("Stele")
+
+[node name="Etiquette" type="Label" parent="GrandTavernePoint"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="ComptoirDesPrimesPoint" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2280.0, 1520.0)
+script = ExtResource("Recolte")
+titre = "Le comptoir des primes"
+description = "Le guichet achète tout, sans discuter : cartes, sondages et journaux de bord. Le registre indique une seule adresse de reprise, quittancée d'un sceau : un fanal barré d'une diagonale."
+quete = "trm_wp_fete"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="ComptoirDesPrimesPoint"]
+position = Vector2(0, -28.0)
+texture = ExtResource("Coffre")
+
+[node name="Etiquette" type="Label" parent="ComptoirDesPrimesPoint"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="ArriereSalle" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2380.0, 1420.0)
+script = ExtResource("Recolte")
+titre = "L'arrière-salle du comptoir"
+description = "Des paquets ficelés prêts au départ, chaque étiquette : « Journaux — lot 12 — à saisir avant visa. » Au-dessus, la robe d'un novice qui ne dansait pas si mal."
+quete = "trm_wp_disparus"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="ArriereSalle"]
+position = Vector2(0, -64.0)
+texture = ExtResource("Caisses")
+
+[node name="Etiquette" type="Label" parent="ArriereSalle"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="CellierDesChandelles" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2450.0, 1950.0)
+script = ExtResource("Recolte")
+titre = "Le cellier des chandelles"
+description = "Entre deux cubes de rhum, un présentoir de fausses pages : journal de bord à l'identique, une écriture trop propre. Le cellier ne stocke pas que des souvenirs, il fabrique les leurs."
+quete = "trm_wp_disparus"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="CellierDesChandelles"]
+position = Vector2(0, -28.0)
+texture = ExtResource("Coffre")
+
+[node name="Etiquette" type="Label" parent="CellierDesChandelles"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="ReserveDesChasseurs" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1950.0, 1750.0)
+script = ExtResource("Recolte")
+titre = "La réserve des chasseurs"
+description = "Des cordes d'amarrage toutes neuves, des tapis de « repos » et un tableau de primes frais d'encre. Les chasseurs ne chassent pas les pirates de passage : ils les cueillent."
+quete = "trm_wp_disparus"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="ReserveDesChasseurs"]
+position = Vector2(0, -64.0)
+texture = ExtResource("Caisses")
+
+[node name="Etiquette" type="Label" parent="ReserveDesChasseurs"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PontDesSoupirs" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1450.0, 2100.0)
+script = ExtResource("Recolte")
+titre = "Le toast du départ"
+description = "Sur le pont des Soupirs, Igaram rend aux disparus leurs journaux. Le port lève son verre d'une seule voix : « Que la mer te garde long comme la fête. » Le Log Pose s'étalonne, le cap désigne la jungle de Little Garden."
+quete = "trm_wp_toast"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PontDesSoupirs"]
+position = Vector2(0, -60.0)
+texture = ExtResource("Colonne")
+
+[node name="Etiquette" type="Label" parent="PontDesSoupirs"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDuQuai" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1360.0, 2090.0)
+script = ExtResource("Recolte")
+titre = "Quai des Toasts"
+description = "« Quai des Toasts. Fête obligatoire pour tout équipage montant — le rhum est offert, la prudence ne l'est pas. On ne quitte pas la ville avant d'avoir salué l'échevin. »"
+quete = "whisky_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDuQuai"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDuQuai"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDeLaTaverne" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1850.0, 1300.0)
+script = ExtResource("Recolte")
+titre = "La grand'taverne"
+description = "« Ici on danse, on chante et on signe un registre. Les pages volées seront rendues. Les clients ivres seront raccompagnés. Les corbeaux n'y sont pas les bienvenus. »"
+quete = "whisky_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDeLaTaverne"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDeLaTaverne"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDuComptoir" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2200.0, 1650.0)
+script = ExtResource("Recolte")
+titre = "Le comptoir des primes"
+description = "« Comptoir des primes de Whisky Peak. On achète tout, on vend du neuf. Le lit est gratuit pour les très fatigués, les journaux partent seuls. »"
+quete = "whisky_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDuComptoir"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDuComptoir"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="RhumDuQuai" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1100.0, 2080.0)
+script = ExtResource("Recolte")
+titre = "Cube de rhum du quai"
+description = "Un cube de rhum poivré, la marque de la maison."
+quete = "whisky_rhum"
+objet = "14"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="RhumDuQuai"]
+position = Vector2(0, -32.0)
+texture = ExtResource("Tonneaux")
+
+[node name="Etiquette" type="Label" parent="RhumDuQuai"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="RhumDuCellier" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2500.0, 2000.0)
+script = ExtResource("Recolte")
+titre = "Cube de rhum du cellier"
+description = "Le meilleur : douze ans de fûts, dit Miss Monday."
+quete = "whisky_rhum"
+objet = "14"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="RhumDuCellier"]
+position = Vector2(0, -32.0)
+texture = ExtResource("Tonneaux")
+
+[node name="Etiquette" type="Label" parent="RhumDuCellier"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="RhumDuPrao" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2380.0, 2080.0)
+script = ExtResource("Recolte")
+titre = "Cube de rhum de l'entrepont"
+description = "Sauté de l'entrepont du prao échoué, étiquette à l'encre de mer."
+quete = "whisky_rhum"
+objet = "14"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="RhumDuPrao"]
+position = Vector2(0, -32.0)
+texture = ExtResource("Tonneaux")
+
+[node name="Etiquette" type="Label" parent="RhumDuPrao"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="ChasseurDeLaRuelle" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1050.0, 1850.0)
+nom = "Chasseur de primes de Baroque Works"
+pv_max = 540
+degats_attaque = 34
+portee_attaque = 1
+pm_max = 3
+mob_id = 1
+quetes_a_progresser = Array[String](["whisky_chasseurs"])
+niveau_personnalise = 32
+groupe = "chasseurs_whisky"
+texture_personnalisee = ExtResource("sprite_ile_chasseur_baroque")
+
+[node name="ChasseurDuPont" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1550.0, 1950.0)
+nom = "Éclaireur de Baroque Works"
+pv_max = 560
+degats_attaque = 35
+portee_attaque = 2
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String](["whisky_chasseurs"])
+niveau_personnalise = 33
+groupe = "chasseurs_whisky"
+texture_personnalisee = ExtResource("sprite_ile_eclaireur_baroque")
+
+[node name="ChasseurDuCellier" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2100.0, 1650.0)
+nom = "Agent de Baroque Works"
+pv_max = 580
+degats_attaque = 36
+portee_attaque = 2
+pm_max = 3
+mob_id = 4
+quetes_a_progresser = Array[String](["whisky_chasseurs"])
+niveau_personnalise = 33
+groupe = "chasseurs_whisky"
+texture_personnalisee = ExtResource("sprite_ile_agent_baroque")
+
+[node name="Vermouth" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1700.0, 1150.0)
+nom = "Mr. 5"
+pv_max = 780
+degats_attaque = 38
+portee_attaque = 2
+pm_max = 3
+mob_id = 0
+quetes_a_progresser = Array[String](["trm_wp_vermouth"])
+niveau_personnalise = 34
+groupe = ""
+texture_personnalisee = ExtResource("sprite_ile_mr5")
+attaques_par_tour = 3
+
+[node name="PouleDeLaPlace" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1550.0, 1700.0)
+nom = "Poule de la place"
+pv_max = 34
+degats_attaque = 5
+portee_attaque = 1
+pm_max = 3
+mob_id = 17
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 1
+groupe = "volailles_whisky"
+texture_personnalisee = ExtResource("sprite_ile_poule_du_quai")
+
+[node name="PouleDuQuai" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1250.0, 1900.0)
+nom = "Poule du quai"
+pv_max = 34
+degats_attaque = 5
+portee_attaque = 1
+pm_max = 3
+mob_id = 17
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 1
+groupe = "volailles_whisky"
+texture_personnalisee = ExtResource("sprite_ile_poule_du_quai")

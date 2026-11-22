@@ -1,0 +1,767 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_coco.tscn" id="FerryCoco"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_reverse.tscn" id="FerryReverse"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-medium-house-v0.png" id="MaisonMoyenne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-small-house-v0.png" id="PetiteMaison"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-large-house-v0.png" id="GrandeMaison"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-market-stall-v0.png" id="Etal"]
+[ext_resource type="Texture2D" path="res://assets/world/orange_town/puits.png" id="Puits"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="Borne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/cabane_de_peche.png" id="Cabane"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/colonne_brisee.png" id="Colonne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/monument_a_l_ancre.png" id="Monument"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/chene_ancien.png" id="Chene"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tonneaux.png" id="Tonneaux"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-statue-de-place.png" id="Statue"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/tashigi.png" id="sprite_ile_tashigi"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pelagie.png" id="sprite_ile_pelagie"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/ipponmatsu.png" id="sprite_ile_ipponmatsu"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/voleur_loguetown.png" id="sprite_ile_voleur_loguetown"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/mistral.png" id="sprite_ile_mistral"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/poule_du_quai.png" id="sprite_ile_poule_du_quai"]
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[node name="Loguetown" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;==========;;;;;;;;;;;;;;;;;;~~",
+	"~~;;,,,,,,,,,,,,,,==========,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,==========,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,==========,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,==========,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,==========,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,==========,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,:::::::::::::::::::::::::,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,================,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,================,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,================,,,,,,,,,,,,,;;~~",
+	"~~;;,::::::::::================:::::::::::::;;~~",
+	"~~;;,,,,,,,,,,,================,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,================,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,===========,,,::,,,,,,,,===========,;;~~",
+	"~~;;,,,,===========,,,::,,,,,,,,===========,;;~~",
+	"~~;;,,,,===========,,,::,,,,,,,,===========,;;~~",
+	"~~;;,,,,===========,,,::,,,,,,,,===========,;;~~",
+	"~~;;,,,,===========,,,::,,,,,,,,===========,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,===================================,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+)
+littoral = true
+emprises_decors = Array[Rect2i]([])
+
+[node name="player" parent="." index="5"]
+position = Vector2(1542.4, 2144.0)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Loguetown"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1472.0, 2112.0): "Quai des Adieux", Vector2(1560.0, 1712.0): "Grand-Place", Vector2(1504.0, 512.0): "Plateforme de l'Ancien", Vector2(2496.0, 1740.0): "Marché des Cartes", Vector2(640.0, 947.2): "Phare du Départ", Vector2(2188.8, 1158.4): "Entrepôts du Nord"})
+
+[node name="DepuisVillageCoco" type="Marker2D" parent="Arrivees"]
+position = Vector2(1472.0, 2112.0)
+
+[node name="DepuisReverseMountain" type="Marker2D" parent="Arrivees"]
+position = Vector2(1600.0, 2112.0)
+
+[node name="CapitaineEsturgeon" parent="." instance=ExtResource("FerryCoco")]
+position = Vector2(1369.6, 2080.0)
+paroles = "Redescendre sur le village Coco ? Je connais la passe des mandarines par coeur. Embarque, je te laisse le fil du quart."
+destination = "res://scenes/coco_village.tscn"
+arrivee = &"DepuisLoguetown"
+libelle_traversee = "Embarquer pour le village Coco"
+
+[node name="CapitaineHalcion" parent="." instance=ExtResource("FerryReverse")]
+position = Vector2(1753.6, 2080.0)
+paroles = "Le courant qui remonte n'attend personne : il se prend à la marée ou on le rate. Reverse Mountain, moussaillon. Prends tes repères avant d'y aller."
+destination = "res://scenes/reverse_mountain.tscn"
+arrivee = &"DepuisLoguetown"
+libelle_traversee = "Remonter vers Reverse Mountain"
+
+[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
+position = Vector2(1088.0, 2752.0)
+texture = ExtResource("Sloop")
+offset = Vector2(0, -250.0)
+scale = Vector2(0.7, 0.7)
+z_index = -3
+
+[node name="BarqueDuPort" type="Sprite2D" parent="Paysage"]
+position = Vector2(1958.4, 2784.0)
+texture = ExtResource("Barque")
+offset = Vector2(0, -70.0)
+scale = Vector2(0.9, 0.9)
+flip_h = true
+z_index = -3
+
+[node name="BorneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1305.6, 2201.6)
+texture = ExtResource("Borne")
+offset = Vector2(0, -31.5)
+scale = Vector2(0.75, 0.75)
+
+[node name="BorneDuQuaiEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1817.6, 2201.6)
+texture = ExtResource("Borne")
+offset = Vector2(0, -31.5)
+scale = Vector2(0.75, 0.75)
+
+[node name="LanterneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1395.2, 2156.8)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+scale = Vector2(0.78, 0.78)
+
+[node name="LanterneDeLaPlace" type="Sprite2D" parent="Paysage"]
+position = Vector2(1720.0, 1420.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+scale = Vector2(0.8, 0.8)
+
+[node name="CabaneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1958.4, 2160.0)
+texture = ExtResource("Cabane")
+offset = Vector2(0, -83.0)
+scale = Vector2(0.9, 0.9)
+
+[node name="PlateformeDeLAncien" type="Sprite2D" parent="Paysage"]
+position = Vector2(1504.0, 512.0)
+texture = ExtResource("Statue")
+offset = Vector2(0, -96.0)
+scale = Vector2(1.3, 1.3)
+
+[node name="ColonneDeLEsplanade" type="Sprite2D" parent="Paysage"]
+position = Vector2(1331.2, 544.0)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -60.5)
+scale = Vector2(0.85, 0.85)
+flip_h = true
+
+[node name="ColonneDeLEsplanadeEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1676.8, 544.0)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -60.5)
+scale = Vector2(0.85, 0.85)
+
+[node name="GrandeMaisonDuGuet" type="Sprite2D" parent="Paysage"]
+position = Vector2(1081.6, 972.8)
+texture = ExtResource("GrandeMaison")
+offset = Vector2(0, -126.0)
+scale = Vector2(1.4, 1.4)
+
+[node name="MaisonDeLaRuelle" type="Sprite2D" parent="Paysage"]
+position = Vector2(851.2, 1753.6)
+texture = ExtResource("PetiteMaison")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.4, 1.4)
+
+[node name="ImprimerieGrise" type="Sprite2D" parent="Paysage"]
+position = Vector2(2201.6, 1753.6)
+texture = ExtResource("MaisonMoyenne")
+offset = Vector2(0, -128.0)
+scale = Vector2(1.5, 1.5)
+flip_h = true
+
+[node name="EntrepotDuNord" type="Sprite2D" parent="Paysage"]
+position = Vector2(2188.8, 1158.4)
+texture = ExtResource("MaisonMoyenne")
+offset = Vector2(0, -128.0)
+scale = Vector2(1.55, 1.55)
+
+[node name="MaisonDuPhare" type="Sprite2D" parent="Paysage"]
+position = Vector2(640.0, 819.2)
+texture = ExtResource("PetiteMaison")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.35, 1.35)
+
+[node name="PuitsDeLaPlace" type="Sprite2D" parent="Paysage"]
+position = Vector2(1657.6, 1817.6)
+texture = ExtResource("Puits")
+offset = Vector2(0, -52.5)
+scale = Vector2(1.0, 1.0)
+
+[node name="EtalDesCartes" type="Sprite2D" parent="Paysage"]
+position = Vector2(2496.0, 1792.0)
+texture = ExtResource("Etal")
+offset = Vector2(0, -76.5)
+scale = Vector2(0.85, 0.85)
+
+[node name="EtalDuQuartier" type="Sprite2D" parent="Paysage"]
+position = Vector2(1126.4, 1750.0)
+texture = ExtResource("Etal")
+offset = Vector2(0, -76.5)
+scale = Vector2(0.8, 0.8)
+flip_h = true
+
+[node name="TonneauxDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1474.56, 2220.8)
+texture = ExtResource("Tonneaux")
+offset = Vector2(0, -32.0)
+scale = Vector2(0.85, 0.85)
+
+[node name="CaissesDeLEntrepot" type="Sprite2D" parent="Paysage"]
+position = Vector2(2112.0, 972.8)
+texture = ExtResource("Caisses")
+offset = Vector2(0, -64.0)
+scale = Vector2(0.7, 0.7)
+
+[node name="CheneDeLaPlace" type="Sprite2D" parent="Paysage"]
+position = Vector2(1980.8, 1290.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(0.8, 0.8)
+
+[node name="OfficierDesDeparts" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1450.0, 1520.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["trm_c5b_registre", "trm_c5b_comptoir", "trm_c5b_fourgant", "trm_c5b_visa"])
+nom_affiche = "Tashigi"
+paroles = "Je suis Tashigi, de la Marine. Des feuilles disparaissent du registre des départs avant d'être recopiées. Rapporte-moi les pages que tu trouveras sur la place, au marché et au phare. Je veux savoir qui achète ces témoignages."
+
+[node name="Sprite2D" type="Sprite2D" parent="OfficierDesDeparts"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_tashigi")
+
+[node name="Area2D" type="Area2D" parent="OfficierDesDeparts"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OfficierDesDeparts/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="OfficierDesDeparts"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Tashigi"
+horizontal_alignment = 1
+
+[node name="Pelage" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(2496.0, 1664.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String]([])
+nom_affiche = "Pélagie la colporteuse"
+paroles = "J'achète des adieux, moi, pas des cartes. Des lettres de départ, des pages de journal, ce que les marins laissent quand ils veulent oublier. Vous partez aussi ? Alors laissez-moi compter sur mes doigts : trois îles secouées, un comptoir démantelé, un courtier perdu. Vous allez vite. C'est le seul compliment que je sais faire."
+
+[node name="Sprite2D" type="Sprite2D" parent="Pelage"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_pelagie")
+
+[node name="Area2D" type="Area2D" parent="Pelage"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pelage/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Pelage"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Pélagie la colporteuse"
+horizontal_alignment = 1
+
+[node name="Aveline" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1720.0, 1868.8)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["logue_panneaux", "logue_vivres"])
+nom_affiche = "Ipponmatsu"
+paroles = "Une lame bien choisie sauve une vie, et une cale bien chargée sauve un équipage. Si tu embarques, il reste des caisses au quai, à l'entrepôt du Nord et près du phare."
+
+[node name="Sprite2D" type="Sprite2D" parent="Aveline"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_ipponmatsu")
+
+[node name="Area2D" type="Area2D" parent="Aveline"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Aveline/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Aveline"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Ipponmatsu"
+horizontal_alignment = 1
+
+[node name="PlateformeDeRoger" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1504.0, 704.0)
+script = ExtResource("Recolte")
+titre = "La plateforme de l'Ancien"
+description = "L'exécuteur de l'Ancien a tenu ici son dernier discours, il y a vingt-deux ans : « Mes trésors ? Je vous laisse les chercher. » Depuis, chaque départ se fait sous son regard de pierre. Sur le registre du cimetière voisin, une page récente a été découpée au ras de la reliure."
+quete = "trm_c5b_registre"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PlateformeDeRoger"]
+position = Vector2(0, -90.0)
+texture = ExtResource("Monument")
+
+[node name="Etiquette" type="Label" parent="PlateformeDeRoger"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="MarcheDesCartes" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2580.0, 1770.0)
+script = ExtResource("Recolte")
+titre = "Le marché des Cartes"
+description = "Étals de routes, de sondages, de rumeurs. Un marchand maquille des « originaux de Corvus » — l'encre est trop fraîche pour trente ans. Le bordereau d'un lot signé d'un cachet gris porte la mention : «À saisir avant visa. »"
+quete = "trm_c5b_registre"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="MarcheDesCartes"]
+position = Vector2(0, -76.5)
+texture = ExtResource("Etal")
+
+[node name="Etiquette" type="Label" parent="MarcheDesCartes"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PhareDuDepart" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(640.0, 947.2)
+script = ExtResource("Recolte")
+titre = "Le phare du Départ"
+description = "Le gardien y note les marées des vingt dernières années. Une page arrachée mentionne un navire gris reparti vers l'ouest juste après la tempête de l'an dernier — sans déclarer son chargement de papier."
+quete = "trm_c5b_registre"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PhareDuDepart"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PhareDuDepart"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="LotDeLEntrepot" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2188.8, 1250.0)
+script = ExtResource("Recolte")
+titre = "Lot de l'entrepôt du Nord"
+description = "Sous une toile : des registres de quai rachetés à des héritiers pressés — trois liasses, un seul cachet : un fanal barré d'une diagonale. La Vigie paie en pièces d'or et fait disparaître les originaux."
+quete = "trm_c5b_comptoir"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="LotDeLEntrepot"]
+position = Vector2(0, -64.0)
+texture = ExtResource("Caisses")
+
+[node name="Etiquette" type="Label" parent="LotDeLEntrepot"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="LotDeLImprimerie" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2201.6, 1838.0)
+script = ExtResource("Recolte")
+titre = "Lot de l'arrière-boutique"
+description = "Derrière l'imprimerie grise, une presse encore chaude : les pages copiées sont parfaites — trop parfaites. Le copiste ne recopie pas : il réécrit, en adoucissant les sondages dangereux."
+quete = "trm_c5b_comptoir"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="LotDeLImprimerie"]
+position = Vector2(0, -64.0)
+texture = ExtResource("Caisses")
+
+[node name="Etiquette" type="Label" parent="LotDeLImprimerie"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="LotDeLaRuelle" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1010.0, 1430.0)
+script = ExtResource("Recolte")
+titre = "Lot de la ruelle des Enchères"
+description = "Au fond de la ruelle, des pages d'adieux empilées comme des contrats : chaque lot vendu porte la même référence, celle du bordereau de Shells Town. Le courtier de la Vigie se cache derrière une enseigne d'huissier."
+quete = "trm_c5b_comptoir"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="LotDeLaRuelle"]
+position = Vector2(0, -28.0)
+texture = ExtResource("Coffre")
+
+[node name="Etiquette" type="Label" parent="LotDeLaRuelle"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="GuichetDesDeparts" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1440.0, 1600.0)
+script = ExtResource("Recolte")
+titre = "Le guichet des Départs"
+description = "Tashigi appose le sceau du port sur ton journal : « Autorisé à remonter le courant. » Elle ajoute à la main, un nom au registre des secours — le tien. La première page de ton journal de bord d'East Blue est complète : le courant qui remonte est ouvert."
+quete = "trm_c5b_visa"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="GuichetDesDeparts"]
+position = Vector2(0, -60.0)
+texture = ExtResource("Colonne")
+
+[node name="Etiquette" type="Label" parent="GuichetDesDeparts"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDuQuai" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1568.0, 2048.0)
+script = ExtResource("Recolte")
+titre = "Quai des Adieux"
+description = "« Quai des Adieux. On salue la ville, pas la mer — la mer, on la prévient. Départs à marée montante seulement. La Vigie n'a pas de titre de propriété sur ce panneau, et elle le sait. »"
+quete = "logue_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDuQuai"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDuQuai"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDeLaPlace" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1560.0, 1712.0)
+script = ExtResource("Recolte")
+titre = "Grand-Place"
+description = "« Grand-Place de Loguetown. Ici l'Ancien a dit son dernier mot. Ici chaque capitaine laisse une page. Défense de la découper, de la vendre, de la faire ressasser par un gris. »"
+quete = "logue_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDeLaPlace"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDeLaPlace"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDuPhare" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(705.0, 1100.0)
+script = ExtResource("Recolte")
+titre = "Phare du Départ"
+description = "« Phare du Départ. Visiteurs : ne réveillez pas le gardien, il ne dort que sur les tempêtes. Les fanals barrés appartiennent à la mer, la mer n'en veut pas. »"
+quete = "logue_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDuPhare"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDuPhare"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="VivresDuQuai" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1830.0, 2140.0)
+script = ExtResource("Recolte")
+titre = "Caisses de vivres du quai"
+description = "Sacs de riz et fruits secs, prêts à monter."
+quete = "logue_vivres"
+objet = "14"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="VivresDuQuai"]
+position = Vector2(0, -64.0)
+texture = ExtResource("Caisses")
+
+[node name="Etiquette" type="Label" parent="VivresDuQuai"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="VivresDeLEntrepot" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2110.0, 1450.0)
+script = ExtResource("Recolte")
+titre = "Caisses de l'entrepôt du Nord"
+description = "Le quart de provisions des capitaines pressés."
+quete = "logue_vivres"
+objet = "14"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="VivresDeLEntrepot"]
+position = Vector2(0, -64.0)
+texture = ExtResource("Caisses")
+
+[node name="Etiquette" type="Label" parent="VivresDeLEntrepot"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="VivresDuPhare" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(750.0, 1250.0)
+script = ExtResource("Recolte")
+titre = "Caisses du pied du phare"
+description = "Le dernier sac, gardé par le gardien pour le navire qui oublie."
+quete = "logue_vivres"
+objet = "14"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="VivresDuPhare"]
+position = Vector2(0, -64.0)
+texture = ExtResource("Caisses")
+
+[node name="Etiquette" type="Label" parent="VivresDuPhare"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="FilouDeLaPromenade" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1970.0, 2000.0)
+nom = "Voleur de la promenade"
+pv_max = 300
+degats_attaque = 26
+portee_attaque = 1
+pm_max = 3
+mob_id = 1
+quetes_a_progresser = Array[String](["logue_filous"])
+niveau_personnalise = 26
+groupe = "filous_logue"
+texture_personnalisee = ExtResource("sprite_ile_voleur_loguetown")
+
+[node name="FilouDeLaRuelle" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1150.0, 1350.0)
+nom = "Voleur de la ruelle"
+pv_max = 310
+degats_attaque = 27
+portee_attaque = 1
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String](["logue_filous"])
+niveau_personnalise = 26
+groupe = "filous_logue"
+texture_personnalisee = ExtResource("sprite_ile_voleur_loguetown")
+
+[node name="FilouDuQuai" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(900.0, 2050.0)
+nom = "Voleur du quai"
+pv_max = 320
+degats_attaque = 28
+portee_attaque = 1
+pm_max = 3
+mob_id = 2
+quetes_a_progresser = Array[String](["logue_filous"])
+niveau_personnalise = 27
+groupe = "filous_logue"
+texture_personnalisee = ExtResource("sprite_ile_voleur_loguetown")
+
+[node name="Fourgant" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1504.0, 576.0)
+nom = "Agent Mistral"
+pv_max = 640
+degats_attaque = 34
+portee_attaque = 2
+pm_max = 3
+mob_id = 0
+quetes_a_progresser = Array[String](["trm_c5b_fourgant"])
+niveau_personnalise = 28
+groupe = ""
+texture_personnalisee = ExtResource("sprite_ile_mistral")
+attaques_par_tour = 3
+
+[node name="PouleDeLaPlace" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1880.0, 1450.0)
+nom = "Poule de la place"
+pv_max = 34
+degats_attaque = 5
+portee_attaque = 1
+pm_max = 3
+mob_id = 17
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 1
+groupe = "volailles_logue"
+texture_personnalisee = ExtResource("sprite_ile_poule_du_quai")
+
+[node name="PouleDuQuai" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1250.0, 2100.0)
+nom = "Poule du quai"
+pv_max = 34
+degats_attaque = 5
+portee_attaque = 1
+pm_max = 3
+mob_id = 17
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 1
+groupe = "volailles_logue"
+texture_personnalisee = ExtResource("sprite_ile_poule_du_quai")

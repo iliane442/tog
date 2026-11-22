@@ -26,6 +26,11 @@ func _enter_tree() -> void:
 			$player.position = arrivee.position
 		_scene_arrivee = ""
 		_point_arrivee = &""
+	else:
+		# retour sur une map sans arrivée précise (lancement du jeu,
+		# reconnexion) : le joueur reprend sa dernière position
+		# mémorisée sur cette carte
+		Reseau.appliquer_position_memorisee(scene_file_path, $player)
 
 func _ready() -> void:
 	var terrain := get_node_or_null("TerrainZone")
@@ -38,6 +43,8 @@ func _ready() -> void:
 		carte.hide()
 		$CreationPerso.tree_exited.connect(carte.show, CONNECT_ONE_SHOT)
 	$MenuUI.menu_ouvert.connect(carte.hide)
+	$MenuUI.menu_ouvert.connect($player._arreter_exploration)
+	$MenuUI.menu_ouvert.connect($CombatManager._quitter_survol_ennemi)
 	$MenuUI.menu_ferme.connect(_afficher_carte_en_exploration)
 	$CombatManager.placement_commence.connect(carte.hide)
 	$CombatManager.combat_termine.connect(func(_victoire: bool):

@@ -1,0 +1,511 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_syrup.tscn" id="FerrySyrup"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_coco.tscn" id="FerryCoco"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-inn-v0.png" id="Auberge"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-tavern-v0.png" id="Taverne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-dock-plank-v1.png" id="Planche"]
+[ext_resource type="Texture2D" path="res://assets/world/world-dock-bollard-v1.png" id="Bollard"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/cabane_de_peche.png" id="Cabane"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-sacs-de-cale.png" id="Sacs"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tonneaux.png" id="Tonneaux"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-brig-v1.png" id="Brig"]
+[ext_resource type="Texture2D" path="res://assets/sprites/fauna/colombe-statique.png" id="Mouette"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/zeff.png" id="sprite_ile_zeff"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/carne.png" id="sprite_ile_carne"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pelagie.png" id="sprite_ile_pelagie"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/johnny.png" id="sprite_ile_johnny"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/yosaku.png" id="sprite_ile_yosaku"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pirate_krieg.png" id="sprite_ile_pirate_krieg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pirate_krieg_cuirasse.png" id="sprite_ile_pirate_krieg_cuirasse"]
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[node name="Baratie" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~=::::::::::::::::::::::::=~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~:========================:~~~~~~~",
+	"~~~~~~~=::::::::::::::::::::::::=~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~:::~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~:::~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~:::~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~:::~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~:::~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~:::~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+)
+littoral = true
+emprises_decors = Array[Rect2i]([])
+
+[node name="player" parent="." index="5"]
+position = Vector2(1280.0, 1472.0)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Le Baratie"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1280.0, 1600.0): "Ponton du ferry", Vector2(1280.0, 896.0): "Le Baratie", Vector2(1280.0, 1216.0): "Terrasse du patron", Vector2(1977.6, 1228.8): "Ponton est", Vector2(900.0, 600.0): "Proue du pont"})
+
+[node name="DepuisSyrupVillage" type="Marker2D" parent="Arrivees"]
+position = Vector2(1241.6, 1600)
+
+[node name="DepuisVillageCoco" type="Marker2D" parent="Arrivees"]
+position = Vector2(1318.4, 1600)
+
+[node name="CapitaineVolige" parent="." instance=ExtResource("FerrySyrup")]
+position = Vector2(1216.0, 1459.2)
+paroles = "Remonter sur Syrup Village ? La colline se voit d'ici quand la brume daigne lever. Embarque, je termine ma soupe en route."
+destination = "res://scenes/syrup_village.tscn"
+arrivee = &"DepuisBaratie"
+libelle_traversee = "Embarquer pour Syrup Village"
+
+[node name="CapitaineFilet" parent="." instance=ExtResource("FerryCoco")]
+position = Vector2(1376.0, 1459.2)
+paroles = "Le village Coco t'attend là où l'eau devient plus dure. Je te préviens : le fanal de la côte est s'éteint tout seul, ces temps-ci."
+destination = "res://scenes/coco_village.tscn"
+arrivee = &"DepuisBaratie"
+libelle_traversee = "Embarquer pour le village Coco"
+
+[node name="BrigAuLarge" type="Sprite2D" parent="Paysage"]
+position = Vector2(2355.2, 371.2)
+texture = ExtResource("Brig")
+offset = Vector2(0, -250.0)
+scale = Vector2(0.55, 0.55)
+z_index = -3
+
+[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
+position = Vector2(1024.0, 1700.0)
+texture = ExtResource("Barque")
+offset = Vector2(0, -70.0)
+scale = Vector2(0.9, 0.9)
+z_index = -3
+
+[node name="BarqueDuPontonSud" type="Sprite2D" parent="Paysage"]
+position = Vector2(1088.0, 1676.8)
+texture = ExtResource("Barque")
+offset = Vector2(0, -70.0)
+scale = Vector2(0.85, 0.85)
+z_index = -3
+
+[node name="LeBaratie" type="Sprite2D" parent="Paysage"]
+position = Vector2(1280.0, 896.0)
+texture = ExtResource("Auberge")
+offset = Vector2(0, -150.0)
+scale = Vector2(1.8, 1.8)
+
+[node name="ComptoirDuBar" type="Sprite2D" parent="Paysage"]
+position = Vector2(768.0, 832.0)
+texture = ExtResource("Taverne")
+offset = Vector2(0, -117.0)
+scale = Vector2(1.3, 1.3)
+flip_h = true
+
+[node name="PlancheDuPonton1" type="Sprite2D" parent="Paysage"]
+position = Vector2(1241.6, 1472.0)
+texture = ExtResource("Planche")
+offset = Vector2(0, -20.0)
+
+[node name="PlancheDuPonton2" type="Sprite2D" parent="Paysage"]
+position = Vector2(1318.4, 1472.0)
+texture = ExtResource("Planche")
+offset = Vector2(0, -20.0)
+
+[node name="BollardDeBabord" type="Sprite2D" parent="Paysage"]
+position = Vector2(1088.0, 1280.0)
+texture = ExtResource("Bollard")
+offset = Vector2(0, -20.0)
+
+[node name="BollardDeTribord" type="Sprite2D" parent="Paysage"]
+position = Vector2(1536.0, 1280.0)
+texture = ExtResource("Bollard")
+offset = Vector2(0, -20.0)
+
+[node name="BollardDuBout" type="Sprite2D" parent="Paysage"]
+position = Vector2(1280.0, 1600.0)
+texture = ExtResource("Bollard")
+offset = Vector2(0, -20.0)
+
+[node name="LanterneDeLEntree" type="Sprite2D" parent="Paysage"]
+position = Vector2(1625.6, 1280.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+scale = Vector2(0.8, 0.8)
+flip_h = true
+
+[node name="LanterneDuPonton" type="Sprite2D" parent="Paysage"]
+position = Vector2(1000.0, 1472.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+scale = Vector2(0.75, 0.75)
+
+[node name="CabaneDeLaCale" type="Sprite2D" parent="Paysage"]
+position = Vector2(1820.8, 1120.0)
+texture = ExtResource("Cabane")
+offset = Vector2(0, -83.0)
+scale = Vector2(0.95, 0.95)
+flip_h = true
+
+[node name="TonneauxDeLaTerrasse" type="Sprite2D" parent="Paysage"]
+position = Vector2(1700.0, 1030.0)
+texture = ExtResource("Tonneaux")
+offset = Vector2(0, -32.0)
+scale = Vector2(0.85, 0.85)
+
+[node name="CaissesDeLaCale" type="Sprite2D" parent="Paysage"]
+position = Vector2(870.4, 1120.0)
+texture = ExtResource("Caisses")
+offset = Vector2(0, -64.0)
+scale = Vector2(0.65, 0.65)
+
+[node name="ColombeDuGrandMat" type="Sprite2D" parent="Paysage"]
+position = Vector2(1980.0, 700.0)
+texture = ExtResource("Mouette")
+offset = Vector2(0, -20.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="SacsDuPontonSud" type="Sprite2D" parent="Paysage"]
+position = Vector2(1187.2, 1600.0)
+texture = ExtResource("Sacs")
+offset = Vector2(0, -32.0)
+scale = Vector2(0.9, 0.9)
+
+[node name="SacsDeLEntree" type="Sprite2D" parent="Paysage"]
+position = Vector2(1520.0, 1248.0)
+texture = ExtResource("Sacs")
+offset = Vector2(0, -32.0)
+scale = Vector2(0.85, 0.85)
+flip_h = true
+
+[node name="SacsDuPontonEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1977.6, 1228.8)
+texture = ExtResource("Sacs")
+offset = Vector2(0, -32.0)
+scale = Vector2(0.8, 0.8)
+
+[node name="Zeff" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1280.0, 1216.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["trm_c4_baratie"])
+nom_affiche = "Zeff"
+paroles = "J'ai vu la carte entière, une nuit, entre deux vagues. Je n'ai plus jamais eu faim depuis. Et je n'ai plus jamais eu faim non plus, tu vois ? Assieds-toi, marmaille. La mer ne paie pas en pièces, elle paie en souvenirs — et j'ai déjà tout pris."
+
+[node name="Sprite2D" type="Sprite2D" parent="Zeff"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_zeff")
+
+[node name="Area2D" type="Area2D" parent="Zeff"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Zeff/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Zeff"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Zeff"
+horizontal_alignment = 1
+
+[node name="Carne" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1024.0, 1060.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["baratie_galopins", "baratie_epices"])
+nom_affiche = "Carne"
+paroles = "La cuisine est sacrée, le ponton aussi. Trois hommes de Krieg réclament du vin à crédit et notre poivre dort à même les planches. Un coup de main et le Baratie saura te remercier."
+
+[node name="Sprite2D" type="Sprite2D" parent="Carne"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_carne")
+
+[node name="Area2D" type="Area2D" parent="Carne"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Carne/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Carne"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Carne"
+horizontal_alignment = 1
+
+[node name="Pelagie" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(900.0, 600.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String]([])
+nom_affiche = "Pélagie la colporteuse"
+paroles = "Monsieur le cuisinier refuse de me vendre ses vieilles cartes de cuisine. Moi qui collectionne les choses avec écrits dessus... Et vous, voyageur ? Vous portez de belles histoires. On se recroisera, j'en tiens le compte."
+
+[node name="Sprite2D" type="Sprite2D" parent="Pelagie"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_pelagie")
+
+[node name="Area2D" type="Area2D" parent="Pelagie"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pelagie/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Pelagie"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Pélagie la colporteuse"
+horizontal_alignment = 1
+
+[node name="JohnnySurLePonton" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1856.0, 1088.0)
+script = ExtResource("Recolte")
+titre = "Johnny"
+description = "Johnny saute sur ses pieds et frappe du poing : « Frère ! On embarque avec lui ! » — Johnny et Yosaku se rallient à toi : deux épées fauchées valent mieux qu'une."
+quete = "trm_c4_baratie"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+interlocuteur = true
+
+[node name="Sprite2D" type="Sprite2D" parent="JohnnySurLePonton"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_johnny")
+
+[node name="Etiquette" type="Label" parent="JohnnySurLePonton"]
+offset_left = -135.0
+offset_top = -118.0
+offset_right = 135.0
+offset_bottom = -93.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="YosakuSurLePonton" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1960.0, 1216.0)
+script = ExtResource("Recolte")
+titre = "Yosaku"
+description = "Yosaku hoche la tête, maladroit : « Johnny a déjà dit oui pour nous deux, frère. » — Les deux chasseurs rejoignent l'équipage du héros."
+quete = "trm_c4_baratie"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+interlocuteur = true
+
+[node name="Sprite2D" type="Sprite2D" parent="YosakuSurLePonton"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_yosaku")
+
+[node name="Etiquette" type="Label" parent="YosakuSurLePonton"]
+offset_left = -135.0
+offset_top = -118.0
+offset_right = 135.0
+offset_bottom = -93.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="TableDuPatron" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1400.0, 1152.0)
+script = ExtResource("Recolte")
+titre = "La table du patron"
+description = "Zeff essuie la table d'un geste lent. « La carte entière, une nuit, entre deux vagues. Elle n'allait nulle part, et c'est pour ça que je l'ai laissée là. Ceux qui la cherchent maintenant... éteignent les fanals pour la trouver dans le noir. Méfie-toi des gris, marmaille. Et goûte la soupe. »"
+quete = "trm_c4_baratie"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="TableDuPatron"]
+position = Vector2(0, -32.0)
+texture = ExtResource("Sacs")
+
+[node name="Etiquette" type="Label" parent="TableDuPatron"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="SacsDuPonton" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1235.0, 1600.0)
+script = ExtResource("Recolte")
+titre = "Sacs d'épices du ponton sud"
+description = "Un sac de poivre de Loguetown, encore sec malgré la houle."
+quete = "baratie_epices"
+objet = "14"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="SacsDuPonton"]
+position = Vector2(0, -32.0)
+texture = ExtResource("Sacs")
+
+[node name="Etiquette" type="Label" parent="SacsDuPonton"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="SacsDeLEntree2" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1500.0, 1230.0)
+script = ExtResource("Recolte")
+titre = "Sacs d'épices de l'entrée"
+description = "Canela et girofle, côté grand mât."
+quete = "baratie_epices"
+objet = "14"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="SacsDeLEntree2"]
+position = Vector2(0, -32.0)
+texture = ExtResource("Sacs")
+
+[node name="Etiquette" type="Label" parent="SacsDeLEntree2"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="SacsDuPontonEst2" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1977.6, 1228.8)
+script = ExtResource("Recolte")
+titre = "Sacs d'épices du ponton est"
+description = "Le dernier sac, coincé sous une borne d'amarrage."
+quete = "baratie_epices"
+objet = "14"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="SacsDuPontonEst2"]
+position = Vector2(0, -32.0)
+texture = ExtResource("Sacs")
+
+[node name="Etiquette" type="Label" parent="SacsDuPontonEst2"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PirateIvreDuSud" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1600.0, 1250.0)
+nom = "Matelot de Krieg"
+pv_max = 175
+degats_attaque = 18
+portee_attaque = 1
+pm_max = 3
+mob_id = 2
+quetes_a_progresser = Array[String](["baratie_galopins"])
+niveau_personnalise = 17
+groupe = "ivrognes_baratie"
+texture_personnalisee = ExtResource("sprite_ile_pirate_krieg")
+
+[node name="PirateIvreDeLEst" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1850.0, 950.0)
+nom = "Pirate cuirassé de Krieg"
+pv_max = 185
+degats_attaque = 19
+portee_attaque = 1
+pm_max = 3
+mob_id = 2
+quetes_a_progresser = Array[String](["baratie_galopins"])
+niveau_personnalise = 18
+groupe = "ivrognes_baratie"
+texture_personnalisee = ExtResource("sprite_ile_pirate_krieg_cuirasse")
+
+[node name="PirateIvreDuBar" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(900.0, 1080.0)
+nom = "Pirate de Krieg"
+pv_max = 195
+degats_attaque = 20
+portee_attaque = 1
+pm_max = 3
+mob_id = 2
+quetes_a_progresser = Array[String](["baratie_galopins"])
+niveau_personnalise = 18
+groupe = "ivrognes_baratie"
+texture_personnalisee = ExtResource("sprite_ile_pirate_krieg")

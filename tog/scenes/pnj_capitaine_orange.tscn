@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_shells.tscn" id="Ferry"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/capitaine_brise.png" id="sprite_ile_capitaine_brise"]
+
+[node name="CapitaineBrise" instance=ExtResource("Ferry")]
+nom_affiche = "Capitaine Brise"
+paroles = "Je fais la navette jusqu’à Orange Town. Là-bas, tout le monde connaît Chouchou et sa petite boutique. Si tu vois un chapiteau au-dessus des toits, c’est que Baggy est encore en ville."
+destination = "res://scenes/orange_town.tscn"
+arrivee = &"DepuisShellsTown"
+libelle_traversee = "Embarquer pour Orange Town"
+
+[node name="Nom" parent="." index="0"]
+text = "Capitaine Brise"
+
+[node name="Sprite2D" parent="." index="1"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_capitaine_brise")

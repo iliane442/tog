@@ -20,8 +20,7 @@ var actions: Dictionary = {
 	"sort_8": "Sort - emplacement 8",
 	"sort_9": "Sort - emplacement 9",
 	"sort_10": "Sort - emplacement 10",
-	"fin_tour": "Fin du tour",
-	"valider_placement": "Valider le placement",
+	"fin_tour": "Fin du tour / valider le placement",
 	"cible_suivante": "Cible suivante",
 	"cible_precedente": "Cible précédente",
 }
@@ -39,7 +38,6 @@ var _defauts: Dictionary = {
 	"sort_9": KEY_9,
 	"sort_10": KEY_0,
 	"fin_tour": KEY_ENTER,
-	"valider_placement": KEY_SPACE,
 	"cible_suivante": KEY_TAB,
 	"cible_precedente": KEY_LEFT,
 }
@@ -59,6 +57,13 @@ func charger() -> void:
 		var defaut: int = int(_defauts.get(action, KEY_NONE))
 		var valeur: int = defaut if erreur != OK else int(cfg.get_value(SECTION, action, defaut))
 		_touches[action] = valeur
+	# migration : valider le placement et fin du tour partagent désormais
+	# la même touche ; une ancienne config qui n'avait personnalisé que
+	# « valider_placement » reporte sa touche sur « fin_tour »
+	if erreur == OK \
+			and not cfg.has_section_key(SECTION, "fin_tour") \
+			and cfg.has_section_key(SECTION, "valider_placement"):
+		_touches["fin_tour"] = int(cfg.get_value(SECTION, "valider_placement", _defauts["fin_tour"]))
 
 func sauvegarder() -> void:
 	var cfg := ConfigFile.new()

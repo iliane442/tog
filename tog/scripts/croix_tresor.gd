@@ -23,6 +23,7 @@ const RAYON := 24.0    # rayon cliquable
 func _ready() -> void:
 	input_pickable = true
 	add_to_group("croix_tresor")
+	add_to_group("entites_minicarte")
 	z_index = 50
 	rarete = clampi(rarete, 1, 4)
 	_construire_dessin()
@@ -35,6 +36,9 @@ func _ready() -> void:
 	battement.set_loops()
 	battement.tween_property(self, "scale", Vector2(1.15, 1.15), 0.7).set_trans(Tween.TRANS_SINE)
 	battement.tween_property(self, "scale", Vector2.ONE, 0.7).set_trans(Tween.TRANS_SINE)
+
+func repere_minicarte() -> Dictionary:
+	return {"categorie": "butin", "nom": "Croix au trésor", "role": "À déterrer"}
 
 # deux diagonales (contour puis couleur) forment la croix
 func _construire_dessin() -> void:

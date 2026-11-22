@@ -1,0 +1,670 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_whisky.tscn" id="FerryWhisky"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_drum.tscn" id="FerryDrum"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/chene_ancien.png" id="Chene"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="Rochers"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/fleurs_medicinales.png" id="Fleurs"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/stele_de_la_vague.png" id="Stele"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/arche_de_pierre.png" id="Arche"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/monument_a_l_ancre.png" id="Monument"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="Borne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
+[ext_resource type="Texture2D" path="res://assets/world/world-planches-ressource-grandline-baies.png" id="Baies"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
+[ext_resource type="Texture2D" path="res://assets/sprites/fauna/cerf-statique.png" id="tex_cerf"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/dorry.png" id="sprite_ile_dorry"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/agent_baroque.png" id="sprite_ile_agent_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/eclaireur_baroque.png" id="sprite_ile_eclaireur_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/chasseur_baroque.png" id="sprite_ile_chasseur_baroque"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/mr3.png" id="sprite_ile_mr3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/brouteur_little_garden.png" id="sprite_ile_brouteur_little_garden"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/ankylosaure.png" id="sprite_ile_ankylosaure"]
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[node name="LittleGarden" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;F,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,;;~~",
+	"~~;;FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF;;~~",
+	"~~;;,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,F;;~~",
+	"~~;;F,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,,,,,F,;;~~",
+	"~~;;FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,F,,,,,FF;;~~",
+	"~~;;,FF,FF,,,,,,,FF,FF,FF,FF,F::::::::::,F;;~~",
+	"~~;;F,FF,F,,,,,,,,FF,FF,FF,FF,,,,,,,,,,,F,;;~~",
+	"~~;;FF,FF,,,,,,,,F,FF,FF,FF,FF,,,,,,,,,,FF;;~~",
+	"~~;;,FF,FF,,,,,,,FF,FF,FF,FF,F,,,,,,,,FF,F;;~~",
+	"~~;;F,FF,F,,,,,,,,FF,FF,FF,FF,,,,,,,,F,FF,;;~~",
+	"~~;;FF,FF,,,,:,,,F,FF,FF,FF,FF,,,:,,,FF,FF;;~~",
+	"~~;;,FF,FF,,,:,,,FF,FF,FF,FF,F,,,:,,,,FF,F;;~~",
+	"~~;;F,FF,FF,F:,FF,FF,FF,FF,FF,FF,:F,FF,FF,;;~~",
+	"~~;;FF,FF,FF,:F,FF,F::::::::::::::FF,FF,FF;;~~",
+	"~~;;,FF,FF,FF:FF,FF,FF,FF,::::::::,FF,FF,F;;~~",
+	"~~;;F,FF,FF,F:,FF,FF,FF,FF::::::::F,FF,FF,;;~~",
+	"~~;;FF,FF,FF,:F,FF,FF,FF,F::::::::FF,FF,FF;;~~",
+	"~~;;,FF,,,,,F:FF,FF,FF,FF,::::::::,FF,FF,F;;~~",
+	"~~;;F,F,,,,,F:,FF,FF,FF,FF::::::::F,FF,FF,;;~~",
+	"~~;;FF,,,:::::F,FF,FF,FF,F::::::::FF,FF,FF;;~~",
+	"~~;;,FF,,,,,F:FF,FF,FF,FF,:F,FF,F:,FF,FF,F;;~~",
+	"~~;;F,F,,,,,F:,FF,FF,FF,FF:FF,FF,:F,FF,FF,;;~~",
+	"~~;;FF,FF,FF,:F,FF,FF,FF,F:,FF,FF:FF,FF,FF;;~~",
+	"~~;;,FF,FF,FF:FF,FF,FF,FF,:F,FF,F:,FF,FF,F;;~~",
+	"~~;;F,FF,FF,F:,FF,FF,FF,FF:FF,FF,:F,FF,FF,;;~~",
+	"~~;;FF,FF,FF,:F,,,,,,,,,,,:,,F,FF:FF,FF,FF;;~~",
+	"~~;;,F,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,F;;~~",
+	"~~;;F,FF,FF,FF,FF,FF,FF,FF,FF,FF,:F,FF,FF,;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+)
+littoral = true
+emprises_decors = Array[Rect2i]([])
+
+[node name="player" parent="." index="5"]
+position = Vector2(1400.0, 2020.0)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Little Garden"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1330.0, 2020.0): "Rivage des géants", Vector2(900.0, 850.0): "Repaire de Dorry", Vector2(2100.0, 820.0): "Repaire de Brogy", Vector2(1900.0, 1400.0): "Arène du Serment", Vector2(2400.0, 700.0): "Grotte aux lucioles", Vector2(600.0, 1550.0): "Racine creuse"})
+
+[node name="DepuisWhiskyPeak" type="Marker2D" parent="Arrivees"]
+position = Vector2(1330.0, 2020.0)
+
+[node name="DepuisDrum" type="Marker2D" parent="Arrivees"]
+position = Vector2(1470.0, 2020.0)
+
+[node name="CapitaineTopaze" parent="." instance=ExtResource("FerryWhisky")]
+position = Vector2(1180.0, 2020.0)
+paroles = "Retour à la ville des fêtes ? Prends un bout de rhum pour la traversée, ça tient chaud. Le comptoir des primes fait profil bas, paraît-il."
+destination = "res://scenes/whisky_peak.tscn"
+arrivee = &"DepuisLittleGarden"
+libelle_traversee = "Embarquer pour Whisky Peak"
+
+[node name="CapitaineAlize" parent="." instance=ExtResource("FerryDrum")]
+position = Vector2(1620.0, 2020.0)
+paroles = "Le royaume de Drum est plus au nord : des cimes, des cèdres, un château vissé sur un rocher. Salue Dalton si tu le croises, c'est le seul roi que le peuple ait vraiment eu."
+destination = "res://scenes/drum.tscn"
+arrivee = &"DepuisLittleGarden"
+libelle_traversee = "Embarquer pour le royaume de Drum"
+
+[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
+position = Vector2(900.0, 2420.0)
+texture = ExtResource("Sloop")
+offset = Vector2(0, -250.0)
+scale = Vector2(0.7, 0.7)
+z_index = -3
+
+[node name="BarqueDuRivage" type="Sprite2D" parent="Paysage"]
+position = Vector2(2700.0, 2380.0)
+texture = ExtResource("Barque")
+offset = Vector2(0, -70.0)
+scale = Vector2(1.1, 1.1)
+flip_h = true
+z_index = -3
+
+[node name="BorneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1400.0, 2120.0)
+texture = ExtResource("Borne")
+offset = Vector2(0, -31.5)
+scale = Vector2(0.75, 0.75)
+
+[node name="CheneDeDorry1" type="Sprite2D" parent="Paysage"]
+position = Vector2(700.0, 900.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(1.25, 1.25)
+
+[node name="CheneDeDorry2" type="Sprite2D" parent="Paysage"]
+position = Vector2(1250.0, 850.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(1.3, 1.3)
+flip_h = true
+
+[node name="CheneDeBrogy1" type="Sprite2D" parent="Paysage"]
+position = Vector2(2500.0, 850.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(1.28, 1.28)
+
+[node name="CheneDeBrogy2" type="Sprite2D" parent="Paysage"]
+position = Vector2(2800.0, 850.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(1.22, 1.22)
+flip_h = true
+
+[node name="CheneDeLArene" type="Sprite2D" parent="Paysage"]
+position = Vector2(2100.0, 1450.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(1.35, 1.35)
+
+[node name="CheneDeLaJungle1" type="Sprite2D" parent="Paysage"]
+position = Vector2(1750.0, 2050.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(1.2, 1.2)
+
+[node name="RochersDuScentre" type="Sprite2D" parent="Paysage"]
+position = Vector2(2700.0, 1600.0)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+scale = Vector2(1.05, 1.05)
+
+[node name="RochersDeLaGrotte" type="Sprite2D" parent="Paysage"]
+position = Vector2(2700.0, 950.0)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+scale = Vector2(1.1, 1.1)
+flip_h = true
+
+[node name="MonumentDuSerment" type="Sprite2D" parent="Paysage"]
+position = Vector2(1150.0, 2050.0)
+texture = ExtResource("Monument")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.15, 1.15)
+
+[node name="ArcheDeLaJungle" type="Sprite2D" parent="Paysage"]
+position = Vector2(1250.0, 1800.0)
+texture = ExtResource("Arche")
+offset = Vector2(0, -110.0)
+scale = Vector2(1.25, 1.25)
+
+[node name="SteleDeLArene" type="Sprite2D" parent="Paysage"]
+position = Vector2(1700.0, 1400.0)
+texture = ExtResource("Stele")
+offset = Vector2(0, -51.5)
+scale = Vector2(1.1, 1.1)
+
+[node name="BaiesDeLaClairiere" type="Sprite2D" parent="Paysage"]
+position = Vector2(2450.0, 800.0)
+texture = ExtResource("Baies")
+offset = Vector2(0, -30.0)
+scale = Vector2(0.9, 0.9)
+
+[node name="CaissesDesRamasseurs" type="Sprite2D" parent="Paysage"]
+position = Vector2(2500.0, 1750.0)
+texture = ExtResource("Caisses")
+offset = Vector2(0, -64.0)
+scale = Vector2(0.7, 0.7)
+
+[node name="Dorry" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(900.0, 850.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 134.0
+hauteur_zone_clic = 164.0
+chain_quetes = Array[String](["trm_lg_duel", "trm_lg_ramasseurs", "trm_lg_depot", "trm_lg_gardien", "trm_lg_toast"])
+nom_affiche = "Dorry le Bleu"
+paroles = "GAGAGA ! Brogy et moi nous battons depuis cent ans. Ces temps-ci, des hommes de Baroque Works fouillent la jungle et coulent de la cire près de notre arène. Aide-moi à dégager le dépôt enfoui sous les racines, petit."
+
+[node name="Sprite2D" type="Sprite2D" parent="Dorry"]
+position = Vector2(0, -72)
+texture = ExtResource("sprite_ile_dorry")
+
+[node name="Area2D" type="Area2D" parent="Dorry"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Dorry/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Dorry"]
+offset_left = -135.0
+offset_top = -168.0
+offset_right = 135.0
+offset_bottom = -144.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Dorry le Bleu"
+horizontal_alignment = 1
+
+[node name="ReperDeDorry" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(950.0, 800.0)
+script = ExtResource("Recolte")
+titre = "Le repère de Dorry"
+description = "Une stèle entaillée de cent vingt-deux traits : chaque trait est un duel, chaque duel s'achève par un rire et une cicatrice. Le cent vingt-troisième se joue demain."
+quete = "trm_lg_duel"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="ReperDeDorry"]
+position = Vector2(0, -51.5)
+texture = ExtResource("Stele")
+
+[node name="Etiquette" type="Label" parent="ReperDeDorry"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="ReperDeBrogy" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2100.0, 820.0)
+script = ExtResource("Recolte")
+titre = "Le repère de Brogy"
+description = "Face à celle de Dorry, la stèle jumelle : cent vingt-deux entailles, la même arme, la même patience. Cent ans d'honneur tiennent en deux colonnes de pierre."
+quete = "trm_lg_duel"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="ReperDeBrogy"]
+position = Vector2(0, -51.5)
+texture = ExtResource("Stele")
+
+[node name="Etiquette" type="Label" parent="ReperDeBrogy"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="SteleDuSerment" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1800.0, 1400.0)
+script = ExtResource("Recolte")
+titre = "La stèle du Serment"
+description = "« Nous nous battrons jusqu'à ce que la mer oublie nos noms. » Serment gravé par les deux géants le jour de leur premier duel. L'arène autour est taillée de leurs pas, réguliers comme des marées."
+quete = "trm_lg_duel"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="SteleDuSerment"]
+position = Vector2(0, -51.0)
+texture = ExtResource("Stele")
+
+[node name="Etiquette" type="Label" parent="SteleDuSerment"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="RacineCreuse" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(600.0, 1550.0)
+script = ExtResource("Recolte")
+titre = "La racine creuse"
+description = "Dans la racine d'un arbre-maître, un étui de toile cirée : des relais de balises du bout du monde, annotés de la main de Corvus. Little Garden était une escale de sa chaîne — longue d'une mer entière."
+quete = "trm_lg_depot"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="RacineCreuse"]
+position = Vector2(0, -28.0)
+texture = ExtResource("Coffre")
+
+[node name="Etiquette" type="Label" parent="RacineCreuse"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="RocherPlat" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2650.0, 2100.0)
+script = ExtResource("Recolte")
+titre = "Le rocher plat"
+description = "Sous le rocher plat, un anneau de bronze : celui d'une balise éteinte depuis trente ans, encore chaud de l'huile qu'on y versa. L'Aiguille du Cap frémit dessus — un conte n'est pas une balise, mais celle-ci l'était."
+quete = "trm_lg_depot"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="RocherPlat"]
+position = Vector2(0, -47.0)
+texture = ExtResource("Rochers")
+
+[node name="Etiquette" type="Label" parent="RocherPlat"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="GrotteAuxLucioles" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2400.0, 680.0)
+script = ExtResource("Recolte")
+titre = "La grotte aux lucioles"
+description = "Les lucioles dessinent le plafond comme une carte du ciel. Sur une paroi, une marque de Corvus, elle identifie un courant du large : le chenal de repérage qu'utilisaient les secours. Un registre mentionne que le village de Drum a déjà reçu sa copie."
+quete = "trm_lg_depot"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="GrotteAuxLucioles"]
+position = Vector2(0, -28.0)
+texture = ExtResource("Coffre")
+
+[node name="Etiquette" type="Label" parent="GrotteAuxLucioles"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="ToastDesGiants" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2050.0, 1250.0)
+script = ExtResource("Recolte")
+titre = "Le toast des géants"
+description = "Dorry et Brogy interrompent leur cent vingt-troisième duel pour porter un toast aux petits — une cuiller minuscule, levée d'une main large comme une barque. Le Log Pose s'étalonne enfin : le cap désigne le royaume de Drum."
+quete = "trm_lg_toast"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="ToastDesGiants"]
+position = Vector2(0, -30.0)
+texture = ExtResource("Baies")
+
+[node name="Etiquette" type="Label" parent="ToastDesGiants"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PetroglypheDuRivage" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1400.0, 2200.0)
+script = ExtResource("Recolte")
+titre = "Pétroglyphe du Rivage"
+description = "« Ici débarquèrent ceux qui soignaient la mer. Ils plantèrent leurs feux et repartirent sans les éteindre. » Le dessin montre une balise entre deux dinosaures — plus vieux que tout le reste gravé."
+quete = "lg_petroglyphes"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PetroglypheDuRivage"]
+position = Vector2(0, -51.5)
+texture = ExtResource("Stele")
+
+[node name="Etiquette" type="Label" parent="PetroglypheDuRivage"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PetroglypheDuSerment" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1950.0, 1550.0)
+script = ExtResource("Recolte")
+titre = "Pétroglyphe du Serment"
+description = "Deux géants gravés face à face, un soleil barré au-dessus : « Le duel durera tant que l'honneur tiendra. Que les petits n'y touchent pas. »"
+quete = "lg_petroglyphes"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PetroglypheDuSerment"]
+position = Vector2(0, -51.5)
+texture = ExtResource("Stele")
+
+[node name="Etiquette" type="Label" parent="PetroglypheDuSerment"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PetroglypheDesCentDuels" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2750.0, 1200.0)
+script = ExtResource("Recolte")
+titre = "Pétroglyphe des Cent Duels"
+description = "Cent entailles, un navire tracé au pied, un fanal barré par-dessus — un graffiti récent, au tracé trop propre pour un géant. La Vigie est déjà venue lire cette pierre."
+quete = "lg_petroglyphes"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PetroglypheDesCentDuels"]
+position = Vector2(0, -51.5)
+texture = ExtResource("Stele")
+
+[node name="Etiquette" type="Label" parent="PetroglypheDesCentDuels"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BaieDesLucioles" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2450.0, 750.0)
+script = ExtResource("Recolte")
+titre = "Baies de la clairière des lucioles"
+description = "Grosses comme le poing, sucrées comme une victoire."
+quete = "lg_baies"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BaieDesLucioles"]
+position = Vector2(0, -30.0)
+texture = ExtResource("Baies")
+
+[node name="Etiquette" type="Label" parent="BaieDesLucioles"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BaieDuSentier" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2700.0, 2200.0)
+script = ExtResource("Recolte")
+titre = "Baies du sentier du dinosaure"
+description = "Le sentier porte l'empreinte d'une patte large comme une nasse. Les baies y poussent à l'abri."
+quete = "lg_baies"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BaieDuSentier"]
+position = Vector2(0, -30.0)
+texture = ExtResource("Baies")
+
+[node name="Etiquette" type="Label" parent="BaieDuSentier"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BaieDeLaRacine" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(560.0, 1550.0)
+script = ExtResource("Recolte")
+titre = "Baies de la racine creuse"
+description = "Les géants les appellent « les confitures de la jungle »."
+quete = "lg_baies"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BaieDeLaRacine"]
+position = Vector2(0, -30.0)
+texture = ExtResource("Baies")
+
+[node name="Etiquette" type="Label" parent="BaieDeLaRacine"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="RamasseurDeLaJungle" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2200.0, 1800.0)
+nom = "Agent de Baroque Works"
+pv_max = 640
+degats_attaque = 35
+portee_attaque = 1
+pm_max = 3
+mob_id = 1
+quetes_a_progresser = Array[String](["trm_lg_ramasseurs"])
+niveau_personnalise = 35
+groupe = "ramasseurs_vigie"
+texture_personnalisee = ExtResource("sprite_ile_agent_baroque")
+
+[node name="RamasseurDeLArene" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2750.0, 1500.0)
+nom = "Éclaireur de Baroque Works"
+pv_max = 660
+degats_attaque = 36
+portee_attaque = 2
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String](["trm_lg_ramasseurs"])
+niveau_personnalise = 35
+groupe = "ramasseurs_vigie"
+texture_personnalisee = ExtResource("sprite_ile_eclaireur_baroque")
+
+[node name="RamasseurDesCimes" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1500.0, 2200.0)
+nom = "Chasseur de Baroque Works"
+pv_max = 680
+degats_attaque = 37
+portee_attaque = 2
+pm_max = 3
+mob_id = 4
+quetes_a_progresser = Array[String](["trm_lg_ramasseurs"])
+niveau_personnalise = 36
+groupe = "ramasseurs_vigie"
+texture_personnalisee = ExtResource("sprite_ile_chasseur_baroque")
+
+[node name="GardienDesOs" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1900.0, 1250.0)
+nom = "Mr. 3"
+pv_max = 1050
+degats_attaque = 40
+portee_attaque = 2
+pm_max = 3
+mob_id = 15
+quetes_a_progresser = Array[String](["trm_lg_gardien"])
+niveau_personnalise = 36
+groupe = ""
+texture_personnalisee = ExtResource("sprite_ile_mr3")
+attaques_par_tour = 3
+
+[node name="BrouteurColossal1" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2500.0, 2200.0)
+nom = "Sauropode de Little Garden"
+pv_max = 110
+degats_attaque = 16
+portee_attaque = 1
+pm_max = 3
+mob_id = 19
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 3
+groupe = "faune_garden"
+texture_personnalisee = ExtResource("sprite_ile_brouteur_little_garden")
+
+[node name="BrouteurColossal2" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1200.0, 2150.0)
+nom = "Ankylosaure de Little Garden"
+pv_max = 110
+degats_attaque = 16
+portee_attaque = 1
+pm_max = 3
+mob_id = 19
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 3
+groupe = "faune_garden"
+texture_personnalisee = ExtResource("sprite_ile_ankylosaure")

@@ -10,6 +10,15 @@ signal ressources_joueur_modifiees(pa: int, pa_max: int, pm: int, pm_max: int)
 
 const ARENE_COMBAT := preload("res://scripts/combat/arene_combat.gd")
 const POSITION_ARENE := Vector2(-16384, -16384)
+# difficulté des combats : PV et dégâts des ennemis sont multipliés à
+# l'ouverture de l'arène (ennemis classiques uniquement — les duels PvP
+# gardent les vraies stats des joueurs) ; les dégâts suivent en plus
+# le niveau du joueur (attaque et défense croissent avec lui, les dégâts
+# des scènes restent fixes) ; les attaques par tour se règlent sur
+# chaque ennemi (attaques_par_tour, 2 par défaut)
+const DIFFICULTE_PV := 1.5
+const DIFFICULTE_DEGATS := 1.25
+const DEGATS_PAR_NIVEAU := 0.15
 
 var en_combat := false
 var en_placement := false
@@ -37,7 +46,10 @@ var _cible_selectionnee: Node
 var groupe_combat := ""
 var pvp_actif := false        # un duel contre un joueur distant est en cours
 var pvp_premier := false      # le duel a commencé par notre tour
+var groupe_actif := false     # combat de groupe : les coéquipiers rejouent ici
 var _pvp_adversaire: SCRIPT_ADVERSAIRE_PVP   # miroir du joueur distant dans notre arène
+# miroirs des coéquipiers dans notre arène : peer_id -> combattant distant
+var _miroirs_groupe := {}
 var _ui: CanvasLayer
 var _fiche_ennemi: PanelContainer
 var _barre_vie_ennemi: ProgressBar
@@ -48,9 +60,20 @@ var _label_etats_ennemi: Label
 var _souris_sur_ennemi := false
 var _bouton_combattre: Button
 var _etats_actifs: Dictionary = {}
+# récompenses cumulées du combat en cours : une seule fenêtre de
+# récapitulatif à la fin, pas une par ennemi vaincu
+var _recompenses := {"vaincus": 0, "xp": 0, "berry": 0, "objets": {}}
+# roster des combattants : menu dépliant des stats + tour actif
+var _panneau_roster: PanelContainer
+var _liste_roster: VBoxContainer
+var _bouton_roster: Button
+var _roster_deplie := false
+var _combattant_actif: Node2D
+var _marqueur_tour: Node2D
 var _hasard := RandomNumberGenerator.new()
 const SCENE_COMBAT_UI := preload("res://scenes/combat_ui.tscn")
 const SCRIPT_ADVERSAIRE_PVP := preload("res://scripts/combat/adversaire_pvp.gd")
+const THEME_COMBAT := preload("res://themes/theme_interface_pirate.tres")
 
 func _ready() -> void:
 	_hasard.randomize()
@@ -111,13 +134,16 @@ func ennemi_proche() -> Node:
 	if _joueur == null or not is_instance_valid(_joueur):
 		return null
 	var meilleure: Node = null
-	var meilleure_distance := -1
+	var meilleure_distance := INF
+	var sol := sol_combat()
 	for ennemi in ennemis_actifs() if en_combat else _ennemis_connus:
 		if ennemi == null or not is_instance_valid(ennemi) or int(ennemi.get("pv")) <= 0:
 			continue
 		var e := ennemi as Node2D
-		var distance: float = _joueur.global_position.distance_to(e.global_position)
-		if meilleure == null or distance < meilleure_distance:
+		var distance: float = _joueur.global_position.distance_squared_to(e.global_position)
+		if en_combat and sol != null:
+			distance = sol.to_local(_joueur.global_position).distance_squared_to(sol.to_local(e.global_position))
+		if distance < meilleure_distance:
 			meilleure = ennemi
 			meilleure_distance = distance
 	return meilleure
@@ -161,6 +187,28 @@ func _cycle_cible(sens: int) -> void:
 
 func sol_combat() -> TileMapLayer:
 	return _arene.sol if _arene != null else null
+
+func case_sous_point(point: Vector2, viser_ennemi: bool) -> Vector2i:
+	var sol := sol_combat()
+	if sol == null:
+		return ARENE_COMBAT.CASE_HORS_ARENE
+	# La sélection suit le sol et les personnages visibles à travers les blocs.
+	var case_sol := sol.local_to_map(sol.to_local(point))
+	if not viser_ennemi:
+		return case_sol
+	var premier_plan := -INF
+	var cible := case_sol
+	for entite in ennemis_actifs():
+		if entite.global_position.y <= premier_plan:
+			continue
+		var sprite := entite.get_node_or_null("Sprite2D") as Sprite2D
+		if sprite == null:
+			continue
+		var point_sprite := sprite.to_local(point)
+		if sprite.get_rect().has_point(point_sprite) and sprite.is_pixel_opaque(point_sprite):
+			premier_plan = entite.global_position.y
+			cible = sol.local_to_map(sol.to_local(entite.global_position))
+	return cible
 
 func dans_zone_combat(case: Vector2i) -> bool:
 	return _arene != null and Rect2i(Vector2i.ZERO, _arene.dimensions).has_point(case)
@@ -214,13 +262,301 @@ func _construire_interface() -> void:
 	# le joueur s'approche d'un ennemi)
 	_bouton_combattre = Button.new()
 	_bouton_combattre.text = "Combattre"
+	_bouton_combattre.theme = THEME_COMBAT
 	_bouton_combattre.custom_minimum_size = Vector2(160, 44)
 	_bouton_combattre.pressed.connect(_on_bouton_combattre_presse)
 	_ui.add_child(_bouton_combattre)
 	_bouton_combattre.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_bouton_combattre.offset_top -= 110.0
-	_bouton_combattre.offset_bottom -= 110.0
+	_bouton_combattre.offset_top -= 176.0
+	_bouton_combattre.offset_bottom -= 176.0
 	_bouton_combattre.hide()
+	_construire_roster()
+	# les pv du joueur changent souvent (coups reçus, soins) : la
+	# liste des combattants suit en direct
+	Personnage.caracteristiques_modifiees.connect(_sur_stats_joueur)
+
+func _sur_stats_joueur() -> void:
+	if en_combat:
+		_rafraichir_roster()
+
+# ============================================================
+#  ROSTER DES COMBATTANTS (menu dépliant) ET TOUR ACTIF
+# ============================================================
+
+# panneau déroulant des stats des alliés et des ennemis du combat ;
+# replié (défaut), le combattant dont c'est le tour est mis en avant
+# sur l'arène par une flèche dorée
+func _construire_roster() -> void:
+	_panneau_roster = PanelContainer.new()
+	_panneau_roster.theme = THEME_COMBAT
+	_panneau_roster.theme_type_variation = "ParchmentPanel"
+	_ui.add_child(_panneau_roster)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 4)
+	_panneau_roster.add_child(colonne)
+	_bouton_roster = Button.new()
+	_bouton_roster.text = "▸ Combattants"
+	_bouton_roster.pressed.connect(basculer_roster)
+	colonne.add_child(_bouton_roster)
+	_liste_roster = VBoxContainer.new()
+	_liste_roster.visible = _roster_deplie
+	colonne.add_child(_liste_roster)
+	_panneau_roster.hide()
+	get_viewport().size_changed.connect(_placer_roster)
+
+# positionne le roster en haut à droite, sous la barre de navigation et
+# le panneau de berries du HUD, aligné sur leur marge droite ; sa taille
+# suit le contenu, il est repositionné à chaque rafraîchissement
+func _placer_roster() -> void:
+	if _panneau_roster == null or not is_instance_valid(_panneau_roster):
+		return
+	_panneau_roster.size = _panneau_roster.get_minimum_size()
+	var haut := 160.0
+	var marge_droite := 20.0
+	var scene_courante := get_tree().current_scene
+	if scene_courante != null:
+		var hud: Node = scene_courante.find_child("HUD", true, false)
+		if hud != null:
+			var berry := hud.get_node_or_null("BerryPanel") as Control
+			if berry != null:
+				haut = berry.offset_bottom + 12.0
+				marge_droite = -berry.offset_right
+	var ecran := get_viewport().get_visible_rect().size
+	_panneau_roster.position = Vector2(ecran.x - _panneau_roster.size.x - marge_droite, haut)
+
+# déploie ou replie la liste des combattants ; replié, le tour actif
+# est rappelé sur l'arène par le marqueur doré
+func basculer_roster() -> void:
+	_roster_deplie = not _roster_deplie
+	_liste_roster.visible = _roster_deplie
+	_bouton_roster.text = ("▾ Combattants" if _roster_deplie else "▸ Combattants")
+	_marquer_tour(_combattant_actif)
+
+# ouvre la liste des combattants en début de combat : les vies de
+# toutes les entités présentes restent visibles d'un coup d'œil
+# (repliable à tout moment depuis le bouton)
+func defplier_roster() -> void:
+	if not _roster_deplie:
+		basculer_roster()
+
+# reconstruit la liste des combattants (alliés puis ennemis), avec le
+# tour actif surligné
+func _rafraichir_roster() -> void:
+	if _liste_roster == null:
+		return
+	_panneau_roster.visible = en_combat
+	if not en_combat:
+		return
+	for enfant in _liste_roster.get_children():
+		enfant.queue_free()
+	_ajouter_titre_roster("Alliés")
+	var allies := [_joueur]
+	for miroir in _miroirs_groupe.values():
+		if miroir is Node and is_instance_valid(miroir):
+			allies.append(miroir)
+	for allie in allies:
+		if allie != null and is_instance_valid(allie):
+			_ajouter_ligne_roster(allie)
+	_ajouter_titre_roster("Ennemis")
+	for ennemi in ennemis_actifs():
+		_ajouter_ligne_roster(ennemi)
+	# la taille du panneau dépend des lignes affichées : replacer après
+	# le remplissage pour qu'il reste entier à l'écran
+	_placer_roster()
+
+func _ajouter_titre_roster(texte: String) -> void:
+	var titre := Label.new()
+	titre.text = texte
+	titre.add_theme_font_size_override("font_size", 15)
+	titre.add_theme_color_override("font_color", Color("#ffd166"))
+	_liste_roster.add_child(titre)
+
+# une ligne du roster : bloc contenant le nom (et attaque/défense),
+# la barre de vie colorée (vert, orange puis rouge) et les valeurs,
+# puis la légende des états actifs (couleur selon le type d'effet)
+func _ajouter_ligne_roster(entite: Node2D) -> void:
+	var stats := _stats_combattant(entite)
+	if stats.is_empty():
+		return
+	var pv_max := maxi(int(stats["pv_max"]), 1)
+	var pv := clampi(int(stats["pv"]), 0, pv_max)
+	var bloc := VBoxContainer.new()
+	bloc.add_theme_constant_override("separation", 0)
+	var ligne := HBoxContainer.new()
+	ligne.add_theme_constant_override("separation", 8)
+	var nom := Label.new()
+	nom.add_theme_font_size_override("font_size", 15)
+	var texte_nom := str(stats["nom"])
+	if stats.has("attaque"):
+		texte_nom += " — ATT %d" % int(stats["attaque"])
+	if stats.has("defense"):
+		texte_nom += " — DEF %d" % int(stats["defense"])
+	if entite == _combattant_actif:
+		texte_nom = "▸ " + texte_nom
+		nom.add_theme_color_override("font_color", Color("#ffd166"))
+	else:
+		nom.add_theme_color_override("font_color", Color.WHITE)
+	nom.text = texte_nom
+	nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ligne.add_child(nom)
+	ligne.add_child(_creer_barre_vie_roster(pv, pv_max))
+	var valeurs := Label.new()
+	valeurs.text = "%d/%d" % [pv, pv_max]
+	valeurs.add_theme_font_size_override("font_size", 14)
+	valeurs.add_theme_color_override("font_color", Color.WHITE)
+	valeurs.add_theme_color_override("font_shadow_color", Color.BLACK)
+	valeurs.add_theme_constant_override("shadow_offset_x", 1)
+	valeurs.add_theme_constant_override("shadow_offset_y", 1)
+	valeurs.custom_minimum_size = Vector2(64, 0)
+	valeurs.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	ligne.add_child(valeurs)
+	bloc.add_child(ligne)
+	var etats := _etats_roster(entite)
+	if not etats.is_empty():
+		var legende := HBoxContainer.new()
+		legende.add_theme_constant_override("separation", 10)
+		for etat in etats:
+			var badge := Label.new()
+			var texte_etat := "%s · %d" % [str(etat["nom"]), int(etat["duree"])]
+			texte_etat += " tour" if int(etat["duree"]) == 1 else " tours"
+			if int(etat["piles"]) > 1:
+				texte_etat += " (x%d)" % int(etat["piles"])
+			badge.text = texte_etat
+			badge.tooltip_text = "%s\n%s" % [str(etat["nom"]), str(etat["description"])]
+			badge.add_theme_font_size_override("font_size", 12)
+			badge.add_theme_color_override("font_shadow_color", Color.BLACK)
+			badge.add_theme_constant_override("shadow_offset_x", 1)
+			badge.add_theme_constant_override("shadow_offset_y", 1)
+			match str(etat["type"]):
+				"buff":
+					badge.add_theme_color_override("font_color", Color("#81c784"))
+				"control":
+					badge.add_theme_color_override("font_color", Color("#ffd166"))
+				_:
+					badge.add_theme_color_override("font_color", Color("#ff8a80"))
+			legende.add_child(badge)
+		bloc.add_child(legende)
+	_liste_roster.add_child(bloc)
+
+# états actifs d'un combattant pour le roster : nom, type, description,
+# durée restante et piles (même source que la fiche ennemi)
+func _etats_roster(entite: Node2D) -> Array[Dictionary]:
+	var resultat: Array[Dictionary] = []
+	if entite == null or not is_instance_valid(entite):
+		return resultat
+	var effets: Dictionary = _etats_actifs.get(entite.get_instance_id(), {})
+	for cle in effets:
+		var definition: Dictionary = Personnage.etats.get(int(cle), {})
+		var actif: Dictionary = effets[cle]
+		resultat.append({
+			"nom": str(definition.get("nom", "Etat %s" % cle)),
+			"type": str(definition.get("type", "debuff")),
+			"description": str(definition.get("description", "")),
+			"duree": int(actif.get("duree", 1)),
+			"piles": int(actif.get("piles", 1)),
+		})
+	return resultat
+
+# petite barre de vie du roster : verte au-delà de la moitié, orange
+# jusqu'au quart, rouge en dessous
+func _creer_barre_vie_roster(pv: int, pv_max: int) -> ProgressBar:
+	var barre := ProgressBar.new()
+	barre.custom_minimum_size = Vector2(90, 10)
+	barre.min_value = 0
+	barre.max_value = pv_max
+	barre.value = pv
+	barre.show_percentage = false
+	var proportion := float(pv) / float(pv_max)
+	var couleur := Color("#e53935")
+	if proportion > 0.5:
+		couleur = Color("#4caf50")
+	elif proportion > 0.25:
+		couleur = Color("#ffa726")
+	var fond := StyleBoxFlat.new()
+	fond.bg_color = Color(0.0, 0.0, 0.0, 0.55)
+	fond.corner_radius_top_left = 3
+	fond.corner_radius_top_right = 3
+	fond.corner_radius_bottom_left = 3
+	fond.corner_radius_bottom_right = 3
+	var remplissage := StyleBoxFlat.new()
+	remplissage.bg_color = couleur
+	remplissage.corner_radius_top_left = 3
+	remplissage.corner_radius_top_right = 3
+	remplissage.corner_radius_bottom_left = 3
+	remplissage.corner_radius_bottom_right = 3
+	barre.add_theme_stylebox_override("background", fond)
+	barre.add_theme_stylebox_override("fill", remplissage)
+	return barre
+
+# stats affichables d'un combattant (joueur local depuis Personnage,
+# ennemis et miroirs depuis leurs propriétés)
+func _stats_combattant(entite: Node2D) -> Dictionary:
+	if entite == null or not is_instance_valid(entite):
+		return {}
+	if entite == _joueur:
+		return {"nom": Personnage.nom, "pv": Personnage.vie, "pv_max": Personnage.vie_max,
+			"attaque": Personnage.attaque, "defense": Personnage.defense}
+	if entite is SCRIPT_ADVERSAIRE_PVP:
+		return {"nom": str(entite.get("nom")), "pv": int(entite.get("pv")),
+			"pv_max": maxi(int(entite.get("pv_max")), 1),
+			"attaque": int(entite.get("degats_attaque")),
+			"defense": int(entite.get("defense_pvp"))}
+	var pv_max: Variant = entite.get("pv_max")
+	if pv_max == null:
+		return {}
+	return {"nom": str(entite.get("nom")), "pv": int(entite.get("pv")),
+		"pv_max": maxi(int(pv_max), 1), "attaque": int(entite.get("degats_attaque"))}
+
+# le joueur local ou player.gd annonce qui joue : le marqueur part sur
+# lui (menu replié) et sa ligne est surlignée (menu déplié)
+func definir_combattant_actif(entite: Node2D) -> void:
+	_combattant_actif = entite if entite != null and is_instance_valid(entite) and en_combat else null
+	_marquer_tour(_combattant_actif)
+	_rafraichir_roster()
+
+# l'adversaire distant d'un duel (miroir dans notre arène)
+func adversaire_duel() -> Node2D:
+	var adversaire := _adversaire_valide()
+	if adversaire == null:
+		return null
+	return adversaire
+
+# flèche dorée battante au-dessus du combattant dont c'est le tour ;
+# visible seulement quand le roster est replié
+func _marquer_tour(entite: Node2D) -> void:
+	_retirer_marqueur_tour()
+	if entite == null or not is_instance_valid(entite) or _roster_deplie:
+		return
+	var marqueur := _creer_marqueur_tour()
+	entite.add_child(marqueur)
+	var sprite: Sprite2D = entite.get_node_or_null("Sprite2D")
+	var hauteur := 96.0
+	if sprite != null and sprite.texture != null:
+		# les planches de sprites à rangées de direction ne comptent
+		# qu'une seule rangée de haut à l'écran
+		var rangs := maxi(int(sprite.vframes), 1)
+		hauteur = sprite.position.y - sprite.texture.get_height() * sprite.scale.y / (2.0 * rangs) - 16.0
+	marqueur.position = Vector2(0, hauteur)
+	_marqueur_tour = marqueur
+
+func _retirer_marqueur_tour() -> void:
+	if _marqueur_tour != null and is_instance_valid(_marqueur_tour):
+		_marqueur_tour.queue_free()
+	_marqueur_tour = null
+
+func _creer_marqueur_tour() -> Node2D:
+	var marqueur := Node2D.new()
+	marqueur.name = "MarqueurTour"
+	marqueur.z_index = 30
+	var fleche := Polygon2D.new()
+	fleche.polygon = PackedVector2Array([Vector2(-10, -12), Vector2(10, -12), Vector2(0, 2)])
+	fleche.color = Color("#ffd166")
+	marqueur.add_child(fleche)
+	var battement := marqueur.create_tween()
+	battement.set_loops()
+	battement.tween_property(fleche, "position:y", -5.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	battement.tween_property(fleche, "position:y", 0.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	return marqueur
 
 # branche la fiche de survol sur un ennemi donné (mouse_entered avec
 # bind pour que la fiche suive n'importe lequel des ennemis)
@@ -237,6 +573,19 @@ func _connecter_survol_ennemi(ennemi: Node) -> void:
 	var maj_sante := Callable(self, "_sante_ennemi_modifiee").bind(cible)
 	if ennemi.has_signal("sante_modifiee") and not ennemi.is_connected("sante_modifiee", maj_sante):
 		ennemi.connect("sante_modifiee", maj_sante)
+	# le roster des combattants suit les pv de chaque ennemi engagé
+	var maj_roster := Callable(self, "_sur_sante_combattant").bind(cible)
+	if ennemi.has_signal("sante_modifiee") and not ennemi.is_connected("sante_modifiee", maj_roster):
+		ennemi.connect("sante_modifiee", maj_roster)
+
+func _sur_sante_combattant(_vie: int, _vie_max: int, _cible: Node = null) -> void:
+	if en_combat:
+		_rafraichir_roster()
+
+# pv d'un miroir de coéquipier (combat de groupe) : le roster suit
+func _sur_sante_miroir(_vie: int, _vie_max: int) -> void:
+	if en_combat:
+		_rafraichir_roster()
 
 func _survol_ennemi(ennemi: Node = null) -> void:
 	_souris_sur_ennemi = true
@@ -312,7 +661,7 @@ func _positionner_fiche_ennemi() -> void:
 		position_fiche.x = souris.x - taille_fiche.x - 18
 	if position_fiche.y + taille_fiche.y > taille_vue.y:
 		position_fiche.y = souris.y - taille_fiche.y - 18
-	_fiche_ennemi.position = position_fiche
+	_fiche_ennemi.position = position_fiche.clamp(Vector2.ZERO, (taille_vue - taille_fiche).max(Vector2.ZERO))
 
 func _process(_delta: float) -> void:
 	if _fiche_ennemi != null and _fiche_ennemi.visible:
@@ -367,6 +716,11 @@ func _groupe_de(ennemi: Node) -> Array:
 			membres.append(connu)
 	return membres
 
+# accès public au camp d'un ennemi (surbrillance rouge au survol,
+# voir ennemy.gd)
+func membres_du_camp(ennemi: Node) -> Array:
+	return _groupe_de(ennemi)
+
 func _etiquette_de(entite: Node) -> String:
 	if entite == null or not is_instance_valid(entite):
 		return ""
@@ -380,6 +734,18 @@ func _on_bouton_combattre_presse() -> void:
 	_propositions.clear()
 	_bouton_combattre.hide()
 	lancer_combat(groupe)
+
+# engagement automatique (clic sur un ennemi en exploration, voir
+# ennemy.gd) : lance directement le combat contre la rencontre cliquée,
+# sans passer par le bouton Combattre
+func engager_rencontre(ennemi: Node) -> void:
+	if en_combat or ennemi == null or not is_instance_valid(ennemi):
+		return
+	if int(ennemi.get("pv")) <= 0:
+		return
+	_bouton_combattre.hide()
+	_propositions.clear()
+	lancer_combat(_groupe_de(ennemi))
 
 # engage un combat : contre le groupe d'ennemis donné (tableau), ou
 # l'ennemi le plus proche du joueur si rien n'est fourni
@@ -404,18 +770,32 @@ func lancer_combat(groupe = null) -> void:
 	if _joueur == null:
 		push_warning("Combat impossible : joueur introuvable.")
 		return
-	_camera_exploration = get_viewport().get_camera_2d()
-	_arene = ARENE_COMBAT.new()
-	_arene.index_plan = _hasard.randi_range(0, ARENE_COMBAT.PLANS.size() - 1)
-	_arene.position = POSITION_ARENE
-	add_child(_arene)
+	# monde partagé : l'étiquette du camp combattu est connue avant
+	# l'arène car elle détermine le plan — tous les joueurs qui
+	# engagent ce même camp sur cette map partagent la même grille
+	# (mêmes cases, mêmes lignes de vue, mêmes trajets rejoués)
+	groupe_combat = ""
+	for ennemi_combat in ennemis:
+		var etiquette_combat := _etiquette_de(ennemi_combat)
+		if etiquette_combat != "":
+			groupe_combat = etiquette_combat
+			break
+	_ouvrir_arene(_index_plan_partage(groupe_combat))
 	var places := _arene.cases_ennemis()
 	if ennemis.size() > places.size():
 		_quitter_arene()
 		afficher_message("Il n’y a pas assez de place dans l’arène pour cette rencontre.")
 		return
 	_ennemis = ennemis
+	# difficulté : les ennemis entrent dans l'arène durcis (les ennemis
+	# qui survivent à un combat perdu retrouvent leurs stats en_sortie) ;
+	# les dégâts montent avec le niveau du joueur pour suivre sa défense
+	var facteur_degats := DIFFICULTE_DEGATS * (1.0 + float(maxi(Personnage.niveau - 1, 0)) * DEGATS_PAR_NIVEAU)
+	for ennemi_durci in _ennemis:
+		if ennemi_durci.has_method("durcir"):
+			ennemi_durci.durcir(DIFFICULTE_PV, facteur_degats)
 	_etats_actifs.clear()
+	_raz_recompenses()
 	numero_combat += 1
 	en_combat = true
 	en_placement = true
@@ -431,18 +811,33 @@ func lancer_combat(groupe = null) -> void:
 	if _souris_sur_ennemi:
 		_survol_ennemi()
 	placement_commence.emit()
-	# monde partagé : annoncer le combat contre ce groupe (lookup au
+	# roster des combattants : visible pendant le combat, tour actif nul
+	# jusqu'à la première annonce (le placement n'est le tour de personne)
+	_combattant_actif = null
+	_retirer_marqueur_tour()
+	defplier_roster()
+	_rafraichir_roster()
+	# monde partagé : annoncer le combat contre ce camp (lookup au
 	# runtime : Reseau n'est pas chargé dans l'éditeur)
-	groupe_combat = ""
-	for ennemi in _ennemis:
-		var etiquette := _etiquette_de(ennemi)
-		if etiquette != "":
-			groupe_combat = etiquette
-			break
+	groupe_actif = groupe_combat != "" and not pvp_actif
 	if groupe_combat != "":
 		var reseau := get_tree().root.get_node_or_null("/root/Reseau")
 		if reseau != null:
 			reseau.call("debut_combat_local", groupe_combat)
+	# combat de groupe : les coéquipiers font apparaître notre miroir
+	if groupe_actif:
+		var reseau_groupe := get_tree().root.get_node_or_null("/root/Reseau")
+		if reseau_groupe != null:
+			reseau_groupe.call("emettre_action_groupe", _profil_groupe())
+
+# plan d'arène d'un combat partagé : identique pour tous ceux qui
+# combattent le même camp sur la même map (les cases relayées par le
+# réseau coïncident) ; aléatoire pour une rencontre sans étiquette
+func _index_plan_partage(etiquette_camp: String) -> int:
+	if etiquette_camp == "":
+		return _hasard.randi_range(0, ARENE_COMBAT.PLANS.size() - 1)
+	var nom_scene := str(get_tree().current_scene.name)
+	return absi((nom_scene + "|" + etiquette_camp).hash()) % ARENE_COMBAT.PLANS.size()
 
 # duel contre un joueur distant : l'arène utilise le même plan des deux
 # côtés (grilles identiques), l'adversaire est un miroir dont les
@@ -456,16 +851,13 @@ func lancer_duel(adversaire: SCRIPT_ADVERSAIRE_PVP, premier: bool) -> void:
 	if _joueur == null or not is_instance_valid(_joueur):
 		push_warning("Duel impossible : joueur introuvable.")
 		return
-	_camera_exploration = get_viewport().get_camera_2d()
-	_arene = ARENE_COMBAT.new()
-	_arene.index_plan = 0
-	_arene.position = POSITION_ARENE
-	add_child(_arene)
+	_ouvrir_arene(0)
 	pvp_actif = true
 	pvp_premier = premier
 	_pvp_adversaire = adversaire
 	_ennemis = [adversaire]
 	_etats_actifs.clear()
+	_raz_recompenses()
 	numero_combat += 1
 	en_combat = true
 	en_placement = true
@@ -477,6 +869,12 @@ func lancer_duel(adversaire: SCRIPT_ADVERSAIRE_PVP, premier: bool) -> void:
 	_mettre_a_jour_etiquette_etats()
 	_actualiser_fiche_ennemi()
 	placement_commence.emit()
+	# roster des combattants : visible pendant le duel, tour actif nul
+	# jusqu'à la première annonce
+	_combattant_actif = null
+	_retirer_marqueur_tour()
+	defplier_roster()
+	_rafraichir_roster()
 
 # une action de l'adversaire distant, relayée par le serveur, rejouée
 # sur notre grille : profil, déplacements, sorts résolus chez lui
@@ -559,6 +957,192 @@ func pvp_appliquer_etats(cible: Node, etats: Array) -> void:
 			_deplacer_par_etat(cible, int(float(etat.get("valeur", 1.0))), id_etat == 8)
 	_etats_actifs[cible.get_instance_id()] = par_cible
 
+# ============================================================
+#  COMBATS DE GROUPE (PvE a plusieurs, instances relieurs)
+# ============================================================
+
+# profil du joueur local, diffuse aux coequipiers pour notre miroir ;
+# embarque notre case d'arène pour que notre place soit rejouée chez
+# eux (même grille : le plan est partagé par étiquette de camp)
+func _profil_groupe() -> Dictionary:
+	var visuel := "humain_pirate"
+	var pa_max := 6
+	var pm_max := 3
+	var case_mine := Vector2i(2, 2)
+	if _joueur != null:
+		if _joueur.has_method("_prefixe_visuel_race"):
+			visuel = str(_joueur.call("_prefixe_visuel_race"))
+		pa_max = int(_joueur.get("pa_max"))
+		pm_max = int(_joueur.get("pm_max"))
+		if _joueur.has_method("ma_case"):
+			case_mine = _joueur.call("ma_case")
+	return {"t": "profil_groupe", "visuel": visuel,
+		"pv": int(Personnage.vie), "pv_max": int(Personnage.vie_max),
+		"attaque": int(Personnage.attaque), "defense": int(Personnage.defense),
+		"pa_max": pa_max, "pm_max": pm_max,
+		"case": [case_mine.x, case_mine.y]}
+
+# le serveur nous transmet les combattants deja en place (on arrive)
+func groupe_membres_recus(presents: Array) -> void:
+	if not groupe_actif:
+		return
+	for present in presents:
+		if present is Dictionary:
+			_apparaitre_miroir_groupe(int(present.get("peer", 0)),
+				str(present.get("pseudo", "??")), str(present.get("visuel", "humain_pirate")))
+
+# une action d'un coequipier, resolue chez lui, jouee ici
+func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionary) -> void:
+	if not groupe_actif or evenement == null or evenement is not Dictionary:
+		return
+	match str(evenement.get("t", "")):
+		"profil_groupe":
+			var profil: Dictionary = evenement.duplicate()
+			profil["pseudo"] = pseudo_exp
+			var miroir = _apparaitre_miroir_groupe(peer_exp, pseudo_exp,
+				str(profil.get("visuel", "humain_pirate")))
+			if miroir != null:
+				miroir.appliquer_profil(profil)
+				# notre grille est identique (plan partagé) : le miroir
+				# rejoint la vraie case de son propriétaire
+				var case_recue = profil.get("case", [])
+				if case_recue is Array and (case_recue as Array).size() == 2:
+					_placer_miroir_sur_case(miroir,
+						Vector2i(int(case_recue[0]), int(case_recue[1])))
+		"deplacement":
+			var miroir_depl = _miroirs_groupe.get(peer_exp)
+			var sol := sol_combat()
+			if is_instance_valid(miroir_depl) and sol != null:
+				miroir_depl.rejouer_trajet(evenement.get("trajet", []), sol)
+		"manque":
+			afficher_message("%s rate son sort." % pseudo_exp)
+		"sort":
+			_rejouer_sort_groupe(peer_exp, pseudo_exp, evenement)
+		"fin_tour":
+			afficher_message("%s termine son tour." % pseudo_exp)
+		"tombe":
+			afficher_message("%s est a terre !" % pseudo_exp)
+			_retirer_miroir_groupe(peer_exp)
+	_mettre_a_jour_etiquette_etats()
+
+# un sort de coequipier : soin sur lui-meme, attaque sur l'ennemi partage
+func _rejouer_sort_groupe(peer_exp: int, pseudo_exp: String, evenement: Dictionary) -> void:
+	if str(evenement.get("cible", "")) == "soi":
+		var miroir_soi = _miroirs_groupe.get(peer_exp)
+		if is_instance_valid(miroir_soi):
+			if _joueur != null and str(evenement.get("id", "")) != "":
+				_joueur.call("_jouer_effet_sort", str(evenement.get("id", "")), miroir_soi)
+			var soin := int(evenement.get("soin", 0))
+			if soin > 0:
+				miroir_soi.soigner(soin)
+			var etats_soi: Array = evenement.get("etats", [])
+			if not etats_soi.is_empty():
+				pvp_appliquer_etats(miroir_soi, etats_soi)
+		afficher_message("%s se soigne." % pseudo_exp)
+		return
+	# attaque : l'index designe le meme ennemi que chez l'emetteur
+	# (meme scene, meme ordre d'engagement)
+	var index := int(evenement.get("index", -1))
+	var ennemis := ennemis_actifs()
+	if index < 0 or index >= ennemis.size():
+		return
+	var cible: Node = ennemis[index]
+	if _joueur != null and str(evenement.get("id", "")) != "":
+		_joueur.call("_jouer_effet_sort", str(evenement.get("id", "")), cible)
+	var degats := int(evenement.get("degats", 0))
+	if degats > 0 and cible.has_method("recevoir_degats"):
+		cible.recevoir_degats(degats)
+	var etats: Array = evenement.get("etats", [])
+	if not etats.is_empty():
+		pvp_appliquer_etats(cible, etats)
+	afficher_message("%s lance %s." % [pseudo_exp, str(evenement.get("nom", "un sort"))])
+
+# un coequipier quitte le combat (victoire ou defaite chez lui)
+func groupe_membre_parti(peer_qui_part: int) -> void:
+	_retirer_miroir_groupe(peer_qui_part)
+
+# fait apparaitre le miroir d'un coequipier dans notre arene : sur une
+# case libre proche de nous (sa vraie case suivra dès que son profil
+# ou ses deplacements arriveront)
+func _apparaitre_miroir_groupe(peer_id: int, nom_recu: String, visuel_recu: String):
+	if not groupe_actif or peer_id == 0 or _joueur == null:
+		return null
+	var existant = _miroirs_groupe.get(peer_id)
+	if is_instance_valid(existant):
+		return existant
+	var miroir := SCRIPT_ADVERSAIRE_PVP.new()
+	miroir.nom = nom_recu
+	miroir.distante = true
+	miroir.sante_modifiee.connect(_sur_sante_miroir)
+	get_tree().current_scene.add_child(miroir)
+	miroir.definir_visuel(visuel_recu)
+	miroir.global_position = _joueur.global_position
+	if _joueur.has_method("ma_case"):
+		_placer_miroir_sur_case(miroir, _joueur.call("ma_case"))
+	_miroirs_groupe[peer_id] = miroir
+	afficher_message("%s combat a tes cotes !" % nom_recu)
+	return miroir
+
+# place le miroir de coequipier sur la case demandee (relayee par son
+# proprietaire) ; si elle est occupee — chacun se place sur la case
+# joueur de sa propre arene — la case libre la plus proche gagne
+func _placer_miroir_sur_case(miroir: Node2D, case_voulue: Vector2i) -> void:
+	if miroir == null or not is_instance_valid(miroir):
+		return
+	var sol := sol_combat()
+	if sol == null:
+		return
+	# une case hors arène n'a pas de sens ici ; une case murée trouve
+	# son voisin libre par le parcours ci-dessous
+	if not dans_zone_combat(case_voulue):
+		return
+	var visitees := {}
+	var file: Array[Vector2i] = [case_voulue]
+	var index := 0
+	while index < file.size():
+		var courante: Vector2i = file[index]
+		index += 1
+		if visitees.has(courante):
+			continue
+		visitees[courante] = true
+		if sol.get_cell_source_id(courante) != -1 and not _case_combat_occupee(courante, miroir):
+			miroir.global_position = sol.to_global(sol.map_to_local(courante))
+			return
+		for direction in [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]:
+			var voisine: Vector2i = courante + direction
+			if dans_zone_combat(voisine) and not visitees.has(voisine):
+				file.append(voisine)
+	# rien de libre : rester à sa position approximative
+
+# true si une case de l'arène est déjà prise (par le joueur local, un
+# miroir de coéquipier ou un ennemi — le miroir en cours de placement
+# ne compte pas)
+func _case_combat_occupee(case_sol: Vector2i, miroir_ignore: Node2D) -> bool:
+	var sol := sol_combat()
+	if sol == null:
+		return true
+	if _joueur != null and is_instance_valid(_joueur) and _joueur is Node2D:
+		if sol.local_to_map(sol.to_local((_joueur as Node2D).global_position)) == case_sol:
+			return true
+	if ennemi_sur_case(case_sol) != null:
+		return true
+	for pair in _miroirs_groupe:
+		var miroir = _miroirs_groupe[pair]
+		if miroir is Node2D and miroir != miroir_ignore and is_instance_valid(miroir):
+			if sol.local_to_map(sol.to_local((miroir as Node2D).global_position)) == case_sol:
+				return true
+	return false
+
+func _retirer_miroir_groupe(peer_id: int) -> void:
+	var miroir = _miroirs_groupe.get(peer_id)
+	_miroirs_groupe.erase(peer_id)
+	if is_instance_valid(miroir):
+		miroir.queue_free()
+
+func _retirer_tous_miroirs_groupe() -> void:
+	for peer_id in _miroirs_groupe.keys():
+		_retirer_miroir_groupe(int(peer_id))
+
 # un ennemi du groupe est vaincu : le combat continue tant qu'il en
 # reste un debout
 func ennemi_vaincu(ennemi: Node) -> void:
@@ -571,10 +1155,21 @@ func ennemi_vaincu(ennemi: Node) -> void:
 		_maj_ennemi_principal()
 	if _propositions.has(ennemi):
 		_propositions.erase(ennemi)
+	if ennemi == _combattant_actif:
+		definir_combattant_actif(null)
+	elif en_combat:
+		_rafraichir_roster()
 	if not en_combat:
 		_maj_propositions()
 	if en_combat and ennemis_actifs().is_empty():
 		terminer_combat(true)
+
+func _ouvrir_arene(index_plan: int) -> void:
+	_camera_exploration = get_viewport().get_camera_2d()
+	_arene = ARENE_COMBAT.new()
+	_arene.index_plan = index_plan
+	_arene.position = POSITION_ARENE
+	get_tree().current_scene.add_child(_arene)
 
 func _placer_dans_arene(entite: Node2D, case: Vector2i) -> void:
 	_positions_exploration[entite] = entite.global_position
@@ -586,6 +1181,10 @@ func _quitter_arene() -> void:
 		if is_instance_valid(entite):
 			entite.arreter_deplacement_combat()
 			entite.global_position = _positions_exploration[entite]
+			# un ennemi qui survit au combat (défaite ou fuite) retrouve
+			# ses stats d'origine en exploration
+			if entite.has_method("assouplir"):
+				entite.assouplir()
 	_positions_exploration.clear()
 	if is_instance_valid(_camera_exploration):
 		_camera_exploration.make_current()
@@ -601,12 +1200,25 @@ func valider_placement() -> void:
 		return
 	en_placement = false
 	combat_commence.emit()
+	# combat de groupe : notre case de départ part aux coéquipiers —
+	# leur miroir de nous rejoint notre vraie place (grille partagée)
+	if groupe_actif:
+		var reseau := get_tree().root.get_node_or_null("/root/Reseau")
+		if reseau != null:
+			reseau.call("emettre_action_groupe", _profil_groupe())
 
 func terminer_combat(victoire: bool) -> void:
 	if not en_combat:
 		return
 	en_combat = false
 	en_placement = false
+	groupe_actif = false
+	# le combat est fini : plus personne ne joue, le roster et le
+	# marqueur de tour disparaissent
+	_combattant_actif = null
+	_retirer_marqueur_tour()
+	_rafraichir_roster()
+	_retirer_tous_miroirs_groupe()
 	if pvp_actif:
 		# notre défaite est annoncée au serveur, qui préviendra le
 		# vainqueur ; une victoire locale n'est que l'echo du réseau
@@ -634,7 +1246,56 @@ func terminer_combat(victoire: bool) -> void:
 	if _fiche_ennemi != null:
 		_fiche_ennemi.hide()
 	ressources_joueur_modifiees.emit(0, 0, 0, 0)
+	# récapitulatif unique du combat gagné : XP, Berry et objets de
+	# tous les ennemis vaincus, une fenêtre pour tout le combat
+	if victoire and int(_recompenses["vaincus"]) > 0:
+		_afficher_recompenses_combat()
+		_raz_recompenses()
 	combat_termine.emit(victoire)
+
+# remet à zéro les récompenses cumulées (début de combat)
+func _raz_recompenses() -> void:
+	_recompenses = {"vaincus": 0, "xp": 0, "berry": 0, "objets": {}}
+
+# un ennemi vient de tomber (côté vainqueur) : ses récompenses rejoignent
+# le récapitulatif de fin, présenté en une seule fenêtre
+func cumuler_recompense(xp: int, berry: int, objets: Array) -> void:
+	_recompenses["vaincus"] = int(_recompenses["vaincus"]) + 1
+	_recompenses["xp"] = int(_recompenses["xp"]) + maxi(xp, 0)
+	_recompenses["berry"] = int(_recompenses["berry"]) + maxi(berry, 0)
+	var cumules: Dictionary = _recompenses["objets"]
+	for objet in objets:
+		if not objet is Dictionary:
+			continue
+		var id := str(objet.get("id", ""))
+		if id == "":
+			continue
+		cumules[id] = int(cumules.get(id, 0)) + maxi(int(objet.get("qte", 0)), 0)
+
+# fenêtre de fin de combat gagné : le total des récompenses accumulées
+# (les objets sont déjà dans l'inventaire, l'XP et les Berry déjà versés)
+func _afficher_recompenses_combat() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var lignes := ["+%d XP" % int(_recompenses["xp"]), "+%d Berry" % int(_recompenses["berry"])]
+	var objets: Dictionary = _recompenses["objets"]
+	if objets.is_empty():
+		lignes.append("Aucun objet trouvé.")
+	else:
+		var noms: Array[String] = []
+		for id in objets:
+			noms.append("%s x%d" % [Inventaire.nom_objet(str(id)), int(objets[id])])
+		lignes.append("Objets : " + ", ".join(noms))
+	var fenetre := AcceptDialog.new()
+	fenetre.title = "Victoire !"
+	fenetre.dialog_text = "\n".join(lignes)
+	fenetre.ok_button_text = "Continuer"
+	scene.add_child(fenetre)
+	fenetre.popup_centered()
+	fenetre.visibility_changed.connect(func() -> void:
+		if not fenetre.visible:
+			fenetre.queue_free())
 
 func mettre_a_jour_stats(_vie: int, _vie_max: int, pa: int, pa_max: int, pm: int, pm_max: int) -> void:
 	ressources_joueur_modifiees.emit(pa, pa_max, pm, pm_max)
@@ -743,6 +1404,10 @@ func _mettre_a_jour_etiquette_etats() -> void:
 	var interface_hud: Node = get_tree().current_scene.find_child("HUD", true, false)
 	if interface_hud != null and interface_hud.has_method("maj_etats_joueur"):
 		interface_hud.call("maj_etats_joueur", _texte_etats_cible(_joueur))
+	# le roster affiche aussi les états en cours : il suit chaque
+	# application d'effet et chaque fin de tour (durées décrémentées)
+	if en_combat:
+		_rafraichir_roster()
 
 func etats_joueur_texte() -> String:
 	return _texte_etats_cible(_joueur)
@@ -766,10 +1431,15 @@ func calculer_degats(lanceur: Node, cible: Node, degats_base: int, type_sort: St
 		degats *= 1.2
 	if a_etat(cible, 17):
 		degats *= 1.0 + float(_valeur_etat(cible, 17)) * _piles_etat(cible, 17)
+	# la défense réduit un pourcentage du coup reçu, comme l'armure de
+	# League of Legends : dégâts x 100 / (100 + défense). Chaque point
+	# de défense rapproche l'absorption de 100 % sans jamais
+	# l'atteindre : un coup ne peut pas tomber à zéro et le centième
+	# point de défense vaut toujours quelque chose
 	if cible == _joueur:
-		degats -= float(Personnage.defense)
+		degats *= 100.0 / (100.0 + maxf(float(Personnage.defense), 0.0))
 	elif _pvp_adversaire != null and is_instance_valid(_pvp_adversaire) and cible == _pvp_adversaire:
-		degats -= float(_pvp_adversaire.defense_pvp)
+		degats *= 100.0 / (100.0 + maxf(float(_pvp_adversaire.defense_pvp), 0.0))
 	return maxi(int(round(degats)), 0)
 
 # réussite d'une attaque : précision de base, bonus du lanceur s'il est

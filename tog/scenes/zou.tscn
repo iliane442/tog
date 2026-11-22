@@ -1,0 +1,670 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_alabasta.tscn" id="FerryAlabasta"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/chene_ancien.png" id="Chene"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/fleurs_medicinales.png" id="Fleurs"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="Rochers"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/pin_de_montagne.png" id="Pin"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/palmier.png" id="Palmier"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/colonne_brisee.png" id="Colonne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/stele_de_la_vague.png" id="Stele"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/filon_de_cristaux.png" id="Cristaux"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="LanterneQuai"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="Borne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/cabane_de_peche.png" id="Cabane"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-small-house-v0.png" id="PetiteMaison"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-medium-house-v0.png" id="MaisonMoyenne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
+[ext_resource type="Texture2D" path="res://assets/world/world-planches-ressource-grandline-baies.png" id="Baies"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/wanda.png" id="sprite_ile_wanda"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/carrot.png" id="sprite_ile_carrot"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/robin.png" id="sprite_ile_robin"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pirate_cent_betes.png" id="sprite_ile_pirate_cent_betes"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pirate_cent_betes_fourrure.png" id="sprite_ile_pirate_cent_betes_fourrure"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/sheepshead.png" id="sprite_ile_sheepshead"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/cerf_zou.png" id="sprite_ile_cerf_zou"]
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[node name="Zou" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;####################;;;;;;;;;;~~",
+	"~~;;,,,,,,,,####################,,,,,,,,;;~~",
+	"~~;;,F,FF,F,##,,,,,,,,,,,,,,,,##,,FF,FF,;;~~",
+	"~~;;,FF,FF,,##,,:,,,,,,,,,:,,,##,FF,FF,,;;~~",
+	"~~;;,,FF,FF,##,::::::::::::::,##,F,FF,F,;;~~",
+	"~~;;,F,FF,F,##,,:,,,,,,,,,:,,,##,,FF,FF,;;~~",
+	"~~;;,FF,FF,,##,,:::::::::::::::#,FF,FF,,;;~~",
+	"~~;;,,FF,FF,##,,:,,,,,,,,,:,,,##,F,FF,F,;;~~",
+	"~~;;,,,,,,,,##,,:,,,,,,,,,:,,,##,,,,,,,,;;~~",
+	"~~;;,,,,,,,,##,,:,,,,,,,,,:,,,##,,,,,,,,;;~~",
+	"~~;;,,,,,,,,##,,,,,,,,,,,,,,,,##,,,,,,,,;;~~",
+	"~~;;,,,,,,,,#######:::##########,,,,,,,,;;~~",
+	"~~;;,,,,,,,,#######:::##########,,,,,,,,;;~~",
+	"~~;;,,,,;;;;;;,,,,,,::,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,;;;;;;,,,,,,::,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,;;;;;;,,,,,,::,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,FF,,,,,,,,,,,,,::,,,,,,,,,,,,F,FF,F;;~~",
+	"~~;;FF,,,,,,,,,,,,,,::,,,,,,,,,,,,FF,FF,;;~~",
+	"~~;;F,F,,,,,,,,,,,,,::,,,,,,,,,,,,,FF,FF;;~~",
+	"~~;;,FF,,,,,,,,,,,,,::,,,,,,,,,,,,F,FF,F;;~~",
+	"~~;;FF,,,,,,,,,,,,,,::,,,,,,,,,,,,FF,FF,;;~~",
+	"~~;;F,FF,,,,,,,,,,,,::,,,,,,,,,,,,,FF,FF;;~~",
+	"~~;;,FF,,,,,,,,,,,,,::,,,,,,,,,,,,F,FF,F;;~~",
+	"~~;;FF,F,,,,,,,,,,,,::,,,,,,,,,,,,FF,FF,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+)
+littoral = true
+emprises_decors = Array[Rect2i]([])
+
+[node name="player" parent="." index="5"]
+position = Vector2(1344.0, 1900.0)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Zou"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1344.0, 1900.0): "Quai du Flanc", Vector2(1300.0, 700.0): "Village des cloches", Vector2(1450.0, 560.0): "Bosquet de la pierre rouge", Vector2(600.0, 1500.0): "Forêt de la Baleine", Vector2(1000.0, 900.0): "Source de la canopée", Vector2(1700.0, 1900.0): "Hameau du flanc"})
+
+[node name="DepuisAlabasta" type="Marker2D" parent="Arrivees"]
+position = Vector2(1344.0, 1900.0)
+
+[node name="CapitaineSimoun" parent="." instance=ExtResource("FerryAlabasta")]
+position = Vector2(1250.0, 1900.0)
+paroles = "Redescendre vers Alabasta avant que le désert ne s'endorme ? La marée nous porte sur le chemin du retour, embarque vite."
+destination = "res://scenes/alabasta.tscn"
+arrivee = &"DepuisZou"
+libelle_traversee = "Embarquer pour Alabasta"
+
+[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
+position = Vector2(900.0, 2340.0)
+texture = ExtResource("Sloop")
+offset = Vector2(0, -250.0)
+scale = Vector2(0.7, 0.7)
+z_index = -3
+
+[node name="BarqueDuFlanc" type="Sprite2D" parent="Paysage"]
+position = Vector2(2500.0, 2300.0)
+texture = ExtResource("Barque")
+offset = Vector2(0, -70.0)
+scale = Vector2(0.9, 0.9)
+flip_h = true
+z_index = -3
+
+[node name="BorneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1420.0, 1950.0)
+texture = ExtResource("Borne")
+offset = Vector2(0, -31.5)
+scale = Vector2(0.75, 0.75)
+
+[node name="LanterneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1150.0, 1950.0)
+texture = ExtResource("LanterneQuai")
+offset = Vector2(0, -67.0)
+scale = Vector2(0.78, 0.78)
+
+[node name="CabaneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1900.0, 1920.0)
+texture = ExtResource("Cabane")
+offset = Vector2(0, -83.0)
+scale = Vector2(0.9, 0.9)
+
+[node name="MaisonDuFlanc" type="Sprite2D" parent="Paysage"]
+position = Vector2(1700.0, 1880.0)
+texture = ExtResource("PetiteMaison")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.4, 1.4)
+
+[node name="RochersDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(2300.0, 1900.0)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="RochersDeLaMesa" type="Sprite2D" parent="Paysage"]
+position = Vector2(950.0, 1050.0)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -47.0)
+scale = Vector2(1.1, 1.1)
+flip_h = true
+
+[node name="MaisonDesSecours" type="Sprite2D" parent="Paysage"]
+position = Vector2(1150.0, 700.0)
+texture = ExtResource("MaisonMoyenne")
+offset = Vector2(0, -128.0)
+scale = Vector2(1.3, 1.3)
+
+[node name="MaisonDesCloches" type="Sprite2D" parent="Paysage"]
+position = Vector2(1600.0, 620.0)
+texture = ExtResource("PetiteMaison")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.3, 1.3)
+
+[node name="PiquetDesCloches" type="Sprite2D" parent="Paysage"]
+position = Vector2(1350.0, 580.0)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -60.5)
+scale = Vector2(0.85, 0.85)
+
+[node name="SteleDuBosquet" type="Sprite2D" parent="Paysage"]
+position = Vector2(1450.0, 540.0)
+texture = ExtResource("Stele")
+offset = Vector2(0, -51.5)
+scale = Vector2(0.95, 0.95)
+
+[node name="FeuDuBosquet" type="Sprite2D" parent="Paysage"]
+position = Vector2(1500.0, 620.0)
+texture = ExtResource("Cristaux")
+offset = Vector2(0, -55.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="CheneDeLaBaleine1" type="Sprite2D" parent="Paysage"]
+position = Vector2(700.0, 1300.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(0.9, 0.9)
+
+[node name="CheneDeLaBaleine2" type="Sprite2D" parent="Paysage"]
+position = Vector2(530.0, 1600.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(1.0, 1.0)
+flip_h = true
+
+[node name="CheneDeLaBaleine3" type="Sprite2D" parent="Paysage"]
+position = Vector2(830.0, 1750.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(0.85, 0.85)
+
+[node name="CheneDeLaClairiere" type="Sprite2D" parent="Paysage"]
+position = Vector2(1850.0, 580.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(0.8, 0.8)
+
+[node name="PinDuFlancEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(2700.0, 1700.0)
+texture = ExtResource("Pin")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="PinDuFlancOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(600.0, 1950.0)
+texture = ExtResource("Pin")
+offset = Vector2(0, -90.0)
+scale = Vector2(0.9, 0.9)
+flip_h = true
+
+[node name="FleursDuPlateau" type="Sprite2D" parent="Paysage"]
+position = Vector2(1700.0, 520.0)
+texture = ExtResource("Fleurs")
+offset = Vector2(0, -36.0)
+scale = Vector2(0.8, 0.8)
+
+[node name="PalmierDuFlanc" type="Sprite2D" parent="Paysage"]
+position = Vector2(2100.0, 2100.0)
+texture = ExtResource("Palmier")
+offset = Vector2(0, -95.0)
+scale = Vector2(0.85, 0.85)
+
+[node name="Amaru" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1300.0, 700.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["trm_c7_deblais", "trm_c7_traqueurs", "trm_c7_margol", "trm_c7_pierre"])
+nom_affiche = "Wanda"
+paroles = "Je suis Wanda, une mousquetaire du duché de Mokomo. Un éboulis nous coupe des réserves et les hommes de Jack fouillent la forêt de la Baleine. Aide-nous à rouvrir nos chemins et à protéger la pierre que le duché garde."
+
+[node name="Sprite2D" type="Sprite2D" parent="Amaru"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_wanda")
+
+[node name="Area2D" type="Area2D" parent="Amaru"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Amaru/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Amaru"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Wanda"
+horizontal_alignment = 1
+
+[node name="Pekora" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1700.0, 1860.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["zou_panneaux", "zou_baies"])
+nom_affiche = "Carrot"
+paroles = "Bienvenue sur le flanc ! Les pancartes du duché sont des lianes d'humeur : elles bougent avec l'île. Lis-les quand même, elles disent où l'île porte. Et cueille des baies pour nos guérisseurs : la forêt de la Baleine les donne à ceux qui la respectent."
+
+[node name="Sprite2D" type="Sprite2D" parent="Pekora"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_carrot")
+
+[node name="Area2D" type="Area2D" parent="Pekora"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pekora/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Pekora"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Carrot"
+horizontal_alignment = 1
+
+[node name="InterpreteZou" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1400.0, 760.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String]([])
+nom_affiche = "Nico Robin"
+paroles = "La pierre rouge parle une langue plus vieille que les cloches. J'en ai lu des fragments au désert : ici, elle est entière. Faites relire les tracés, pas les rumeurs — la pierre ne ment pas, elle se tait. C'est différent."
+
+[node name="Sprite2D" type="Sprite2D" parent="InterpreteZou"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_robin")
+
+[node name="Area2D" type="Area2D" parent="InterpreteZou"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InterpreteZou/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="InterpreteZou"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Nico Robin"
+horizontal_alignment = 1
+
+[node name="EbuliDuSentier" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1330.0, 1700.0)
+script = ExtResource("Recolte")
+titre = "Éboulis du sentier des cloches"
+description = "Des blocs volants ont couvert le sentier. On déblaye depuis l'aube ; tes bras terminent ce que la parole du duché a promis : le passage est libre, les réserves descendent."
+quete = "trm_c7_deblais"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="EbuliDuSentier"]
+position = Vector2(0, -47.0)
+texture = ExtResource("Rochers")
+
+[node name="Etiquette" type="Label" parent="EbuliDuSentier"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="EbuliDeLaSource" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1030.0, 900.0)
+script = ExtResource("Recolte")
+titre = "Éboulis de la source de la canopée"
+description = "Derrière les blocs, la source de la canopée retrouve son lit. Les outres se remplissent, les guérisseurs relâchent leurs réserves. Le serment tient."
+quete = "trm_c7_deblais"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="EbuliDeLaSource"]
+position = Vector2(0, -47.0)
+texture = ExtResource("Rochers")
+
+[node name="Etiquette" type="Label" parent="EbuliDeLaSource"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="EbuliDeLaForet" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(700.0, 1650.0)
+script = ExtResource("Recolte")
+titre = "Éboulis du débouché de la forêt"
+description = "Le débouché de la forêt de la Baleine est dégagé : l'équipe de secours repasse avec deux blessés et trois tonneaux de baies. Personne n'est resté derrière."
+quete = "trm_c7_deblais"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="EbuliDeLaForet"]
+position = Vector2(0, -47.0)
+texture = ExtResource("Rochers")
+
+[node name="Etiquette" type="Label" parent="EbuliDeLaForet"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PancarteDuQuai" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1520.0, 1930.0)
+script = ExtResource("Recolte")
+titre = "Quai du Flanc"
+description = "« Quai du Flanc. Attention : l'île change d'humeur au pas. On ne s'amare pas deux fois au même rocher. Les cloches du plateau indiquent la durée du séjour, pas l'heure. »"
+quete = "zou_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PancarteDuQuai"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PancarteDuQuai"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PancarteDesCloches" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1350.0, 900.0)
+script = ExtResource("Recolte")
+titre = "Village des cloches"
+description = "« Village des cloches, duché de Mokomo. Interdiction de chasser sur le flanc d'un blessé, de voler une réserve, de tirer une cape sans saluer. Le mensonge se paie en brou. »"
+quete = "zou_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PancarteDesCloches"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PancarteDesCloches"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PancarteDeLaBaleine" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(600.0, 1400.0)
+script = ExtResource("Recolte")
+titre = "Forêt de la Baleine"
+description = "« Forêt de la Baleine. Ici dort celle qui chantait pour que les navires ne doutent pas. Cueillir : oui. Piétiner les racines de son sommeil : jamais. »"
+quete = "zou_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PancarteDeLaBaleine"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PancarteDeLaBaleine"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BaiesDeLaClairiere" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1800.0, 700.0)
+script = ExtResource("Recolte")
+titre = "Baies de la clairière haute"
+description = "Grosses, sombres, sucrées — les guérisseurs en font des sirops."
+quete = "zou_baies"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BaiesDeLaClairiere"]
+position = Vector2(0, -30.0)
+texture = ExtResource("Baies")
+
+[node name="Etiquette" type="Label" parent="BaiesDeLaClairiere"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BaiesDuSentier" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1400.0, 1750.0)
+script = ExtResource("Recolte")
+titre = "Baies du sentier des cloches"
+description = "Celles du sentier mûrissent plus tôt, dit-on, depuis le glissement."
+quete = "zou_baies"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BaiesDuSentier"]
+position = Vector2(0, -30.0)
+texture = ExtResource("Baies")
+
+[node name="Etiquette" type="Label" parent="BaiesDuSentier"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BaiesDeLaCanopee" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2600.0, 900.0)
+script = ExtResource("Recolte")
+titre = "Baies de la canopée du bord"
+description = "Ramassées au bord du vide, là où les minks n'ont pas de jaloux."
+quete = "zou_baies"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BaiesDeLaCanopee"]
+position = Vector2(0, -30.0)
+texture = ExtResource("Baies")
+
+[node name="Etiquette" type="Label" parent="BaiesDeLaCanopee"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PierreRouge" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1450.0, 560.0)
+script = ExtResource("Recolte")
+titre = "La pierre rouge"
+description = "Le ponéglyphe veille au cœur du bosquet sacré. Nico Robin lit à voix haute pendant que Wanda monte la garde : la première coordonnée est inscrite au journal de bord. Entre les racines, une lettre de convoi pliée en quatre situe la seconde pierre « chez la maman des gâteaux » — Big Mom garde aussi un tracé."
+quete = "trm_c7_pierre"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PierreRouge"]
+position = Vector2(0, -51.5)
+texture = ExtResource("Stele")
+
+[node name="Etiquette" type="Label" parent="PierreRouge"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="TraqueurDeLaLisiere" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(600.0, 1500.0)
+nom = "Éclaireur des Cent Bêtes"
+pv_max = 580
+degats_attaque = 33
+portee_attaque = 1
+pm_max = 3
+mob_id = 1
+quetes_a_progresser = Array[String](["trm_c7_traqueurs"])
+niveau_personnalise = 36
+groupe = "traqueurs_baleine"
+texture_personnalisee = ExtResource("sprite_ile_pirate_cent_betes")
+
+[node name="TraqueurDeLaSource" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(950.0, 1250.0)
+nom = "Traqueur des Cent Bêtes"
+pv_max = 600
+degats_attaque = 34
+portee_attaque = 2
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String](["trm_c7_traqueurs"])
+niveau_personnalise = 36
+groupe = "traqueurs_baleine"
+texture_personnalisee = ExtResource("sprite_ile_pirate_cent_betes_fourrure")
+
+[node name="TraqueurDuFlanc" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2100.0, 1800.0)
+nom = "Pirate des Cent Bêtes"
+pv_max = 620
+degats_attaque = 35
+portee_attaque = 2
+pm_max = 3
+mob_id = 2
+quetes_a_progresser = Array[String](["trm_c7_traqueurs"])
+niveau_personnalise = 37
+groupe = "traqueurs_baleine"
+texture_personnalisee = ExtResource("sprite_ile_pirate_cent_betes")
+
+[node name="Margol" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1650.0, 620.0)
+nom = "Sheepshead"
+pv_max = 980
+degats_attaque = 39
+portee_attaque = 2
+pm_max = 3
+mob_id = 0
+quetes_a_progresser = Array[String](["trm_c7_margol"])
+niveau_personnalise = 38
+groupe = ""
+texture_personnalisee = ExtResource("sprite_ile_sheepshead")
+attaques_par_tour = 3
+
+[node name="ElanDeLaCanopee" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2450.0, 1200.0)
+nom = "Cerf de la canopée"
+pv_max = 150
+degats_attaque = 18
+portee_attaque = 1
+pm_max = 3
+mob_id = 21
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 5
+groupe = "faune_zou"
+texture_personnalisee = ExtResource("sprite_ile_cerf_zou")
+
+[node name="ElanDuFlancEst" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2650.0, 1600.0)
+nom = "Cerf du flanc est"
+pv_max = 150
+degats_attaque = 18
+portee_attaque = 1
+pm_max = 3
+mob_id = 21
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 5
+groupe = "faune_zou"
+texture_personnalisee = ExtResource("sprite_ile_cerf_zou")

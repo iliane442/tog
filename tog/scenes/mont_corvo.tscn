@@ -422,7 +422,6 @@ horizontal_alignment = 1
 
 [node name="TigreCrete" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2016, 1440)
-collision_layer = 2
 nom = "Tigre de Corvo"
 pv_max = 120
 degats_attaque = 11
@@ -433,7 +432,6 @@ niveau_personnalise = 5
 
 [node name="SanglierBasseVallee" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2208, 2912)
-collision_layer = 2
 nom = "Sanglier des sous-bois"
 pv_max = 65
 degats_attaque = 7
@@ -444,7 +442,6 @@ niveau_personnalise = 2
 
 [node name="SanglierClairiere" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2976, 2272)
-collision_layer = 2
 nom = "Sanglier des sous-bois"
 pv_max = 72
 degats_attaque = 8
@@ -455,7 +452,6 @@ niveau_personnalise = 3
 
 [node name="LoupDesPins" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(2400, 2080)
-collision_layer = 2
 nom = "Loup des pins"
 pv_max = 84
 degats_attaque = 9
@@ -466,7 +462,6 @@ niveau_personnalise = 4
 
 [node name="LoupDeLaRavine" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(3488, 2464)
-collision_layer = 2
 nom = "Loup de la ravine"
 pv_max = 87
 degats_attaque = 9
@@ -477,7 +472,6 @@ niveau_personnalise = 4
 
 [node name="TigreForet" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(3616, 2016)
-collision_layer = 2
 nom = "Tigre de la forêt"
 pv_max = 128
 degats_attaque = 12
@@ -488,7 +482,6 @@ niveau_personnalise = 6
 
 [node name="LoupDuCol" parent="Rencontres" instance=ExtResource("Ennemi")]
 position = Vector2(3104, 1312)
-collision_layer = 2
 nom = "Loup du col"
 pv_max = 94
 degats_attaque = 10

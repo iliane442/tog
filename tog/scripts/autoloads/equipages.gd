@@ -12,6 +12,9 @@ extends Node
 const MEMBRES_MAX := 20        # capitaine compris
 const DESCRIPTION_MAX := 200   # caractères
 const CHEMIN_BASE := "user://equipages.db"
+# le serveur MMO porte les équipages en ligne dans sa propre base, sur
+# la même machine que le jeu solo elle ne doit jamais toucher la même
+const CHEMIN_BASE_SERVEUR := "user://mmo_equipages.db"
 
 const RANG_CAPITAINE := "capitaine"
 const RANG_VICE := "vice-capitaine"
@@ -23,6 +26,23 @@ const RANG_MATELOT := "matelot"
 var mon_equipage: Dictionary = {}
 var db: SQLite
 var disponible := false
+
+# compte connecté : l'équipage vit sur le serveur, l'état local n'est
+# plus lu ni écrit (les lectures servent le miroir reçu par le réseau)
+var en_ligne := false
+# serveur uniquement : pseudo du joueur à l'origine de l'action en
+# cours (les données identifient les joueurs par leur pseudo)
+var joueur_courant := ""
+# dernier message serveur à afficher dans l'onglet Équipage (erreur
+# ou confirmation d'une opération en ligne)
+var dernier_message := ""
+# miroirs de l'état serveur (en ligne) : membres, journal, autres
+# équipages, flotte — servis par les lectures ci-dessous
+var _miroir_membres: Array = []
+var _miroir_journal: Array = []
+var _miroir_autres: Array = []
+var _miroir_flotte: Dictionary = {}
+var _miroir_membres_flotte: Array = []
 
 signal equipage_modifie
 
@@ -50,6 +70,8 @@ func _exit_tree() -> void:
 # compte du serveur en MMO)
 func _recharger_mon_equipage() -> void:
 	mon_equipage = {}
+	if en_ligne and joueur_courant == "":
+		return  # en ligne, l'état vient du serveur (instantanés réseau)
 	if not disponible:
 		return
 	var nom := _joueur()
@@ -73,7 +95,13 @@ func _recharger_mon_equipage() -> void:
 		"mon_rang": RANG_CAPITAINE if capitaine else str(ligne.get("mon_rang", RANG_MATELOT)),
 	}
 
+# le joueur local : son compte en ligne, son personnage en solo ; côté
+# serveur, le pseudo du joueur à l'origine de l'action en cours
 func _joueur() -> String:
+	if joueur_courant != "":
+		return joueur_courant
+	if en_ligne:
+		return Reseau.pseudo
 	return Personnage.nom
 
 func suis_capitaine() -> bool:
@@ -86,9 +114,85 @@ func suis_vice_capitaine() -> bool:
 func puis_je_gerer() -> bool:
 	return suis_capitaine() or suis_vice_capitaine()
 
+# --- passage en ligne / hors ligne ---
+
+# le serveur MMO porte les équipages en ligne : sa base est dédiée pour
+# ne jamais mélanger avec le fichier du jeu solo de la même machine
+func basculer_serveur() -> void:
+	if db != null:
+		db.close_db()
+	db = SQLite.new()
+	db.path = CHEMIN_BASE_SERVEUR
+	db.open_db()
+	_creer_schema()
+	db.query("SELECT COUNT(*) AS total FROM equipages;")
+	disponible = not db.query_result.is_empty()
+	if disponible:
+		_recharger_mon_equipage()
+
+# compte connecté : l'état reçu du serveur rempli les miroirs, la base
+# locale n'est plus lue ni écrite (elle redevient la référence en solo)
+func basculer_en_ligne() -> void:
+	en_ligne = true
+	joueur_courant = ""
+	mon_equipage = {}
+	_miroir_membres = []
+	_miroir_journal = []
+	_miroir_autres = []
+	_miroir_flotte = {}
+	_miroir_membres_flotte = []
+
+# retour hors ligne : la base locale redevient la référence
+func recharger_etat_local() -> void:
+	en_ligne = false
+	joueur_courant = ""
+	dernier_message = ""
+	_miroir_membres = []
+	_miroir_journal = []
+	_miroir_autres = []
+	_miroir_flotte = {}
+	_miroir_membres_flotte = []
+	_recharger_mon_equipage()
+	equipage_modifie.emit()
+
+# instantané complet de mon équipage, envoyé par le serveur après chaque
+# opération : tout l'onglet Équipage se resynchronise
+func appliquer_snapshot(snapshot_json: String) -> void:
+	var analyse: Variant = JSON.parse_string(snapshot_json)
+	if not analyse is Dictionary:
+		return
+	var d: Dictionary = analyse
+	var equipage: Variant = d.get("equipage", {})
+	mon_equipage = equipage if equipage is Dictionary else {}
+	_miroir_membres = d.get("membres", []) if d.get("membres", []) is Array else []
+	_miroir_journal = d.get("journal", []) if d.get("journal", []) is Array else []
+	_miroir_autres = d.get("autres", []) if d.get("autres", []) is Array else []
+	var flotte: Variant = d.get("flotte", {})
+	_miroir_flotte = flotte if flotte is Dictionary else {}
+	_miroir_membres_flotte = d.get("membres_flotte", []) if d.get("membres_flotte", []) is Array else []
+	equipage_modifie.emit()
+
+# message du serveur (confirmation ou reflet d'une opération) : affiché
+# par l'onglet Équipage au prochain rafraîchissement
+func message_serveur(texte: String) -> void:
+	if texte == "":
+		return
+	dernier_message = texte
+	equipage_modifie.emit()
+
 # --- Fondation et dissolution ---
 
 func creer(nom: String) -> String:
+	if en_ligne:
+		if not mon_equipage.is_empty():
+			return "Vous faites déjà partie d'un équipage"
+		var nom_en_ligne := nom.strip_edges()
+		if nom_en_ligne.length() < 2:
+			return "Nom trop court"
+		if nom_en_ligne.length() > 30:
+			return "Nom trop long (30 caractères max)"
+		Reseau.demander_equipage("creer", nom_en_ligne)
+		return ""
 	if not disponible:
 		return "Base des équipages indisponible"
 	if not mon_equipage.is_empty():
@@ -109,6 +213,10 @@ func creer(nom: String) -> String:
 # dissoudre l'équipage (capitaine uniquement) : membres virés, alliance
 # rompue, journal effacé, flotte supprimée si elle se vide
 func dissoudre() -> void:
+	if en_ligne:
+		if suis_capitaine():
+			Reseau.demander_equipage("dissoudre", "")
+		return
 	if not suis_capitaine():
 		return
 	var id_equipage := int(mon_equipage["id"])
@@ -121,6 +229,10 @@ func dissoudre() -> void:
 
 # quitter l'équipage (simple membre, vice-capitaine compris)
 func quitter() -> void:
+	if en_ligne:
+		if not mon_equipage.is_empty() and not suis_capitaine():
+			Reseau.demander_equipage("quitter", "")
+		return
 	if mon_equipage.is_empty() or suis_capitaine():
 		return
 	var rang := str(mon_equipage.get("mon_rang", RANG_MATELOT))
@@ -137,6 +249,8 @@ func quitter() -> void:
 
 # membres du groupe hors capitaine : [{nom_joueur, rang}]
 func liste_membres() -> Array:
+	if en_ligne:
+		return _miroir_membres.duplicate(true)
 	if mon_equipage.is_empty():
 		return []
 	return _lire(
@@ -154,6 +268,14 @@ func places_libres() -> int:
 # ajoute un joueur à l'équipage ; renvoie "" si réussi, sinon la raison.
 # en MMO, cette écriture sera remplacée par une invitation à accepter.
 func ajouter_membre(nom: String) -> String:
+	if en_ligne:
+		# en ligne, le recrutement devient une invitation : le serveur
+		# pré-vérifie et la cible reçoit une popup à accepter
+		var erreur_invitation := _valider_recrutement(nom)
+		if erreur_invitation != "":
+			return erreur_invitation
+		Reseau.demander_equipage("ajouter", nom.strip_edges())
+		return "Invitation envoyée"
 	if not puis_je_gerer():
 		return "Seul le capitaine ou le vice-capitaine recrute"
 	if places_libres() <= 0:
@@ -174,6 +296,22 @@ func ajouter_membre(nom: String) -> String:
 	equipage_modifie.emit()
 	return ""
 
+# contrôles de recrutement communs (rang, places, nom), sans toucher la
+# base : ils lisent l'état en mémoire, serveur comme client
+func _valider_recrutement(nom: String) -> String:
+	if not puis_je_gerer():
+		return "Seul le capitaine ou le vice-capitaine recrute"
+	if places_libres() <= 0:
+		return "Équipage complet (%d membres)" % MEMBRES_MAX
+	var nom_propre := nom.strip_edges()
+	if nom_propre.length() < 2:
+		return "Nom trop court"
+	if nom_propre.length() > 30:
+		return "Nom trop long (30 caractères max)"
+	if nom_propre.to_lower() == str(mon_equipage["capitaine"]).to_lower():
+		return "C'est déjà le capitaine"
+	return ""
+
 # un joueur est-il déjà capitaine ou membre d'un équipage ?
 func _deja_engage(nom: String) -> bool:
 	var nom_echappe := _echapper(nom)
@@ -185,6 +323,11 @@ func _deja_engage(nom: String) -> bool:
 
 # vire un membre ; le capitaine ne peut pas être viré
 func virer(nom: String) -> String:
+	if en_ligne:
+		if not puis_je_gerer():
+			return "Seul le capitaine ou le vice-capitaine vire"
+		Reseau.demander_equipage("virer", nom.strip_edges())
+		return ""
 	if not puis_je_gerer():
 		return "Seul le capitaine ou le vice-capitaine vire"
 	var nom_propre := nom.strip_edges()
@@ -209,6 +352,11 @@ func virer(nom: String) -> String:
 
 # nomme un membre vice-capitaine (un seul à la fois) ; capitaine uniquement
 func nommer_vice(nom: String) -> String:
+	if en_ligne:
+		if not suis_capitaine():
+			return "Seul le capitaine nomme le vice-capitaine"
+		Reseau.demander_equipage("nommer_vice", nom.strip_edges())
+		return ""
 	if not suis_capitaine():
 		return "Seul le capitaine nomme le vice-capitaine"
 	var nom_propre := nom.strip_edges()
@@ -227,6 +375,11 @@ func nommer_vice(nom: String) -> String:
 
 # redescend le vice-capitaine au rang de matelot ; capitaine uniquement
 func destituer_vice() -> String:
+	if en_ligne:
+		if not suis_capitaine():
+			return "Seul le capitaine peut destituer le vice-capitaine"
+		Reseau.demander_equipage("destituer_vice", "")
+		return ""
 	if not suis_capitaine():
 		return "Seul le capitaine peut destituer le vice-capitaine"
 	var lignes := _lire(
@@ -252,6 +405,17 @@ func rang_de(nom: String) -> String:
 
 # verse des Berry à la caisse (n'importe quel membre)
 func deposer_berry(montant: int) -> String:
+	if en_ligne:
+		# le Berry en ligne vit dans la sauvegarde serveur : c'est le
+		# serveur qui le débite et renvoie le solde à jour
+		if mon_equipage.is_empty():
+			return "Vous n'êtes pas dans un équipage"
+		if montant <= 0:
+			return "Montant invalide"
+		if Personnage.berry < montant:
+			return "Pas assez de Berry"
+		Reseau.demander_equipage("deposer", "", montant)
+		return ""
 	if mon_equipage.is_empty():
 		return "Vous n'êtes pas dans un équipage"
 	if montant <= 0:
@@ -269,6 +433,15 @@ func deposer_berry(montant: int) -> String:
 
 # retire des Berry de la caisse vers la bourse du joueur (gestion, auto : capitaine ou vice)
 func retirer_berry(montant: int) -> String:
+	if en_ligne:
+		if not puis_je_gerer():
+			return "Seul le capitaine ou le vice-capitaine retire de la caisse"
+		if montant <= 0:
+			return "Montant invalide"
+		if int(mon_equipage["caisse"]) < montant:
+			return "Caisse insuffisante (%d Berry)" % int(mon_equipage["caisse"])
+		Reseau.demander_equipage("retirer", "", montant)
+		return ""
 	if not puis_je_gerer():
 		return "Seul le capitaine ou le vice-capitaine retire de la caisse"
 	if montant <= 0:
@@ -287,6 +460,13 @@ func retirer_berry(montant: int) -> String:
 # --- Description ---
 
 func changer_description(texte: String) -> String:
+	if en_ligne:
+		if not puis_je_gerer():
+			return "Seul le capitaine ou le vice-capitaine modifie la description"
+		if texte.strip_edges().length() > DESCRIPTION_MAX:
+			return "Description trop longue (%d caractères max)" % DESCRIPTION_MAX
+		Reseau.demander_equipage("description", texte)
+		return ""
 	if not puis_je_gerer():
 		return "Seul le capitaine ou le vice-capitaine modifie la description"
 	var texte_propre := texte.strip_edges()
@@ -301,6 +481,63 @@ func changer_description(texte: String) -> String:
 	equipage_modifie.emit()
 	return ""
 
+# --- Aides serveur ---
+
+# le serveur verse dans la caisse le Berry déjà débité du perso serveur
+# (le Berry en ligne vit dans la sauvegarde du compte, pas Personnage)
+func verser_caisse(montant: int) -> String:
+	if mon_equipage.is_empty():
+		return "Vous n'êtes pas dans un équipage"
+	if montant <= 0:
+		return "Montant invalide"
+	_ecrire("UPDATE equipages SET caisse = caisse + %d WHERE id = %d;" % [
+		montant, int(mon_equipage["id"])])
+	mon_equipage["caisse"] = int(mon_equipage["caisse"]) + montant
+	_journaliser("%s dépose %d Berry à la caisse." % [_joueur(), montant])
+	equipage_modifie.emit()
+	return ""
+
+# le serveur prend dans la caisse ; le versement au compte du joueur est
+# fait par Reseau (le processus serveur n'a pas de Personnage)
+func prendre_caisse(montant: int) -> String:
+	if not puis_je_gerer():
+		return "Seul le capitaine ou le vice-capitaine retire de la caisse"
+	if mon_equipage.is_empty():
+		return "Vous n'êtes pas dans un équipage"
+	if montant <= 0:
+		return "Montant invalide"
+	if int(mon_equipage["caisse"]) < montant:
+		return "Caisse insuffisante (%d Berry)" % int(mon_equipage["caisse"])
+	_ecrire("UPDATE equipages SET caisse = caisse - %d WHERE id = %d;" % [
+		montant, int(mon_equipage["id"])])
+	mon_equipage["caisse"] = int(mon_equipage["caisse"]) - montant
+	_journaliser("%s retire %d Berry de la caisse." % [_joueur(), montant])
+	equipage_modifie.emit()
+	return ""
+
+# ids des équipages de la flotte d'un équipage donné (lui compris s'il
+# en fait partie) — le serveur s'en sert pour rafraîchir les membres de
+# flotte concernés par une alliance ou une rupture
+func equipages_de_la_flotte_de(id_equipage: int) -> Array:
+	var ids: Array = []
+	for ligne in _lire(
+			"SELECT ef2.equipage_id FROM equipage_flotte ef2"
+			+ " WHERE ef2.flotte_id = (SELECT flotte_id FROM equipage_flotte"
+			+ " WHERE equipage_id = %d);" % id_equipage):
+		ids.append(int(ligne["equipage_id"]))
+	return ids
+
+# pseudos (comptes) de tous les membres d'un équipage, capitaine compris
+func pseudos_de_l_equipage(id_equipage: int) -> Array:
+	var pseudos: Array = []
+	for ligne in _lire("SELECT capitaine FROM equipages WHERE id = %d;" % id_equipage):
+		pseudos.append(str(ligne["capitaine"]))
+	for ligne in _lire(
+			"SELECT nom_joueur FROM equipages_membres WHERE equipage_id = %d;"
+			% id_equipage):
+		pseudos.append(str(ligne["nom_joueur"]))
+	return pseudos
+
 # --- Journal de bord ---
 
 # ajoute une entrée au journal de l'équipage courant
@@ -314,6 +551,8 @@ func _journaliser(message: String) -> void:
 # (l'heure est découpée côté GDScript : le "%" de strftime casserait
 # le formatage des requêtes)
 func liste_journal(limite: int = 10) -> Array:
+	if en_ligne:
+		return _miroir_journal.duplicate(true)
 	if mon_equipage.is_empty():
 		return []
 	var entrees: Array = []
@@ -331,6 +570,8 @@ func liste_journal(limite: int = 10) -> Array:
 
 # la flotte dont fait partie mon équipage : {id, nom} ou vide
 func ma_flotte() -> Dictionary:
+	if en_ligne:
+		return _miroir_flotte.duplicate(true)
 	if mon_equipage.is_empty():
 		return {}
 	var lignes := _lire(
@@ -343,6 +584,8 @@ func ma_flotte() -> Dictionary:
 
 # équipages membres de ma flotte (moi compris si je suis en flotte)
 func membres_de_ma_flotte() -> Array:
+	if en_ligne:
+		return _miroir_membres_flotte.duplicate(true)
 	var flotte := ma_flotte()
 	if flotte.is_empty():
 		return []
@@ -353,6 +596,8 @@ func membres_de_ma_flotte() -> Array:
 
 # tous les autres équipages du monde (pour proposer des alliances)
 func autres_equipages() -> Array:
+	if en_ligne:
+		return _miroir_autres.duplicate(true)
 	if not disponible:
 		return []
 	var requete := "SELECT id, nom, capitaine, niveau FROM equipages"
@@ -362,6 +607,11 @@ func autres_equipages() -> Array:
 	return _lire(requete)
 
 func nb_membres_de(id_equipage: int) -> int:
+	if en_ligne:
+		for ligne in _miroir_autres:
+			if int(ligne.get("id", -1)) == id_equipage:
+				return maxi(int(ligne.get("membres", 1)), 1)
+		return 1
 	var lignes := _lire(
 		"SELECT COUNT(*) AS total FROM equipages_membres WHERE equipage_id = %d;" % id_equipage)
 	if lignes.is_empty():
@@ -372,6 +622,11 @@ func nb_membres_de(id_equipage: int) -> int:
 # rejoignent la même flotte ; renvoie "" si réussi. En MMO, la proposition
 # devra être acceptée par le capitaine adverse.
 func proposer_alliance(id_cible: int) -> String:
+	if en_ligne:
+		if not puis_je_gerer():
+			return "Seul le capitaine ou le vice-capitaine gère les alliances"
+		Reseau.demander_equipage("alliance", str(id_cible))
+		return ""
 	if mon_equipage.is_empty():
 		return "Vous n'êtes pas engagé dans un équipage"
 	if not puis_je_gerer():
@@ -417,6 +672,11 @@ func proposer_alliance(id_cible: int) -> String:
 # rompt l'alliance de mon équipage : il quitte sa flotte ; la flotte se
 # dissout si elle se vide
 func rompre_alliance() -> String:
+	if en_ligne:
+		if not puis_je_gerer():
+			return "Seul le capitaine ou le vice-capitaine rompt l'alliance"
+		Reseau.demander_equipage("rompre", "")
+		return ""
 	if mon_equipage.is_empty():
 		return "Vous n'êtes pas engagé dans un équipage"
 	if not puis_je_gerer():
@@ -443,6 +703,11 @@ func _retirer_de_la_flotte(id_equipage: int) -> void:
 
 # mon équipage est-il allié à l'équipage donné ?
 func est_allie(id_equipage: int) -> bool:
+	if en_ligne:
+		for equipage_allie in _miroir_membres_flotte:
+			if int(equipage_allie.get("id", -1)) == id_equipage:
+				return true
+		return false
 	var flotte := ma_flotte()
 	if flotte.is_empty():
 		return false

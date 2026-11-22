@@ -32,6 +32,7 @@
 [ext_resource type="PackedScene" path="res://scenes/pnj_yosaku.tscn" id="24_yosaku"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_johnny.tscn" id="25_johnny"]
 [ext_resource type="PackedScene" path="res://scenes/pnj_nojiko.tscn" id="26_nojiko"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_shells.tscn" id="27_capitaine"]
 [ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="theme"]
 [ext_resource type="Script" path="res://scripts/world/carte_fushia.gd" id="carte"]
 [ext_resource type="Texture2D" path="res://assets/sprites/pnj/nils.png" id="pawn"]
@@ -694,7 +695,7 @@ texture = ExtResource("terrain")
 expand_mode = 1
 script = ExtResource("carte")
 dimensions_monde = Vector2(10304, 8064)
-reperes = Dictionary[Vector2, String]({Vector2(4768, 6048): "Quai des Voiles", Vector2(4640, 4640): "Village de Fushia", Vector2(2464, 3424): "Bois du Moulin", Vector2(6944, 3680): "Verger des Lucioles", Vector2(8288, 1824): "Cap du Phare", Vector2(5509.67, 1416.77): "Camp des contrebandiers", Vector2(1504, 5216): "Anse des Pêcheurs", Vector2(7648, 3232): "Étang des Roseaux", Vector2(8544, 6240): "Crique du Levant", Vector2(4672, 7296): "Navire de Shanks", Vector2(3904, 2450): "Escalier du mont Corvo", Vector2(4608, 4672): "Bar de Makino"})
+reperes = Dictionary[Vector2, String]({Vector2(4768, 6048): "Quai des Voiles", Vector2(4640, 4640): "Village de Fushia", Vector2(2464, 3424): "Bois du Moulin", Vector2(6944, 3680): "Verger des Lucioles", Vector2(8288, 1824): "Cap du Phare", Vector2(5509.67, 1416.77): "Camp des contrebandiers", Vector2(1504, 5216): "Anse des Pêcheurs", Vector2(7648, 3232): "Étang des Roseaux", Vector2(8544, 6240): "Crique du Levant", Vector2(4672, 7296): "Navire de Shanks", Vector2(3904, 2450): "Escalier du mont Corvo", Vector2(4608, 4672): "Bar de Makino", Vector2(4864, 6144): "Bateau pour Shells Town"})
 
 [node name="Notification" type="PanelContainer" parent="CarteFushia"]
 visible = false
@@ -737,6 +738,12 @@ script = ExtResource("EscalierCorvo")
 
 [node name="DepuisCorvo" type="Marker2D" parent="Arrivees"]
 position = Vector2(3936, 2656)
+
+[node name="DepuisShells" type="Marker2D" parent="Arrivees"]
+position = Vector2(4768, 5952)
+
+[node name="capitaine_ferry" parent="." instance=ExtResource("27_capitaine")]
+position = Vector2(4832, 6112)
 
 [node name="VersMontCorvo" type="Area2D" parent="."]
 position = Vector2(3904, 2272)
@@ -1307,6 +1314,9 @@ text = "Refuser"
 
 [node name="HUD" parent="." instance=ExtResource("10_hud")]
 
+
+
+[node name="CoffreUI" parent="." instance=ExtResource("13_coffreui")]
 
 
 [node name="BoutiqueUI" parent="." instance=ExtResource("14_boutique")]

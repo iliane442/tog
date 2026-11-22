@@ -1,0 +1,843 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_orange.tscn" id="FerryOrange"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_baratie.tscn" id="FerryBaratie"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-large-house-v0.png" id="Manoir"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-medium-house-v0.png" id="MaisonMoyenne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-small-house-v0.png" id="PetiteMaison"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-tavern-v0.png" id="Taverne"]
+[ext_resource type="Texture2D" path="res://assets/world/orange_town/puits.png" id="Puits"]
+[ext_resource type="Texture2D" path="res://assets/world/orange_town/oranger.png" id="Oranger"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="Borne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/cabane_de_peche.png" id="Cabane"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/chene_ancien.png" id="Chene"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/fleurs_medicinales.png" id="Fleurs"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/colonne_brisee.png" id="Colonne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/stele_de_la_vague.png" id="Stele"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/phare.png" id="Poste"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/kaya.png" id="sprite_ile_kaya"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/usopp.png" id="sprite_ile_usopp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/merry.png" id="sprite_ile_merry"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/pelagie.png" id="sprite_ile_pelagie"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/jango.png" id="sprite_ile_jango"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/sham.png" id="sprite_ile_sham"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/buchi.png" id="sprite_ile_buchi"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/kuro.png" id="sprite_ile_kuro"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/chien_du_manoir.png" id="sprite_ile_chien_du_manoir"]
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[node name="SyrupVillage" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;################;;;;;;;;;;;;;;~~",
+	"~~;;,,,,,,,,,,,,################,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,##,,,,,,,,,,,,##,,,,,,,,,,,,;;~~",
+	"~~;;,,F.,..,F,,,##,,,,,,,,,,,,##,,,,,,,,,,,,;;~~",
+	"~~;;,FF,..,.F,,,##,,,,,,,,,,,,##,,,,,,,,,,,,;;~~",
+	"~~;;,F,..,..,,,,##,,,,,,,,,,,,##,,,,,FF,..,.;;~~",
+	"~~;;,,F.,..,F,,,##,,,,,,,,,,,,##,,,,F,F.,..,;;~~",
+	"~~;;,FF,..,.F,,,##,,,,,,,,,,,,##,,,,FF,..,..;;~~",
+	"~~;;,F,FF,FF,,,,##,,,,,,,,,,,,##,,,,,FF,FF,F;;~~",
+	"~~;;,,FF,FF,F,,,#######:::######,,,,F,FF,FF,;;~~",
+	"~~;;,FF,FF,FF,,,#######:::######,,,,FF,FF,FF;;~~",
+	"~~;;,F,FF,FF,,,,,,,,,,,::,,,,,,,,,,,,FF,FF,F;;~~",
+	"~~;;,,FF,FF,F,,,,,,,,,,::,,,,,,,,,,,F,FF,FF,;;~~",
+	"~~;;,FF,FF,F.,,,,,,,,,,::,,,,,,,,,,,FF,FF,FF;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,FF,FF,F;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,F,FF,FF,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,::::::,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,:,,,,,;;~~",
+	"~~;;,,,,,,,::::::::::::::::::::::,,,,,:,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,:,,,,,;;~~",
+	"~~;;F,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;,,,F,,,,,,,,,,,,,,,::,,,,,,,,F,,,,F,,,,,;;~~",
+	"~~;;,F:::::::::::::::::::,,,,,,,,,,F,,,,F,,,;;~~",
+	"~~;;,,,,F,,,,,,,,,,,,,,::,,,,,,,,,,,,F,,,,,,;;~~",
+	"~~;;,,F,,,,,,,,,,,,,,,,::,,,,,,,,,F,,,,F,,,,;;~~",
+	"~~;;F,,,,,,,,,,,,,,,,,,::,,,,,,,,,,,F,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+)
+littoral = true
+emprises_decors = Array[Rect2i]([])
+
+[node name="player" parent="." index="5"]
+position = Vector2(1542.4, 2144.0)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Syrup Village"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1472.0, 2112.0): "Quai du ferry", Vector2(1280.0, 1664.0): "Place du Village", Vector2(1504.0, 512.0): "Manoir de Kaya", Vector2(576.0, 576.0): "Poste du cap", Vector2(2432.0, 1600.0): "Lisière est", Vector2(576.0, 2048.0): "Verger de l'ouest"})
+
+[node name="DepuisOrangeTown" type="Marker2D" parent="Arrivees"]
+position = Vector2(1472, 2112)
+
+[node name="DepuisBaratie" type="Marker2D" parent="Arrivees"]
+position = Vector2(1600, 2112)
+
+[node name="CapitaineBrise" parent="." instance=ExtResource("FerryOrange")]
+position = Vector2(1331.2, 2080)
+paroles = "Je redescends sur Orange Town quand tu veux. Baggy raffermi ou reparti, la miroiterie sent encore la fumée, paraît-il."
+destination = "res://scenes/orange_town.tscn"
+arrivee = &"DepuisSyrupVillage"
+libelle_traversee = "Embarquer pour Orange Town"
+
+[node name="CapitaineBarrique" parent="." instance=ExtResource("FerryBaratie")]
+position = Vector2(1721.6, 2080)
+paroles = "Un café et un pont vers la suite du monde : le Baratie m'attend au large, et son patron juré ne parle qu'à table."
+destination = "res://scenes/baratie.tscn"
+arrivee = &"DepuisSyrupVillage"
+libelle_traversee = "Embarquer pour le Baratie"
+
+[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
+position = Vector2(1088, 2752)
+texture = ExtResource("Sloop")
+offset = Vector2(0, -250.0)
+scale = Vector2(0.7, 0.7)
+z_index = -3
+
+[node name="BarqueAuMouillage" type="Sprite2D" parent="Paysage"]
+position = Vector2(1984, 2752)
+texture = ExtResource("Barque")
+offset = Vector2(0, -70.0)
+scale = Vector2(0.9, 0.9)
+flip_h = true
+z_index = -3
+
+[node name="BorneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1305.6, 2201.6)
+texture = ExtResource("Borne")
+offset = Vector2(0, -31.5)
+scale = Vector2(0.75, 0.75)
+
+[node name="BorneDuQuaiEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1817.6, 2195.2)
+texture = ExtResource("Borne")
+offset = Vector2(0, -31.5)
+scale = Vector2(0.75, 0.75)
+
+[node name="LanterneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1395.2, 2156.8)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -67.0)
+scale = Vector2(0.78, 0.78)
+
+[node name="CabaneDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1958.4, 2160.0)
+texture = ExtResource("Cabane")
+offset = Vector2(0, -83.0)
+scale = Vector2(0.9, 0.9)
+
+[node name="ManoirDeKaya" type="Sprite2D" parent="Paysage"]
+position = Vector2(1504, 512)
+texture = ExtResource("Manoir")
+offset = Vector2(0, -126.0)
+scale = Vector2(1.5, 1.5)
+
+[node name="ColonneDuPerron" type="Sprite2D" parent="Paysage"]
+position = Vector2(1356.8, 704.0)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -60.5)
+scale = Vector2(0.8, 0.8)
+
+[node name="MaisonDeLaPlace" type="Sprite2D" parent="Paysage"]
+position = Vector2(1081.6, 1542.4)
+texture = ExtResource("MaisonMoyenne")
+offset = Vector2(0, -128.0)
+scale = Vector2(1.55, 1.55)
+
+[node name="PensionDeLaPlace" type="Sprite2D" parent="Paysage"]
+position = Vector2(1958.4, 1433.6)
+texture = ExtResource("PetiteMaison")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.5, 1.5)
+flip_h = true
+
+[node name="TaverneDuVillage" type="Sprite2D" parent="Paysage"]
+position = Vector2(2163.2, 1881.6)
+texture = ExtResource("Taverne")
+offset = Vector2(0, -117.0)
+scale = Vector2(1.4, 1.4)
+
+[node name="PuitsDuVillage" type="Sprite2D" parent="Paysage"]
+position = Vector2(1657.6, 1817.6)
+texture = ExtResource("Puits")
+offset = Vector2(0, -52.5)
+scale = Vector2(1.0, 1.0)
+
+[node name="MaisonDeLOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(851.2, 1753.6)
+texture = ExtResource("PetiteMaison")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.4, 1.4)
+
+[node name="VieuxMoulin" type="Sprite2D" parent="Paysage"]
+position = Vector2(832, 1888)
+texture = ExtResource("Taverne")
+offset = Vector2(0, -117.0)
+scale = Vector2(1.1, 1.1)
+flip_h = true
+
+[node name="CheneDelisiere" type="Sprite2D" parent="Paysage"]
+position = Vector2(2560, 1728)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(0.9, 0.9)
+
+[node name="CheneDuChemin" type="Sprite2D" parent="Paysage"]
+position = Vector2(2112, 1216)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(0.8, 0.8)
+flip_h = true
+
+[node name="SteleDeLaSource" type="Sprite2D" parent="Paysage"]
+position = Vector2(934.4, 1241.6)
+texture = ExtResource("Stele")
+offset = Vector2(0, -51.5)
+scale = Vector2(0.85, 0.85)
+
+[node name="CaissesDuQuai" type="Sprite2D" parent="Paysage"]
+position = Vector2(1548.8, 2214.4)
+texture = ExtResource("Caisses")
+offset = Vector2(0, -64.0)
+scale = Vector2(0.6, 0.6)
+
+[node name="Oranger01" type="Sprite2D" parent="Paysage"]
+position = Vector2(678.4, 1990.4)
+texture = ExtResource("Oranger")
+offset = Vector2(0, -72.0)
+scale = Vector2(0.72, 0.72)
+flip_h = true
+
+[node name="Oranger02" type="Sprite2D" parent="Paysage"]
+position = Vector2(825.6, 2048.0)
+texture = ExtResource("Oranger")
+offset = Vector2(0, -72.0)
+scale = Vector2(0.77, 0.77)
+
+[node name="Oranger03" type="Sprite2D" parent="Paysage"]
+position = Vector2(552.8, 2246.4)
+texture = ExtResource("Oranger")
+offset = Vector2(0, -72.0)
+scale = Vector2(0.82, 0.82)
+flip_h = true
+
+[node name="Oranger04" type="Sprite2D" parent="Paysage"]
+position = Vector2(947.2, 2246.4)
+texture = ExtResource("Oranger")
+offset = Vector2(0, -72.0)
+scale = Vector2(0.72, 0.72)
+
+[node name="Oranger05" type="Sprite2D" parent="Paysage"]
+position = Vector2(1100.8, 2355.2)
+texture = ExtResource("Oranger")
+offset = Vector2(0, -72.0)
+scale = Vector2(0.77, 0.77)
+flip_h = true
+
+[node name="Oranger06" type="Sprite2D" parent="Paysage"]
+position = Vector2(748.8, 2188.8)
+texture = ExtResource("Oranger")
+offset = Vector2(0, -72.0)
+scale = Vector2(0.82, 0.82)
+
+[node name="Oranger07" type="Sprite2D" parent="Paysage"]
+position = Vector2(339.2, 1932.8)
+texture = ExtResource("Oranger")
+offset = Vector2(0, -72.0)
+scale = Vector2(0.72, 0.72)
+flip_h = true
+
+[node name="Oranger08" type="Sprite2D" parent="Paysage"]
+position = Vector2(486.4, 2105.6)
+texture = ExtResource("Oranger")
+offset = Vector2(0, -72.0)
+scale = Vector2(0.77, 0.77)
+
+[node name="Oranger09" type="Sprite2D" parent="Paysage"]
+position = Vector2(364.8, 2278.4)
+texture = ExtResource("Oranger")
+offset = Vector2(0, -72.0)
+scale = Vector2(0.82, 0.82)
+flip_h = true
+
+[node name="Kaya" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1504, 864)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 84.0
+chain_quetes = Array[String](["trm_c3_kaya", "trm_c3_atelier", "trm_c3_kuro", "trm_c3_argent"])
+nom_affiche = "Kaya"
+paroles = "Chaque carte que l'on dessine est une promesse. La vôtre, on l'a faite avant vous : mon grand-père gardait déjà la montre d'un cartographe. Montez voir mes longues-vues — elles ne mentent pas, elles. Si le manoir vous fait peur après ça, c'est qu'il faut."
+
+[node name="Sprite2D" type="Sprite2D" parent="Kaya"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_kaya")
+
+[node name="Area2D" type="Area2D" parent="Kaya"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Kaya/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Kaya"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Kaya"
+horizontal_alignment = 1
+
+[node name="Ganbak" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1856, 1664)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["syrup_panneaux", "syrup_guet"])
+nom_affiche = "Usopp"
+paroles = "Pirates en vue ! Cette fois, je les ai vraiment vus près du manoir. Suis mes repères : du quai à la place, puis à la montée de chez Kaya. Les trois guetteurs ignorent que le grand capitaine Usopp les surveille !"
+
+[node name="Sprite2D" type="Sprite2D" parent="Ganbak"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_usopp")
+
+[node name="Area2D" type="Area2D" parent="Ganbak"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ganbak/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Ganbak"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Usopp"
+horizontal_alignment = 1
+
+[node name="Mira" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(742.4, 1939.2)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String](["syrup_herbes"])
+nom_affiche = "Merry"
+paroles = "Mademoiselle Kaya se fatigue vite. Je lui prépare une tisane, mais il me manque trois touffes de fleurs médicinales. Tu en trouveras dans le verger, près de la lisière et à la source."
+
+[node name="Sprite2D" type="Sprite2D" parent="Mira"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_merry")
+
+[node name="Area2D" type="Area2D" parent="Mira"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Mira/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Mira"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Merry"
+horizontal_alignment = 1
+
+[node name="Pelagie" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1190.4, 1651.2)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String]([])
+nom_affiche = "Pélagie la colporteuse"
+paroles = "Des cartes ? J'en achète toutes, moi, même déchirées, même fausses. Vous seriez étonné de ce que les gens jettent. Moi, je compte. On paie ce qu'on prend, on recommande ce qu'on vend. Vous ne m'avez pas vue. Personne ne me voit jamais."
+
+[node name="Sprite2D" type="Sprite2D" parent="Pelagie"]
+position = Vector2(0, -48)
+texture = ExtResource("sprite_ile_pelagie")
+
+[node name="Area2D" type="Area2D" parent="Pelagie"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pelagie/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Pelagie"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Pélagie la colporteuse"
+horizontal_alignment = 1
+
+[node name="PanierDuQuaiOuest" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(787.2, 2112.0)
+script = ExtResource("Recolte")
+titre = "Fleurs de la berge"
+description = "Les touffes du talus sud, les plus amères."
+quete = "syrup_herbes"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanierDuQuaiOuest"]
+position = Vector2(0, -36.0)
+texture = ExtResource("Fleurs")
+
+[node name="Etiquette" type="Label" parent="PanierDuQuaiOuest"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanierDeLaLisiere" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2124.8, 1984.0)
+script = ExtResource("Recolte")
+titre = "Fleurs de la lisière"
+description = "Une touffe contre le bois, une fragrance qui ouvre les bronches."
+quete = "syrup_herbes"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanierDeLaLisiere"]
+position = Vector2(0, -36.0)
+texture = ExtResource("Fleurs")
+
+[node name="Etiquette" type="Label" parent="PanierDeLaLisiere"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanierDeLaSource" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(972.8, 1472.0)
+script = ExtResource("Recolte")
+titre = "Fleurs de la source"
+description = "Les plus douces, celles qui poussent l'eau claire."
+quete = "syrup_herbes"
+objet = "135"
+quantite = 1
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanierDeLaSource"]
+position = Vector2(0, -36.0)
+texture = ExtResource("Fleurs")
+
+[node name="Etiquette" type="Label" parent="PanierDeLaSource"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDuQuai" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1568.0, 2048.0)
+script = ExtResource("Recolte")
+titre = "Quai du Sud"
+description = "« Quai du Sud de Syrup Village. Le ferry fait escale quand la cloche sonne. Gris nottaires s'abstenir : ni achat, ni troc. »"
+quete = "syrup_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDuQuai"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDuQuai"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDeLaPlace" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1113.6, 1664.0)
+script = ExtResource("Recolte")
+titre = "Place du Village"
+description = "« Place du Village. La taverne sert à crédit, l'herboriste à l'œil, le puits sans commentaire. Le maire dort, mais son panneau veille. »"
+quete = "syrup_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDeLaPlace"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDeLaPlace"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDeLaMontee" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1472.0, 1024.0)
+script = ExtResource("Recolte")
+titre = "Montée du Manoir"
+description = "« Montée du Manoir. Propriété des Kaya. Défense de grimper aux arbres du parc, d'abimer les allées, de perdre la montre de gousset que l'on vous confierait. »"
+quete = "syrup_panneaux"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDeLaMontee"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDeLaMontee"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="LongueVueDuCap" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(576.0, 576.0)
+script = ExtResource("Recolte")
+titre = "Longue-vue du cap"
+description = "Dans le verre de Kaya, la côte ouest tourne lentement : des silhouettes creusent le sable de la plage basse, et rien de ce qu'elles exhume ne retourne au village."
+quete = "trm_c3_kaya"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="LongueVueDuCap"]
+position = Vector2(0, -126.0)
+texture = ExtResource("Poste")
+
+[node name="Etiquette" type="Label" parent="LongueVueDuCap"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="LongueVueDesCretes" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2624.0, 576.0)
+script = ExtResource("Recolte")
+titre = "Longue-vue des crêtes"
+description = "Vue sur l'est : trois tentes grises sur la lisière, des cartes étendues comme du linge. Un homme au nez d'aiguille vérifie des coordonnées sur un grand livre plat."
+quete = "trm_c3_kaya"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="LongueVueDesCretes"]
+position = Vector2(0, -126.0)
+texture = ExtResource("Poste")
+
+[node name="Etiquette" type="Label" parent="LongueVueDesCretes"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="LongueVueDuVerger" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(384.0, 1856.0)
+script = ExtResource("Recolte")
+titre = "Longue-vue du verger"
+description = "Le sud ouest cette fois : un canot repart sans feu, sans fanal, sans bruit. Sur sa poupe, une lanterne barrée d'une diagonale. La marque de la Vigie."
+quete = "trm_c3_kaya"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="LongueVueDuVerger"]
+position = Vector2(0, -126.0)
+texture = ExtResource("Poste")
+
+[node name="Etiquette" type="Label" parent="LongueVueDuVerger"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="CacheDeLaLisiere" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2432.0, 1600.0)
+script = ExtResource("Recolte")
+titre = "Cache de la lisière est"
+description = "Sous une toile goudronnée : des planches à croix, des listes de coordonnées, des rubans gris. L'encre est fraîche. Le Tailleur travaille près d'ici."
+quete = "trm_c3_atelier"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="CacheDeLaLisiere"]
+position = Vector2(0, -64.0)
+texture = ExtResource("Caisses")
+
+[node name="Etiquette" type="Label" parent="CacheDeLaLisiere"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="CacheDeLaSource" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(896.0, 1216.0)
+script = ExtResource("Recolte")
+titre = "Cache de la source"
+description = "Une fausse croix au trésor, plantée à côté d'un carnet de comptes : chaque croix vendue est soldée, chaque chasseur égaré est noté. « Effacer avant retour. »"
+quete = "trm_c3_atelier"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="CacheDeLaSource"]
+position = Vector2(0, -28.0)
+texture = ExtResource("Coffre")
+
+[node name="Etiquette" type="Label" parent="CacheDeLaSource"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="CacheDuVieuxMoulin" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(947.2, 1907.2)
+script = ExtResource("Recolte")
+titre = "Cache du vieux moulin"
+description = "Dans la farine du moulin abandonné, des paquets d'éclats de verre taillés : de faux Éclats, douze fois la même coupe, douze fois le même mensonge."
+quete = "trm_c3_atelier"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="CacheDuVieuxMoulin"]
+position = Vector2(0, -64.0)
+texture = ExtResource("Caisses")
+
+[node name="Etiquette" type="Label" parent="CacheDuVieuxMoulin"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="CaveauDuManoir" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1728.0, 768.0)
+script = ExtResource("Recolte")
+titre = "Le caveau du vieux Kaya"
+description = "La dalle glisse comme une clef. Dans la montre de gousset, la trotteuse ne tourne pas : elle pointe vers l'est, obstinée. Sous le cadran ouvert, un fragment d'argent porte une carte gravée au trait : l'Éclat de l'Argent. Une lettre l'accompagne : « Rends-la à qui finira la mer. »"
+quete = "trm_c3_argent"
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="CaveauDuManoir"]
+position = Vector2(0, -60.0)
+texture = ExtResource("Colonne")
+
+[node name="Etiquette" type="Label" parent="CaveauDuManoir"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="GuetteurDuChemin" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1520.0, 1152.0)
+nom = "Jango l'Hypnotiseur"
+pv_max = 155
+degats_attaque = 16
+portee_attaque = 1
+pm_max = 3
+mob_id = 1
+quetes_a_progresser = Array[String](["syrup_guet"])
+niveau_personnalise = 15
+groupe = "guet_vigie"
+texture_personnalisee = ExtResource("sprite_ile_jango")
+
+[node name="GuetteurDesCretes" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2048.0, 1152.0)
+nom = "Sham, des Nyaban"
+pv_max = 165
+degats_attaque = 17
+portee_attaque = 2
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String](["syrup_guet"])
+niveau_personnalise = 16
+groupe = "guet_vigie"
+texture_personnalisee = ExtResource("sprite_ile_sham")
+
+[node name="GuetteurDeLaLisiere" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2368.0, 1472.0)
+nom = "Buchi, des Nyaban"
+pv_max = 190
+degats_attaque = 18
+portee_attaque = 2
+pm_max = 3
+mob_id = 4
+quetes_a_progresser = Array[String](["syrup_guet"])
+niveau_personnalise = 17
+groupe = "guet_vigie"
+texture_personnalisee = ExtResource("sprite_ile_buchi")
+
+[node name="KuroLeTailleur" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1600.0, 640.0)
+nom = "Kuro aux Cent Plans"
+pv_max = 400
+degats_attaque = 26
+portee_attaque = 2
+pm_max = 3
+mob_id = 10
+quetes_a_progresser = Array[String](["trm_c3_kuro"])
+niveau_personnalise = 20
+groupe = ""
+texture_personnalisee = ExtResource("sprite_ile_kuro")
+attaques_par_tour = 3
+
+[node name="ChienDesClotures" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(640.0, 1440.0)
+nom = "Chien des clôtures"
+pv_max = 64
+degats_attaque = 8
+portee_attaque = 1
+pm_max = 3
+mob_id = 18
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 3
+groupe = "meute_ouest"
+texture_personnalisee = ExtResource("sprite_ile_chien_du_manoir")
+
+[node name="ChienDuVerger" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(851.2, 1696.0)
+nom = "Chien du verger"
+pv_max = 64
+degats_attaque = 8
+portee_attaque = 1
+pm_max = 3
+mob_id = 18
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 3
+groupe = "meute_ouest"
+texture_personnalisee = ExtResource("sprite_ile_chien_du_manoir")

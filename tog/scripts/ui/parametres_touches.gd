@@ -8,6 +8,8 @@ signal fermee
 
 const THEME := preload("res://themes/theme_pirate.tres")
 
+var theme_panneau: Theme = THEME
+
 var _action_ecoute: String = ""
 var _boutons: Dictionary = {}
 var _panneau: PanelContainer
@@ -22,11 +24,13 @@ func _construire() -> void:
 	fond.color = Color(0.0, 0.0, 0.0, 0.55)
 	fond.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(fond)
+	var centre := CenterContainer.new()
+	centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(centre)
 	_panneau = PanelContainer.new()
-	_panneau.theme = THEME
-	_panneau.custom_minimum_size = Vector2(560, 640)
-	add_child(_panneau)
-	_panneau.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_panneau.theme = theme_panneau
+	_panneau.custom_minimum_size = Vector2(650, 690)
+	centre.add_child(_panneau)
 	var marges := MarginContainer.new()
 	marges.add_theme_constant_override("margin_left", 24)
 	marges.add_theme_constant_override("margin_right", 24)
@@ -41,12 +45,14 @@ func _construire() -> void:
 	titre.add_theme_font_size_override("font_size", 26)
 	colonne.add_child(titre)
 	var aide := Label.new()
-	aide.text = "Clique sur la touche d'une action, puis appuie sur la\ntouche de ton clavier. Échap annule."
+	aide.text = "Choisis une action, puis appuie sur la touche à lui attribuer. Échap annule."
+	aide.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	colonne.add_child(aide)
 	var defilement := ScrollContainer.new()
 	defilement.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	colonne.add_child(defilement)
 	var lignes := VBoxContainer.new()
+	lignes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	defilement.add_child(lignes)
 	for action in Touches.actions:
 		var ligne := HBoxContainer.new()
@@ -90,9 +96,14 @@ func fermer() -> void:
 
 # capte la touche pressée pour l'action en cours de réassignation
 func _input(event: InputEvent) -> void:
-	if _action_ecoute == "":
-		return
 	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	if _action_ecoute == "":
+		if event.keycode == KEY_ESCAPE:
+			get_viewport().set_input_as_handled()
+			fermer()
+		elif event.keycode in [KEY_M, KEY_C]:
+			get_viewport().set_input_as_handled()
 		return
 	get_viewport().set_input_as_handled()
 	var action := _action_ecoute

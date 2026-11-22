@@ -9,6 +9,9 @@ signal vaincu
 @export var degats_attaque := 10
 @export var portee_attaque := 2
 @export var pm_max := 3
+# nombre d'attaques de mêlée par tour (difficulté) : les scènes
+# peuvent l'ajuster ennemi par ennemi
+@export var attaques_par_tour := 2
 # mob correspondant dans la table `mobs` (0 = aucun : récompenses
 # estimées à partir des stats de l'ennemi)
 @export var mob_id := 0
@@ -22,9 +25,22 @@ signal vaincu
 const ID_ETAT_TEST := 5 # Ralentissement
 const DUREE_ETAT_TEST := 2
 
+# surbrillance rouge au survol : même mécanique que les PNJ (shader
+# surlignage.gdshader) mais en rouge pour signaler un camp hostile
+const shader_surlignage := preload("res://assets/shaders/surlignage.gdshader")
+const COULEUR_SURBRILLANCE := Color(0.95, 0.16, 0.16, 1.0)
+
 var pv := 100
 var _combat_manager
 var _deplacement_combat: Tween
+var _etiquette_mob: Label
+# joueur présent dans la zone de détection
+var _zone_contient_joueur := false
+# engagement différé au clic : le joueur marche vers cet ennemi et le
+# combat se lance dès l'entrée dans la zone, sans bouton
+var _engagement_au_clique := false
+# un seul engagement différé à la fois, tous ennemis confondus
+static var _cible_engagement: Node = null
 
 @onready var zone_detection: Area2D = $ZoneDetection
 @onready var sprite: Sprite2D = $Sprite2D
@@ -35,14 +51,63 @@ func _ready() -> void:
 		# dans l'éditeur : juste le visuel (le loup par défaut sinon),
 		# pas de combat ni d'étiquette (pour ne pas polluer la scène)
 		_charger_visuel_mob()
+		_centrer_contenu_sprite()
 		return
+	add_to_group("entites_minicarte")
 	_combat_manager = get_tree().current_scene.get_node_or_null("CombatManager")
 	zone_detection.body_entered.connect(_on_zone_body_entered)
 	zone_detection.body_exited.connect(_on_zone_body_exited)
 	if _combat_manager != null:
 		_combat_manager.enregistrer_ennemi(self)
+	var mat := ShaderMaterial.new()
+	mat.shader = shader_surlignage
+	mat.set_shader_parameter("couleur", COULEUR_SURBRILLANCE)
+	mat.set_shader_parameter("surligne", false)
+	sprite.material = mat
 	_charger_visuel_mob()
+	_centrer_contenu_sprite()
 	sante_modifiee.emit(pv, pv_max)
+
+func repere_minicarte() -> Dictionary:
+	if pv <= 0:
+		return {}
+	return {"categorie": "ennemis", "nom": nom, "role": "Rencontre"}
+
+# survol : surligne l'ennemi, ou tout son camp s'il porte une étiquette
+func _process(_delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
+	var survol := _clic_sur_ennemi(get_global_mouse_position())
+	if _combat_manager != null and _combat_manager.has_method("membres_du_camp"):
+		for membre in _combat_manager.membres_du_camp(self):
+			if membre != null and membre.has_method("_appliquer_surbrillance"):
+				membre.call("_appliquer_surbrillance", survol)
+	else:
+		_appliquer_surbrillance(survol)
+
+func _appliquer_surbrillance(surligne: bool) -> void:
+	if sprite.material == null or sprite.material is not ShaderMaterial:
+		return
+	if bool(sprite.material.get_shader_parameter("surligne")) != surligne:
+		sprite.material.set_shader_parameter("surligne", surligne)
+
+# zone de survol : le sprite et son étiquette « Nom (Niv. X) »
+func _clic_sur_ennemi(point: Vector2) -> bool:
+	if sprite.texture == null:
+		return false
+	var point_local := to_local(point)
+	if (
+		_etiquette_mob != null
+		and _etiquette_mob.visible
+		and _etiquette_mob.get_rect().has_point(point_local)
+	):
+		return true
+	var taille := sprite.texture.get_size() * sprite.scale
+	var coin := Vector2(
+		-taille.x / 2.0 - 16.0,
+		sprite.position.y - taille.y / 2.0 - 26.0)
+	return Rect2(coin, Vector2(taille.x + 32.0, taille.y + 40.0)).has_point(
+		point_local)
 
 # données visuelles du mob : sprite statique (colonne sprite_path, le loup
 # par défaut si absent) et étiquette nom + niveau au-dessus du sprite
@@ -83,6 +148,33 @@ func _appliquer_sprite(chemin: String) -> void:
 	if sprite.texture.get_height() != 100:
 		sprite.position = Vector2(0, -24)
 
+# décale le sprite pour que le DESSIN (et non les bords transparents
+# de sa planche) soit centré sur l'entité : le loup par exemple vit
+# dans un canvas de 100 px majoritairement vide à gauche, il
+# apparaissait décalé vers la droite de sa case de combat
+func _centrer_contenu_sprite() -> void:
+	if sprite.texture == null:
+		return
+	var image := sprite.texture.get_image()
+	if image == null or image.is_empty():
+		return
+	var largeur := image.get_width()
+	var min_x := largeur
+	var max_x := -1
+	for y in image.get_height():
+		for x in largeur:
+			if image.get_pixel(x, y).a8 > 25:
+				if x < min_x:
+					min_x = x
+				if x > max_x:
+						max_x = x
+	if max_x < 0:
+		return  # planche entièrement transparente
+	var centre_dessin := (min_x + max_x + 1) / 2.0
+	# le canvas est centré sur la position du sprite : on décale
+	# d'autant que le dessin s'écarte du centre du canvas
+	sprite.position.x = float(largeur) / 2.0 - centre_dessin
+
 # étiquette flottante au-dessus de l'ennemi : « Nom (Niv. X) »
 func _ajouter_etiquette(nom_mob: String, niveau_mob: int) -> void:
 	var etiquette := Label.new()
@@ -94,22 +186,103 @@ func _ajouter_etiquette(nom_mob: String, niveau_mob: int) -> void:
 	etiquette.add_theme_color_override("font_color", Color.WHITE)
 	etiquette.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	etiquette.add_theme_constant_override("outline_size", 6)
-	etiquette.custom_minimum_size = Vector2(150, 0)
-	etiquette.size = Vector2(150, 0)
 	etiquette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var hauteur: float = 100.0
 	if sprite.texture != null:
 		hauteur = float(sprite.texture.get_height())
-	etiquette.position = Vector2(-75, sprite.position.y - hauteur / 2.0 - 22.0)
 	add_child(etiquette)
+	etiquette.reset_size()
+	etiquette.position = Vector2(-etiquette.size.x / 2.0, sprite.position.y - hauteur / 2.0 - 22.0)
+	_etiquette_mob = etiquette
 
 func _on_zone_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player") and _combat_manager != null:
+		_zone_contient_joueur = true
 		_combat_manager.proposer_combat(self)
+		if _engagement_au_clique:
+			_engager_si_encore_valide()
 
 func _on_zone_body_exited(body: Node2D) -> void:
 	if body.is_in_group("player") and _combat_manager != null:
+		_zone_contient_joueur = false
 		_combat_manager.annuler_proposition_combat(self)
+
+# clic sur l'ennemi en exploration : le joueur rejoint la zone et le
+# combat démarre tout seul à l'arrivée
+func _unhandled_input(event: InputEvent) -> void:
+	if Engine.is_editor_hint() or pv <= 0:
+		return
+	if _combat_manager != null and _combat_manager.en_combat:
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if not _clic_sur_ennemi(get_global_mouse_position()):
+			return
+		var joueur := get_tree().get_first_node_in_group("player")
+		if joueur != null and joueur.has_method("rejoindre_interaction"):
+			_definir_engagement_differe()
+			joueur.rejoindre_interaction(global_position, _engager_si_encore_valide)
+			get_viewport().set_input_as_handled()
+
+func _definir_engagement_differe() -> void:
+	if _cible_engagement != null and _cible_engagement != self \
+			and is_instance_valid(_cible_engagement) \
+			and _cible_engagement.has_method("_annuler_engagement"):
+		_cible_engagement.call("_annuler_engagement")
+	_engagement_au_clique = true
+	_cible_engagement = self
+	# déjà dans la zone : combat immédiat, pas besoin de marcher
+	if _zone_contient_joueur:
+		_engager_si_encore_valide()
+
+func _annuler_engagement() -> void:
+	_engagement_au_clique = false
+	if _cible_engagement == self:
+		_cible_engagement = null
+
+func _engager_si_encore_valide() -> void:
+	if not _engagement_au_clique:
+		return
+	_annuler_engagement()
+	if not is_inside_tree() or pv <= 0:
+		return
+	if _combat_manager != null and _combat_manager.en_combat:
+		return
+	if _combat_manager != null and _combat_manager.has_method("engager_rencontre"):
+		_combat_manager.engager_rencontre(self)
+
+# stats d'origine : la difficulté multiplie toujours les valeurs de
+# base, jamais des valeurs déjà durcies — et l'ennemi qui survit à un
+# combat perdus les retrouve en exploration
+var _pv_max_original := 0
+var _degats_originaux := 0
+
+# entre en mode combat durci : PV et dégâts multipliés (appellé par le
+# gestionnaire de combat à l'ouverture de l'arène)
+func durcir(facteur_pv: float, facteur_degats: float) -> void:
+	if pv_max <= 0:
+		return
+	if _pv_max_original == 0:
+		_pv_max_original = pv_max
+		_degats_originaux = degats_attaque
+	# la proportion de vie est conservée, comme dans assouplir : un
+	# ennemi au maximum entre dans l'arène à son maximum durci, un
+	# blessé garde sa blessure en proportion
+	var proportion := float(pv) / float(pv_max)
+	pv_max = maxi(int(round(_pv_max_original * facteur_pv)), 1)
+	degats_attaque = maxi(int(round(_degats_originaux * facteur_degats)), 1)
+	pv = clampi(int(round(proportion * pv_max)), 0, pv_max)
+	sante_modifiee.emit(pv, pv_max)
+
+# sort du mode combat durci : retour aux stats d'origine, la barre de
+# vie conserve sa proportion
+func assouplir() -> void:
+	if _pv_max_original == 0:
+		return
+	var proportion := float(pv) / float(maxi(pv_max, 1))
+	pv_max = _pv_max_original
+	degats_attaque = _degats_originaux
+	pv = clampi(int(round(proportion * pv_max)), 0, pv_max)
+	sante_modifiee.emit(pv, pv_max)
 
 func recevoir_degats(degats: int) -> void:
 	if pv <= 0:
@@ -166,9 +339,19 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 		depart = _case_de(sol, global_position)
 	if _peut_attaquer(depart, cible):
 		_appliquer_ralentissement_test(joueur)
-		if _combat_manager == null or _combat_manager.precision_reussie(self, joueur):
-			var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque)) if _combat_manager != null else degats_attaque
-			joueur.recevoir_degats(degats)
+		# difficulté : l'ennemi frappe tant qu'il lui reste des attaques
+		# et que sa cible est à portée (chaque coup jette sa précision)
+		var attaques := maxi(attaques_par_tour, 1)
+		while attaques > 0 and is_instance_valid(joueur) and _peut_attaquer(depart, cible):
+			if _combat_manager == null:
+				joueur.recevoir_degats(degats_attaque)
+			else:
+				if not _combat_manager.en_combat:
+					return
+				if _combat_manager.precision_reussie(self, joueur):
+					var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque))
+					joueur.recevoir_degats(degats)
+			attaques -= 1
 	if _combat_manager != null and _combat_manager.en_combat and is_inside_tree():
 		_combat_manager.terminer_tour(self)
 
@@ -231,30 +414,11 @@ func recompenser_victoire() -> void:
 	var berry := randi_range(berry_min, maxi(berry_max, berry_min))
 	Personnage.gagner_xp(xp)
 	Personnage.ajouter_berry(berry)
-	_afficher_recompenses(Personnage.xp_effectif(xp), berry, objets_gagnes)
-
-# récapitulatif de fin de combat : les objets vont directement à l'inventaire
-func _afficher_recompenses(xp: int, berry: int, objets: Array) -> void:
-	var scene := get_tree().current_scene
-	if scene == null:
-		return
-	var lignes := ["+%d XP" % xp, "+%d Berry" % berry]
-	if objets.is_empty():
-		lignes.append("Aucun objet trouvé.")
-	else:
-		var noms: Array[String] = []
-		for objet in objets:
-			noms.append("%s x%d" % [Inventaire.nom_objet(str(objet["id"])), int(objet["qte"])])
-		lignes.append("Objets : " + ", ".join(noms))
-	var fenetre := AcceptDialog.new()
-	fenetre.title = "Victoire !"
-	fenetre.dialog_text = "\n".join(lignes)
-	fenetre.ok_button_text = "Continuer"
-	scene.add_child(fenetre)
-	fenetre.popup_centered()
-	fenetre.visibility_changed.connect(func() -> void:
-		if not fenetre.visible:
-			fenetre.queue_free())
+	# le récapitulatif n'est plus affiché ici : les récompenses se
+	# cumulent dans le gestionnaire de combat et une seule fenêtre
+	# résume tout à la fin du combat
+	if _combat_manager != null and _combat_manager.has_method("cumuler_recompense"):
+		_combat_manager.cumuler_recompense(Personnage.xp_effectif(xp), berry, objets_gagnes)
 
 func _calculer_chemin(sol: TileMapLayer, depart: Vector2i, cible: Vector2i) -> Array[Vector2i]:
 	var file: Array[Vector2i] = [depart]
