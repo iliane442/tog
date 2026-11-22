@@ -1142,7 +1142,8 @@ func gagner_xp(montant: int) -> void:
 		xp -= xp_prochain_niveau()
 		niveau += 1
 		vie_max += 5
-		vie = vie_max
+		# pas de soin au passage de niveau : les points de vie
+		# actuels ne bougent pas
 		points_statistique += POINTS_PAR_NIVEAU
 	# un nouveau sort de classe s'est débloqué -> placé dans la barre
 	# s'il reste de la place ; les pouvoirs du fruit suivent une autre
