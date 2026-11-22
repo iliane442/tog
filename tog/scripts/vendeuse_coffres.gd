@@ -40,7 +40,10 @@ func _on_body_exited(body: Node2D) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if not _clic_sur_pnj(get_global_mouse_position()):
+		interaction_en_attente = false
+		if not get_tree().current_scene.exploration_disponible():
+			return
+		if not _clic_sur_pnj(get_canvas_transform().affine_inverse() * event.position):
 			return
 		if player_near:
 			ouvrir_boutique()
@@ -58,6 +61,8 @@ func _clic_sur_pnj(point: Vector2) -> bool:
 	return zone.has_point(point - global_position)
 
 func ouvrir_boutique() -> void:
+	if not get_tree().current_scene.exploration_disponible():
+		return
 	var ui := get_tree().get_first_node_in_group("boutique_ui")
 	if ui != null:
 		ui.ouvrir()

@@ -63,6 +63,13 @@ func _input_event(_viewport: Viewport, event: InputEvent, _shape_idx: int) -> vo
 		return
 	if event.button_index != MOUSE_BUTTON_LEFT:
 		return
+	var carte := get_tree().current_scene
+	# Pendant la révélation du butin, il est possible d'ouvrir un autre
+	# coffre proche. Les autres fenêtres gardent la main sur les entrées.
+	if carte.has_method("exploration_disponible") and not carte.exploration_disponible():
+		var fenetre_butin := carte.get_node_or_null("CoffreUI/Fenetre") as Control
+		if fenetre_butin == null or not fenetre_butin.is_visible_in_tree():
+			return
 	var joueur := get_tree().get_first_node_in_group("player")
 	if joueur == null:
 		return

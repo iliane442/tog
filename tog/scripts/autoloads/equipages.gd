@@ -98,8 +98,10 @@ func creer(nom: String) -> String:
 		return "Nom trop court"
 	if nom_propre.length() > 30:
 		return "Nom trop long (30 caractères max)"
-	if not _ecrire("INSERT INTO equipages (nom, capitaine) VALUES ('%s', '%s');" % [
+	if not _ecrire("INSERT INTO equipages (nom, capitaine) VALUES ('%s', '%s') ON CONFLICT(nom) DO NOTHING;" % [
 			_echapper(nom_propre), _echapper(_joueur())]):
+		return "Impossible de créer l'équipage"
+	if int(_lire("SELECT changes() AS ajouts;")[0]["ajouts"]) == 0:
 		return "Ce nom d'équipage est déjà pris"
 	_recharger_mon_equipage()
 	_journaliser("%s fonde l'équipage." % _joueur())

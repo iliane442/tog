@@ -51,6 +51,7 @@ func _peupler() -> void:
 		liste_classes.add_item(Personnage.classes[id]["nom"])
 	liste_races.select(0)
 	liste_classes.select(0)
+	liste_races.grab_focus()
 
 # métier lié à la classe choisie (table character_class_professions) — la
 # classe détermine le métier, aucun choix séparé n'est proposé
@@ -153,7 +154,8 @@ func _on_commencer() -> void:
 		label_erreur.text = "Aucun métier lié à cette classe."
 		return
 	Personnage.creer(nouveau_nom, ids_races[index_race], ids_classes[index_classe], id_metier, _sexe_choisi())
-	_donner_ingredients_debug(id_metier)
+	if OS.is_debug_build():
+		_donner_ingredients_debug(id_metier)
 	get_tree().paused = false
 	queue_free()
 

@@ -1,5 +1,5 @@
 # boutique_ui.gd — fenêtre d'achat de coffres chez Shanksette (CanvasLayer BoutiqueUI)
-extends CanvasLayer
+extends "res://scripts/ui/fenetre_secondaire.gd"
 
 const ICONE_DEFAUT := "res://addons/pixel_ui_fantasy/icons/chest.png"
 
@@ -10,6 +10,7 @@ const ICONE_DEFAUT := "res://addons/pixel_ui_fantasy/icons/chest.png"
 @onready var btn_fermer: Button = $Fenetre/VBox/Boutons/Fermer
 
 var _tween_popup: Tween
+var _prix_par_bouton: Dictionary[Button, int] = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -18,25 +19,18 @@ func _ready() -> void:
 	popup.modulate.a = 0.0
 
 func ouvrir() -> void:
-	fenetre.visible = true
+	if fenetre.visible or not presenter(fenetre, btn_fermer):
+		return
+	popup.modulate.a = 0.0
+	if _prix_par_bouton.is_empty():
+		for ligne in _offres():
+			liste.add_child(_creer_ligne(str(ligne["id"]), int(ligne["base_price"])))
 	_rafraichir()
-	get_tree().paused = true
-
-func fermer() -> void:
-	fenetre.visible = false
-	get_tree().paused = false
-
-func _unhandled_input(event: InputEvent) -> void:
-	if fenetre.visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		fermer()
-		get_viewport().set_input_as_handled()
 
 func _rafraichir() -> void:
 	label_argent.text = "Berry : %d" % Personnage.berry
-	for enfant in liste.get_children():
-		enfant.queue_free()
-	for ligne in _offres():
-		liste.add_child(_creer_ligne(str(ligne["id"]), int(ligne["base_price"])))
+	for bouton in _prix_par_bouton:
+		bouton.disabled = Personnage.berry < _prix_par_bouton[bouton]
 
 # les coffres en vente : tous les items actifs de type "coffre", du moins cher au plus cher
 func _offres() -> Array:
@@ -59,7 +53,6 @@ func _creer_ligne(id: String, prix: int) -> HBoxContainer:
 
 	var nom := Label.new()
 	nom.text = Inventaire.nom_objet(id)
-	nom.add_theme_color_override("font_color", details["couleur_rarete"])
 	nom.add_theme_font_size_override("font_size", 19)
 	nom.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -74,7 +67,7 @@ func _creer_ligne(id: String, prix: int) -> HBoxContainer:
 
 	var bouton := Button.new()
 	bouton.text = "Acheter"
-	bouton.disabled = Personnage.berry < prix
+	_prix_par_bouton[bouton] = prix
 	bouton.pressed.connect(_acheter.bind(id, prix))
 	ligne.add_child(bouton)
 	return ligne

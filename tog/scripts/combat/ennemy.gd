@@ -30,6 +30,8 @@ func _on_zone_body_entered(body: Node2D) -> void:
 		_combat_manager.lancer_combat(self)
 
 func recevoir_degats(degats: int) -> void:
+	if pv <= 0:
+		return
 	pv = maxi(pv - maxi(degats, 0), 0)
 	sante_modifiee.emit(pv, pv_max)
 	if pv > 0:
@@ -48,10 +50,14 @@ func soigner(montant: int) -> void:
 func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 	if not is_instance_valid(joueur) or sol == null:
 		return
-	if _combat_manager != null and _combat_manager.preparer_tour(self):
-		_combat_manager.afficher_message("L’ennemi perd son tour.")
-		_combat_manager.terminer_tour(self)
-		return
+	if _combat_manager != null:
+		var tour_bloque: bool = _combat_manager.preparer_tour(self)
+		if not _combat_manager.en_combat:
+			return
+		if tour_bloque:
+			_combat_manager.afficher_message("L’ennemi perd son tour.")
+			_combat_manager.terminer_tour(self)
+			return
 	if not is_inside_tree():
 		return
 	var depart := _case_de(sol, global_position)
@@ -66,7 +72,7 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 			var tween := create_tween()
 			tween.tween_property(self, "global_position", position_cible, 0.2)
 			await tween.finished
-			if not is_inside_tree():
+			if not is_inside_tree() or (_combat_manager != null and not _combat_manager.en_combat):
 				return
 		depart = _case_de(sol, global_position)
 		distance = absi(depart.x - cible.x) + absi(depart.y - cible.y)

@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/combat/combat_manager.gd" id="16_combat"]
 [ext_resource type="Script" path="res://scripts/combat/overlay.gd" id="17_overlay"]
 [ext_resource type="PackedScene" path="res://scenes/combat_ui.tscn" id="18_combat_ui"]
+[ext_resource type="Theme" path="res://themes/theme_pirate.tres" id="19_theme"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_iw27f"]
 texture = ExtResource("1_e0an3")
@@ -292,29 +293,52 @@ position = Vector2(1440, 480)
 position = Vector2(4, 1095)
 
 [node name="DialogueUI" type="CanvasLayer" parent="." unique_id=634557583]
+layer = 40
 script = ExtResource("6_iw27f")
 
 [node name="PanelContainer" type="PanelContainer" parent="DialogueUI" unique_id=1095034868]
-anchors_preset = -1
-anchor_right = 0.312
-anchor_bottom = 0.27800003
-offset_right = 0.95996094
-offset_bottom = -0.24002075
+visible = false
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 0.68
+anchor_bottom = 0.68
+offset_left = -400.0
+offset_right = 400.0
+offset_top = -170.0
+offset_bottom = 170.0
+theme = ExtResource("19_theme")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="DialogueUI/PanelContainer" unique_id=149752526]
 layout_mode = 2
+theme_override_constants/separation = 12
 
-[node name="Texte" type="TextEdit" parent="DialogueUI/PanelContainer/VBoxContainer" unique_id=1990381472]
+[node name="Titre" type="Label" parent="DialogueUI/PanelContainer/VBoxContainer"]
+layout_mode = 2
+theme_type_variation = "Ribbon"
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Defilement" type="ScrollContainer" parent="DialogueUI/PanelContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-wrap_mode = 1
+horizontal_scroll_mode = 0
 
-[node name="Accepter" type="Button" parent="DialogueUI/PanelContainer/VBoxContainer" unique_id=661729058]
+[node name="Texte" type="Label" parent="DialogueUI/PanelContainer/VBoxContainer/Defilement" unique_id=1990381472]
 layout_mode = 2
-text = "Accepter
-"
+size_flags_horizontal = 3
+autowrap_mode = 3
 
-[node name="Refuser" type="Button" parent="DialogueUI/PanelContainer/VBoxContainer" unique_id=846420450]
+[node name="Actions" type="HBoxContainer" parent="DialogueUI/PanelContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+theme_override_constants/separation = 12
+
+[node name="Accepter" type="Button" parent="DialogueUI/PanelContainer/VBoxContainer/Actions" unique_id=661729058]
+layout_mode = 2
+text = "Accepter"
+
+[node name="Refuser" type="Button" parent="DialogueUI/PanelContainer/VBoxContainer/Actions" unique_id=846420450]
 layout_mode = 2
 text = "Refuser"
 

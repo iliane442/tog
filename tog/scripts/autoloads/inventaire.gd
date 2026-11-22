@@ -126,8 +126,8 @@ func details_objet(id: String) -> Dictionary:
 			details["id_rarete"] = int(ligne.get("rarity_id", 1))
 			details["rarete"] = str(ligne.get("rarete", ""))
 			details["couleur_rarete"] = Color.from_string(str(ligne.get("couleur", "#808080")), Color.GRAY)
-			var chemin: String = str(ligne.get("icon_path", ""))
-			if chemin != "":
+			var chemin: Variant = ligne.get("icon_path")
+			if chemin is String and not chemin.is_empty():
 				details["chemin_icone"] = chemin if chemin.begins_with("res://") else "res://" + chemin
 			var effets: Variant = JSON.parse_string(str(ligne.get("effects_json", "{}")))
 			if effets is Dictionary:

@@ -4,7 +4,7 @@
 # Révélation d'un objet : sa rareté s'affiche, puis son type, puis l'objet
 # lui-même. « Suivant » dévoile un objet à la fois, « Tout afficher » tout
 # en cascade.
-extends CanvasLayer
+extends "res://scripts/ui/fenetre_secondaire.gd"
 
 const ICONE_DEFAUT := "res://addons/pixel_ui_fantasy/icons/chest.png"
 const NOMS_RARETE := {
@@ -66,15 +66,15 @@ func ouvrir_contenu(texte: String, coffre_id: String, contenu: Array, rarete := 
 	_ajouter_source(texte, couleur, coffre_id, contenu, true)
 
 func _ajouter_source(texte: String, couleur: Color, coffre_id: String, contenu: Array, mode_inv: bool) -> void:
+	var premiere_ouverture := not fenetre.visible
+	if not presenter(fenetre, btn_fermer):
+		return
+	if premiere_ouverture:
+		popup.modulate.a = 0.0
 	if contenu.is_empty() and _sources.is_empty():
 		# coffre vide et aucun affichage en cours : juste la mention
 		titre.text = texte
-		fenetre.visible = true
-		label_vide.visible = true
-		btn_tout.visible = false
-		btn_suivant.visible = false
-		btn_tout_afficher.visible = false
-		get_tree().paused = true
+		_rafraichir()
 		return
 	if contenu.is_empty():
 		return  # rien à ajouter aux sections déjà affichées
@@ -86,9 +86,7 @@ func _ajouter_source(texte: String, couleur: Color, coffre_id: String, contenu: 
 		"coffre_id": coffre_id, "mode_inv": mode_inv,
 		"reveles": 0,
 	})
-	if not fenetre.visible:
-		titre.text = "Butin"
-		fenetre.visible = true
+	if premiere_ouverture:
 		fenetre.modulate.a = 0.0
 		var t := create_tween()
 		t.tween_property(fenetre, "modulate:a", 1.0, 0.12)
@@ -98,7 +96,6 @@ func _ajouter_source(texte: String, couleur: Color, coffre_id: String, contenu: 
 	var source = _sources[_sources.size() - 1]
 	_reveler(_sources.size() - 1, int(source["reveles"]))
 	source["reveles"] = int(source["reveles"]) + 1
-	get_tree().paused = true
 
 func fermer() -> void:
 	_tuer_tweens()
@@ -107,13 +104,7 @@ func fermer() -> void:
 		if source["mode_inv"]:
 			_virer_source_dans_inventaire(source)
 	_sources.clear()
-	fenetre.visible = false
-	get_tree().paused = false
-
-func _unhandled_input(event: InputEvent) -> void:
-	if fenetre.visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		fermer()
-		get_viewport().set_input_as_handled()
+	super.fermer()
 
 func _tuer_tweens() -> void:
 	for t in _tweens_revelation:
@@ -125,6 +116,7 @@ func _tuer_tweens() -> void:
 func _rafraichir() -> void:
 	_tuer_tweens()
 	for enfant in liste.get_children():
+		liste.remove_child(enfant)
 		enfant.queue_free()
 	_infos_lignes.clear()
 	var nb_lignes := 0
@@ -258,7 +250,7 @@ func _creer_ligne(prise: Dictionary, index_source: int, index: int) -> Button:
 	var intro := Label.new()
 	intro.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	intro.add_theme_font_size_override("font_size", 19)
-	intro.add_theme_color_override("font_color", details["couleur_rarete"])
+	intro.add_theme_color_override("font_color", Color(details["couleur_rarete"]).lightened(0.55))
 	intro.modulate.a = 0.0
 	intro.text = ""
 	vbox.add_child(intro)
@@ -287,7 +279,7 @@ func _creer_ligne(prise: Dictionary, index_source: int, index: int) -> Button:
 	var nom := Label.new()
 	nom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	nom.text = Inventaire.nom_objet(id)
-	nom.add_theme_color_override("font_color", details["couleur_rarete"])
+	nom.add_theme_color_override("font_color", Color("fff1cf"))
 	nom.add_theme_font_size_override("font_size", 28)
 	nom.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -298,6 +290,7 @@ func _creer_ligne(prise: Dictionary, index_source: int, index: int) -> Button:
 	qte.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	qte.text = "x%d" % int(prise["qte"])
 	qte.add_theme_font_size_override("font_size", 28)
+	qte.add_theme_color_override("font_color", Color("fff1cf"))
 	qte.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	qte.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	qte.custom_minimum_size = Vector2(80, 0)

@@ -46,7 +46,10 @@ func _on_body_exited(body: Node2D) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if not _clic_sur_pnj(get_global_mouse_position()):
+		interaction_en_attente = false
+		if not get_tree().current_scene.exploration_disponible():
+			return
+		if not _clic_sur_pnj(get_canvas_transform().affine_inverse() * event.position):
 			return
 		if player_near:
 			ouvrir_dialogue()
@@ -77,6 +80,8 @@ func quest_suivante() -> String:
 	return ""
 
 func ouvrir_dialogue() -> void:
+	if not get_tree().current_scene.exploration_disponible():
+		return
 	var quest := quest_suivante()
 	if quest != "":
 		dialogue_opened.emit(quest, self)

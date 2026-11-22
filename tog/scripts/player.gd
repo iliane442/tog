@@ -117,11 +117,23 @@ func _maj_visuels_race() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
+	if get_tree().current_scene.fenetre_menu.visible:
+		return
+	var point: Vector2 = get_canvas_transform().affine_inverse() * event.position
 	if _combat_manager != null and _combat_manager.en_combat:
-		_gerer_clic_combat()
+		_gerer_clic_combat(point)
 	else:
-		target = get_global_mouse_position()
+		target = point
 		_en_deplacement = true
+
+func arreter_deplacement() -> void:
+	_en_deplacement = false
+	target = global_position
+	velocity = Vector2.ZERO
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PAUSED and is_node_ready():
+		arreter_deplacement()
 
 func _physics_process(delta: float) -> void:
 	var race := _id_technique_race()
@@ -157,10 +169,10 @@ func _ligne_cardinale(direction: Vector2) -> int:
 		return LIGNES["est"] if direction.x > 0.0 else LIGNES["ouest"]
 	return LIGNES["nord"] if direction.y < 0.0 else LIGNES["sud"]
 
-func _gerer_clic_combat() -> void:
+func _gerer_clic_combat(point: Vector2) -> void:
 	if _sol == null or _combat_manager == null:
 		return
-	var case_cliquee := _sol.local_to_map(_sol.get_local_mouse_position())
+	var case_cliquee := _case_de(point)
 	if _combat_manager.en_placement:
 		if _cases_placement.has(case_cliquee):
 			global_position = _sol.to_global(_sol.map_to_local(case_cliquee))
@@ -170,7 +182,7 @@ func _gerer_clic_combat() -> void:
 	if _sort_selectionne:
 		var sort: Dictionary = Personnage.sorts.get(_sort_selectionne_id, {})
 		var cible: Node2D = self if _sort_selectionne_id != "boule_de_feu" and _combat_manager.est_allie(sort) else _ennemi
-		if cible != null and is_instance_valid(cible) and case_cliquee == _case_de(cible.global_position):
+		if is_instance_valid(cible) and (case_cliquee == _case_de(cible.global_position) or _clic_sur_entite(cible, point)):
 			if _sort_selectionne_id == "boule_de_feu":
 				_lancer_boule_de_feu()
 			else:
@@ -187,6 +199,17 @@ func _gerer_clic_combat() -> void:
 
 func ma_case() -> Vector2i:
 	return _case_de(global_position)
+
+# Les sprites dépassent de leur case. Un clic sur le corps désigne la
+# même cible qu'un clic au sol, y compris lorsque la caméra s'est déplacée.
+func _clic_sur_entite(cible: Node2D, point_monde: Vector2) -> bool:
+	var collision := cible.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision == null or collision.shape == null:
+		return false
+	var point := collision.to_local(point_monde)
+	if collision.shape is CircleShape2D:
+		return point.length() <= (collision.shape as CircleShape2D).radius
+	return collision.shape.get_rect().has_point(point)
 
 func _case_de(position_globale: Vector2) -> Vector2i:
 	return _sol.local_to_map(_sol.to_local(position_globale))
@@ -303,6 +326,7 @@ func _on_combat_commence() -> void:
 
 func _on_combat_termine(_victoire: bool) -> void:
 	_tour_joueur = false
+	arreter_deplacement()
 	_sort_selectionne = false
 	_cases_placement.clear()
 	if _overlay != null:
@@ -447,6 +471,8 @@ func _fin_du_tour() -> void:
 	if not is_inside_tree() or not _combat_manager.en_combat:
 		return
 	var tour_bloque: bool = _combat_manager.preparer_tour(self)
+	if not _combat_manager.en_combat:
+		return
 	if tour_bloque:
 		_combat_manager.terminer_tour(self)
 		_combat_manager.afficher_message("Tu es immobilisé et perds ton tour.")

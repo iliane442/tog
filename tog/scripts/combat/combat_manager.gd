@@ -66,7 +66,10 @@ func _construire_interface() -> void:
 	_label_stats_ennemi = _ui.get_node("FicheEnnemi/Marges/Colonne/Stats") as Label
 	_label_etats_ennemi = _ui.get_node("FicheEnnemi/Marges/Colonne/Etats") as Label
 	_fiche_ennemi.hide()
-	_actualiser_fiche_ennemi()
+	_fiche_ennemi.visibility_changed.connect(_sur_visibilite_fiche)
+	_fiche_ennemi.resized.connect(_positionner_fiche_ennemi)
+	get_viewport().size_changed.connect(_positionner_fiche_ennemi)
+	set_process_input(false)
 
 func _connecter_survol_ennemi() -> void:
 	if _ennemi == null or not is_instance_valid(_ennemi):
@@ -83,10 +86,10 @@ func _connecter_survol_ennemi() -> void:
 
 func _survol_ennemi() -> void:
 	_souris_sur_ennemi = true
-	if not en_combat or _fiche_ennemi == null:
+	if not en_combat or _fiche_ennemi == null or get_tree().current_scene.fenetre_menu.visible:
 		return
-	_actualiser_fiche_ennemi()
 	_fiche_ennemi.show()
+	_actualiser_fiche_ennemi()
 	_positionner_fiche_ennemi()
 
 func _quitter_survol_ennemi() -> void:
@@ -98,7 +101,7 @@ func _sante_ennemi_modifiee(_vie: int, _vie_max: int) -> void:
 	_actualiser_fiche_ennemi()
 
 func _actualiser_fiche_ennemi() -> void:
-	if _fiche_ennemi == null or _ennemi == null or not is_instance_valid(_ennemi):
+	if _fiche_ennemi == null or not _fiche_ennemi.visible or not is_instance_valid(_ennemi):
 		return
 	var nom_ennemi: String = str(_ennemi.get("nom"))
 	if nom_ennemi.is_empty():
@@ -109,7 +112,7 @@ func _actualiser_fiche_ennemi() -> void:
 	_barre_vie_ennemi.max_value = vie_max
 	_barre_vie_ennemi.value = vie
 	_label_vie_ennemi.text = "%d / %d" % [vie, vie_max]
-	_label_stats_ennemi.text = "ATTAQUE : %d\nPORTEE : %d cases\nDEPLACEMENT : %d PM" % [
+	_label_stats_ennemi.text = "Attaque : %d\nPortée : %d cases\nDéplacement : %d PM" % [
 		int(_ennemi.get("degats_attaque")),
 		int(_ennemi.get("portee_attaque")),
 		int(_ennemi.get("pm_max")),
@@ -147,20 +150,22 @@ func _positionner_fiche_ennemi() -> void:
 		position_fiche.x = souris.x - taille_fiche.x - 18
 	if position_fiche.y + taille_fiche.y > taille_vue.y:
 		position_fiche.y = souris.y - taille_fiche.y - 18
-	_fiche_ennemi.position = position_fiche
+	_fiche_ennemi.position = position_fiche.clamp(Vector2.ZERO, (taille_vue - taille_fiche).max(Vector2.ZERO))
 
-func _process(_delta: float) -> void:
-	if _fiche_ennemi != null and _fiche_ennemi.visible:
+func _sur_visibilite_fiche() -> void:
+	set_process_input(_fiche_ennemi.visible)
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
 		_positionner_fiche_ennemi()
 
 func lancer_combat(ennemi: Node = null) -> void:
-	if en_combat:
+	if not get_tree().current_scene.exploration_disponible():
 		return
 	if ennemi != null:
 		_ennemi = ennemi
 	_connecter_survol_ennemi()
-	if _joueur == null or _ennemi == null:
-		push_warning("Combat impossible : joueur ou ennemi introuvable.")
+	if not is_instance_valid(_joueur) or not is_instance_valid(_ennemi) or _ennemi.is_queued_for_deletion():
 		return
 	_aligner_sur_grille(_joueur)
 	_aligner_sur_grille(_ennemi)
@@ -273,7 +278,7 @@ func preparer_tour(cible: Node) -> bool:
 			_recevoir_degats(cible, maxi(montant, 1))
 		elif id_etat == 12:
 			_soigner_cible(cible, _soin_regeneration(cible, float(effet.get("valeur", 0.0))))
-		if not is_instance_valid(cible):
+		if not en_combat or not is_instance_valid(cible) or cible.is_queued_for_deletion():
 			return true
 	return bloque
 
@@ -397,6 +402,8 @@ func _deplacer_par_etat(cible: Node, nombre: int, repousser: bool) -> void:
 	entite.global_position = sol.to_global(sol.map_to_local(destination))
 
 func _unhandled_input(event: InputEvent) -> void:
+	if get_tree().current_scene.fenetre_menu.visible:
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_F:
 			lancer_combat()
