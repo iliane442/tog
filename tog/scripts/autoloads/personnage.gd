@@ -538,7 +538,9 @@ func utiliser_objet(id_objet: String) -> String:
 				buffs.remove_at(i)
 				break
 		buffs.append({"id": id_objet, "effets": bonus, "expire": expire})
-	recalculer_stats()
+	# recalcul SANS remplir la vie : le soin de l'objet est le seul
+	# accordé, la potion ne soigne pas au-delà de sa valeur
+	recalculer_stats(false)
 	sauvegarder()
 	return ""
 
