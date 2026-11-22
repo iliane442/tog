@@ -2858,6 +2858,7 @@ func serialiser_perso() -> Dictionary:
 		"points_statistique": Personnage.points_statistique,
 		"points_depenses": Personnage.points_depenses, "equipement": Personnage.equipement,
 		"metiers": Personnage.metiers, "barre_sorts": Personnage.barre_sorts,
+		"barre_objets": Personnage.barre_objets,
 		"fruit": Personnage.fruit_id, "fruit_xp": Personnage.fruit_xp, "buffs": Personnage.buffs,
 		# croix au trésor non fouillées : elles sont personnelles, elles
 		# suivent la sauvegarde du perso sur le serveur
@@ -2900,6 +2901,12 @@ func _appliquer_perso(perso_json: String) -> void:
 		for id_sort in barre:
 			nouvelle_barre.append(str(id_sort))
 		Personnage.barre_sorts = nouvelle_barre
+	var barre_objets = d.get("barre_objets", [])
+	if barre_objets is Array:
+		var nouvelle_barre_objets: Array[String] = []
+		for id_objet in barre_objets:
+			nouvelle_barre_objets.append(str(id_objet))
+		Personnage.barre_objets = nouvelle_barre_objets
 	Personnage.fruit_id = str(d.get("fruit", ""))
 	Personnage.fruit_xp = int(d.get("fruit_xp", 0))
 	var buffs_lus = d.get("buffs", [])
@@ -2919,6 +2926,7 @@ func _appliquer_perso(perso_json: String) -> void:
 	Personnage.caracteristiques_modifiees.emit()
 	# la barre de sorts peut différer de la version locale : le HUD suit
 	Personnage.barre_sorts_modifiee.emit()
+	Personnage.barre_objets_modifiee.emit()
 
 # ============================================================
 #  ACCUEIL ET PRÉFÉRENCES DU CLIENT

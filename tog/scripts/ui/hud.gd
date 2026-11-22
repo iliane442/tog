@@ -35,6 +35,21 @@ var _tween_vie: Tween
 var _tween_xp: Tween
 var _tween_sorts: Tween
 
+# barre d'objets (consommables) : même place que la barre de sorts, une
+# seule des deux s'affiche — le bouton ⇄ des en-têtes intervertit
+var panneau_objets: PanelContainer
+var barre_objets_emplacements: HBoxContainer
+var label_action_objets: Label
+var bouton_bascule_sorts: Button
+var bouton_bascule_objets: Button
+var barre_objets_active := false
+var _barres_visibles := true
+
+const ICONES_OBJETS_PAR_TYPE := {
+	"consumable": "res://addons/pixel_ui_fantasy/icons/potion_red.png",
+}
+const ICONE_OBJET_DEFAUT := "res://addons/pixel_ui_fantasy/icons/chest.png"
+
 func _ready() -> void:
 	_joueur = get_tree().current_scene.find_child("player", true, false)
 	_gestionnaire_combat = get_tree().current_scene.get_node_or_null("CombatManager")
@@ -57,7 +72,11 @@ func _ready() -> void:
 		bouton.mouse_exited.connect(_animer_case.bind(bouton, Vector2.ONE))
 	Personnage.caracteristiques_modifiees.connect(maj)
 	Personnage.barre_sorts_modifiee.connect(maj_barre_sorts)
+	Personnage.barre_objets_modifiee.connect(maj_barre_objets)
+	Inventaire.inventaire_modifie.connect(maj_barre_objets)
 	Touches.touches_modifiees.connect(maj_barre_sorts)
+	Touches.touches_modifiees.connect(maj_barre_objets)
+	_construire_barre_objets()
 	QuestManager.quete_acceptee.connect(maj_quete)
 	QuestManager.quete_progressee.connect(maj_quete)
 	QuestManager.quete_abandonnee.connect(maj_quete)
@@ -195,7 +214,7 @@ func _on_bouton_fin_tour_presse() -> void:
 		_gestionnaire_combat.demander_fin_tour()
 
 func afficher_message_sort(message: String) -> void:
-	label_action.text = message
+	_label_action_actif().text = message
 
 func _on_placement_commence() -> void:
 	_animer_visibilite_sorts(false)
@@ -203,16 +222,17 @@ func _on_placement_commence() -> void:
 	_afficher_stats_combat(true)
 	bouton_fin_tour.text = "Placement OK"
 	bouton_fin_tour.show()
-	label_action.text = "Place-toi, puis valide le placement : %s" % [
+	_label_action_actif().text = "Place-toi, puis valide le placement : %s" % [
 		Touches.libelle_action("fin_tour")]
 
 func _on_combat_commence() -> void:
 	maj_barre_sorts()
+	maj_barre_objets()
 	_synchroniser_etats_joueur()
 	_afficher_stats_combat(true)
 	bouton_fin_tour.text = "Fin du tour"
 	bouton_fin_tour.show()
-	label_action.text = "Sorts : %s | cible : %s / %s | fin du tour : %s" % [
+	_label_action_actif().text = "Sorts : %s | cible : %s / %s | fin du tour : %s" % [
 		Touches.libelle_action("sort_1"),
 		Touches.libelle_action("cible_suivante"),
 		Touches.libelle_action("cible_precedente"),
@@ -263,7 +283,8 @@ func _afficher_barre_sorts(_victoire: bool) -> void:
 	if _menu != null and bool((_menu.get_node("Fenetre") as Control).visible):
 		return
 	maj_barre_sorts()
-	label_action.text = "Touches 1-0 - clic pour utiliser"
+	maj_barre_objets()
+	_label_action_actif().text = "Touches 1-0 - clic pour utiliser"
 	_animer_visibilite_sorts(true)
 
 func _retour_menu() -> void:
@@ -293,19 +314,171 @@ func _basculer_parametres_touches() -> void:
 func _on_parametres_touches_ferme() -> void:
 	_parametres_touches = null
 
+# anime la barre active (sorts ou objets selon la bascule) ; l'autre
+# barre reste cachée : elles partagent la même place, en bas de l'écran
 func _animer_visibilite_sorts(afficher: bool) -> void:
+	_barres_visibles = afficher
+	_appliquer_visibilite_barres()
+
+func _appliquer_visibilite_barres() -> void:
+	if panneau_objets == null:
+		return
+	var actif: PanelContainer = panneau_objets if barre_objets_active else panneau_sorts
+	var inactif: PanelContainer = panneau_sorts if barre_objets_active else panneau_objets
+	inactif.hide()
 	if _tween_sorts != null and _tween_sorts.is_running():
 		_tween_sorts.kill()
-	if afficher:
-		panneau_sorts.show()
-		panneau_sorts.modulate.a = 0.0
-		panneau_sorts.scale = Vector2(0.96, 0.96)
+	if _barres_visibles:
+		actif.show()
+		actif.modulate.a = 0.0
+		actif.scale = Vector2(0.96, 0.96)
 	_tween_sorts = create_tween().set_parallel(true)
 	_tween_sorts.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_tween_sorts.tween_property(panneau_sorts, "modulate:a", 1.0 if afficher else 0.0, 0.18)
-	_tween_sorts.tween_property(panneau_sorts, "scale", Vector2.ONE if afficher else Vector2(0.96, 0.96), 0.18)
-	if not afficher:
-		_tween_sorts.finished.connect(panneau_sorts.hide)
+	_tween_sorts.tween_property(actif, "modulate:a", 1.0 if _barres_visibles else 0.0, 0.18)
+	_tween_sorts.tween_property(actif, "scale", Vector2.ONE if _barres_visibles else Vector2(0.96, 0.96), 0.18)
+	if not _barres_visibles:
+		_tween_sorts.finished.connect(actif.hide)
+
+# intervertit la barre du bas : sorts ou objets
+func basculer_barres_bas() -> void:
+	barre_objets_active = not barre_objets_active
+	maj_barre_sorts()
+	maj_barre_objets()
+	_appliquer_visibilite_barres()
+
+# construit la barre d'objets en miroir de la barre de sorts : mêmes
+# ancrages bas de l'écran, dix emplacements avec le même badge de
+# touche, et le bouton ⇄ dans l'en-tête des deux barres
+func _construire_barre_objets() -> void:
+	panneau_objets = PanelContainer.new()
+	panneau_objets.name = "BarreDObjets"
+	panneau_objets.theme = panneau_sorts.theme
+	panneau_objets.theme_type_variation = panneau_sorts.theme_type_variation
+	# même place que la barre de sorts : ancres et marges identiques
+	for ancre in ["anchor_left", "anchor_right", "anchor_top", "anchor_bottom",
+			"offset_left", "offset_right", "offset_top", "offset_bottom"]:
+		panneau_objets.set(ancre, panneau_sorts.get(ancre))
+	add_child(panneau_objets)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 2)
+	panneau_objets.add_child(colonne)
+	var entete := HBoxContainer.new()
+	colonne.add_child(entete)
+	var titre := Label.new()
+	titre.theme_type_variation = "Ribbon"
+	titre.add_theme_font_size_override("font_size", 18)
+	titre.text = "BARRE D'OBJETS"
+	entete.add_child(titre)
+	bouton_bascule_objets = Button.new()
+	bouton_bascule_objets.text = "⇄ Sorts"
+	bouton_bascule_objets.tooltip_text = "Intervertir la barre d'objets et la barre de sorts."
+	bouton_bascule_objets.pressed.connect(basculer_barres_bas)
+	entete.add_child(bouton_bascule_objets)
+	label_action_objets = Label.new()
+	label_action_objets.text = "Touches 1-0 - clic pour utiliser"
+	label_action_objets.add_theme_font_size_override("font_size", 18)
+	label_action_objets.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label_action_objets.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	entete.add_child(label_action_objets)
+	barre_objets_emplacements = HBoxContainer.new()
+	barre_objets_emplacements.alignment = BoxContainer.ALIGNMENT_CENTER
+	barre_objets_emplacements.add_theme_constant_override("separation", 5)
+	colonne.add_child(barre_objets_emplacements)
+	for index in range(Personnage.TAILLE_BARRE_OBJETS):
+		var bouton := Button.new()
+		bouton.custom_minimum_size = Vector2(58, 58)
+		bouton.expand_icon = true
+		bouton.icon_alignment = 1
+		bouton.tooltip_text = "Objet %d" % (index + 1)
+		bouton.disabled = true
+		bouton.pressed.connect(_on_emplacement_objet_clique.bind(index))
+		var badge := Label.new()
+		badge.text = str((index + 1) % 10)
+		badge.offset_left = 2.0
+		badge.offset_top = 0.0
+		badge.offset_right = 26.0
+		badge.offset_bottom = 24.0
+		badge.add_theme_font_size_override("font_size", 15)
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bouton.add_child(badge)
+		barre_objets_emplacements.add_child(bouton)
+	# bouton ⇄ dans l'en-tête de la barre de sorts, entre titre et action
+	var entete_sorts := panneau_sorts.get_node("Colonne/Entete") as HBoxContainer
+	bouton_bascule_sorts = Button.new()
+	bouton_bascule_sorts.text = "⇄ Objets"
+	bouton_bascule_sorts.tooltip_text = "Intervertir la barre de sorts et la barre d'objets."
+	bouton_bascule_sorts.pressed.connect(basculer_barres_bas)
+	entete_sorts.add_child(bouton_bascule_sorts)
+	entete_sorts.move_child(bouton_bascule_sorts, 1)
+	panneau_objets.hide()
+	maj_barre_objets()
+
+# remplit les emplacements de la barre d'objets : icône, quantité et
+# info-bulle pour les consommables placés, emplacement grisé sinon
+func maj_barre_objets() -> void:
+	if barre_objets_emplacements == null:
+		return
+	for index in range(barre_objets_emplacements.get_child_count()):
+		var bouton: Button = barre_objets_emplacements.get_child(index) as Button
+		var id: String = Personnage.barre_objets[index] if index < Personnage.barre_objets.size() else ""
+		var possede := int(Inventaire.objets.get(id, 0)) > 0
+		if id != "" and possede:
+			var details := Inventaire.details_objet(id)
+			bouton.icon = _icone_objet_barre(details)
+			bouton.disabled = false
+			var quantite := int(Inventaire.objets[id])
+			var texte_quantite := " (x%d)" % quantite if quantite > 1 else ""
+			bouton.tooltip_text = "%s%s\nClic : consommer — Maj+clic : retirer de la barre\nTouche %s" % [
+				Inventaire.nom_objet(id), texte_quantite, _raccourci(index)]
+		else:
+			bouton.icon = null
+			bouton.disabled = true
+			bouton.tooltip_text = "Ouvre Menu > Inventaire pour placer un consommable."
+
+func _icone_objet_barre(details: Dictionary) -> Texture2D:
+	var chemin: String = details.get("chemin_icone", "")
+	if chemin == "" or not ResourceLoader.exists(chemin):
+		chemin = ICONES_OBJETS_PAR_TYPE.get(str(details.get("type", "")).to_lower(), ICONE_OBJET_DEFAUT)
+	if not ResourceLoader.exists(chemin):
+		chemin = ICONE_OBJET_DEFAUT
+	return load(chemin)
+
+# clic (ou touche 1-0) sur un emplacement d'objet : consomme le
+# consommable ; Maj+clic le retire de la barre sans le consommer
+func _on_emplacement_objet_clique(index: int) -> void:
+	var avec_maj := Input.is_key_pressed(KEY_SHIFT)
+	if index >= Personnage.barre_objets.size():
+		return
+	var id := Personnage.barre_objets[index]
+	if avec_maj:
+		Personnage.retirer_objet_barre(id)
+		afficher_message_sort("%s retiré de la barre." % Inventaire.nom_objet(id))
+		return
+	if int(Inventaire.objets.get(id, 0)) <= 0:
+		return
+	var details := Inventaire.details_objet(id)
+	# parchemin de réattribution : une décision trop lourde pour un
+	# clic de barre, l'inventaire la confirme
+	if bool(details.get("effets", {}).get(Personnage.EFFET_REATTRIBUTION, false)):
+		afficher_message_sort("Ouvre l'inventaire pour ce parchemin.")
+		return
+	if _gestionnaire_combat != null and _gestionnaire_combat.en_combat \
+			and _gestionnaire_combat.en_placement:
+		afficher_message_sort("Valide d'abord ton placement.")
+		return
+	var message := Personnage.utiliser_objet(id)
+	if message != "":
+		afficher_message_sort(message)
+	else:
+		afficher_message_sort("%s consommé !" % Inventaire.nom_objet(id))
+
+# le texte d'action s'écrit dans l'en-tête de la barre visible
+func _label_action_actif() -> Label:
+	if barre_objets_active and label_action_objets != null:
+		return label_action_objets
+	return label_action
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
@@ -316,9 +489,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if action == "":
 		return
 	if action.begins_with("sort_"):
-		if not panneau_sorts.visible:
+		# les touches 1-0 pilotent la barre visible : sorts ou objets
+		var panneau_actif: Control = panneau_objets if barre_objets_active else panneau_sorts
+		if not panneau_actif.visible:
 			return
-		_on_emplacement_sort_clique(int(action.substr(5)) - 1)
+		if barre_objets_active:
+			_on_emplacement_objet_clique(int(action.substr(5)) - 1)
+		else:
+			_on_emplacement_sort_clique(int(action.substr(5)) - 1)
 		get_viewport().set_input_as_handled()
 		return
 	if _gestionnaire_combat == null or not _gestionnaire_combat.en_combat:

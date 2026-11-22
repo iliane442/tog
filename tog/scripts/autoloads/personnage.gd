@@ -84,6 +84,12 @@ var caracteristiques: Dictionary = {
 const TAILLE_BARRE_SORTS := 10
 var barre_sorts: Array[String] = []
 
+# barre d'objets : ids d'items consommables placés par le joueur (dans
+# l'ordre) ; seuls les consommables possédés peuvent y figurer, les
+# emplacements se vident quand la quantité tombe à zéro
+const TAILLE_BARRE_OBJETS := 10
+var barre_objets: Array[String] = []
+
 # Fruit du démon mangé (id de l'item, table `items`) ; "" si aucun.
 # Manger un fruit est définitif : un seul fruit par personnage.
 var fruit_id := ""
@@ -121,11 +127,15 @@ var classes: Dictionary = {
 signal caracteristiques_modifiees
 signal metiers_modifies
 signal barre_sorts_modifiee
+signal barre_objets_modifiee
 
 func _ready() -> void:
 	# sauvegarde automatique du perso à chaque changement de stats
 	caracteristiques_modifiees.connect(_auto_sauvegarder)
 	metiers_modifies.connect(_auto_sauvegarder)
+	# inventaire : un consommable vendu ou consommé jusqu'à la dernière
+	# unité quitte la barre d'objets
+	Inventaire.inventaire_modifie.connect(filtrer_barre_objets)
 	# les données viennent de la base SQLite ; les dictionnaires au-dessus
 	# servent de repli si la base est indisponible
 	if BaseDonnees.disponible:
@@ -384,6 +394,50 @@ func _filtrer_barre_sorts() -> void:
 	for id_sort in barre_sorts.duplicate():
 		if not sorts_disponibles().has(id_sort):
 			barre_sorts.erase(id_sort)
+
+# --- barre d'objets (consommables) ---
+
+func objet_dans_barre(id: String) -> bool:
+	return id in barre_objets
+
+func barre_objets_pleine() -> bool:
+	return barre_objets.size() >= TAILLE_BARRE_OBJETS
+
+# place un consommable possédé dans le premier emplacement libre de
+# la barre d'objets ; renvoie false si l'objet ne s'y prête pas (pas
+# consommable, pas possédé, déjà placé ou barre pleine)
+func ajouter_objet_barre(id: String) -> bool:
+	if int(Inventaire.objets.get(id, 0)) <= 0:
+		return false
+	if str(Inventaire.details_objet(id).get("type", "")) != "consumable":
+		return false
+	if objet_dans_barre(id) or barre_objets_pleine():
+		return false
+	barre_objets.append(id)
+	sauvegarder()
+	barre_objets_modifiee.emit()
+	return true
+
+# retire un consommable de la barre d'objets (rien ne se passe s'il
+# n'y figure pas)
+func retirer_objet_barre(id: String) -> void:
+	if barre_objets.has(id):
+		barre_objets.erase(id)
+		sauvegarder()
+		barre_objets_modifiee.emit()
+
+# garde en barre uniquement les consommables encore possédés : vendus,
+# consommés jusqu'à la dernière unité ou perdus, un emplacement se
+# vide ; les autres quantités rafraîchissent l'affichage
+func filtrer_barre_objets() -> void:
+	var modification := false
+	for id_objet in barre_objets.duplicate():
+		if int(Inventaire.objets.get(id_objet, 0)) <= 0:
+			barre_objets.erase(id_objet)
+			modification = true
+	if modification:
+		sauvegarder()
+		barre_objets_modifiee.emit()
 
 # Mange un fruit du démon de l'inventaire : ses pouvoirs sont débloqués
 # définitivement, ses bonus passifs s'appliquent et le fruit ne peut plus
@@ -684,6 +738,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	berry = 0
 	points_statistique = 0
 	barre_sorts = []
+	barre_objets = []
 	fruit_id = ""
 	fruit_xp = 0
 	buffs = []
@@ -736,6 +791,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "equipement", equipement)
 	cfg.set_value("perso", "metiers", metiers)
 	cfg.set_value("perso", "barre_sorts", barre_sorts)
+	cfg.set_value("perso", "barre_objets", barre_objets)
 	cfg.set_value("perso", "fruit", fruit_id)
 	cfg.set_value("perso", "fruit_xp", fruit_xp)
 	cfg.set_value("perso", "buffs", buffs)
@@ -774,6 +830,14 @@ func charger_perso() -> void:
 			var id := str(id_sort)
 			if not barre_sorts.has(id):
 				barre_sorts.append(id)
+	var barre_objets_lue = cfg.get_value("perso", "barre_objets", [])
+	if barre_objets_lue is Array:
+		barre_objets = []
+		for id_objet in barre_objets_lue:
+			var id_item := str(id_objet)
+			if not barre_objets.has(id_item):
+				barre_objets.append(id_item)
+	filtrer_barre_objets()
 	fruit_id = str(cfg.get_value("perso", "fruit", ""))
 	fruit_xp = maxi(int(cfg.get_value("perso", "fruit_xp", 0)), 0)
 	buffs = []
@@ -830,6 +894,7 @@ func reinitialiser() -> void:
 	berry = 0
 	points_statistique = 0
 	barre_sorts = []
+	barre_objets = []
 	fruit_id = ""
 	fruit_xp = 0
 	buffs = []

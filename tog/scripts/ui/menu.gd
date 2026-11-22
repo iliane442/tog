@@ -134,6 +134,7 @@ var filtre_portables := false
 # bouton d'utilisation des consommables (créé dans _ready : la scène ne
 # contient que les boutons Équiper, Fruit et Coffres)
 var btn_utiliser: Button
+var btn_barre_objets: Button
 
 const TEXTES_EMPLACEMENTS := {
 	"arme": "Arme",
@@ -250,6 +251,11 @@ func _ready() -> void:
 	btn_utiliser.visible = false
 	btn_equiper.get_parent().add_child(btn_utiliser)
 	btn_utiliser.pressed.connect(_on_bouton_utiliser)
+	btn_barre_objets = Button.new()
+	btn_barre_objets.text = "Placer dans la barre d'objets"
+	btn_barre_objets.visible = false
+	btn_utiliser.get_parent().add_child(btn_barre_objets)
+	btn_barre_objets.pressed.connect(_on_bouton_barre_objets)
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	$Fenetre/Entete/Accueil.pressed.connect(_confirmer_retour_accueil)
 	btn_valider.pressed.connect(_on_valider_points)
@@ -791,6 +797,7 @@ func maj_detail_item(id: String) -> void:
 	prix_detail.text = "Prix : %d Berry" % int(details.get("prix", 0))
 	_maj_bouton_equiper(details, id)
 	_maj_bouton_utiliser(details)
+	_maj_bouton_barre_objets(details)
 
 func maj_detail_aucun() -> void:
 	detail_id_courant = ""
@@ -807,6 +814,8 @@ func maj_detail_aucun() -> void:
 	btn_ouvrir_tous.visible = false
 	if btn_utiliser != null:
 		btn_utiliser.visible = false
+	if btn_barre_objets != null:
+		btn_barre_objets.visible = false
 
 # construit le paperdoll : portrait du personnage au centre, un slot
 # cliquable par emplacement positionné sur le corps
@@ -908,6 +917,38 @@ func _maj_bouton_utiliser(details: Dictionary) -> void:
 	var effets: Dictionary = details.get("effets", {})
 	btn_utiliser.text = "Réattribuer les points" if bool(effets.get(Personnage.EFFET_REATTRIBUTION, false)) else "Utiliser"
 	btn_utiliser.disabled = effets.is_empty()
+
+# met à jour le bouton de la barre d'objets selon l'objet affiché :
+# visible pour les consommables, il place ou retire l'objet de la barre
+func _maj_bouton_barre_objets(details: Dictionary) -> void:
+	if btn_barre_objets == null:
+		return
+	var consommable := str(details.get("type", "")) == "consumable"
+	btn_barre_objets.visible = consommable
+	if not consommable:
+		return
+	if detail_id_courant != "" and Personnage.objet_dans_barre(detail_id_courant):
+		btn_barre_objets.text = "Retirer de la barre d'objets"
+		btn_barre_objets.disabled = false
+	else:
+		btn_barre_objets.text = "Placer dans la barre d'objets"
+		btn_barre_objets.disabled = Personnage.barre_objets_pleine()
+
+# place le consommable sélectionné dans la barre d'objets du HUD (ou
+# le retire s'il y figure déjà) ; la barre se gère ensuite au clic et
+# aux touches 1-0 comme celle des sorts
+func _on_bouton_barre_objets() -> void:
+	if detail_id_courant == "":
+		return
+	var id := detail_id_courant
+	if Personnage.objet_dans_barre(id):
+		Personnage.retirer_objet_barre(id)
+	else:
+		if not Personnage.ajouter_objet_barre(id):
+			avertir("La barre d'objets est pleine (%d emplacements)." % [
+				Personnage.TAILLE_BARRE_OBJETS])
+			return
+	maj_detail_item(id)
 
 # utilise le consommable sélectionné dans le détail : applique ses effets
 # (points de vie restaurés, bonus temporaires) et le retire de
