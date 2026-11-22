@@ -162,7 +162,7 @@ const EFFETS_POUVOIRS_FRUIT := {
 	"262": {"buff": {"force": 12}, "duree": 5},
 	"263": {"buff": {"vitalite": 8}, "duree": 5},
 	"264": {"buff": {"force": 6, "chance": 6}, "duree": 5},
-	"265": {"soin": 0.35},
+	"265": {"soin": 1.0},
 }
 # libellés lisibles des clés d'effets (affichage des messages)
 const LIBELLES_EFFETS_FRUIT := {
