@@ -97,6 +97,7 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var label_nom: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Nom
 @onready var label_race_classe: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/RaceClasse
 @onready var label_niveau: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Niveau
+@onready var label_navire: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Navire
 @onready var label_xp: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/XP
 @onready var label_vie: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/Vie
 @onready var label_argent: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/Argent
@@ -144,6 +145,7 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var btn_ouvrir_coffre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnOuvrirCoffre
 @onready var btn_ouvrir_tous: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnOuvrirTous
 @onready var btn_vendre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnVendre
+@onready var btn_navire: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnNavire
 @onready var panneau_personnage_inventaire: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette
 @onready var panneau_sac: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac
 @onready var panneau_detail: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem
@@ -302,6 +304,7 @@ func _ready() -> void:
 	btn_ouvrir_coffre.pressed.connect(_on_bouton_ouvrir_coffre)
 	btn_ouvrir_tous.pressed.connect(_on_bouton_ouvrir_tous)
 	btn_vendre.pressed.connect(_on_bouton_vendre)
+	btn_navire.pressed.connect(_on_bouton_navire)
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
@@ -500,6 +503,7 @@ func maj_personnage() -> void:
 	label_race_classe.text = "Race : %s | Classe : %s" % [Personnage.nom_race(), Personnage.nom_classe()]
 	label_niveau.text = "Niveau %d" % Personnage.niveau
 	label_xp.text = "Expérience : %d / %d" % [Personnage.xp, Personnage.xp_prochain_niveau()]
+	_maj_resume_navire()
 	var vie_max_affichee: int = Personnage.vie_max + 5 * int(points_en_attente.get("vitalite", 0))
 	label_vie.text = "Vie : %d / %d" % [Personnage.vie, vie_max_affichee]
 	label_argent.text = "Berry : %d" % Personnage.berry
@@ -520,6 +524,20 @@ func maj_personnage() -> void:
 		valeur_stat.text = str(int(Personnage.caracteristiques[cle]) + int(points_en_attente.get(cle, 0)))
 		bouton_ajouter.disabled = restants <= 0
 
+# résumé du navire sous l'identité : solidité et résistance des
+# pièces installées, avec leurs bonus effectifs
+func _maj_resume_navire() -> void:
+	if label_navire == null:
+		return
+	var stats := Personnage.stats_bateau()
+	if int(stats["solidite"]) <= 0 and float(stats["tempete"]) <= 0.0:
+		label_navire.text = "Navire : aucune pièce installée"
+		return
+	label_navire.text = "Navire : solidité %d · %d%% tempête — +%d PV, +%d DEF, +%d%% vitesse" % [
+		int(stats["solidite"]), int(stats["tempete"]),
+		int(stats["solidite"]) / 20, int(stats["solidite"]) / 200,
+		roundi(float(stats["tempete"]))]
+
 func _sur_personnage_modifie() -> void:
 	if not fenetre.visible:
 		return
@@ -532,7 +550,7 @@ func _sur_personnage_modifie() -> void:
 			var details_inventaire := Inventaire.details_objet(detail_id_courant)
 			_maj_bouton_equiper(details_inventaire, detail_id_courant)
 			_maj_bouton_vendre(details_inventaire)
-
+			_maj_bouton_navire(details_inventaire, detail_id_courant)
 func _maj_resume_personnage() -> void:
 	_maj_portrait_equipement()
 	nom_niveau_inventaire.text = "%s · Niv. %d" % [Personnage.nom, Personnage.niveau]
@@ -1096,6 +1114,7 @@ func maj_detail_item(id: String) -> void:
 	_maj_bouton_utiliser(details)
 	_maj_bouton_barre_objets(details)
 	_maj_bouton_vendre(details)
+	_maj_bouton_navire(details, id)
 
 func maj_detail_aucun() -> void:
 	detail_id_courant = ""
@@ -1115,6 +1134,7 @@ func maj_detail_aucun() -> void:
 	btn_ouvrir_coffre.visible = false
 	btn_ouvrir_tous.visible = false
 	btn_vendre.visible = false
+	btn_navire.visible = false
 
 # construit le paperdoll : portrait du personnage au centre, un slot
 # cliquable par emplacement positionné sur le corps
@@ -1867,6 +1887,45 @@ func _on_bouton_vendre() -> void:
 	# retour immédiat : la monnaie et la quantité se rafraîchissent,
 	# pas de popup au milieu d'une série de ventes
 	prix_detail.text = "+%d Berry — %s vendu." % [demi_prix, nom]
+
+# --- Navire ---
+
+# bouton d'installation d'une pièce de navire : visible sur les
+# pièces possédées, il échange avec la pièce déjà en place
+func _maj_bouton_navire(details: Dictionary, id: String) -> void:
+	var emplacement := Personnage.emplacement_navire(id)
+	btn_navire.visible = emplacement != ""
+	if emplacement == "":
+		return
+	if Personnage.piece_navire_installee(id):
+		btn_navire.text = "Retirer du navire"
+		btn_navire.disabled = false
+	elif int(Inventaire.objets.get(id, 0)) > 0:
+		btn_navire.text = "Installer sur le navire"
+		btn_navire.disabled = false
+		btn_navire.tooltip_text = "Prend la place de %s." % (
+			Inventaire.nom_objet(str(Personnage.bateau[emplacement]))
+			if str(Personnage.bateau[emplacement]) != "" else "l'emplacement vide")
+
+# installe ou retire la pièce de navire sélectionnée : la sortie
+# d'une pièce la renvoie à l'inventaire
+func _on_bouton_navire() -> void:
+	if detail_id_courant == "":
+		return
+	var emplacement := Personnage.emplacement_navire(detail_id_courant)
+	if emplacement == "":
+		return
+	if Personnage.piece_navire_installee(detail_id_courant):
+		var nom_piece := Inventaire.nom_objet(detail_id_courant)
+		Personnage.retirer_piece_navire(emplacement)
+		prix_detail.text = "%s rejoint l'inventaire." % nom_piece
+	else:
+		var nom_piece := Inventaire.nom_objet(detail_id_courant)
+		if Personnage.installer_piece_navire(detail_id_courant) == "":
+			return
+		prix_detail.text = "%s installé sur le navire." % nom_piece
+	maj_grille()
+	maj_detail_item(detail_id_courant)
 
 # --- Hôtel des ventes ---
 

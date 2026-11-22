@@ -312,6 +312,12 @@ text = "Race : Humain | Classe : Épéiste"
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Niveau 1"
+
+[node name="Navire" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Navire : aucune pièce installée"
+
 [node name="XP" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
@@ -1091,6 +1097,13 @@ custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Vendre"
+
+[node name="BtnNavire" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem"]
+visible = false
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Installer sur le navire"
 
 [node name="ZoneInventaireCompacte" type="ScrollContainer" parent="Fenetre/Corps/ContenuInventaire"]
 visible = false

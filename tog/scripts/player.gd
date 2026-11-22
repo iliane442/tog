@@ -26,7 +26,6 @@ const VISUELS_FEMININS := {
 }
 const RACE_DEFAUT := "human"
 const SORT_BOULE_DE_FEU := preload("res://scripts/combat/sort.gd")
-const EFFET_SORT := preload("res://scripts/combat/effet_sort.gd")
 
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -50,7 +49,6 @@ var _pa := 0
 var _pm := 0
 var _cases_placement: Array[Vector2i] = []
 var _sort_boule_de_feu
-var _cache_effets := {}  # id_sort -> ligne de la table `animations` (ou {})
 
 var _sol: TileMapLayer
 var _deplacement_combat: Tween
@@ -219,7 +217,12 @@ func _physics_process(delta: float) -> void:
 			direction = target - global_position
 	var en_mouvement := _en_deplacement and direction.length() > 4.0
 	if en_mouvement:
-		velocity = direction.normalized() * minf(speed, direction.length() / delta)
+		# hors combat, le navire porte son capitaine : ses pièces
+		# installées donnent un regain d'allant à l'exploration
+		var vitesse := speed
+		if _combat_manager == null or not _combat_manager.en_combat:
+			vitesse *= 1.0 + Personnage.bonus_vitesse_navire()
+		velocity = direction.normalized() * minf(vitesse, direction.length() / delta)
 		_ligne = _ligne_cardinale(direction)
 	else:
 		velocity = Vector2.ZERO
@@ -242,7 +245,7 @@ func _ligne_cardinale(direction: Vector2) -> int:
 	return LIGNES["nord"] if direction.y < 0.0 else LIGNES["sud"]
 
 func _gerer_clic_combat() -> void:
-	if _sol == null or _combat_manager == null:
+	if _sol == null or _combat_manager == null or _combat_manager.conclusion_en_cours:
 		return
 	var case_cliquee := _case_combat_sous_souris()
 	if _combat_manager.en_placement:
@@ -450,6 +453,8 @@ func _selectionner_boule_de_feu() -> void:
 func _selectionner_sort(id_sort: String) -> void:
 	if _combat_manager == null or not _combat_manager.en_combat or not _tour_joueur:
 		return
+	if _combat_manager.conclusion_en_cours:
+		return
 	if not _combat_manager.sort_autorise(self):
 		_combat_manager.afficher_message("Le silence t’empêche de lancer un sort.")
 		return
@@ -495,11 +500,13 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		_combat_manager.afficher_message("Cible hors portée ou ligne de vue bloquée.")
 		return false
 	if not _combat_manager.precision_reussie(self):
+		_jouer_effet_sort(_id_sort, cible, false)
 		_pa -= cout
 		_demarrer_recharge_sort(_id_sort, sort)
 		_combat_manager.afficher_message("Le sort rate sa cible.")
-		_emettre_action_duel({"t": "manque"})
+		_emettre_action_duel(_evenement_sort(_id_sort, cible, "manque"))
 	else:
+		var evenement := _evenement_sort(_id_sort, cible, "sort")
 		_jouer_effet_sort(_id_sort, cible)
 		var soin := absi(int(sort.get("degats", 0))) if str(sort.get("type", "")) == "heal" else 0
 		if soin > 0:
@@ -514,20 +521,9 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		if _combat_manager.en_combat:
 			etats_appliques = _combat_manager.appliquer_effets_sort(cible, sort)
 		if _combat_manager.pvp_actif or _combat_manager.groupe_actif:
-			var evenement := {"t": "sort", "id": _id_sort,
-				"nom": str(sort.get("nom", "Sort")),
-				"etats": etats_appliques}
-			if cible == self:
-				evenement["cible"] = "soi"
-				evenement["soin"] = soin
-			else:
-				evenement["cible"] = "adv"
-				evenement["degats"] = degats
-				# nom de l'ennemi visé : stable chez tous les coéquipiers
-				# (l'index bouge dès qu'un ennemi tombe d'un côté), plus
-				# l'index en repli pour les événements plus anciens
-				evenement["cible_nom"] = cible.name
-				evenement["index"] = _combat_manager.ennemis_actifs().find(cible)
+			evenement["nom"] = str(sort.get("nom", "Sort"))
+			evenement["etats"] = etats_appliques
+			evenement["soin" if cible == self else "degats"] = soin if cible == self else degats
 			_emettre_action_duel(evenement)
 		_pa -= cout
 		_demarrer_recharge_sort(_id_sort, sort)
@@ -572,38 +568,21 @@ func _distance_ennemi() -> int:
 		return 1_000_000
 	return _distance_depuis(cible)
 
-# ligne de la table `animations` pour ce sort ({} si aucun effet) ; la
-# boule de feu codée en dur est enregistrée avec l'id de sort 0
-func _details_effet_sort(id_sort: String) -> Dictionary:
-	if _cache_effets.has(id_sort):
-		return _cache_effets[id_sort]
-	var details := {}
-	if BaseDonnees.disponible:
-		var id_sort_bdd := 0 if id_sort == "boule_de_feu" else id_sort.to_int()
-		var lignes := BaseDonnees.lire(
-			"SELECT sprite_sheet_path, frame_count, frame_delay_ms, loop, frame_width, frame_height"
-			+ " FROM animations WHERE entity_type = 'skill' AND entity_id = %d;" % id_sort_bdd)
-		if not lignes.is_empty():
-			details = lignes[0]
-	_cache_effets[id_sort] = details
-	return details
-
-# affiche l'animation du sort sur la cible (l'effet est autonome : il
-# joue ses frames puis se libère tout seul)
-func _jouer_effet_sort(id_sort: String, cible: Node2D) -> void:
-	var details := _details_effet_sort(id_sort)
-	if details.is_empty() or cible == null or not is_instance_valid(cible):
+func _jouer_effet_sort(id_sort: String, cible: Node2D, touche := true) -> void:
+	if not is_instance_valid(cible):
 		return
-	var effet := EFFET_SORT.new()
-	effet.configure(
-		str(details.get("sprite_sheet_path", "")),
-		int(details.get("frame_count", 1)),
-		int(details.get("frame_delay_ms", 100)),
-		int(details.get("loop", 0)) == 1,
-		int(details.get("frame_width", 32)),
-		int(details.get("frame_height", 32)))
-	get_tree().current_scene.add_child(effet)
-	effet.jouer(cible.global_position)
+	if cible != self:
+		_ligne = _ligne_cardinale(cible.global_position - global_position)
+		_animer(false, 0.0)
+	_combat_manager.jouer_animation_sort(id_sort, self, cible, touche)
+
+func _evenement_sort(id_sort: String, cible: Node2D, type: String) -> Dictionary:
+	var evenement := {"t": type, "id": id_sort, "cible": "soi" if cible == self else "adv"}
+	if cible != self:
+		# Le nom de nœud reste stable quand la liste des ennemis change.
+		evenement["cible_nom"] = cible.name
+		evenement["index"] = _combat_manager.ennemis_actifs().find(cible)
+	return evenement
 
 func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 	var cible: Node2D = cible_visée
@@ -623,17 +602,18 @@ func _lancer_boule_de_feu(cible_visée: Node2D = null) -> bool:
 		return false
 	_pa -= _sort_boule_de_feu.cout_pa
 	if _combat_manager.precision_reussie(self):
+		var evenement := _evenement_sort("boule_de_feu", cible, "sort")
 		_jouer_effet_sort("boule_de_feu", cible)
 		var degats: int = _combat_manager.calculer_degats(self, cible, int(_sort_boule_de_feu.degats), "attack", int(_sort_boule_de_feu.portee_max))
 		cible.recevoir_degats(degats)
-		_emettre_action_duel({"t": "sort", "id": "boule_de_feu",
-			"nom": "Boule de feu", "cible": "adv", "degats": degats,
-			"cible_nom": cible.name,
-			"index": _combat_manager.ennemis_actifs().find(cible)})
+		evenement["nom"] = "Boule de feu"
+		evenement["degats"] = degats
+		_emettre_action_duel(evenement)
 		_combat_manager.effacer_message()
 	else:
+		_jouer_effet_sort("boule_de_feu", cible, false)
 		_combat_manager.afficher_message("La boule de feu rate sa cible.")
-		_emettre_action_duel({"t": "manque"})
+		_emettre_action_duel(_evenement_sort("boule_de_feu", cible, "manque"))
 	_sort_selectionne = false
 	if _overlay != null:
 		_overlay.effacer()
@@ -723,6 +703,8 @@ func _arreter_chrono_tour() -> void:
 func _decompter_tour(delta: float) -> void:
 	if not _chrono_tour_actif or not _tour_joueur or _occupe:
 		return
+	if _combat_manager != null and _combat_manager.conclusion_en_cours:
+		return
 	_temps_tour_restant -= delta
 	_maj_affichage_chrono()
 	if _temps_tour_restant <= 0.0:
@@ -743,6 +725,8 @@ func _maj_affichage_chrono() -> void:
 
 func _fin_du_tour() -> void:
 	if _combat_manager == null or not _combat_manager.en_combat or not _tour_joueur or _occupe:
+		return
+	if _combat_manager.conclusion_en_cours:
 		return
 	var numero: int = _combat_manager.numero_combat
 	_tour_joueur = false
@@ -767,6 +751,8 @@ func _fin_du_tour() -> void:
 # la chance (agilité) et un échec coûte le tour
 func _tenter_fuite() -> void:
 	if _combat_manager == null or not _combat_manager.en_combat or _occupe:
+		return
+	if _combat_manager.conclusion_en_cours:
 		return
 	# en plein combat contre des ennemis, on ne fuit que pendant son tour
 	if not _combat_manager.en_placement and not _tour_joueur:
@@ -805,6 +791,8 @@ func _attendre_tour_adverse_pvp() -> void:
 func _commencer_mon_tour(numero: int) -> void:
 	if not is_inside_tree() or _combat_manager == null or not _combat_manager.en_combat or numero != _combat_manager.numero_combat:
 		return
+	if _combat_manager.conclusion_en_cours:
+		return
 	var tour_bloque: bool = _combat_manager.preparer_tour(self)
 	if tour_bloque:
 		_combat_manager.terminer_tour(self)
@@ -836,7 +824,7 @@ func recevoir_degats(degats: int) -> void:
 	if Personnage.vie <= 0 and _combat_manager != null:
 		if _combat_manager.groupe_actif:
 			_emettre_action_duel({"t": "tombe"})
-		_combat_manager.terminer_combat(false)
+		_combat_manager.terminer_sur_impact(false, self)
 
 func _maj_affichage() -> void:
 	if _combat_manager != null:

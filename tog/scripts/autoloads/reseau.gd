@@ -3102,6 +3102,7 @@ func serialiser_perso() -> Dictionary:
 		"vie": Personnage.vie, "berry": Personnage.berry,
 		"points_statistique": Personnage.points_statistique,
 		"points_depenses": Personnage.points_depenses, "equipement": Personnage.equipement,
+		"bateau": Personnage.bateau,
 		"metiers": Personnage.metiers, "barre_sorts": Personnage.barre_sorts,
 		"barre_objets": Personnage.barre_objets,
 		"fruit": Personnage.fruit_id, "fruit_xp": Personnage.fruit_xp, "buffs": Personnage.buffs,
@@ -3138,6 +3139,11 @@ func _appliquer_perso(perso_json: String) -> void:
 	var equipement = d.get("equipement", {})
 	if equipement is Dictionary:
 		Personnage.equipement = equipement
+	# pièces installées sur le navire
+	var navire = d.get("bateau", {})
+	if navire is Dictionary:
+		for emplacement in Personnage.bateau:
+			Personnage.bateau[emplacement] = str(navire.get(emplacement, ""))
 	var metiers = d.get("metiers", {})
 	if metiers is Dictionary:
 		Personnage.metiers = metiers

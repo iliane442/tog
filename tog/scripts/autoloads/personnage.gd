@@ -26,6 +26,20 @@ var equipement: Dictionary = {
 }
 # métiers appris (id de profession -> {"niveau": int, "xp": int})
 var metiers: Dictionary = {}
+# pièces installées sur le navire (emplacement -> id d'item) : un
+# seul exemplaire par emplacement, l'ancienne pièce rejoint
+# l'inventaire quand une nouvelle prend sa place
+var bateau: Dictionary = {
+	"planche": "", "gouvernail": "", "mat": "", "coque": "", "proue": "",
+}
+# vocabulaire des pièces installables : mot-clé du nom de l'item -> emplacement
+const EMPLACEMENTS_NAVIRE := {
+	"Planche renforcée": "planche",
+	"Gouvernail": "gouvernail",
+	"Mât": "mat",
+	"Module de coque": "coque",
+	"Figure de proue": "proue",
+}
 
 const POINTS_PAR_NIVEAU := 5
 const EFFET_REATTRIBUTION := "reset_stats"
@@ -617,12 +631,17 @@ func recalculer_stats(remplir_vie := true) -> void:
 	buffs = actifs
 	for buff in actifs:
 		_appliquer_effets_objet(buff.get("effets", {}))
+	# le navire soutient son capitaine : sa solidité devient vie et
+	# défense (en combat), sa résistance aux tempêtes devient de la
+	# vitesse d'exploration (hors combat)
+	var navire := stats_bateau()
+	vie_max += int(navire["solidite"]) / 20
 	vie_max = maxi(vie_max, 1)
 	vie = vie_max if remplir_vie else clampi(vie, 0, vie_max)
 	# la défense répartie (race, classe, points dépensés) rejoint la
 	# défense des objets et des buffs : c'est le total qui absorbe les
 	# dégâts dans les combats
-	defense += int(caracteristiques.get("defense", 0))
+	defense += int(caracteristiques.get("defense", 0)) + int(navire["solidite"]) / 200
 	caracteristiques_modifiees.emit()
 
 # applique les effets d'un objet (paires clé -> valeur de effects_json)
@@ -750,6 +769,86 @@ func desequiper(emplacement: String) -> void:
 	Inventaire.ajouter_objet(equipement[emplacement])
 	equipement[emplacement] = ""
 	recalculer_stats()
+
+# --- navire du personnage ---
+
+# emplacement de navire visé par un item ("" si ce n'est pas une
+# pièce de navire) : reconnu au préfixe « Navire : » de sa
+# description, puis au mot-clé de son nom
+func emplacement_navire(id: String) -> String:
+	if id == "" or not str(Inventaire.details_objet(id).get("description", "")).begins_with("Navire :"):
+		return ""
+	var nom_item := Inventaire.nom_objet(id)
+	for mot_cle in EMPLACEMENTS_NAVIRE:
+		if nom_item.begins_with(mot_cle):
+			return str(EMPLACEMENTS_NAVIRE[mot_cle])
+	return ""
+
+# une pièce de navire est-elle déjà installée sur l'emplacement ?
+func piece_navire_installee(id: String) -> bool:
+	return bateau.values().has(id)
+
+# installe une pièce de navire possédée : l'ancienne pièce de
+# l'emplacement rejoint l'inventaire ; renvoie l'emplacement, "" en
+# cas de refus
+func installer_piece_navire(id: String) -> String:
+	var emplacement := emplacement_navire(id)
+	if emplacement == "" or emplacement not in bateau or int(Inventaire.objets.get(id, 0)) <= 0:
+		return ""
+	var ancienne := str(bateau[emplacement])
+	Inventaire.retirer_objet(id, 1)
+	if ancienne != "":
+		Inventaire.ajouter_objet(ancienne, 1)
+	bateau[emplacement] = id
+	recalculer_stats(false)
+	sauvegarder()
+	return emplacement
+
+# retire la pièce installée d'un emplacement : elle rejoint
+# l'inventaire
+func retirer_piece_navire(emplacement: String) -> bool:
+	if not bateau.has(emplacement) or str(bateau[emplacement]) == "":
+		return false
+	Inventaire.ajouter_objet(str(bateau[emplacement]), 1)
+	bateau[emplacement] = ""
+	recalculer_stats(false)
+	sauvegarder()
+	return true
+
+# lit la description d'une pièce (« Navire : +25 solidité et +0 % de
+# résistance aux tempêtes ») ; non reconnue → 0/0
+var _regex_navire: RegEx
+
+func _stats_piece_bateau(id: String) -> Dictionary:
+	var stats := {"solidite": 0, "tempete": 0.0}
+	var description := str(Inventaire.details_objet(id).get("description", ""))
+	if _regex_navire == null:
+		_regex_navire = RegEx.new()
+		_regex_navire.compile("Navire :\\s*\\+(\\d+) solidité et \\+(\\d+) % de résistance aux tempêtes")
+	var analyse := _regex_navire.search(description)
+	if analyse != null:
+		stats["solidite"] = int(analyse.get_string(1))
+		stats["tempete"] = float(analyse.get_string(2))
+	return stats
+
+# solidité et résistance aux tempêtes du navire : la somme des
+# pièces installées
+func stats_bateau() -> Dictionary:
+	var solidite := 0
+	var tempete := 0.0
+	for emplacement in bateau:
+		var id := str(bateau[emplacement])
+		if id == "":
+			continue
+		var stats := _stats_piece_bateau(id)
+		solidite += int(stats["solidite"])
+		tempete += float(stats["tempete"])
+	return {"solidite": solidite, "tempete": tempete}
+
+# bonus de vitesse d'exploration (hors combat) conféré par le
+# navire : +1% par point de résistance aux tempêtes, plafonné
+func bonus_vitesse_navire() -> float:
+	return clampf(stats_bateau()["tempete"] * 0.01, 0.0, 0.30)
 
 # équipe d'un coup, sur chaque emplacement, le meilleur objet atteignable
 # (score = somme des effets bénéfiques) ; l'arme principale exige une
@@ -914,11 +1013,12 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 		"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
 		"anneau1": "", "anneau2": "",
 	}
+	# le navire d'un nouveau perso est nu : aucune pièce installée
+	bateau = {"planche": "", "gouvernail": "", "mat": "", "coque": "", "proue": ""}
 	recalculer_stats()
 	perso_cree = true
 	sauvegarder()
 	barre_sorts_modifiee.emit()
-
 func sauvegarder() -> void:
 	# en ligne, le serveur est l'unique référence du perso : la
 	# sauvegarde locale n'est plus touchée pendant la session
@@ -946,6 +1046,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "points_statistique", points_statistique)
 	cfg.set_value("perso", "points_depenses", points_depenses)
 	cfg.set_value("perso", "equipement", equipement)
+	cfg.set_value("perso", "bateau", bateau)
 	cfg.set_value("perso", "metiers", metiers)
 	cfg.set_value("perso", "barre_sorts", barre_sorts)
 	cfg.set_value("perso", "barre_objets", barre_objets)
@@ -1017,6 +1118,16 @@ func charger_perso() -> void:
 			var cible := _resoudre_emplacement(details)
 			if cible != "":
 				equipement[cible] = id_equipe
+	# pièces du navire : chaque emplacement reprend sa pièce ; les
+	# pièces installées ne sont pas dans l'inventaire (retirées à
+	# l'installation), leur id suffit
+	var navire_lu = cfg.get_value("perso", "bateau", {})
+	if navire_lu is Dictionary:
+		for emplacement in bateau:
+			bateau[emplacement] = ""
+		for emplacement_lu in navire_lu:
+			if bateau.has(emplacement_lu):
+				bateau[emplacement_lu] = str(navire_lu[emplacement_lu])
 	niveau = int(cfg.get_value("perso", "niveau", 1))
 	xp = int(cfg.get_value("perso", "xp", 0))
 	# filtrer la barre seulement ici : le niveau est connu, les sorts de
@@ -1062,6 +1173,8 @@ func reinitialiser() -> void:
 		"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
 		"anneau1": "", "anneau2": "",
 	}
+	# idem le navire
+	bateau = {"planche": "", "gouvernail": "", "mat": "", "coque": "", "proue": ""}
 	recalculer_stats()
 	# la barre repart à vide : l'interface suit
 	barre_sorts_modifiee.emit()
