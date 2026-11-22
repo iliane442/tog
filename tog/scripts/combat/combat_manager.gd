@@ -1430,14 +1430,15 @@ func calculer_degats(lanceur: Node, cible: Node, degats_base: int, type_sort: St
 		degats *= 1.2
 	if a_etat(cible, 17):
 		degats *= 1.0 + float(_valeur_etat(cible, 17)) * _piles_etat(cible, 17)
-	# la défense absorbe au plus la moitié du coup : un ennemi (ou un
-	# duelliste) frappe toujours un peu, quelle que soit l'écart de
-	# stats — sans ce plafond, une défense élevée annulait chaque
-	# attaque et les ennemis semblaient ne plus attaquer du tout
+	# la défense réduit un pourcentage du coup reçu, comme l'armure de
+	# League of Legends : dégâts x 100 / (100 + défense). Chaque point
+	# de défense rapproche l'absorption de 100 % sans jamais
+	# l'atteindre : un coup ne peut pas tomber à zéro et le centième
+	# point de défense vaut toujours quelque chose
 	if cible == _joueur:
-		degats -= minf(float(Personnage.defense), degats * 0.5)
+		degats *= 100.0 / (100.0 + maxf(float(Personnage.defense), 0.0))
 	elif _pvp_adversaire != null and is_instance_valid(_pvp_adversaire) and cible == _pvp_adversaire:
-		degats -= minf(float(_pvp_adversaire.defense_pvp), degats * 0.5)
+		degats *= 100.0 / (100.0 + maxf(float(_pvp_adversaire.defense_pvp), 0.0))
 	return maxi(int(round(degats)), 0)
 
 # réussite d'une attaque : précision de base, bonus du lanceur s'il est
