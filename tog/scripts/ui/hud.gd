@@ -7,6 +7,9 @@ const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 @onready var panneau_sorts: PanelContainer = $BarreDeSorts
 @onready var barre_sorts: HBoxContainer = $BarreDeSorts/Colonne/Emplacements
 @onready var barre_vie: ProgressBar = $PanneauStats/Colonne/LigneVie/Vie
+@onready var ligne_bouclier: HBoxContainer = $PanneauStats/Colonne/LigneBouclier
+@onready var barre_bouclier: ProgressBar = $PanneauStats/Colonne/LigneBouclier/Bouclier
+@onready var label_bouclier: Label = $PanneauStats/Colonne/LigneBouclier/BouclierTexte
 @onready var barre_xp: ProgressBar = $PanneauStats/Colonne/LigneXP/XP
 @onready var ligne_xp: HBoxContainer = $PanneauStats/Colonne/LigneXP
 @onready var label_nom: Label = $PanneauStats/Colonne/Nom
@@ -126,6 +129,15 @@ func maj() -> void:
 	barre_xp.max_value = maxi(Personnage.xp_prochain_niveau(), 1)
 	_animer_valeur(barre_vie, float(Personnage.vie), true)
 	_animer_valeur(barre_xp, float(Personnage.xp), false)
+	# jauge de bouclier au-dessus des PV, visible seulement quand il
+	# reste des points ; elle est cotée sur les PV max pour lire
+	# d'un coup d'œil le poids du bouclier face à la vie
+	var points_bouclier := maxi(Personnage.bouclier, 0)
+	ligne_bouclier.visible = points_bouclier > 0
+	if points_bouclier > 0:
+		barre_bouclier.max_value = maxi(Personnage.vie_max, 1)
+		barre_bouclier.value = mini(points_bouclier, maxi(Personnage.vie_max, 1))
+		label_bouclier.text = "%d pts" % points_bouclier
 	label_nom.text = "%s - Niv. %d" % [Personnage.nom, Personnage.niveau]
 	label_vie.text = "%d / %d" % [Personnage.vie, Personnage.vie_max]
 	label_xp.text = "%d / %d XP" % [Personnage.xp, Personnage.xp_prochain_niveau()]
