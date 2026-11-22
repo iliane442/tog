@@ -517,7 +517,7 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 		if soin <= 0 and int(sort.get("degats", 0)) > 0:
 			degats = _combat_manager.calculer_degats(self, cible, int(sort.get("degats", 0)), str(sort.get("type", "")), int(sort.get("portee", 1)))
 			cible.recevoir_degats(degats)
-			_degats_zone_croix(_id_sort, cible, degats)
+			_degats_zone(_id_sort, cible, degats, sort)
 		var etats_appliques: Array = []
 		if _combat_manager.en_combat:
 			etats_appliques = _combat_manager.appliquer_effets_sort(cible, sort)
@@ -540,29 +540,42 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 	_afficher_cases()
 	return true
 
-# sorts de zone : l'attaque frappe aussi les cases au contact de la
-# cible (croix : haut, bas, gauche, droite) — les figures actuelles
+# sorts de zone : l'attaque frappe aussi les cases autour de la
+# cible — croix (haut, bas, gauche, droite) ou barre de trois cases
+# dressée perpendiculairement au tir, cible au centre
 const SORTS_ZONE_CROIX := ["245"]
+const SORTS_ZONE_BARRE := ["21"]
 
-func _degats_zone_croix(id_sort: String, cible_principale: Node2D, degats: int) -> void:
-	if degats <= 0 or not SORTS_ZONE_CROIX.has(id_sort):
-		return
-	if cible_principale == null or not is_instance_valid(cible_principale) or _combat_manager == null:
+func _degats_zone(id_sort: String, cible_principale: Node2D, degats: int, sort: Dictionary) -> void:
+	if degats <= 0 or cible_principale == null or not is_instance_valid(cible_principale) or _combat_manager == null:
 		return
 	var case_centre := _case_de(cible_principale.global_position)
-	var cases_contact: Array[Vector2i] = [
-		case_centre + Vector2i.UP, case_centre + Vector2i.DOWN,
-		case_centre + Vector2i.LEFT, case_centre + Vector2i.RIGHT,
-	]
+	var cases: Array[Vector2i] = []
+	if SORTS_ZONE_CROIX.has(id_sort):
+		cases = [
+			case_centre + Vector2i.UP, case_centre + Vector2i.DOWN,
+			case_centre + Vector2i.LEFT, case_centre + Vector2i.RIGHT,
+		]
+	elif SORTS_ZONE_BARRE.has(id_sort):
+		# la barre traverse la ligne de tir : les deux cases latérales
+		# sont prises perpendiculairement à la direction du lanceur
+		var direction := case_centre - ma_case()
+		var lateral := Vector2i(0, 1) if absi(direction.x) >= absi(direction.y) else Vector2i(1, 0)
+		cases = [case_centre + lateral, case_centre - lateral]
+	else:
+		return
 	var touches := 0
 	for ennemi in _combat_manager.ennemis_actifs():
 		if ennemi == cible_principale:
 			continue
-		if cases_contact.has(_case_de(ennemi.global_position)):
+		if cases.has(_case_de(ennemi.global_position)):
 			ennemi.recevoir_degats(degats)
+			# la barre de givre geôle aussi les témoins : les états du
+			# sort (gel) s'appliquent à toute la zone
+			_combat_manager.appliquer_effets_sort(ennemi, sort)
 			touches += 1
 	if touches > 0:
-		_combat_manager.afficher_message("La zone de stèle touche %d ennemi(s) au contact." % touches)
+		_combat_manager.afficher_message("La zone du sort touche %d ennemi(s) de plus." % touches)
 
 # le sort consommé part en recharge : base_cooldown tours séparent
 # deux lancements (1 = jouable à chaque tour, la recharge est
