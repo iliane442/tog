@@ -44,6 +44,11 @@ func _marquer_connu(id: String) -> void:
 		items_connus[id] = true
 		_sauver_connus()
 
+# variante sans écriture fichier pour les ajouts en lot
+func _marquer_connu_sans_sauver(id: String) -> void:
+	if id != "" and not items_connus.has(id):
+		items_connus[id] = true
+
 func est_connu(id: String) -> bool:
 	return items_connus.has(id)
 
@@ -84,6 +89,22 @@ func ajouter_objet(id: String, quantite: int = 1) -> void:
 	objets[id] = objets.get(id, 0) + quantite
 	_marquer_connu(id)
 	_sauver_objets()
+	inventaire_modifie.emit()
+
+# ajoute plusieurs prises d'un coup (vidage de coffre par ex.) :
+# une seule écriture fichier et un seul signal, contrairement à des
+# ajouter_objet en série qui figeaient le jeu sur les gros lots
+func ajouter_lot(prises: Array) -> void:
+	if prises.is_empty():
+		return
+	for prise in prises:
+		if prise is Dictionary:
+			var id := str(prise.get("id", ""))
+			if id != "":
+				objets[id] = int(objets.get(id, 0)) + int(prise.get("qte", 1))
+				_marquer_connu_sans_sauver(id)
+	_sauver_objets()
+	_sauver_connus()
 	inventaire_modifie.emit()
 
 func retirer_objet(id: String, quantite: int = 1) -> void:

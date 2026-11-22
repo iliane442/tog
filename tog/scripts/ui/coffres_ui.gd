@@ -357,16 +357,16 @@ func _on_tout_prendre() -> void:
 	var prises := []
 	for source in _sources:
 		prises.append_array(Coffres.vider(source["coffre_id"]))
-	for prise in prises:
-		Inventaire.ajouter_objet(str(prise["id"]), int(prise["qte"]))
+	# un seul passage inventaire : un gros lot ne déclenche plus
+	# des centaines d'écritures et de mises à jour d'interface
+	Inventaire.ajouter_lot(prises)
 	if not prises.is_empty():
 		_annonce_pris(prises)
 	_rafraichir()
 
 # emporte le reste d'un coffre d'inventaire sans annonce
 func _virer_source_dans_inventaire(source: Dictionary) -> void:
-	for prise in Coffres.vider(source["coffre_id"]):
-		Inventaire.ajouter_objet(str(prise["id"]), int(prise["qte"]))
+	Inventaire.ajouter_lot(Coffres.vider(source["coffre_id"]))
 
 func _annonce_texte(texte: String, couleur: Color) -> void:
 	popup.text = texte

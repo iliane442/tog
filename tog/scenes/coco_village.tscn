@@ -40,6 +40,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/pelagie.png" id="sprite_ile_pelagie"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/crabe_cotier.png" id="sprite_ile_crabe_cotier"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -110,6 +111,9 @@ position = Vector2(608, 2368)
 [node name="DepuisLoguetown" type="Marker2D" parent="Arrivees"]
 position = Vector2(500, 2368)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(308, 2368)
 [node name="CapitaineEsturgeon" parent="." instance=ExtResource("FerryLogue")]
 position = Vector2(420.0, 2368.0)
 paroles = "Derrière Coco commence le bout d'East Blue. Loguetown emboute les journaux de bord des candidats au départ, et un gris en profite pour racheter les témoignages. Si tu montes là-haut, montre-leur comment on s'en va."

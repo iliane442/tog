@@ -26,6 +26,8 @@ const ID_ETAT_TEST := 5 # Ralentissement
 const DUREE_ETAT_TEST := 2
 
 const EFFET_SORT := preload("res://scripts/combat/effet_sort.gd")
+# nombre de dégâts flottant (chiffre qui jaillit, rebondit, s'envole)
+const DEGATS_FLOTTANTS := preload("res://scripts/combat/degats_flottants.gd")
 
 # surbrillance rouge au survol : même mécanique que les PNJ (shader
 # surlignage.gdshader) mais en rouge pour signaler un camp hostile
@@ -295,6 +297,7 @@ func recevoir_degats(degats: int) -> void:
 		return
 	pv = maxi(pv - maxi(degats, 0), 0)
 	sante_modifiee.emit(pv, pv_max)
+	_nombre_flottant(self, "-%d" % maxi(degats, 0), "degats")
 	if pv > 0:
 		return
 	for quest_id in quetes_a_progresser:
@@ -316,6 +319,18 @@ func recevoir_degats(degats: int) -> void:
 func soigner(montant: int) -> void:
 	pv = mini(pv + maxi(montant, 0), pv_max)
 	sante_modifiee.emit(pv, pv_max)
+	_nombre_flottant(self, "+%d" % maxi(montant, 0), "soin")
+
+# affiche un texte flottant au-dessus d'un combattant : dégâts
+# subis, soin reçu… le chiffre vit sa vie puis se libère seul
+func _nombre_flottant(cible: Node2D, texte: String, type: String) -> void:
+	if not is_inside_tree() or cible == null or not is_instance_valid(cible):
+		return
+	var nombre := DEGATS_FLOTTANTS.new()
+	nombre.texte = texte
+	nombre.type = type
+	nombre.position = cible.global_position + Vector2(0, -26)
+	get_tree().current_scene.add_child(nombre)
 
 # --- animation d'attaque ---
 
@@ -388,7 +403,12 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 			global_position = position_cible
 		depart = _case_de(sol, global_position)
 	if _peut_attaquer(depart, cible):
-		_appliquer_ralentissement_test(joueur)
+		# le Sceau du silence (état 7) prive l'ennemi de sa capacité
+		# spéciale, comme il prive le joueur de ses sorts
+		if _combat_manager == null or _combat_manager.sort_autorise(self):
+			_appliquer_ralentissement_test(joueur)
+		else:
+			_combat_manager.afficher_message("L’ennemi est réduit au silence : sa capacité spéciale échoue.")
 		# difficulté : l'ennemi frappe tant qu'il lui reste des attaques
 		# et que sa cible est à portée (chaque coup jette sa précision)
 		var attaques := maxi(attaques_par_tour, 1)
@@ -402,6 +422,7 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 					_jouer_animation_attaque(joueur)
 					var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque))
 					joueur.recevoir_degats(degats)
+					_nombre_flottant(joueur, "-%d" % degats, "degats")
 			attaques -= 1
 			# laisser lire la salve : une courte pause entre chaque coup
 			# (le combat peut finir entre-temps : mêmes gardes que le
@@ -439,13 +460,16 @@ func _case_de(sol: TileMapLayer, position_globale: Vector2) -> Vector2i:
 
 # --- récompenses de victoire ---
 
+func _butin_specifique() -> Array:
+	return []
+
 # applique les récompenses du mob vaincu (XP, Berry, drops de la table
 # `mobs`) puis affiche un récapitulatif
 func recompenser_victoire() -> void:
 	var xp := maxi(int(pv_max / 4.0), 5)
 	var berry_min := maxi(int(pv_max / 5.0), 5)
 	var berry_max := maxi(int(pv_max / 2.0), berry_min)
-	var drops: Array = []
+	var drops := _butin_specifique()
 	if BaseDonnees.disponible and mob_id > 0:
 		var lignes := BaseDonnees.lire(
 			"SELECT xp_reward, berry_reward_min, berry_reward_max, drops_json"
@@ -457,7 +481,16 @@ func recompenser_victoire() -> void:
 			berry_max = int(ligne.get("berry_reward_max", berry_max))
 			var liste: Variant = JSON.parse_string(str(ligne.get("drops_json", "[]")))
 			if liste is Array:
-				drops = liste
+				drops.append_array(liste)
+	# la tablette des Flots Calmes honore sa promesse : les gains de ce
+	# combat sont doublés (le drapeau tient jusqu'à la victoire, donc
+	# toutes les rencontres de la même escarmouche profitent du bonus)
+	if Personnage.prochain_combat_double:
+		xp *= 2
+		berry_min *= 2
+		berry_max *= 2
+		if _combat_manager != null:
+			_combat_manager.afficher_message("La tablette des Flots Calmes double tes gains !")
 	# tirage des objets : chaque entrée {item_id, probability, min/max_quantity}
 	# (les ids arrivent en float depuis le JSON : on les repasse en int)
 	var objets_gagnes: Array = []

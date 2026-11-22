@@ -7,6 +7,9 @@ const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 @onready var panneau_sorts: PanelContainer = $BarreDeSorts
 @onready var barre_sorts: HBoxContainer = $BarreDeSorts/Colonne/Emplacements
 @onready var barre_vie: ProgressBar = $PanneauStats/Colonne/LigneVie/Vie
+@onready var ligne_bouclier: HBoxContainer = $PanneauStats/Colonne/LigneBouclier
+@onready var barre_bouclier: ProgressBar = $PanneauStats/Colonne/LigneBouclier/Bouclier
+@onready var label_bouclier: Label = $PanneauStats/Colonne/LigneBouclier/BouclierTexte
 @onready var barre_xp: ProgressBar = $PanneauStats/Colonne/LigneXP/XP
 @onready var ligne_xp: HBoxContainer = $PanneauStats/Colonne/LigneXP
 @onready var label_nom: Label = $PanneauStats/Colonne/Nom
@@ -19,6 +22,7 @@ const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 @onready var label_etats_joueur: Label = $PanneauStats/Colonne/EtatsJoueur
 @onready var boutons_combat: HBoxContainer = $PanneauStats/Colonne/BoutonsCombat
 @onready var bouton_fin_tour: Button = $PanneauStats/Colonne/BoutonsCombat/FinTour
+@onready var bouton_fuir: Button = $PanneauStats/Colonne/BoutonsCombat/Fuir
 @onready var label_berry: Label = $BerryPanel/BerryRow/Berry
 @onready var label_action: Label = $BarreDeSorts/Colonne/Entete/Action
 @onready var label_quete: Label = $QuestPanel/Marges/Colonne/QuestName
@@ -62,6 +66,7 @@ func _ready() -> void:
 		_gestionnaire_combat.ressources_joueur_modifiees.connect(maj_ressources_combat)
 		_gestionnaire_combat.tour_actif_change.connect(_maj_bouton_fin_tour)
 		bouton_fin_tour.pressed.connect(_on_bouton_fin_tour_presse)
+		bouton_fuir.pressed.connect(_on_bouton_fuir_presse)
 	_menu = get_tree().current_scene.get_node_or_null("MenuUI")
 	if _menu != null:
 		_menu.get_node("Fenetre").visibility_changed.connect(_actualiser_visibilite_menu)
@@ -75,7 +80,7 @@ func _ready() -> void:
 	Personnage.caracteristiques_modifiees.connect(maj)
 	Personnage.barre_sorts_modifiee.connect(maj_barre_sorts)
 	Personnage.barre_objets_modifiee.connect(maj_barre_objets)
-	Inventaire.inventaire_modifie.connect(maj_barre_objets)
+	Inventaire.inventaire_modifie.connect(maj_barre_objets, CONNECT_DEFERRED)
 	Touches.touches_modifiees.connect(maj_barre_sorts)
 	Touches.touches_modifiees.connect(maj_barre_objets)
 	_construire_barre_objets()
@@ -124,6 +129,15 @@ func maj() -> void:
 	barre_xp.max_value = maxi(Personnage.xp_prochain_niveau(), 1)
 	_animer_valeur(barre_vie, float(Personnage.vie), true)
 	_animer_valeur(barre_xp, float(Personnage.xp), false)
+	# jauge de bouclier au-dessus des PV, visible seulement quand il
+	# reste des points ; elle est cotée sur les PV max pour lire
+	# d'un coup d'œil le poids du bouclier face à la vie
+	var points_bouclier := maxi(Personnage.bouclier, 0)
+	ligne_bouclier.visible = points_bouclier > 0
+	if points_bouclier > 0:
+		barre_bouclier.max_value = maxi(Personnage.vie_max, 1)
+		barre_bouclier.value = mini(points_bouclier, maxi(Personnage.vie_max, 1))
+		label_bouclier.text = "%d pts" % points_bouclier
 	label_nom.text = "%s - Niv. %d" % [Personnage.nom, Personnage.niveau]
 	label_vie.text = "%d / %d" % [Personnage.vie, Personnage.vie_max]
 	label_xp.text = "%d / %d XP" % [Personnage.xp, Personnage.xp_prochain_niveau()]
@@ -172,18 +186,28 @@ func maj_barre_sorts() -> void:
 			var sort: Dictionary = Personnage.sorts[id_sort]
 			bouton.icon = ICONES_SORTS.pour_sort(id_sort, str(sort.get("type", "")))
 			bouton.disabled = false
+			# sort en recharge : grisé, la durée restante rend le
+			# bouton muet mais visible
+			var recharge := 0
+			if _joueur != null and is_instance_valid(_joueur) and _joueur.has_method("recharge_restante_sort"):
+				recharge = int(_joueur.call("recharge_restante_sort", id_sort))
+			bouton.modulate = Color(0.45, 0.45, 0.5) if recharge > 0 else Color.WHITE
 			# la caractéristique qui renforce ce sort suit son type :
-			# Force au corps à corps, Intelligence à distance et en soin
+			# Force pour toutes les attaques, Intelligence pour les soins
 			var stat_boost: String = Personnage.stat_booster_sort(sort)
 			var texte_boost := ""
 			if stat_boost != "":
 				texte_boost = "Boost : %s (actuel : +%d)\n" % [stat_boost, roundi(Personnage.bonus_sort_actuel(sort))]
-			bouton.tooltip_text = "%s\n%s\n%sTouche %s" % [
+			var texte_recharge := ""
+			if recharge > 0:
+				texte_recharge = "En recharge : %d tour(s)\n" % recharge
+			bouton.tooltip_text = "%s\n%s\n%s%sTouche %s" % [
 				str(sort.get("nom", "Sort")), str(sort.get("description", "")),
-				texte_boost, _raccourci(index)]
+				texte_boost, texte_recharge, _raccourci(index)]
 		else:
 			bouton.icon = null
 			bouton.disabled = true
+			bouton.modulate = Color.WHITE
 			bouton.tooltip_text = "Ouvre Menu > Sorts pour équiper un sort."
 
 func _animer_case(bouton: Control, echelle: Vector2) -> void:
@@ -220,6 +244,12 @@ func _on_bouton_fin_tour_presse() -> void:
 	elif _gestionnaire_combat.en_combat:
 		_gestionnaire_combat.demander_fin_tour()
 
+func _on_bouton_fuir_presse() -> void:
+	if _gestionnaire_combat == null:
+		return
+	if _gestionnaire_combat.en_combat:
+		_gestionnaire_combat.demander_fuite()
+
 func afficher_message_sort(message: String) -> void:
 	_label_action_actif().text = message
 
@@ -230,7 +260,11 @@ func afficher_message_sort(message: String) -> void:
 func _maj_bouton_fin_tour(combattant: Node2D) -> void:
 	if _gestionnaire_combat == null or _gestionnaire_combat.en_placement:
 		return
-	bouton_fin_tour.visible = _gestionnaire_combat.en_combat and combattant != null and combattant == _joueur
+	# le bouton de fuite suit le même rythme : jamais pendant le tour
+	# d'un ennemi ou celui de l'adversaire distant
+	var mon_tour: bool = _gestionnaire_combat.en_combat and combattant != null and combattant == _joueur
+	bouton_fin_tour.visible = mon_tour
+	bouton_fuir.visible = mon_tour
 
 func _on_placement_commence() -> void:
 	_animer_visibilite_sorts(false)
@@ -238,6 +272,7 @@ func _on_placement_commence() -> void:
 	_afficher_stats_combat(true)
 	bouton_fin_tour.text = "Placement OK"
 	bouton_fin_tour.show()
+	bouton_fuir.show()
 	_label_action_actif().text = "Place-toi, puis valide le placement : %s" % [
 		Touches.libelle_action("fin_tour")]
 
@@ -248,11 +283,13 @@ func _on_combat_commence() -> void:
 	_afficher_stats_combat(true)
 	bouton_fin_tour.text = "Fin du tour"
 	bouton_fin_tour.show()
-	_label_action_actif().text = "Sorts : %s | cible : %s / %s | fin du tour : %s" % [
+	bouton_fuir.show()
+	_label_action_actif().text = "Sorts : %s | cible : %s / %s | fin du tour : %s | fuir : %s" % [
 		Touches.libelle_action("sort_1"),
 		Touches.libelle_action("cible_suivante"),
 		Touches.libelle_action("cible_precedente"),
 		Touches.libelle_action("fin_tour"),
+		Touches.libelle_action("fuir"),
 	]
 	_animer_visibilite_sorts(true)
 
@@ -260,6 +297,9 @@ func maj_ressources_combat(pa: int, pa_max: int, pm: int, pm_max: int) -> void:
 	label_pa.text = "PA %d / %d" % [pa, pa_max]
 	label_pm.text = "PM %d / %d" % [pm, pm_max]
 	ligne_combat.visible = _gestionnaire_combat != null and _gestionnaire_combat.en_combat
+	# le joueur vient d'agir ou de reprendre son tour : les recharges
+	# de sorts ont pu bouger, la barre suit
+	maj_barre_sorts()
 
 # compte à rebours du tour du joueur : effacé quand ce n'est pas son
 # tour, rouge pendant les cinq dernières secondes
@@ -569,4 +609,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		"cible_precedente":
 			_gestionnaire_combat.cible_precedente()
+			get_viewport().set_input_as_handled()
+		"fuir":
+			_gestionnaire_combat.demander_fuite()
 			get_viewport().set_input_as_handled()

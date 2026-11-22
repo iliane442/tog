@@ -1,0 +1,499 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_capitaine_celeste.tscn" id="FerryCeleste"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="PNJ"]
+[ext_resource type="Script" path="res://scripts/world/passage_zone.gd" id="Passage"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-large-house-v0.png" id="Sanctuaire"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-batiments-v1-cottage-ocre-small-house-v0.png" id="Hameau"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/pin_de_montagne.png" id="Pin"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/chene_ancien.png" id="Chene"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/fleurs_medicinales.png" id="Fleurs"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/monument_a_l_ancre.png" id="Monument"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="Borne"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
+[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/conis.png" id="Conis"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/pagaya.png" id="Pagaya"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/amazone.png" id="Amazone"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/gan_fall.png" id="GanFall"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/wiper.png" id="Wiper"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/kamakiri.png" id="Kamakiri"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/nola.png" id="Nola"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/aigle_des_nuees.png" id="AigleNuees"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/aigle_du_large.png" id="AigleLarge"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/cerf_des_hauteurs.png" id="Cerf"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/porte_du_tonnerre.png" id="PorteDuTonnerre"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="Rochers"]
+
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[sub_resource type="RectangleShape2D" id="RayonTonnerre"]
+size = Vector2(116, 50)
+
+[node name="IleCeleste" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;,,,,,,,####################,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,#..................#,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,#..F..F..F....F....#,,,,,,,,,,,,,;;~~",
+	"~~;;,,FFF,FFF.F.FFF..F..F..F..#,,,,,,,,,,,,,;;~~",
+	"~~;;,,FF,FFF.F...F...F.::F..F.#,,,,,,,,,,,,,;;~~",
+	"~~;;,,,,F,FFF.F.F..F...::...F.#,,,,,,,,,,,,,;;~~",
+	"~~;;,,FF,FFF.FFFFF..F..::.F...#,,,,,,,,,,,,,;;~~",
+	"~~;;,,,FFF,FFFF........::.....#,,,,,,,,,,,,,;;~~",
+	"~~;;,,F,FFF#FFF########::######,,,,,,,,,,,,,;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,....F.FF...;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,..FF.....F.;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,.F....F.FF.;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,....FF.....;;~~",
+	"~~;;,.........F,,,,,,,,::,,,,,,,,.F.F....F..;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,FF....FF...;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,...F.F.....;;~~",
+	"~~;;,.........,,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,,,,,,,,,,,,,,,,,,,::,,,,,,,,...........;;~~",
+	"~~;;,,,,,,,,,,,++++++++++++++++++,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,++++++++++++++++++,,,,,,,,,,,;;~~",
+	"~~;;,,,,,,,,:::++++++++++++++++++::::,,,,,,,;;~~",
+	"~~;;,,,,,,,,,,,++++++++++++++++++,,,,,,,,,,,;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+)
+littoral = true
+emprises_decors = Array[Rect2i]([])
+
+[node name="player" parent="." index="5"]
+position = Vector2(1568.0, 2144.0)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Skypiea"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1568.0, 2144.0): "Plage des Anges", Vector2(1696.0, 608.0): "Sanctuaire de Shandora", Vector2(1504.0, 1056.0): "Sentier d’Upper Yard", Vector2(608.0, 1376.0): "Forêt suspendue", Vector2(2528.0, 1248.0): "Bassins des Nuées"})
+
+[node name="DepuisAlabasta" type="Marker2D" parent="Arrivees"]
+position = Vector2(1568.0, 2144.0)
+
+[node name="DepuisSanctuaireTonnerre" type="Marker2D" parent="Arrivees"]
+position = Vector2(2336, 864)
+
+[node name="Pagaya" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(1648, 2144)
+largeur_zone_clic = 88.0
+hauteur_zone_clic = 112.0
+
+[node name="NomMarchand" parent="Pagaya" index="0"]
+text = "Pagaya"
+
+[node name="Sprite2D" parent="Pagaya" index="1"]
+texture = ExtResource("Pagaya")
+texture_filter = 1
+
+[node name="Amazone" parent="." instance=ExtResource("FerryCeleste")]
+position = Vector2(1760.0, 2144.0)
+largeur_zone_clic = 88.0
+hauteur_zone_clic = 112.0
+nom_affiche = "Amazone"
+paroles = "Je tiens le registre des voyageurs. Tu redescends vers Alabasta ? La mer Blanche est calme. Dis-moi quand le bateau est prêt, je te montrerai le passage."
+destination = "res://scenes/alabasta.tscn"
+arrivee = &"DepuisIleCeleste"
+libelle_traversee = "Embarquer pour Alabasta"
+
+[node name="Nom" parent="Amazone" index="0"]
+position = Vector2(-90, -98)
+text = "Amazone"
+
+[node name="Sprite2D" parent="Amazone" index="1"]
+texture_filter = 1
+position = Vector2(0, -44)
+texture = ExtResource("Amazone")
+
+[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
+position = Vector2(1120.0, 2420.0)
+texture = ExtResource("Sloop")
+offset = Vector2(0, -250.0)
+scale = Vector2(0.7, 0.7)
+z_index = -3
+
+[node name="GanFall" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1696.0, 608.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String]([])
+nom_affiche = "Gan Fall"
+paroles = "Depuis sa défaite contre Luffy, Ener s’est retranché au Sanctuaire du Tonnerre, à l’est d’Upper Yard. J’ai vu deux groupes de sentinelles alimenter le sceau de la salle du trône. Neutralise les deux, puis rejoins Ener avant qu’il ne menace à nouveau Shandora."
+
+[node name="Sprite2D" type="Sprite2D" parent="GanFall"]
+texture_filter = 1
+position = Vector2(0, -44)
+texture = ExtResource("GanFall")
+
+[node name="Area2D" type="Area2D" parent="GanFall"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GanFall/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="GanFall"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Gan Fall"
+horizontal_alignment = 1
+
+[node name="Conis" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1376.0, 2144.0)
+script = ExtResource("PNJ")
+largeur_zone_clic = 86.0
+hauteur_zone_clic = 111.0
+chain_quetes = Array[String]([])
+nom_affiche = "Conis"
+paroles = "Bienvenue sur la plage des Anges ! Je m’appelle Conis. Mon père, Pagaya, est au quai si tu as besoin de provisions. Prends le chemin qui monte vers Upper Yard pour rejoindre Gan Fall. Il a vu la foudre frapper près du Sanctuaire du Tonnerre."
+
+[node name="Sprite2D" type="Sprite2D" parent="Conis"]
+texture_filter = 1
+position = Vector2(0, -44)
+texture = ExtResource("Conis")
+
+[node name="Area2D" type="Area2D" parent="Conis"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Conis/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Conis"]
+offset_left = -135.0
+offset_top = -117.0
+offset_right = 135.0
+offset_bottom = -92.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Conis"
+horizontal_alignment = 1
+
+[node name="PanneauDuPort" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1696.0, 2208.0)
+script = ExtResource("Recolte")
+titre = "Plage des Anges"
+description = "« Bienvenue à Skypiea. Suivez le sentier vers Upper Yard. Pour un départ sur la mer Blanche, faites enregistrer votre bateau auprès d’Amazone. »"
+quete = ""
+objet = ""
+quantite = 1
+retour_secondes = 0.0
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDuPort"]
+position = Vector2(0, -55.0)
+texture = ExtResource("Panneau")
+
+[node name="Etiquette" type="Label" parent="PanneauDuPort"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="BoisDeLaForet" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(608.0, 1376.0)
+script = ExtResource("Recolte")
+titre = "Écorces de la forêt suspendue"
+description = "L'arbre pousse au bord du vide : ses branches portent les nuages, son bois sent la foudre tiède."
+quete = ""
+objet = "817"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BoisDeLaForet"]
+position = Vector2(0, -100.0)
+texture = ExtResource("Chene")
+
+[node name="Etiquette" type="Label" parent="BoisDeLaForet"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="EclatsDuBassin" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2528.0, 1248.0)
+script = ExtResource("Recolte")
+titre = "Cristaux des bassins des Nuées"
+description = "La foudre tombe ici deux fois par orage : le minerai qui en sort chante quand on le frotte."
+quete = ""
+objet = "852"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="EclatsDuBassin"]
+position = Vector2(0, -47.0)
+texture = ExtResource("Rochers")
+
+[node name="Etiquette" type="Label" parent="EclatsDuBassin"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="FibresDuPlateau" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1376.0, 672.0)
+script = ExtResource("Recolte")
+titre = "Fibres d’Upper Yard"
+description = "De hautes herbes poussent entre les pierres. Pagaya utilise ces fibres pour réparer les voiles qui prennent le vent de la mer Blanche."
+quete = ""
+objet = "793"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="FibresDuPlateau"]
+position = Vector2(0, -36.0)
+texture = ExtResource("Fleurs")
+
+[node name="Etiquette" type="Label" parent="FibresDuPlateau"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="AigleDesNuees" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2272.0, 1632.0)
+nom = "Aigle des Nuées"
+pv_max = 700
+degats_attaque = 36
+portee_attaque = 1
+pm_max = 3
+mob_id = 16
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 36
+groupe = "rapaces_celeste"
+texture_personnalisee = ExtResource("AigleNuees")
+
+[node name="AigleDuLarge" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(672.0, 1824.0)
+nom = "Aigle du Large"
+pv_max = 710
+degats_attaque = 37
+portee_attaque = 1
+pm_max = 3
+mob_id = 16
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 36
+groupe = "rapaces_celeste"
+texture_personnalisee = ExtResource("AigleLarge")
+
+[node name="CerfDuPlateau" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1120.0, 1184.0)
+nom = "Cerf des Hauteurs"
+pv_max = 620
+degats_attaque = 33
+portee_attaque = 1
+pm_max = 3
+mob_id = 21
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 36
+groupe = "faune_celeste"
+texture_personnalisee = ExtResource("Cerf")
+
+[node name="Kamakiri" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2144.0, 992.0)
+nom = "Kamakiri"
+pv_max = 600
+degats_attaque = 35
+portee_attaque = 1
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 37
+groupe = "entrainement_shandia"
+texture_personnalisee = ExtResource("Kamakiri")
+
+[node name="Wiper" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1184.0, 1696.0)
+nom = "Wiper"
+pv_max = 660
+degats_attaque = 38
+portee_attaque = 2
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 38
+groupe = "entrainement_shandia"
+texture_personnalisee = ExtResource("Wiper")
+
+[node name="Nola" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1888.0, 480.0)
+nom = "Nola"
+pv_max = 1200
+degats_attaque = 44
+portee_attaque = 2
+pm_max = 3
+mob_id = 0
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 40
+groupe = ""
+texture_personnalisee = ExtResource("Nola")
+attaques_par_tour = 2
+
+[node name="VersSanctuaireTonnerre" type="Area2D" parent="."]
+position = Vector2(2336, 800)
+collision_layer = 0
+script = ExtResource("Passage")
+destination = "res://scenes/donjon_ener.tscn"
+arrivee = &"DepuisSkypiea"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VersSanctuaireTonnerre"]
+shape = SubResource("RayonTonnerre")
+
+[node name="Etiquette" type="Label" parent="VersSanctuaireTonnerre"]
+z_index = 18
+offset_left = -190.0
+offset_top = -187.0
+offset_right = 190.0
+offset_bottom = -153.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.90, 0.70, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.12, 0.18, 1)
+theme_override_constants/outline_size = 9
+theme_override_font_sizes/font_size = 24
+text = "Sanctuaire du Tonnerre"
+horizontal_alignment = 1
+
+[node name="PorteDuTonnerre" type="Sprite2D" parent="Paysage"]
+position = Vector2(2336, 800)
+scale = Vector2(0.83, 0.83)
+texture = ExtResource("PorteDuTonnerre")
+offset = Vector2(0, -95)
+
+[node name="SanctuaireDeShandora" type="Sprite2D" parent="Paysage"]
+position = Vector2(1696.0, 580.0)
+texture = ExtResource("Sanctuaire")
+offset = Vector2(0, -190.0)
+scale = Vector2(2.1, 2.1)
+
+[node name="HameauDUne" type="Sprite2D" parent="Paysage"]
+position = Vector2(1400.0, 700.0)
+texture = ExtResource("Hameau")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.3, 1.3)
+
+[node name="HameauDAutre" type="Sprite2D" parent="Paysage"]
+position = Vector2(1900.0, 700.0)
+texture = ExtResource("Hameau")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.2, 1.2)
+flip_h = true
+
+[node name="PinsDuPlateauA" type="Sprite2D" parent="Paysage"]
+position = Vector2(1500.0, 900.0)
+texture = ExtResource("Pin")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.1, 1.1)
+
+[node name="PinsDuPlateauB" type="Sprite2D" parent="Paysage"]
+position = Vector2(1850.0, 950.0)
+texture = ExtResource("Pin")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.05, 1.05)
+flip_h = true
+
+[node name="CheneDeLaForet" type="Sprite2D" parent="Paysage"]
+position = Vector2(620.0, 1300.0)
+texture = ExtResource("Chene")
+offset = Vector2(0, -100.0)
+scale = Vector2(1.2, 1.2)
+
+[node name="FleursDeLOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(900.0, 1450.0)
+texture = ExtResource("Fleurs")
+offset = Vector2(0, -36.0)
+scale = Vector2(0.8, 0.8)
+
+[node name="MonumentDuSanctuaire" type="Sprite2D" parent="Paysage"]
+position = Vector2(1980.0, 640.0)
+texture = ExtResource("Monument")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.1, 1.1)
+
+[node name="LanterneDuPort" type="Sprite2D" parent="Paysage"]
+position = Vector2(1470.0, 2140.0)
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -90.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="BorneDUne" type="Sprite2D" parent="Paysage"]
+position = Vector2(1790.0, 2140.0)
+texture = ExtResource("Borne")
+offset = Vector2(0, -60.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="BarqueDUne" type="Sprite2D" parent="Paysage"]
+position = Vector2(2500.0, 2260.0)
+texture = ExtResource("Barque")
+offset = Vector2(0, -70.0)
+scale = Vector2(1.0, 1.0)
+
+[node name="CaissesDuPort" type="Sprite2D" parent="Paysage"]
+position = Vector2(1820.0, 2208.0)
+texture = ExtResource("Caisses")
+offset = Vector2(0, -64.0)
+scale = Vector2(0.7, 0.7)
+
+[editable path="Pagaya"]
+[editable path="Amazone"]
+

@@ -4,8 +4,18 @@ const HORS_GRILLE := Vector2i(-1, -1)
 
 var cases_deplacement: Array[Vector2i] = []
 var cases_sort: Array[Vector2i] = []
+# aperçu de la figure du sort de zone autour de la cible survolée
+var cases_zone: Array[Vector2i] = []
+# salle d'opération active (Room du bistouri) : contrairement aux
+# couches précédentes, elle survit aux rafraîchissements de tour —
+# c'est un décor de combat, pas une indication
+var cases_salle: Array[Vector2i] = []
+var cases_danger: Array[Vector2i] = []
 var _sol: TileMapLayer
 var _lire_case_curseur: Callable
+# fournit les cases de la figure (croix, barre...) selon la case
+# survolée ; recalculées à chaque changement de survol
+var _lire_apercu_zone: Callable
 var _case_survolee := HORS_GRILLE
 var _contour_survol: Node2D
 
@@ -26,20 +36,44 @@ func definir_sol(sol: TileMapLayer, lire_case_curseur := Callable()) -> void:
 	_maj_survol()
 	queue_redraw()
 
+# enregistre la fonction qui calcule l'aperçu de figure du sort
+func definir_apercu_zone(lire_apercu: Callable) -> void:
+	_lire_apercu_zone = lire_apercu
+	_maj_survol()
+
+# la salle d'opération se dresse pour plusieurs tours : elle se
+# redessine au-dessus de tout jusqu'à son effacement explicite
+func afficher_salle(cases: Array[Vector2i]) -> void:
+	cases_salle = cases.duplicate()
+	_maj_survol()
+	queue_redraw()
+
+# la salle s'est dissipée
+func effacer_salle() -> void:
+	cases_salle.clear()
+	queue_redraw()
+
+func afficher_danger(cases: Array[Vector2i]) -> void:
+	cases_danger = cases.duplicate()
+	queue_redraw()
+
 func afficher(cases: Array[Vector2i]) -> void:
 	cases_deplacement = cases.duplicate()
 	cases_sort.clear()
+	cases_zone.clear()
 	_maj_survol()
 	queue_redraw()
 
 func afficher_sort(cases: Array[Vector2i]) -> void:
 	cases_sort = cases.duplicate()
+	cases_zone.clear()
 	_maj_survol()
 	queue_redraw()
 
 func effacer() -> void:
 	cases_deplacement.clear()
 	cases_sort.clear()
+	cases_zone.clear()
 	_maj_survol()
 	queue_redraw()
 
@@ -55,6 +89,13 @@ func _maj_survol() -> void:
 	if coordonnee != _case_survolee:
 		_case_survolee = coordonnee
 		_contour_survol.queue_redraw()
+	# l'aperçu de figure suit le survol : il se recalcule quand la
+	# case sous le curseur change
+	if _lire_apercu_zone.is_valid():
+		var nouvelles: Array[Vector2i] = _lire_apercu_zone.call()
+		if nouvelles != cases_zone:
+			cases_zone = nouvelles
+			queue_redraw()
 
 func _draw() -> void:
 	if _sol == null or _sol.tile_set == null:
@@ -62,6 +103,19 @@ func _draw() -> void:
 	var taille := Vector2(_sol.tile_set.tile_size)
 	_dessiner_cases(cases_deplacement, Color(0.2, 0.5, 1.0, 0.4), Color(0.5, 0.8, 1.0, 0.85), taille)
 	_dessiner_cases(cases_sort, Color(1.0, 0.1, 0.1, 0.4), Color(1.0, 0.4, 0.4, 0.9), taille)
+	# la figure de zone recouvre la portée : dorée, pour la distinguer
+	_dessiner_cases(cases_zone, Color(1.0, 0.75, 0.2, 0.38), Color(1.0, 0.75, 0.35, 0.9), taille)
+	# la Room active : dôme verdâtre qui recouvre tout le reste
+	_dessiner_cases(cases_salle, Color(0.45, 0.95, 0.6, 0.30), Color(0.5, 1.0, 0.7, 0.9), taille)
+	_dessiner_cases(cases_danger, Color("#ff721970"), Color("#ffc45f"), taille, 3.5)
+	for case in cases_danger:
+		var centre := to_local(_sol.to_global(_sol.map_to_local(case)))
+		var eclair := PackedVector2Array([
+			centre + Vector2(4, -15), centre + Vector2(-6, 1),
+			centre + Vector2(4, 1), centre + Vector2(-4, 14),
+		])
+		draw_polyline(eclair, Color("#651f1a"), 6.0)
+		draw_polyline(eclair, Color("#fff0a1"), 3.0)
 
 func _dessiner_cases(cases: Array[Vector2i], remplissage: Color, bordure: Color, taille: Vector2, epaisseur: float = 2.0) -> void:
 	for case in cases:

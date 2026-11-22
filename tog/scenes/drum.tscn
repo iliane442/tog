@@ -31,6 +31,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/renne.png" id="sprite_ile_renne"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/oiseau_des_neiges.png" id="sprite_ile_oiseau_des_neiges"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -95,6 +96,9 @@ position = Vector2(1250.0, 2160.0)
 [node name="DepuisAlabasta" type="Marker2D" parent="Arrivees"]
 position = Vector2(1390.0, 2160.0)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(998, 2160)
 [node name="CapitaineOrme" parent="." instance=ExtResource("FerryGarden")]
 position = Vector2(1110.0, 2160.0)
 paroles = "Redescendre à Little Garden ? La jungle aux géants garde le meilleur des caprices du ciel : embroche ta cape quand même, le thermomètre ici-bas se moque des saisons."

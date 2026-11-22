@@ -16,11 +16,6 @@ const TAILLE_CASE_EQUIP := Vector2(58, 58)
 const ESPACEMENT_CASE_EQUIP := 8.0
 const EMPLACEMENTS_GAUCHE: Array[String] = ["tête", "corps", "cape", "main", "ceinture", "pantalon"]
 const EMPLACEMENTS_DROIT: Array[String] = ["visage", "cou", "arme", "arme2", "anneau1", "anneau2", "pieds"]
-const VISUELS_RACES := {
-	"human": "humain_pirate",
-	"mink": "mink_pirate",
-	"fishman": "fishman_pirate",
-}
 const FONDS := {
 	"personnage": preload("res://assets/ui/planches/carnet.jpg"),
 	"inventaire": preload("res://assets/ui/planches/sac.jpg"),
@@ -44,16 +39,22 @@ var _boutons_sorts: Dictionary = {}
 var _barre_apercu: PanelContainer
 var _mise_a_jour_sac_prevue := false
 var _mode_inventaire_compact := false
-var _race_portrait_chargee := ""
+var _visuel_portrait_charge := ""
 var _tweens_cases: Dictionary = {}
 var _cache_icones_objets: Dictionary = {}
 @onready var option_type_inventaire: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/Categorie
 @onready var case_portables: CheckBox = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/CasePortables
 @onready var champ_recherche_sac: LineEdit = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/ChampRechercheSac
+@onready var tri_sac: OptionButton = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/TriSac
+# ordre d'affichage du sac : par nom (défaut) ou par rareté décroissante
+var _tri_par_rarete := false
 @onready var btn_manger_fruit: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnMangerFruit
 @onready var btn_barre_objets: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnBarreObjets
 @onready var retour_accueil: Button = $Fenetre/RetourAccueil
 var filtre_portables := false
+# clic sur un emplacement du paperdoll : la grille ne montre plus
+# que ce qui peut prendre cette place ("" = pas de filtre)
+var filtre_emplacement := ""
 var _fruit_wiki_visible := false
 var _niveau_sorts := -1
 @onready var info_ventes_joueurs: Label = $Fenetre/Corps/ContenuHotel/ZoneHotel/PanneauAchats/MargesAchats/ColonneAchats/InfoVentesJoueurs
@@ -73,10 +74,11 @@ const LIBELLES_TYPES_INVENTAIRE := {
 const AIDE_STATS := {
 	"vitalite": "Vitalité : +5 points de vie par point.",
 	"sagesse": "Sagesse : +2% d'expérience gagnée par point.",
-	"force": "Force : +1 dégât par point sur les sorts d'attaque au corps à corps (portée 1).",
-	"intelligence": "Intelligence : +1 dégât par point sur les sorts d'attaque à distance (portée 2 et plus), +1 point de soin par point sur les sorts de soin.",
+	"force": "Force : +1 dégât par point sur tous les sorts d'attaque.",
+	"intelligence": "Intelligence : +1 point de soin par point sur les sorts de soin.",
 	"chance": "Précision : +1% de chances de toucher par point.",
 	"agilite": "Vitesse : +1% d'esquive et +1% d'initiative par point, jusqu'à +50% de chances de gagner un PM supplémentaire par tour.",
+	"defense": "Défense : chaque point absorbe une part croissante des dégâts reçus (dégâts x 100 / (100 + défense)) — 100 points réduisent tout coup de moitié.",
 }
 
 @onready var monnaie: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac/Monnaie
@@ -93,9 +95,15 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var liste_quetes: VBoxContainer = $Fenetre/Corps/ContenuQuetes/DefilementQuetes/ListeQuetes
 @onready var label_aucune_quete: Label = $Fenetre/Corps/ContenuQuetes/Aucune
 @onready var liste_sorts: VBoxContainer = $Fenetre/Corps/ContenuSorts/DefilementSorts/ListeSorts
+@onready var contenu_sorts: VBoxContainer = $Fenetre/Corps/ContenuSorts
 @onready var label_nom: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Nom
+@onready var ligne_apparence: HBoxContainer = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/LigneApparence
+@onready var option_apparence: OptionButton = ligne_apparence.get_node("OptionApparence")
+@onready var portrait_identite: TextureRect = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/PortraitCadre/Portrait
+@onready var portrait_identite_defaut: Texture2D = portrait_identite.texture
 @onready var label_race_classe: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/RaceClasse
 @onready var label_niveau: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Niveau
+@onready var label_navire: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/Navire
 @onready var label_xp: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/XP
 @onready var label_vie: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/Vie
 @onready var label_argent: Label = $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/Argent
@@ -114,6 +122,7 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 	"intelligence": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatIntelligence/Ligne/Ajouter},
 	"chance": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatChance/Ligne/Ajouter},
 	"agilite": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatAgilite/Ligne/Ajouter},
+	"defense": {"valeur": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne/Valeur, "ajouter": $Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne/Ajouter},
 }
 @onready var icone_detail: TextureRect = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/EnteteDetail/IconeItem
 @onready var nom_detail: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/EnteteDetail/IdentiteItem/NomItem
@@ -138,8 +147,21 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var titre_recettes: Label = $Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/TitreRecettes
 @onready var liste_recettes: VBoxContainer = $Fenetre/Corps/ContenuMetiers/ZoneMetiers/PanneauMetier/MargesMetier/ColonneMetier/DefilementRecettes/ListeRecettes
 @onready var btn_equiper: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnEquip
+@onready var btn_auto_equipement: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BtnAutoEquipement
 @onready var btn_ouvrir_coffre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnOuvrirCoffre
 @onready var btn_ouvrir_tous: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnOuvrirTous
+@onready var btn_vendre: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnVendre
+@onready var btn_navire: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem/BtnNavire
+@onready var slots_navire: VBoxContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/SlotsNavire
+@onready var bonus_navire: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BonusNavire
+@onready var titre_navire_col: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/TitreNavire
+@onready var btn_vue_equipement: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BasculeColonne/BtnVueEquipement
+@onready var btn_vue_navire: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BasculeColonne/BtnVueNavire
+# vue courante de la colonne de gauche de l'inventaire : équipement
+# ou navire, jamais les deux à la fois
+var _vue_navire := false
+# bouton de la colonne NAVIRE, rempli à la première ouverture
+var _boutons_navire: Dictionary = {}
 @onready var panneau_personnage_inventaire: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette
 @onready var panneau_sac: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac
 @onready var panneau_detail: PanelContainer = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem
@@ -283,8 +305,15 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_ajuster_fenetre)
 	$Fenetre/FermerPlanche.pressed.connect(fermer)
 	option_type_inventaire.item_selected.connect(_on_type_inventaire_selectionne)
+	for apparence in Personnage.APPARENCES_HUMAINES.values():
+		option_apparence.add_item(apparence["nom"])
+	option_apparence.item_selected.connect(_sur_apparence_choisie)
 	case_portables.toggled.connect(_on_portables_toggle)
 	champ_recherche_sac.text_changed.connect(_on_recherche_sac)
+	tri_sac.add_item("Tri : nom")
+	tri_sac.add_item("Tri : rareté")
+	tri_sac.select(0)
+	tri_sac.item_selected.connect(_on_tri_sac_choisi)
 	btn_utiliser.pressed.connect(_on_bouton_utiliser)
 	btn_manger_fruit.pressed.connect(_on_bouton_manger_fruit)
 	btn_barre_objets.pressed.connect(_on_bouton_barre_objets)
@@ -294,8 +323,16 @@ func _ready() -> void:
 	call_deferred("_positionner_emplacements")
 	_connecter_onglets()
 	btn_equiper.pressed.connect(_on_bouton_equiper)
+	btn_auto_equipement.pressed.connect(_on_auto_equipement)
 	btn_ouvrir_coffre.pressed.connect(_on_bouton_ouvrir_coffre)
 	btn_ouvrir_tous.pressed.connect(_on_bouton_ouvrir_tous)
+	btn_vendre.pressed.connect(_on_bouton_vendre)
+	btn_navire.pressed.connect(_on_bouton_navire)
+	btn_vue_equipement.toggled.connect(_basculer_vue_equipement)
+	btn_vue_navire.toggled.connect(_basculer_vue_navire)
+	_appliquer_vue_colonne()
+	_construire_onglets_metiers()
+	_construire_onglets_sorts()
 	$Fenetre/Entete/Fermer.pressed.connect(fermer)
 	btn_valider.pressed.connect(_on_valider_points)
 	btn_reinitialiser.pressed.connect(_on_reinitialiser_points)
@@ -465,6 +502,9 @@ func maj_section() -> void:
 	for section in contenus:
 		contenus[section].visible = section == section_actuelle
 	titre.text = noms_sections[section_actuelle]
+	# filtre d'emplacement actif : l'onglet le dit
+	if section_actuelle == "inventaire" and filtre_emplacement != "":
+		titre.text += " — %s seulement" % _libelle_emplacement_filtre(filtre_emplacement)
 	match section_actuelle:
 		"personnage":
 			maj_personnage()
@@ -475,6 +515,7 @@ func maj_section() -> void:
 			maj_quetes()
 		"inventaire":
 			maj_equipement()
+			maj_panneau_navire()
 			if _grille_sale:
 				maj_grille()
 		"wiki":
@@ -491,9 +532,11 @@ func maj_personnage() -> void:
 	var en_attente := _total_points_en_attente()
 	var restants := maxi(Personnage.points_statistique - en_attente, 0)
 	label_nom.text = Personnage.nom
+	_maj_apparence_personnage()
 	label_race_classe.text = "Race : %s | Classe : %s" % [Personnage.nom_race(), Personnage.nom_classe()]
 	label_niveau.text = "Niveau %d" % Personnage.niveau
 	label_xp.text = "Expérience : %d / %d" % [Personnage.xp, Personnage.xp_prochain_niveau()]
+	_maj_resume_navire()
 	var vie_max_affichee: int = Personnage.vie_max + 5 * int(points_en_attente.get("vitalite", 0))
 	label_vie.text = "Vie : %d / %d" % [Personnage.vie, vie_max_affichee]
 	label_argent.text = "Berry : %d" % Personnage.berry
@@ -503,14 +546,40 @@ func maj_personnage() -> void:
 	btn_valider.disabled = en_attente == 0
 	btn_reinitialiser.disabled = en_attente == 0
 	valeur_vie_max.text = str(vie_max_affichee)
-	valeur_attaque.text = str(Personnage.attaque)
-	valeur_defense.text = str(Personnage.defense)
+	# l'attaque suit la force du personnage : base + contribution de
+	# la Force (points validés, puis points posés en prévisualisation)
+	valeur_attaque.text = str(Personnage.attaque_effective() + int(points_en_attente.get("force", 0)))
+	# la défense en attente se prévisualise comme la vie (points posés,
+	# pas encore validés)
+	valeur_defense.text = str(int(Personnage.defense) + int(points_en_attente.get("defense", 0)))
 	for cle: String in Personnage.caracteristiques:
 		var ligne_stat: Dictionary = lignes_stats[cle]
 		var valeur_stat: Label = ligne_stat["valeur"] as Label
 		var bouton_ajouter: Button = ligne_stat["ajouter"] as Button
 		valeur_stat.text = str(int(Personnage.caracteristiques[cle]) + int(points_en_attente.get(cle, 0)))
 		bouton_ajouter.disabled = restants <= 0
+
+# résumé du navire sous l'identité : pièces installées emplacement
+# par emplacement, puis solidité et résistance avec leurs bonus
+func _maj_resume_navire() -> void:
+	if label_navire == null:
+		return
+	var stats := Personnage.stats_bateau()
+	if int(stats["solidite"]) <= 0 and float(stats["tempete"]) <= 0.0:
+		label_navire.text = "Navire : aucune pièce installée"
+		return
+	var lignes := PackedStringArray()
+	for emplacement in Personnage.EMPLACEMENTS_NAVIRE.values():
+		var id_piece := str(Personnage.bateau.get(emplacement, ""))
+		lignes.append("%s : %s" % [
+			emplacement,
+			Inventaire.nom_objet(id_piece) if id_piece != "" else "vide",
+		])
+	label_navire.text = "Navire — %s\nBonus : +%d PV, +%d DEF, +%d%% vitesse d'exploration (%d solidité · %d%% tempête)" % [
+		" · ".join(lignes),
+		int(stats["solidite"]) / 20, int(stats["solidite"]) / 200,
+		roundi(float(stats["tempete"])), int(stats["solidite"]), int(stats["tempete"]),
+	]
 
 func _sur_personnage_modifie() -> void:
 	if not fenetre.visible:
@@ -520,35 +589,68 @@ func _sur_personnage_modifie() -> void:
 	elif section_actuelle == "inventaire":
 		_maj_resume_personnage()
 		_maj_monnaie_et_compteur()
+		maj_panneau_navire()
 		if detail_id_courant != "":
-			_maj_bouton_equiper(Inventaire.details_objet(detail_id_courant), detail_id_courant)
-
+			var details_inventaire := Inventaire.details_objet(detail_id_courant)
+			_maj_bouton_equiper(details_inventaire, detail_id_courant)
+			_maj_bouton_vendre(details_inventaire)
+			_maj_bouton_navire(details_inventaire, detail_id_courant)
 func _maj_resume_personnage() -> void:
 	_maj_portrait_equipement()
 	nom_niveau_inventaire.text = "%s · Niv. %d" % [Personnage.nom, Personnage.niveau]
 	resume_stats_inventaire.text = "PV %d/%d · ATQ %d · DEF %d\n%s Berry" % [
-		Personnage.vie, Personnage.vie_max, Personnage.attaque, Personnage.defense,
+		Personnage.vie, Personnage.vie_max, Personnage.attaque_effective(), Personnage.defense,
 		_formater_nombre(Personnage.berry),
 	]
 
+func _sur_apparence_choisie(index: int) -> void:
+	Personnage.choisir_apparence_humaine(Personnage.APPARENCES_HUMAINES.keys()[index])
+	_maj_apparence_personnage()
+
+func _maj_apparence_personnage() -> void:
+	ligne_apparence.visible = Personnage.a_une_apparence_humaine(Personnage.race_id)
+	if not ligne_apparence.visible:
+		portrait_identite.texture = portrait_identite_defaut
+		return
+	option_apparence.select(Personnage.APPARENCES_HUMAINES.keys().find(Personnage.apparence_humaine))
+	_maj_portrait_equipement()
+	portrait_identite.texture = portrait_equipement.texture
+
 func _maj_portrait_equipement() -> void:
-	var identifiant_race := str(Personnage.races.get(Personnage.race_id, {}).get("id_technique", "human"))
-	if identifiant_race == _race_portrait_chargee:
+	var dossier := Personnage.prefixe_visuel(Personnage.race_id, Personnage.sexe, Personnage.apparence_humaine)
+	if dossier == _visuel_portrait_charge:
 		return
-	var dossier: String = str(VISUELS_RACES.get(identifiant_race, VISUELS_RACES["human"]))
-	var chemin := "res://assets/sprites/%s/%s_idle.png" % [dossier, dossier]
-	if not ResourceLoader.exists(chemin):
-		dossier = str(VISUELS_RACES["human"])
-		chemin = "res://assets/sprites/%s/%s_idle.png" % [dossier, dossier]
-	var planche := load(chemin) as Texture2D
-	if planche == null:
-		return
-	var taille_case := planche.get_size() / Vector2(4.0, 4.0)
-	var portrait := AtlasTexture.new()
-	portrait.atlas = planche
-	portrait.region = Rect2(Vector2.ZERO, taille_case)
+	var portrait := Personnage.portrait_visuel(dossier)
+	if portrait == null:
+		portrait = Personnage.portrait_visuel("humain_pirate")
 	portrait_equipement.texture = portrait
-	_race_portrait_chargee = identifiant_race
+	_visuel_portrait_charge = dossier
+
+# rang de tri d'un objet par rareté : suit l'ordre réel des paliers
+# (commun < peu commun < rare < épique < légendaire < mythique), les
+# ids de rareté de la base n'étant pas numériquement croissants
+const PALIERS_RARETE_TRI := [1, 5, 2, 3, 4, 6]
+
+func _rang_rarete(id: String) -> int:
+	var id_rarete := int(Inventaire.details_objet(id).get("id_rarete", 1))
+	var rang := PALIERS_RARETE_TRI.find(id_rarete)
+	return rang if rang >= 0 else PALIERS_RARETE_TRI.size()
+
+# l'utilisateur choisit l'ordre du sac : par nom ou par rareté
+func _on_tri_sac_choisi(index: int) -> void:
+	_tri_par_rarete = index == 1
+	maj_grille()
+
+# libellé affiché d'un emplacement de filtre : paperdoll ou navire
+const LIBELLES_EMPLACEMENTS_NAVIRE := {
+	"planche": "Planches", "gouvernail": "Gouvernails", "mat": "Mâts",
+	"coque": "Coques", "proue": "Figures de proue",
+}
+
+func _libelle_emplacement_filtre(emplacement: String) -> String:
+	if LIBELLES_EMPLACEMENTS_NAVIRE.has(emplacement):
+		return LIBELLES_EMPLACEMENTS_NAVIRE[emplacement]
+	return str(TEXTES_EMPLACEMENTS.get(emplacement, emplacement))
 
 func _maj_monnaie_et_compteur() -> void:
 	monnaie.text = "%s Berry" % _formater_nombre(Personnage.berry)
@@ -649,6 +751,12 @@ func _on_debug_niveau_200() -> void:
 const TAILLE_CASE_SORT := Vector2(56, 56)
 const ICONES_SORTS := preload("res://scripts/ui/icones_sorts.gd")
 
+# --- sous-onglets des sorts : classe d'un côté, fruit du démon de l'autre ---
+var _vue_sorts := "classe"
+var _rangee_onglets_sorts: HBoxContainer
+var _btn_onglet_sorts_classe: Button
+var _btn_onglet_sorts_fruit: Button
+
 func maj_sorts() -> void:
 	_sorts_sales = false
 	_niveau_sorts = Personnage.niveau
@@ -657,33 +765,48 @@ func maj_sorts() -> void:
 		liste_sorts.remove_child(enfant)
 		enfant.queue_free()
 	_construire_barre_sorts()
+	_maj_onglets_sorts()
 	var ids_classe: Array[String] = Personnage.sorts_de_classe()
-	var ids_combat: Array[String] = []
 	# sorts disponibles hors classe (pouvoirs du fruit mangé débloqués
-	# par son niveau d'utilisation)
+	# par leur niveau d'utilisation)
+	var ids_fruit: Array[String] = []
 	for id_sort in Personnage.sorts_disponibles():
 		if not ids_classe.has(id_sort):
-			ids_combat.append(id_sort)
+			ids_fruit.append(id_sort)
+	# les pouvoirs de menu (Greffe de Vie) vivent ici, pas sur la barre :
+	# l'onglet du fruit est leur seul point d'entrée
+	for id_pouvoir in Personnage.pouvoirs_fruit_menu():
+		if not ids_fruit.has(id_pouvoir):
+			ids_fruit.append(id_pouvoir)
 	var verrous_classe := Personnage.sorts_de_classe_verrouilles()
 	var verrous_fruit := Personnage.sorts_fruit_verrouilles()
-	if ids_classe.is_empty() and ids_combat.is_empty() and verrous_classe.is_empty() and verrous_fruit.is_empty():
+	# la vue « fruit » ne se tient qu'avec un fruit dans l'estomac :
+	# sans lui, l'onglet n'existe pas et la classe occupe tout
+	var vue_fruit := _vue_sorts == "fruit" and Personnage.fruit_id != ""
+	if vue_fruit:
+		_construire_fiche_fruit(ids_fruit, verrous_fruit)
+		if ids_fruit.is_empty() and verrous_fruit.is_empty():
+			var vide_fruit := Label.new()
+			vide_fruit.text = "Aucun pouvoir n'est encore débloqué."
+			liste_sorts.add_child(vide_fruit)
+			return
+		_ajouter_titre_section_sorts("Pouvoirs du fruit du démon")
+		for id_fruit in ids_fruit:
+			_construire_carte_sort(id_fruit, "", Personnage.POUVOIRS_FRUIT_MENU.has(id_fruit))
+		for verrou in verrous_fruit:
+			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du fruit du démon." % int(verrou["niveau"]), Personnage.POUVOIRS_FRUIT_MENU.has(str(verrou["id"])))
+		return
+	if ids_classe.is_empty() and verrous_classe.is_empty():
 		var vide := Label.new()
 		vide.text = "Aucun sort n'est disponible pour le moment."
 		liste_sorts.add_child(vide)
 		return
-	if not ids_classe.is_empty() or not verrous_classe.is_empty():
-		_ajouter_titre_section_sorts("Sorts de classe")
-		for id_classe in ids_classe:
-			if Personnage.sorts.has(id_classe):
-				_construire_carte_sort(id_classe)
-		for verrou in verrous_classe:
-			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du personnage." % int(verrou["niveau"]))
-	if not ids_combat.is_empty() or not verrous_fruit.is_empty():
-		_ajouter_titre_section_sorts("Pouvoirs du fruit du démon")
-		for id_combat in ids_combat:
-			_construire_carte_sort(id_combat)
-		for verrou in verrous_fruit:
-			_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du fruit du démon." % int(verrou["niveau"]))
+	_ajouter_titre_section_sorts("Sorts de classe")
+	for id_classe in ids_classe:
+		if Personnage.sorts.has(id_classe):
+			_construire_carte_sort(id_classe)
+	for verrou in verrous_classe:
+		_construire_carte_sort(verrou["id"], "Débloqué au niveau %d du personnage." % int(verrou["niveau"]))
 
 func _ajouter_titre_section_sorts(texte: String) -> void:
 	var titre_section := Label.new()
@@ -691,6 +814,83 @@ func _ajouter_titre_section_sorts(texte: String) -> void:
 	titre_section.theme_type_variation = "Ribbon"
 	titre_section.add_theme_font_size_override("font_size", 24)
 	liste_sorts.add_child(titre_section)
+
+# fiche du fruit mangé, en tête de son onglet : nom, niveau, expérience
+# vers le prochain palier et pouvoirs débloqués
+func _construire_fiche_fruit(ids_fruit: Array[String], verrous_fruit: Array[Dictionary]) -> void:
+	var encadre := PanelContainer.new()
+	encadre.add_theme_stylebox_override("panel", FICHE_MENU)
+	var colonne := VBoxContainer.new()
+	colonne.add_theme_constant_override("separation", 6)
+	var titre := Label.new()
+	titre.text = Personnage.nom_fruit()
+	titre.add_theme_font_size_override("font_size", 22)
+	colonne.add_child(titre)
+	var niveau := Personnage.niveau_fruit()
+	var seuil_actuel := Personnage.seuil_xp_fruit(niveau)
+	var seuil_suivant := Personnage.seuil_xp_fruit(niveau + 1)
+	var prochain := -1
+	for verrou in verrous_fruit:
+		var niveau_verrou := int(verrou.get("niveau", 0))
+		if prochain < 0 or niveau_verrou < prochain:
+			prochain = niveau_verrou
+	var texte_infos := "Niveau du fruit : %d   •   Pouvoirs débloqués : %d / %d" % [
+		niveau, ids_fruit.size(), ids_fruit.size() + verrous_fruit.size()]
+	if prochain >= 0:
+		texte_infos += "   •   prochain pouvoir au niveau %d du fruit" % prochain
+	var infos := Label.new()
+	infos.text = texte_infos
+	colonne.add_child(infos)
+	# l'expérience se lit dans le palier courant : ce que le fruit a
+	# gagné depuis son dernier niveau sur ce qu'il lui faut pour le
+	# prochain
+	var xp_palier := clampi(Personnage.fruit_xp - seuil_actuel, 0, maxi(seuil_suivant - seuil_actuel, 1))
+	# le prochain palier ne dépend pas du prochain pouvoir : le fruit
+	# monte par ses seuils cumulés, les pouvoirs suivent son niveau
+	var texte_xp := Label.new()
+	texte_xp.text = "XP du fruit : %d / %d vers le niveau %d" % [xp_palier, seuil_suivant - seuil_actuel, niveau + 1]
+	colonne.add_child(texte_xp)
+	var barre := ProgressBar.new()
+	barre.max_value = maxi(seuil_suivant - seuil_actuel, 1)
+	barre.value = xp_palier
+	barre.show_percentage = false
+	colonne.add_child(barre)
+	encadre.add_child(colonne)
+	liste_sorts.add_child(encadre)
+
+# la rangée de sous-onglets des sorts : classe d'un côté, pouvoirs du
+# fruit mangé de l'autre ; elle n'apparaît qu'avec un fruit dans
+# l'estomac, sinon la liste de classe occupe tout l'onglet
+func _construire_onglets_sorts() -> void:
+	_rangee_onglets_sorts = HBoxContainer.new()
+	_rangee_onglets_sorts.add_theme_constant_override("separation", 8)
+	_btn_onglet_sorts_classe = Button.new()
+	_btn_onglet_sorts_classe.text = "Sorts de classe"
+	_btn_onglet_sorts_classe.toggle_mode = true
+	_btn_onglet_sorts_classe.button_pressed = true
+	_btn_onglet_sorts_classe.pressed.connect(_sur_onglet_sorts.bind("classe"))
+	_btn_onglet_sorts_fruit = Button.new()
+	_btn_onglet_sorts_fruit.text = "Fruit du démon"
+	_btn_onglet_sorts_fruit.toggle_mode = true
+	_btn_onglet_sorts_fruit.pressed.connect(_sur_onglet_sorts.bind("fruit"))
+	_rangee_onglets_sorts.add_child(_btn_onglet_sorts_classe)
+	_rangee_onglets_sorts.add_child(_btn_onglet_sorts_fruit)
+	contenu_sorts.add_child(_rangee_onglets_sorts)
+	contenu_sorts.move_child(_rangee_onglets_sorts, 0)
+
+func _sur_onglet_sorts(vue: String) -> void:
+	_vue_sorts = vue
+	maj_sorts()
+
+func _maj_onglets_sorts() -> void:
+	if _rangee_onglets_sorts == null:
+		return
+	var a_fruit := Personnage.fruit_id != ""
+	_rangee_onglets_sorts.visible = a_fruit
+	if not a_fruit:
+		_vue_sorts = "classe"
+	_btn_onglet_sorts_classe.button_pressed = _vue_sorts == "classe"
+	_btn_onglet_sorts_fruit.button_pressed = _vue_sorts == "fruit"
 
 # barre de sorts : un bouton par emplacement ; les emplacements vides
 # sont grisés, cliquer un sort placé le retire de la barre
@@ -749,7 +949,7 @@ func _maj_action_sort(id: String, bouton: Button) -> void:
 
 # carte d'un sort de la classe : nom, icône, infos, description et
 # bouton de placement dans la barre de combat
-func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
+func _construire_carte_sort(id: String, texte_verrou: String = "", hors_combat := false) -> void:
 	if not Personnage.sorts.has(id):
 		return
 	var sort: Dictionary = Personnage.sorts[id]
@@ -770,7 +970,11 @@ func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
 	nom.add_theme_font_size_override("font_size", 26)
 	nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var btn_barre := Button.new()
-	if texte_verrou.is_empty():
+	if hors_combat and texte_verrou.is_empty():
+		btn_barre.text = "Utiliser"
+		btn_barre.tooltip_text = "Hors combat, depuis ce menu : le prochain clic sur la carte désigne le patient."
+		btn_barre.pressed.connect(_on_utiliser_pouvoir_fruit.bind(id))
+	elif texte_verrou.is_empty():
 		_boutons_sorts[id] = btn_barre
 		_maj_action_sort(id, btn_barre)
 		btn_barre.pressed.connect(_basculer_sort_barre.bind(id))
@@ -783,14 +987,20 @@ func _construire_carte_sort(id: String, texte_verrou: String = "") -> void:
 	entete.add_child(nom)
 	entete.add_child(btn_barre)
 	var infos := Label.new()
-	var texte_infos := "Type : %s   •   Portée : %d   •   PA : %d   •   Recharge de base : %d" % [
-		sort.get("type", "-"), int(sort.get("portee", 0)), int(sort.get("cout_pa", 2)), int(sort.get("recharge", 0)),
-	]
-	if int(sort.get("degats", 0)) > 0:
-		texte_infos += " | Dégâts : %d" % int(sort["degats"])
-	var stat_boost := Personnage.stat_booster_sort(sort)
-	if not stat_boost.is_empty():
-		texte_infos += " · %s +%d" % [stat_boost, roundi(Personnage.bonus_sort_actuel(sort))]
+	var texte_infos := ""
+	if hors_combat:
+		# pas de stats de combat : un pouvoir du fruit se lit dans sa
+		# description, il vit hors de la barre et des affrontements
+		texte_infos = "Pouvoir hors combat   •   Utilisable uniquement depuis ce menu"
+	else:
+		texte_infos = "Type : %s   •   Portée : %d   •   PA : %d   •   Recharge de base : %d" % [
+			sort.get("type", "-"), int(sort.get("portee", 0)), int(sort.get("cout_pa", 2)), int(sort.get("recharge", 0)),
+		]
+		if int(sort.get("degats", 0)) > 0:
+			texte_infos += " | Dégâts : %d" % int(sort["degats"])
+		var stat_boost := Personnage.stat_booster_sort(sort)
+		if not stat_boost.is_empty():
+			texte_infos += " · %s +%d" % [stat_boost, roundi(Personnage.bonus_sort_actuel(sort))]
 	infos.text = texte_infos
 	infos.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var description := Label.new()
@@ -828,6 +1038,16 @@ func _basculer_sort_barre(id: String) -> void:
 
 func _on_retirer_sort_barre(id: String) -> void:
 	Personnage.retirer_sort_barre(id)
+
+# un pouvoir du fruit (hors barre, hors combat) se lance ici : on
+# arme le ciblage puis on referme le menu, le patient se désigne d'un
+# clic sur la carte
+func _on_utiliser_pouvoir_fruit(id: String) -> void:
+	var joueur := get_tree().current_scene.find_child("player", true, false) if get_tree().current_scene != null else null
+	if joueur == null or not joueur.has_method("utiliser_pouvoir_fruit_menu"):
+		return
+	joueur.call("utiliser_pouvoir_fruit_menu", id)
+	fermer()
 
 func maj_quetes(_quest_id: String = "") -> void:
 	if not fenetre.visible or section_actuelle != "quetes":
@@ -936,21 +1156,52 @@ func _rafraichir_sac() -> void:
 		maj_equipement()
 
 func _objet_visible(id: String, type_choisi: Variant) -> bool:
-	if filtre_portables and not _est_portable(id):
-		return false
-	# recherche par nom (cumulée aux filtres portables et catégorie) :
-	# insensible à la casse, sur le nom affiché de l'objet
+	# recherche par nom (cumulée aux autres filtres) : insensible à
+	# la casse, sur le nom affiché de l'objet
 	var filtre_nom := champ_recherche_sac.text.strip_edges().to_lower()
 	if filtre_nom != "" and not Inventaire.nom_objet(id).to_lower().contains(filtre_nom):
 		return false
+	# filtre par emplacement (clic sur le paperdoll) : il prime sur la
+	# catégorie et les portables, seuls les objets de cette place restent
+	if filtre_emplacement != "":
+		return _objet_pour_emplacement(id, filtre_emplacement)
+	if filtre_portables and not _est_portable(id):
+		return false
 	return type_choisi == null or Inventaire.details_objet(id).get("type", "") == type_choisi
+
+# l'objet peut-il prendre la place visée ? les catégories « arme » et
+# « anneau » couvrent leurs deux emplacements (principal/secondaire,
+# anneau1/anneau2) ; un emplacement de navire n'accepte que sa pièce
+func _objet_pour_emplacement(id: String, emplacement: String) -> bool:
+	if Personnage.EMPLACEMENTS_NAVIRE.values().has(emplacement):
+		return Personnage.emplacement_navire(id) == emplacement
+	if Personnage.emplacement_navire(id) != "":
+		return false
+	var details := Inventaire.details_objet(id)
+	var cible := Personnage.emplacement_equipement(str(details.get("type", "")), str(details.get("sous_type", "")))
+	if cible == "":
+		return false
+	if emplacement == "arme" or emplacement == "arme2":
+		return cible == "arme"
+	if emplacement == "anneau1" or emplacement == "anneau2":
+		return cible == "anneau"
+	return cible == emplacement
 
 func maj_grille() -> void:
 	_grille_sale = false
 	var types: Array[String] = []
 	var ids: Array = Inventaire.objets.keys()
-	ids.sort_custom(func(id_a: String, id_b: String) -> bool:
-		return Inventaire.nom_objet(id_a).naturalnocasecmp_to(Inventaire.nom_objet(id_b)) < 0)
+	if _tri_par_rarete:
+		# la plus haute rareté d'abord, égalité départagée par le nom
+		ids.sort_custom(func(id_a: String, id_b: String) -> bool:
+			var rang_a := _rang_rarete(id_a)
+			var rang_b := _rang_rarete(id_b)
+			if rang_a != rang_b:
+				return rang_a > rang_b
+			return Inventaire.nom_objet(id_a).naturalnocasecmp_to(Inventaire.nom_objet(id_b)) < 0)
+	else:
+		ids.sort_custom(func(id_a: String, id_b: String) -> bool:
+			return Inventaire.nom_objet(id_a).naturalnocasecmp_to(Inventaire.nom_objet(id_b)) < 0)
 	# le menu des catégories ne propose que les types des objets qui
 	# passent aussi la recherche par nom
 	var filtre_nom_types := champ_recherche_sac.text.strip_edges().to_lower()
@@ -1085,6 +1336,8 @@ func maj_detail_item(id: String) -> void:
 	_maj_bouton_equiper(details, id)
 	_maj_bouton_utiliser(details)
 	_maj_bouton_barre_objets(details)
+	_maj_bouton_vendre(details)
+	_maj_bouton_navire(details, id)
 
 func maj_detail_aucun() -> void:
 	detail_id_courant = ""
@@ -1103,6 +1356,8 @@ func maj_detail_aucun() -> void:
 	btn_barre_objets.hide()
 	btn_ouvrir_coffre.visible = false
 	btn_ouvrir_tous.visible = false
+	btn_vendre.visible = false
+	btn_navire.visible = false
 
 # construit le paperdoll : portrait du personnage au centre, un slot
 # cliquable par emplacement positionné sur le corps
@@ -1172,6 +1427,19 @@ func _maj_bouton_equiper(details: Dictionary, id: String) -> void:
 	btn_equiper.text = "Déséquiper" if emplacement_equipe != "" else "Équiper"
 	var niveau_suffisant := int(details.get("niveau_min", 1)) <= Personnage.niveau
 	btn_equiper.disabled = emplacement_equipe == "" and not niveau_suffisant
+
+# équipe d'un coup le meilleur objet atteignable de chaque emplacement
+# puis rafraîchit silhouette, grille et détail
+func _on_auto_equipement() -> void:
+	var changements := Personnage.equiper_les_meilleurs()
+	if changements > 0:
+		avertir("%d emplacement(s) optimisé(s)." % changements)
+	else:
+		avertir("Équipement déjà au mieux de ton inventaire.")
+	maj_grille()
+	maj_equipement()
+	_maj_resume_personnage()
+	maj_detail_aucun()
 
 func _on_bouton_equiper() -> void:
 	if detail_id_courant == "":
@@ -1287,6 +1555,8 @@ func _utiliser_consommable(id: String) -> void:
 		texte = "%d %s à redistribuer dans l’onglet Personnage." % [points_rendus, unite]
 	elif soin > 0:
 		texte = "Tu récupères %d points de vie." % soin
+	elif effets.has(Personnage.EFFET_DOUBLE_COMBAT):
+		texte = "La tablette s'est brisée en une bénédiction : prochain combat gagné, XP et Berry doublés !"
 	# carte au trésor : la croix est plantée, la chasse commence
 	if str(details.get("sous_type", "")) == "carte_tresor":
 		texte = "Une croix marque un trésor sur la carte du monde. File la déterrer !"
@@ -1396,10 +1666,18 @@ func _on_debug_berry() -> void:
 	Personnage.ajouter_berry(1_000_000)
 
 func _on_emplacement_clique(evenement: InputEvent, emplacement: String) -> void:
-	if _activation_case(evenement):
-		var id: String = Personnage.equipement.get(emplacement, "")
-		if id != "":
-			maj_detail_item(id)
+	if not _activation_case(evenement):
+		return
+	# un clic filtre la grille sur ce qui peut prendre cette place,
+	# un second clic la lève ; le papier équipé s'affiche toujours
+	if filtre_emplacement == emplacement:
+		filtre_emplacement = ""
+	else:
+		filtre_emplacement = emplacement
+	maj_grille()
+	var id: String = Personnage.equipement.get(emplacement, "")
+	if id != "":
+		maj_detail_item(id)
 
 # rafraîchit les emplacements du paperdoll (icône, cadre de rareté, tooltip)
 func maj_equipement() -> void:
@@ -1534,7 +1812,9 @@ func maj_wiki() -> void:
 		liste_wiki.set_item_metadata(index, id)
 		if id == id_wiki_courant:
 			index_actuel = index
-		if Inventaire.est_connu(id) or est_fruit:
+		# ressources et fruits révélés : jamais de cadenas sur elles
+		var est_ressource := str(ligne["type"]) == "ressource"
+		if Inventaire.est_connu(id) or est_fruit or est_ressource:
 			connus += 1
 		else:
 			liste_wiki.set_item_icon(index, preload(ICONE_CADENAS))
@@ -1563,7 +1843,10 @@ func maj_detail_wiki(id: String) -> void:
 	var details := Inventaire.details_objet(id)
 	# l'encyclopédie des fruits du démon révèle leur fiche sans rencontre
 	var fruit_revele := str(details.get("type", "")) == "fruit_demon" and _encyclopedie_fruits_possedee()
-	if not Inventaire.est_connu(id) and not fruit_revele:
+	# les ressources sont des repères de terrain : leur fiche est
+	# publique dès le départ
+	var ressource_revelee := str(details.get("type", "")) == "ressource"
+	if not Inventaire.est_connu(id) and not fruit_revele and not ressource_revelee:
 		icone_wiki.texture = load(ICONE_CADENAS)
 		type_wiki.text = ""
 		description_wiki.text = "Objet non encore rencontré. Ses caractéristiques apparaîtront quand vous le trouverez."
@@ -1589,7 +1872,92 @@ func maj_detail_wiki(id: String) -> void:
 			texte_stats = (texte_pouvoirs + "\n" + texte_stats) if texte_stats != "" else texte_pouvoirs
 	stats_wiki.text = texte_stats
 	stats_wiki.visible = texte_stats != ""
+	# pour une ressource, la fiche dit où la récupérer : points de
+	# récolte des zones et ennemis qui la laisse tomber
+	if ressource_revelee:
+		var sources := _sources_ressource(id)
+		if sources != "":
+			var texte_sources := "Récupération : %s" % sources
+			stats_wiki.text = (texte_stats + "\n" + texte_sources) if texte_stats != "" else texte_sources
+			stats_wiki.show()
 	prix_wiki.text = "Prix : %d Berry" % int(details.get("prix", 0))
+
+# --- sources des ressources (wiki) ---
+
+# scènes qui portent des points de récolte : leurs nœuds « point_fushia »
+# avec une propriété `objet` non vide donnent des ressources
+const SCENES_RECOLTE := [
+	"res://scenes/fushia_decors.tscn",
+	"res://scenes/alabasta.tscn",
+	"res://scenes/baratie.tscn",
+	"res://scenes/coco_village.tscn",
+	"res://scenes/drum.tscn",
+	"res://scenes/ile_celeste.tscn",
+	"res://scenes/little_garden.tscn",
+	"res://scenes/loguetown.tscn",
+	"res://scenes/mont_corvo.tscn",
+	"res://scenes/orange_town.tscn",
+	"res://scenes/reverse_mountain.tscn",
+	"res://scenes/shells_town.tscn",
+	"res://scenes/syrup_village.tscn",
+	"res://scenes/whisky_peak.tscn",
+	"res://scenes/zou.tscn",
+]
+
+# id d'item -> [nom de zone] : rempli une fois au premier wiki ouvert
+static var _recoltes_par_item: Dictionary = {}
+
+# nom lisible d'une scène de récolte ("mont_corvo" → "Mont Corvo") :
+# underscores en espaces, première lettre capitale
+func _nom_zone_recolte(chemin_scene: String) -> String:
+	var base := chemin_scene.get_file().get_basename()
+	base = base.replace("_decors", "").replace("_", " ")
+	return base.capitalize()
+
+# relit les scènes de récolte une fois par session : pour chaque
+# nœud porteur d'un objet, la zone offre cet id
+func _recenser_recoltes() -> void:
+	if not _recoltes_par_item.is_empty():
+		return
+	for chemin in SCENES_RECOLTE:
+		if not ResourceLoader.exists(chemin):
+			continue
+		var scene := load(chemin) as PackedScene
+		if scene == null:
+			continue
+		var zone := _nom_zone_recolte(chemin)
+		var etat := scene.get_state()
+		for index_noeud in range(etat.get_node_count()):
+			for index_propriete in range(etat.get_node_property_count(index_noeud)):
+				if etat.get_node_property_name(index_noeud, index_propriete) != &"objet":
+					continue
+				var id_objet := str(etat.get_node_property_value(index_noeud, index_propriete))
+				if not id_objet.is_valid_int() or id_objet == "":
+					break
+				if not _recoltes_par_item.has(id_objet):
+					_recoltes_par_item[id_objet] = []
+				var zones: Array = _recoltes_par_item[id_objet]
+				if not zones.has(zone):
+					zones.append(zone)
+
+# phrase « où récupérer » d'une ressource : zones de récolte et
+# ennemis qui la laissent tomber ; "" si rien de connu
+func _sources_ressource(id: String) -> String:
+	var fragments: Array[String] = []
+	_recenser_recoltes()
+	var zones: Array = _recoltes_par_item.get(id, [])
+	if not zones.is_empty():
+		zones.sort()
+		fragments.append("récolte à %s" % " ; ".join(PackedStringArray(zones)))
+	if BaseDonnees.disponible and id.is_valid_int():
+		var butins: Array[String] = []
+		for ligne in BaseDonnees.lire(
+			"SELECT DISTINCT entity_name FROM drop_rates WHERE item_id = %d AND is_active = 1;" % int(id)):
+			butins.append(str(ligne["entity_name"]))
+		if not butins.is_empty():
+			butins.sort()
+			fragments.append("butin de : %s" % " ; ".join(butins))
+	return " | ".join(fragments)
 
 # pouvoirs d'un fruit du démon (tables `fruit_skills` + `skills`),
 # au format "Nom (coût PA)" ; vide si le fruit n'a aucun pouvoir rattaché
@@ -1640,6 +2008,9 @@ func maj_metiers() -> void:
 	titre_recettes.visible = false
 	for enfant in liste_recettes.get_children():
 		enfant.queue_free()
+	if liste_ameliorations != null:
+		for enfant in liste_ameliorations.get_children():
+			enfant.queue_free()
 
 func afficher_metier(id_profession: String) -> void:
 	metier_affiche = id_profession
@@ -1651,6 +2022,8 @@ func afficher_metier(id_profession: String) -> void:
 		titre_recettes.visible = false
 		for enfant in liste_recettes.get_children():
 			enfant.queue_free()
+		for enfant in liste_ameliorations.get_children():
+			enfant.queue_free()
 		return
 	titre_recettes.visible = true
 	var donnees: Dictionary = Personnage.metiers[id_profession]
@@ -1659,7 +2032,140 @@ func afficher_metier(id_profession: String) -> void:
 		int(donnees["xp"]),
 		Personnage.xp_prochain_niveau_metier(id_profession),
 	]
-	_construire_recettes(id_profession)
+	# l'atelier affiche la vue choisie : recettes de craft ou établi
+	# d'amélioration des objets de la spécialité du métier
+	if _onglet_metiers == "ameliorations":
+		titre_recettes.text = "Améliorations (+20%% par niveau, max %d)" % Personnage.AMELIORATION_MAX
+		liste_recettes.visible = false
+		liste_ameliorations.visible = true
+		_construire_ameliorations()
+	else:
+		titre_recettes.text = _titre_recettes_initial
+		liste_recettes.visible = true
+		liste_ameliorations.visible = false
+		_construire_recettes(id_profession)
+
+# --- onglets de l'atelier du métier : Recettes et Améliorations ---
+
+var _onglet_metiers := "recettes"
+var _titre_recettes_initial := "Recettes"
+var _btn_onglet_recettes: Button
+var _btn_onglet_ameliorations: Button
+var liste_ameliorations: VBoxContainer
+
+# construit une fois la rangée d'onglets (entre l'XP du métier et le
+# titre) et la colonne des améliorations, jumelle de la liste des
+# recettes dans le même défilement
+func _construire_onglets_metiers() -> void:
+	var colonne := xp_metier.get_parent()
+	var rangee := HBoxContainer.new()
+	rangee.add_theme_constant_override("separation", 8)
+	_titre_recettes_initial = titre_recettes.text
+	_btn_onglet_recettes = Button.new()
+	_btn_onglet_recettes.text = "Recettes"
+	_btn_onglet_recettes.toggle_mode = true
+	_btn_onglet_recettes.button_pressed = true
+	_btn_onglet_recettes.pressed.connect(_sur_onglet_metiers.bind("recettes"))
+	_btn_onglet_ameliorations = Button.new()
+	_btn_onglet_ameliorations.text = "Améliorations"
+	_btn_onglet_ameliorations.toggle_mode = true
+	_btn_onglet_ameliorations.pressed.connect(_sur_onglet_metiers.bind("ameliorations"))
+	rangee.add_child(_btn_onglet_recettes)
+	rangee.add_child(_btn_onglet_ameliorations)
+	colonne.add_child(rangee)
+	# la rangée s'installe juste au-dessus du titre (entre l'XP du
+	# métier et « Recettes »)
+	colonne.move_child(rangee, titre_recettes.get_index())
+	liste_ameliorations = VBoxContainer.new()
+	liste_ameliorations.add_theme_constant_override("separation", 10)
+	liste_recettes.get_parent().add_child(liste_ameliorations)
+	liste_ameliorations.visible = false
+
+func _sur_onglet_metiers(onglet: String) -> void:
+	_onglet_metiers = onglet
+	if _btn_onglet_recettes != null:
+		_btn_onglet_recettes.button_pressed = onglet == "recettes"
+	if _btn_onglet_ameliorations != null:
+		_btn_onglet_ameliorations.button_pressed = onglet == "ameliorations"
+	if metier_affiche != "":
+		afficher_metier(metier_affiche)
+
+# l'établi d'amélioration : chaque objet possédé relevant de la
+# spécialité du métier, son niveau, le coût du prochain cran et le
+# bouton qui engage la retouche
+func _construire_ameliorations() -> void:
+	for enfant in liste_ameliorations.get_children():
+		enfant.queue_free()
+	var possedes: Array = []
+	for id_objet in Inventaire.objets:
+		if int(Inventaire.objets[id_objet]) > 0 and Personnage.objet_ameliorable(str(id_objet)):
+			possedes.append(str(id_objet))
+	possedes.sort_custom(func(a, b): return Inventaire.nom_objet(str(a)).to_lower() < Inventaire.nom_objet(str(b)).to_lower())
+	if possedes.is_empty():
+		var vide := Label.new()
+		vide.text = "Aucun objet de ta spécialité dans ton sac : fabrique-en ou améliore ce que tu possèdes déjà."
+		vide.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		liste_ameliorations.add_child(vide)
+		return
+	for id_objet in possedes:
+		var niveau: int = Personnage.niveau_amelioration(id_objet)
+		var cout: Dictionary = Personnage.cout_amelioration(id_objet) if niveau < Personnage.AMELIORATION_MAX else {}
+		var complet := true
+		var fragments: Array[String] = []
+		for id_ressource in cout:
+			var possede := int(Inventaire.objets.get(str(id_ressource), 0))
+			if possede < int(cout[id_ressource]):
+				complet = false
+			fragments.append("%s %d/%d" % [Inventaire.nom_objet(str(id_ressource)), possede, int(cout[id_ressource])])
+		var encadre := PanelContainer.new()
+		encadre.add_theme_stylebox_override("panel", FICHE_MENU)
+		var boite := VBoxContainer.new()
+		boite.add_theme_constant_override("separation", 4)
+		var entete := HBoxContainer.new()
+		var nom := Label.new()
+		nom.text = "%s · Niv. %d/%d" % [Inventaire.nom_objet(id_objet), niveau, Personnage.AMELIORATION_MAX]
+		nom.add_theme_font_size_override("font_size", 20)
+		nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		nom.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var btn := Button.new()
+		if niveau >= Personnage.AMELIORATION_MAX:
+			btn.text = "Au sommet"
+			btn.disabled = true
+		else:
+			btn.text = "Améliorer"
+			btn.disabled = not complet
+			btn.pressed.connect(_on_ameliorer.bind(id_objet))
+		entete.add_child(nom)
+		entete.add_child(btn)
+		var ligne_bonus := Label.new()
+		ligne_bonus.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		ligne_bonus.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if niveau >= Personnage.AMELIORATION_MAX:
+			ligne_bonus.text = "Bonus : +%d %% (statut maximum de l'art)." % roundi((Personnage.facteur_amelioration(id_objet) - 1.0) * 100.0)
+		else:
+			ligne_bonus.text = "Bonus actuel : +%d %%  ·  Après amélioration : +%d %%" % [
+				roundi((Personnage.facteur_amelioration(id_objet) - 1.0) * 100.0),
+				roundi((Personnage.facteur_amelioration(id_objet) - 1.0) * 100.0 + Personnage.AMELIORATION_BONUS * 100.0),
+			]
+		boite.add_child(entete)
+		boite.add_child(ligne_bonus)
+		if not fragments.is_empty():
+			var ligne_cout := Label.new()
+			ligne_cout.text = "Coût : " + ", ".join(PackedStringArray(fragments))
+			if not complet:
+				ligne_cout.add_theme_color_override("font_color", Color(0.55, 0.11, 0.10))
+			boite.add_child(ligne_cout)
+		encadre.add_child(boite)
+		liste_ameliorations.add_child(encadre)
+
+func _on_ameliorer(id_objet: String) -> void:
+	var message := Personnage.ameliorer_objet(id_objet)
+	if message != "":
+		avertir(message)
+	_construire_ameliorations()
+	maj_grille()
+	if detail_id_courant == id_objet:
+		maj_detail_item(id_objet)
 
 func _construire_recettes(id_profession: String) -> void:
 	for enfant in liste_recettes.get_children():
@@ -1718,6 +2224,161 @@ func _construire_recettes(id_profession: String) -> void:
 func _on_fabriquer(id_recette: String) -> void:
 	Personnage.artisaner(id_recette)
 	maj_metiers()
+
+# --- Vente rapide ---
+
+# bouton de vente directe : moitié du prix de base, sans hôtel ni
+# confirmation ; masqué si l'objet ne vaut même pas 1 Berry à la revente
+func _maj_bouton_vendre(details: Dictionary) -> void:
+	var possedes := int(Inventaire.objets.get(detail_id_courant, 0))
+	var demi_prix := int(details.get("prix", 0)) / 2
+	btn_vendre.visible = possedes > 0 and demi_prix >= 1
+	if btn_vendre.visible:
+		btn_vendre.text = "Vendre · %d Berry" % demi_prix
+		btn_vendre.tooltip_text = "Vend une unité, moitié du prix de base."
+
+# vend une unité de l'objet sélectionné : le Berry est crédité
+# aussitôt, l'hôtel des ventes reste la voie du prix fort
+func _on_bouton_vendre() -> void:
+	if detail_id_courant == "":
+		return
+	var details := Inventaire.details_objet(detail_id_courant)
+	var restants := int(Inventaire.objets.get(detail_id_courant, 0))
+	var demi_prix := int(details.get("prix", 0)) / 2
+	if restants <= 0 or demi_prix < 1:
+		return
+	var nom := Inventaire.nom_objet(detail_id_courant)
+	Inventaire.retirer_objet(detail_id_courant, 1)
+	Personnage.ajouter_berry(demi_prix)
+	if restants == 1:
+		# dernière unité : l'objet quitte aussi la barre d'objets
+		Personnage.filtrer_barre_objets()
+		maj_detail_aucun()
+	else:
+		maj_detail_item(detail_id_courant)
+	# retour immédiat : la monnaie et la quantité se rafraîchissent,
+	# pas de popup au milieu d'une série de ventes
+	prix_detail.text = "+%d Berry — %s vendu." % [demi_prix, nom]
+
+# --- Navire ---
+
+# bouton d'installation d'une pièce de navire : visible sur les
+# pièces possédées, il échange avec la pièce déjà en place
+func _maj_bouton_navire(details: Dictionary, id: String) -> void:
+	var emplacement := Personnage.emplacement_navire(id)
+	btn_navire.visible = emplacement != ""
+	if emplacement == "":
+		return
+	if Personnage.piece_navire_installee(id):
+		btn_navire.text = "Retirer du navire"
+		btn_navire.disabled = false
+	elif int(Inventaire.objets.get(id, 0)) > 0:
+		btn_navire.text = "Installer sur le navire"
+		# niveau requis, comme pour l'équipement porté
+		btn_navire.disabled = int(details.get("niveau_min", 1)) > Personnage.niveau
+		if btn_navire.disabled:
+			btn_navire.tooltip_text = "Niveau %d requis." % int(details.get("niveau_min", 1))
+		else:
+			btn_navire.tooltip_text = "Prend la place de %s." % (
+				Inventaire.nom_objet(str(Personnage.bateau[emplacement]))
+				if str(Personnage.bateau[emplacement]) != "" else "l'emplacement vide")
+
+# installe ou retire la pièce de navire sélectionnée : la sortie
+# d'une pièce la renvoie à l'inventaire
+func _on_bouton_navire() -> void:
+	if detail_id_courant == "":
+		return
+	var emplacement := Personnage.emplacement_navire(detail_id_courant)
+	if emplacement == "":
+		return
+	if Personnage.piece_navire_installee(detail_id_courant):
+		var nom_piece := Inventaire.nom_objet(detail_id_courant)
+		Personnage.retirer_piece_navire(emplacement)
+		prix_detail.text = "%s rejoint l'inventaire." % nom_piece
+	else:
+		var nom_piece := Inventaire.nom_objet(detail_id_courant)
+		if Personnage.installer_piece_navire(detail_id_courant) == "":
+			if int(Inventaire.details_objet(detail_id_courant).get("niveau_min", 1)) > Personnage.niveau:
+				prix_detail.text = "Niveau %d requis pour installer %s." % [
+					int(Inventaire.details_objet(detail_id_courant).get("niveau_min", 1)), nom_piece]
+			return
+		prix_detail.text = "%s installé sur le navire." % nom_piece
+	maj_grille()
+	maj_panneau_navire()
+	maj_detail_item(detail_id_courant)
+
+# colonne NAVIRE de l'inventaire : un bouton par emplacement ; cliqué,
+# il ouvre la fiche de la pièce installée (à droite, avec son bouton
+# « Retirer du navire »)
+func maj_panneau_navire() -> void:
+	if _boutons_navire.is_empty():
+		for emplacement in Personnage.EMPLACEMENTS_NAVIRE.values():
+			var bouton := Button.new()
+			bouton.custom_minimum_size = Vector2(0, 52)
+			bouton.expand_icon = true
+			bouton.pressed.connect(_sur_slot_navire.bind(str(emplacement)))
+			slots_navire.add_child(bouton)
+			_boutons_navire[str(emplacement)] = bouton
+	for emplacement in _boutons_navire:
+		var bouton: Button = _boutons_navire[emplacement]
+		var id_piece := str(Personnage.bateau.get(emplacement, ""))
+		if id_piece == "":
+			bouton.text = "%s\n· vide ·" % emplacement
+			bouton.icon = null
+			bouton.disabled = false
+			bouton.tooltip_text = "Emplacement libre : clic pour filtrer le sac sur les pièces de cette place."
+			continue
+		var details := Inventaire.details_objet(id_piece)
+		bouton.text = "%s\n%s" % [emplacement, Inventaire.nom_objet(id_piece)]
+		bouton.icon = _icone_objet(details)
+		bouton.disabled = false
+		bouton.tooltip_text = "%s\nClic pour filtrer le sac sur cette place et examiner la pièce." % str(details.get("description", ""))
+	var stats := Personnage.stats_bateau()
+	if int(stats["solidite"]) <= 0 and float(stats["tempete"]) <= 0.0:
+		bonus_navire.text = "Aucune pièce installée."
+	else:
+		bonus_navire.text = "%d solidité · %d%% tempête\n+%d PV · +%d DEF · +%d%% vitesse" % [
+			int(stats["solidite"]), int(stats["tempete"]),
+			int(stats["solidite"]) / 20, int(stats["solidite"]) / 200,
+			roundi(float(stats["tempete"]))]
+
+# affiche en détail la pièce installée sur un emplacement du navire ;
+# un clic filtre la grille sur les pièces de cette place, un second
+# clic la lève - le même geste que sur le paperdoll d'équipement
+func _sur_slot_navire(emplacement: String) -> void:
+	if filtre_emplacement == emplacement:
+		filtre_emplacement = ""
+	else:
+		filtre_emplacement = emplacement
+	maj_grille()
+	var id_piece := str(Personnage.bateau.get(emplacement, ""))
+	if id_piece != "":
+		maj_detail_item(id_piece)
+
+# la colonne de gauche de l'inventaire montre l'équipement OU le
+# navire, jamais les deux en même temps : deux boutons couplés
+# tiennent l'état
+func _basculer_vue_equipement(vue_active: bool) -> void:
+	btn_vue_navire.set_pressed_no_signal(not vue_active)
+	_vue_navire = not vue_active
+	_appliquer_vue_colonne()
+
+func _basculer_vue_navire(vue_active: bool) -> void:
+	btn_vue_equipement.set_pressed_no_signal(not vue_active)
+	_vue_navire = vue_active
+	# le filtre d'emplacement appartient à la vue quittée (équipement
+	# ou navire) : on le lève pour retrouver le sac complet
+	filtre_emplacement = ""
+	maj_grille()
+	_appliquer_vue_colonne()
+	maj_panneau_navire()
+
+func _appliquer_vue_colonne() -> void:
+	btn_auto_equipement.visible = not _vue_navire
+	silhouette.visible = not _vue_navire
+	titre_navire_col.visible = _vue_navire
+	slots_navire.visible = _vue_navire
+	bonus_navire.visible = _vue_navire
 
 # --- Hôtel des ventes ---
 

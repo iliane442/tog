@@ -28,6 +28,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/pirate_krieg.png" id="sprite_ile_pirate_krieg"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/pirate_krieg_cuirasse.png" id="sprite_ile_pirate_krieg_cuirasse"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -84,6 +85,9 @@ position = Vector2(1241.6, 1600)
 [node name="DepuisVillageCoco" type="Marker2D" parent="Arrivees"]
 position = Vector2(1318.4, 1600)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(1104, 1459.2)
 [node name="CapitaineVolige" parent="." instance=ExtResource("FerrySyrup")]
 position = Vector2(1216.0, 1459.2)
 paroles = "Remonter sur Syrup Village ? La colline se voit d'ici quand la brume daigne lever. Embarque, je termine ma soupe en route."

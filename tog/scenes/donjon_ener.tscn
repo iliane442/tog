@@ -1,0 +1,366 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="Script" path="res://scripts/world/donjon_ener.gd" id="Donjon"]
+[ext_resource type="Script" path="res://scripts/world/passage_zone.gd" id="Passage"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Inscription"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="Script" path="res://scripts/combat/ener.gd" id="Boss"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/ener.png" id="Ener"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/sentinelle_du_dial.png" id="Sentinelle"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/porte_du_tonnerre.png" id="Porte"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/pylone_du_tonnerre.png" id="Pylone"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/trone_du_tonnerre.png" id="Trone"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/ruines_mine/stele_de_la_vague.png" id="Stele"]
+[ext_resource type="Shader" path="res://assets/shaders/terrain_sanctuaire.gdshader" id="TerrainSanctuaire"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/sanctuaire/dallage.png" id="Dallage"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/sanctuaire/maconnerie.png" id="Maconnerie"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/sanctuaire/mosaique.png" id="Mosaique"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/sanctuaire/arcades.png" id="Arcades"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/sanctuaire/condenseur.png" id="Condenseur"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/sanctuaire/banniere.png" id="Banniere"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/sanctuaire/brasero.png" id="Brasero"]
+
+[sub_resource type="RectangleShape2D" id="RayonSortie"]
+size = Vector2(116, 50)
+
+[sub_resource type="CanvasItemMaterial" id="LueurAdditive"]
+blend_mode = 1
+light_mode = 1
+
+[sub_resource type="Gradient" id="DegradeLueur"]
+offsets = PackedFloat32Array(0, 0.38, 1)
+colors = PackedColorArray(1, 1, 1, 0.43, 1, 1, 1, 0.20, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="TextureLueur"]
+gradient = SubResource("DegradeLueur")
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="DonjonEner" instance=ExtResource("Zone")]
+script = ExtResource("Donjon")
+renouveler_rencontres = false
+emprise_sceau = Rect2i(15, 10, 4, 1)
+
+[node name="TerrainZone" parent="." index="0"]
+plan = PackedStringArray(
+	"##################################",
+	"##################################",
+	"##########..............##########",
+	"##########.....====.....##########",
+	"#######.~~.....====.....~~.#######",
+	"#######.~~==============~~.#######",
+	"#######...==============...#######",
+	"#######...==============...#######",
+	"#######...==============...#######",
+	"#######........====........#######",
+	"###############====###############",
+	"###############====###############",
+	"######.........====.........######",
+	"######.~~~.....====.....~~~.######",
+	"######.~~~.....====.....~~~.######",
+	"######...================...######",
+	"######.........====.........######",
+	"#############..====..#############",
+	"#############..====..#############",
+	"##########.....====.....##########",
+	"##########.....====.....##########",
+	"##########.....====.....##########",
+	"##########.....====.....##########",
+	"############...====...############",
+	"############...====...############",
+	"##########.....====.....##########",
+	"##########.========.....##########",
+	"##########.....====.....##########",
+	"##########.....====.....##########",
+	"############...====...############",
+	"##################################"
+)
+souterrain = true
+shader_terrain = ExtResource("TerrainSanctuaire")
+dallage = ExtResource("Dallage")
+maconnerie = ExtResource("Maconnerie")
+
+[node name="player" parent="." index="5"]
+position = Vector2(1120, 1824)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Sanctuaire du Tonnerre"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(1120, 1824): "Vestibule", Vector2(1088, 928): "Galerie des Dials", Vector2(1088, 672): "Sceau du Tonnerre", Vector2(1120, 416): "Salle du trône"})
+
+[node name="DepuisSkypiea" type="Marker2D" parent="Arrivees"]
+position = Vector2(1120, 1824)
+
+[node name="RetourSkypiea" type="Area2D" parent="."]
+position = Vector2(736, 1696)
+collision_layer = 0
+script = ExtResource("Passage")
+destination = "res://scenes/ile_celeste.tscn"
+arrivee = &"DepuisSanctuaireTonnerre"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RetourSkypiea"]
+shape = SubResource("RayonSortie")
+
+[node name="Etiquette" type="Label" parent="RetourSkypiea"]
+z_index = 18
+offset_left = -145.0
+offset_top = -184.0
+offset_right = 145.0
+offset_bottom = -151.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_colors/font_outline_color = Color(0.1, 0.12, 0.18, 1)
+theme_override_constants/outline_size = 9
+theme_override_font_sizes/font_size = 23
+text = "Retour à Skypiea"
+horizontal_alignment = 1
+
+[node name="InscriptionVestibule" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1248, 1760)
+script = ExtResource("Inscription")
+titre = "Le sceau du Tonnerre"
+description = "Les deux groupes de sentinelles alimentent le sceau de la salle du trône. Désactive-les pour atteindre Ener. Dans son arène, les éclairs frappent les cases marquées au tour suivant. Quitte-les avant la décharge."
+
+[node name="Sprite2D" type="Sprite2D" parent="InscriptionVestibule"]
+texture_filter = 1
+position = Vector2(0, -52)
+texture = ExtResource("Stele")
+scale = Vector2(0.62, 0.62)
+
+[node name="Etiquette" type="Label" parent="InscriptionVestibule"]
+z_index = 18
+offset_left = -165.0
+offset_top = -122.0
+offset_right = 165.0
+offset_bottom = -95.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.9, 0.72, 1)
+theme_override_colors/font_outline_color = Color(0.1, 0.12, 0.18, 1)
+theme_override_constants/outline_size = 9
+theme_override_font_sizes/font_size = 19
+horizontal_alignment = 1
+
+[node name="Sceau" type="Node2D" parent="."]
+position = Vector2(1088, 672)
+z_index = 4
+
+[node name="Lumiere" type="Polygon2D" parent="Sceau"]
+color = Color(0.10, 0.66, 0.83, 0.38)
+polygon = PackedVector2Array(-105, -34, 105, -34, 96, 10, -96, 10)
+
+[node name="ArcPrincipal" type="Line2D" parent="Sceau"]
+points = PackedVector2Array(-105, -23, -80, -13, -54, -31, -24, -11, 0, -25, 25, -9, 52, -26, 80, -11, 105, -24)
+width = 8.0
+default_color = Color(0.2, 0.72, 0.91, 0.95)
+
+[node name="Coeur" type="Line2D" parent="Sceau"]
+points = PackedVector2Array(-105, -23, -80, -13, -54, -31, -24, -11, 0, -25, 25, -9, 52, -26, 80, -11, 105, -24)
+width = 3.0
+default_color = Color(0.83, 0.98, 1, 1)
+
+[node name="Etiquette" type="Label" parent="Sceau"]
+offset_left = -230.0
+offset_top = 30.0
+offset_right = 230.0
+offset_bottom = 57.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.69, 0.94, 1, 1)
+theme_override_colors/font_outline_color = Color(0.06, 0.12, 0.18, 1)
+theme_override_constants/outline_size = 9
+theme_override_font_sizes/font_size = 19
+text = "Sceau du Tonnerre · vaincs les sentinelles"
+horizontal_alignment = 1
+
+[node name="PorteDeSortie" type="Sprite2D" parent="Paysage"]
+position = Vector2(736, 1696)
+scale = Vector2(0.72, 0.72)
+texture = ExtResource("Porte")
+offset = Vector2(0, -95)
+
+[node name="PorteDuTrone" type="Sprite2D" parent="Paysage"]
+position = Vector2(1088, 672)
+scale = Vector2(1.02, 1.02)
+texture = ExtResource("Porte")
+offset = Vector2(0, -95)
+
+[node name="TroneEner" type="Sprite2D" parent="Paysage"]
+position = Vector2(1120, 224)
+scale = Vector2(1.16, 1.16)
+texture = ExtResource("Trone")
+offset = Vector2(0, -94)
+
+[node name="ArcadesRoyales" type="Sprite2D" parent="Paysage"]
+z_index = -2
+position = Vector2(1120, 208)
+texture = ExtResource("Arcades")
+offset = Vector2(0, -106)
+
+[node name="BanniereOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(886, 219)
+scale = Vector2(0.82, 0.82)
+texture = ExtResource("Banniere")
+offset = Vector2(0, -98)
+
+[node name="BanniereEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1354, 219)
+scale = Vector2(0.82, 0.82)
+texture = ExtResource("Banniere")
+offset = Vector2(0, -98)
+
+[node name="MosaiqueDuTonnerre" type="Sprite2D" parent="Paysage"]
+z_index = -10
+position = Vector2(1120, 411)
+scale = Vector2(0.86, 0.86)
+texture = ExtResource("Mosaique")
+
+[node name="BraseroVestibuleOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(870, 1526)
+scale = Vector2(1.04, 1.04)
+texture = ExtResource("Brasero")
+offset = Vector2(0, -62)
+
+[node name="BraseroVestibuleEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1306, 1526)
+scale = Vector2(1.04, 1.04)
+texture = ExtResource("Brasero")
+offset = Vector2(0, -62)
+
+[node name="CondenseurGalerieOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(552, 860)
+texture = ExtResource("Condenseur")
+offset = Vector2(0, -79)
+
+[node name="CondenseurGalerieEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1624, 860)
+texture = ExtResource("Condenseur")
+offset = Vector2(0, -79)
+
+[node name="PyloneSceauOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(928, 736)
+scale = Vector2(0.98, 0.98)
+texture = ExtResource("Pylone")
+offset = Vector2(0, -62)
+
+[node name="PyloneSceauEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1248, 736)
+scale = Vector2(0.98, 0.98)
+texture = ExtResource("Pylone")
+offset = Vector2(0, -62)
+
+[node name="PyloneTroneOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(736, 288)
+scale = Vector2(1.08, 1.08)
+texture = ExtResource("Pylone")
+offset = Vector2(0, -62)
+
+[node name="PyloneTroneEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(1504, 288)
+scale = Vector2(1.08, 1.08)
+texture = ExtResource("Pylone")
+offset = Vector2(0, -62)
+
+[node name="LumieresDuSanctuaire" type="Node2D" parent="Paysage"]
+z_index = -8
+texture_filter = 2
+
+[node name="BraseroOuest" type="Sprite2D" parent="Paysage/LumieresDuSanctuaire"]
+modulate = Color(0.93, 0.47, 0.14, 0.46)
+material = SubResource("LueurAdditive")
+position = Vector2(870, 1512)
+scale = Vector2(1.40, 0.81)
+texture = SubResource("TextureLueur")
+
+[node name="BraseroEst" type="Sprite2D" parent="Paysage/LumieresDuSanctuaire"]
+modulate = Color(0.93, 0.47, 0.14, 0.46)
+material = SubResource("LueurAdditive")
+position = Vector2(1306, 1512)
+scale = Vector2(1.40, 0.81)
+texture = SubResource("TextureLueur")
+
+[node name="RefletDuBassinOuest" type="Sprite2D" parent="Paysage/LumieresDuSanctuaire"]
+modulate = Color(0.09, 0.74, 0.93, 0.46)
+material = SubResource("LueurAdditive")
+position = Vector2(574, 871)
+scale = Vector2(1.44, 0.83)
+texture = SubResource("TextureLueur")
+
+[node name="RefletDuBassinEst" type="Sprite2D" parent="Paysage/LumieresDuSanctuaire"]
+modulate = Color(0.09, 0.74, 0.93, 0.46)
+material = SubResource("LueurAdditive")
+position = Vector2(1602, 871)
+scale = Vector2(1.44, 0.83)
+texture = SubResource("TextureLueur")
+
+[node name="Estrade" type="Sprite2D" parent="Paysage/LumieresDuSanctuaire"]
+modulate = Color(0.22, 0.59, 0.90, 0.40)
+material = SubResource("LueurAdditive")
+position = Vector2(1120, 411)
+scale = Vector2(2.08, 1.49)
+texture = SubResource("TextureLueur")
+
+[node name="SentinelleVestibule" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(992, 1376)
+pv_max = 520
+nom = "Sentinelle du Dial"
+degats_attaque = 16
+portee_attaque = 1
+attaques_par_tour = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("Sentinelle")
+niveau_personnalise = 38
+groupe = "ener_vestibule"
+
+[node name="VeilleurVestibule" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1184, 1312)
+pv_max = 550
+nom = "Veilleur du Tonnerre"
+degats_attaque = 17
+portee_attaque = 2
+attaques_par_tour = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("Sentinelle")
+niveau_personnalise = 38
+groupe = "ener_vestibule"
+
+[node name="SentinelleGalerie" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(736, 992)
+pv_max = 590
+nom = "Sentinelle de la galerie"
+degats_attaque = 19
+portee_attaque = 1
+attaques_par_tour = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("Sentinelle")
+niveau_personnalise = 39
+groupe = "ener_galerie"
+
+[node name="VeilleurGalerie" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1440, 992)
+pv_max = 615
+nom = "Veilleur de la galerie"
+degats_attaque = 20
+portee_attaque = 2
+attaques_par_tour = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("Sentinelle")
+niveau_personnalise = 39
+groupe = "ener_galerie"
+
+[node name="Ener" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1120, 416)
+script = ExtResource("Boss")
+pv_max = 1900
+nom = "Ener"
+degats_attaque = 27
+portee_attaque = 4
+pm_max = 3
+attaques_par_tour = 1
+quetes_a_progresser = Array[String]([])
+texture_personnalisee = ExtResource("Ener")
+niveau_personnalise = 42
+groupe = "ener_trone"

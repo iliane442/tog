@@ -20,6 +20,9 @@ const SHADER_SOL := preload("res://assets/shaders/terrain_zone.gdshader")
 @export var souterrain := false
 @export var littoral := false
 @export var emprises_decors: Array[Rect2i] = []
+@export var shader_terrain: Shader = SHADER_SOL
+@export var dallage: Texture2D
+@export var maconnerie: Texture2D
 
 var apercu: Texture2D
 var _dimensions := Vector2i.ZERO
@@ -101,13 +104,18 @@ func _construire_textures() -> PackedByteArray:
 	apercu = ImageTexture.create_from_image(carte)
 	var texture_donnees := ImageTexture.create_from_image(donnees)
 	var materiau := ShaderMaterial.new()
-	materiau.shader = SHADER_SOL
+	materiau.shader = shader_terrain
 	materiau.set_shader_parameter("donnees", texture_donnees)
 	materiau.set_shader_parameter("hauteur", texture_donnees)
-	materiau.set_shader_parameter("sols", SOLS)
 	materiau.set_shader_parameter("dimensions", Vector2(_dimensions))
-	materiau.set_shader_parameter("souterrain", souterrain)
-	materiau.set_shader_parameter("littoral", littoral)
+	if shader_terrain == SHADER_SOL:
+		materiau.set_shader_parameter("sols", SOLS)
+		materiau.set_shader_parameter("souterrain", souterrain)
+		materiau.set_shader_parameter("littoral", littoral)
+	if dallage != null:
+		materiau.set_shader_parameter("dallage", dallage)
+	if maconnerie != null:
+		materiau.set_shader_parameter("maconnerie", maconnerie)
 	material = materiau
 	queue_redraw()
 	return codes

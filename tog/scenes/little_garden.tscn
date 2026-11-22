@@ -28,6 +28,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/brouteur_little_garden.png" id="sprite_ile_brouteur_little_garden"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/ankylosaure.png" id="sprite_ile_ankylosaure"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -92,6 +93,9 @@ position = Vector2(1330.0, 2020.0)
 [node name="DepuisDrum" type="Marker2D" parent="Arrivees"]
 position = Vector2(1470.0, 2020.0)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(1068, 2020)
 [node name="CapitaineTopaze" parent="." instance=ExtResource("FerryWhisky")]
 position = Vector2(1180.0, 2020.0)
 paroles = "Retour à la ville des fêtes ? Prends un bout de rhum pour la traversée, ça tient chaud. Le comptoir des primes fait profil bas, paraît-il."

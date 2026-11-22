@@ -1,0 +1,66 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/boutique_marchand_ui.gd" id="1_marchand"]
+[ext_resource type="Theme" path="res://themes/theme_interface_pirate.tres" id="2_theme"]
+
+[node name="MarchandUI" type="CanvasLayer" groups=["marchand_ui"]]
+layer = 41
+script = ExtResource("1_marchand")
+
+[node name="Fenetre" type="PanelContainer" parent="."]
+visible = false
+anchors_preset = -1
+anchor_left = 0.3
+anchor_top = 0.25
+anchor_right = 0.7
+anchor_bottom = 0.75
+theme = ExtResource("2_theme")
+
+[node name="VBox" type="VBoxContainer" parent="Fenetre"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Titre" type="Label" parent="Fenetre/VBox"]
+layout_mode = 2
+theme_type_variation = "Ribbon"
+text = "Marchand Ambulant — Catalogue complet"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 24
+
+[node name="Argent" type="Label" parent="Fenetre/VBox"]
+layout_mode = 2
+text = "Berry : 0"
+horizontal_alignment = 1
+
+[node name="Recherche" type="LineEdit" parent="Fenetre/VBox"]
+layout_mode = 2
+placeholder_text = "Rechercher un item..."
+
+[node name="Compteur" type="Label" parent="Fenetre/VBox"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+
+[node name="Defilement" type="ScrollContainer" parent="Fenetre/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Liste" type="VBoxContainer" parent="Fenetre/VBox/Defilement"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Popup" type="Label" parent="Fenetre/VBox"]
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+
+[node name="Boutons" type="HBoxContainer" parent="Fenetre/VBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="Fermer" type="Button" parent="Fenetre/VBox/Boutons"]
+layout_mode = 2
+text = "Fermer"

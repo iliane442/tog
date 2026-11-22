@@ -35,6 +35,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/kuro.png" id="sprite_ile_kuro"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/chien_du_manoir.png" id="sprite_ile_chien_du_manoir"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -101,6 +102,9 @@ position = Vector2(1472, 2112)
 [node name="DepuisBaratie" type="Marker2D" parent="Arrivees"]
 position = Vector2(1600, 2112)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(1219.2, 2080)
 [node name="CapitaineBrise" parent="." instance=ExtResource("FerryOrange")]
 position = Vector2(1331.2, 2080)
 paroles = "Je redescends sur Orange Town quand tu veux. Baggy raffermi ou reparti, la miroiterie sent encore la fumée, paraît-il."

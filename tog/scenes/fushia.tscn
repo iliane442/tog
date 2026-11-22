@@ -10,6 +10,8 @@
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="10_hud"]
 [ext_resource type="PackedScene" path="res://scenes/fenetre_coffre.tscn" id="13_coffreui"]
 [ext_resource type="PackedScene" path="res://scenes/boutique_coffres.tscn" id="14_boutique"]
+[ext_resource type="PackedScene" path="res://scenes/boutique_marchand.tscn" id="30_marchand"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="31_marchand"]
 [ext_resource type="PackedScene" path="res://scenes/shankette.tscn" id="15_shankette"]
 [ext_resource type="Script" path="res://scripts/combat/combat_manager.gd" id="16_combat"]
 [ext_resource type="Script" path="res://scripts/combat/overlay.gd" id="17_overlay"]
@@ -772,6 +774,9 @@ position = Vector2(3936, 2656)
 [node name="DepuisShells" type="Marker2D" parent="Arrivees"]
 position = Vector2(4768, 5952)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("31_marchand")]
+position = Vector2(4944, 6112)
 [node name="capitaine_ferry" parent="." instance=ExtResource("27_capitaine")]
 position = Vector2(4832, 6112)
 
@@ -1350,6 +1355,9 @@ text = "Refuser"
 
 
 [node name="BoutiqueUI" parent="." instance=ExtResource("14_boutique")]
+
+
+[node name="MarchandUI" parent="." instance=ExtResource("30_marchand")]
 
 
 [node name="CombatManager" type="Node" parent="."]

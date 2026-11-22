@@ -26,21 +26,43 @@ var equipement: Dictionary = {
 }
 # métiers appris (id de profession -> {"niveau": int, "xp": int})
 var metiers: Dictionary = {}
+# pièces installées sur le navire (emplacement -> id d'item) : un
+# seul exemplaire par emplacement, l'ancienne pièce rejoint
+# l'inventaire quand une nouvelle prend sa place
+var bateau: Dictionary = {
+	"planche": "", "gouvernail": "", "mat": "", "coque": "", "proue": "",
+}
+# vocabulaire des pièces installables : mot-clé du nom de l'item -> emplacement
+const EMPLACEMENTS_NAVIRE := {
+	"Planche renforcée": "planche",
+	"Gouvernail": "gouvernail",
+	"Mât": "mat",
+	"Module de coque": "coque",
+	"Figure de proue": "proue",
+}
 
 const POINTS_PAR_NIVEAU := 5
 const EFFET_REATTRIBUTION := "reset_stats"
+# tablette des Flots Calmes : gains du prochain combat doublés
+const EFFET_DOUBLE_COMBAT := "prochain_combat_double"
+
+# la bénédiction de la tablette attend le prochain combat gagné :
+# XP et Berry versés par les victoires y seront doublés
+var prochain_combat_double := false
 
 # impacts des points de caractéristiques (la vitalité donne +5 PV par
 # point, cf. recalculer_stats / depenser_point) ; la caractéristique
 # « chance » s'affiche « Précision » et « agilite » s'affiche « Vitesse »
 # (les clés restent celles de la base et du fichier de sauvegarde)
-const DEGATS_PAR_FORCE := 1.0  # sort d'attaque de portée 1 (corps à corps)
-const DEGATS_PAR_INTELLIGENCE := 1.0  # sort d'attaque de portée >= 2
+const DEGATS_PAR_FORCE := 1.0  # tout sort d'attaque
 const SOIN_PAR_INTELLIGENCE := 1.0  # sorts de type heal
 const BONUS_XP_PAR_SAGESSE := 0.02  # +2% d'XP par point de sagesse
 const PRECISION_PAR_CHANCE := 0.01  # +1% de toucher par point de « Précision »
 const ESQUIVE_PAR_AGILITE := 0.01  # -1% de précision aux attaques ennemies
 const CHANCE_PM_PAR_AGILITE := 0.01  # chance de +1 PM au début du tour (max 50%)
+const FUITE_BASE := 0.5  # chance de fuite de base en combat PvE
+const FUITE_PAR_AGILITE := 0.03  # bonus de fuite par point d'agilité
+const FUITE_MAX := 0.95  # une fuite n'est jamais certaine
 const INITIATIVE_BASE := 0.5  # probabilité de base de commencer le combat
 const INITIATIVE_PAR_AGILITE := 0.01  # +1% par point de « Vitesse »
 
@@ -58,10 +80,20 @@ const CLASSES_REMPLACEMENT := {
 	"6": "5",   # Infirmière -> Médecin
 	"8": "14",  # Timonier -> Combattant
 }
-# sexe ("M" ou "F") — seul élément de personnalisation choisi à la création,
-# l'apparence dépend ensuite de l'équipement porté
 var sexe: String = "M"
 const VALEURS_SEXES_VALIDES: Array[String] = ["M", "F"]
+const APPARENCE_HUMAINE_DEFAUT := "fushia"
+const APPARENCES_HUMAINES := {
+	"fushia": {"nom": "Aventuriers de Fushia", "M": "humain_pirate", "F": "humaine_pirate"},
+	"loguetown": {"nom": "Contrebandiers de Loguetown", "M": "humain_loguetown", "F": "humaine_loguetown"},
+	"large": {"nom": "Duellistes du large", "M": "humain_duelliste", "F": "humaine_duelliste"},
+}
+const VISUELS_AUTRES_RACES := {
+	"mink": {"M": "mink_pirate", "F": "mink_pirate_f"},
+	"fishman": {"M": "fishman_pirate", "F": "femme_poisson_pirate"},
+	"giant": {"M": "geant_pirate", "F": "geante_pirate"},
+}
+var apparence_humaine := APPARENCE_HUMAINE_DEFAUT
 var perso_cree := false
 # vrai quand le perso vit sur le serveur (compte connecté) : chaque
 # sauvegarde part immédiatement au serveur et le fichier local
@@ -76,6 +108,9 @@ var caracteristiques: Dictionary = {
 	"intelligence": 0,
 	"chance": 0,
 	"agilite": 0,
+	# réductrice : chaque point absorbe une part croissante des dégâts
+	# reçus (dégâts x 100 / (100 + défense), comme une armure)
+	"defense": 0,
 }
 
 # Barre de sorts du joueur : ids des sorts placés dans les emplacements
@@ -103,6 +138,38 @@ var fruit_xp := 0
 # multiplicateur du seuil d'expérience du fruit, ajustable pour la
 # progression voulue (100 -> éveil après 1000 lancements)
 const XP_FRUIT_PAR_PALIER := 100
+# pouvoirs du fruit qui ne sont pas des sorts : capacités hors barre
+# et hors combat, lancées depuis l'onglet du fruit (Greffe de Vie et
+# pouvoirs des autres fruits)
+const POUVOIRS_FRUIT_MENU: Array[String] = [
+	"250", "251", "252", "253", "254", "255", "256", "257", "258",
+	"259", "260", "261", "262", "263", "264", "265",
+]
+# effets des pouvoirs de menu, par id de sort : soin (fraction des PV
+# max) ou buff (mêmes clés que les effets de consommables) et durée
+const EFFETS_POUVOIRS_FRUIT := {
+	"251": {"buff": {"agilite": 8}, "duree": 5},
+	"252": {"buff": {"attack": 10}, "duree": 5},
+	"253": {"buff": {"agilite": 6, "chance": 4}, "duree": 5},
+	"254": {"buff": {"defense": 10}, "duree": 5},
+	"255": {"buff": {"force": 8}, "duree": 5},
+	"256": {"buff": {"chance": 10}, "duree": 5},
+	"257": {"buff": {"agilite": 12}, "duree": 3},
+	"258": {"buff": {"attack": 14}, "duree": 3},
+	"259": {"buff": {"intelligence": 8}, "duree": 5},
+	"260": {"buff": {"defense": 6, "agilite": 6}, "duree": 5},
+	"261": {"buff": {"defense": 4, "agilite": 6}, "duree": 5},
+	"262": {"buff": {"force": 12}, "duree": 5},
+	"263": {"buff": {"vitalite": 8}, "duree": 5},
+	"264": {"buff": {"force": 6, "chance": 6}, "duree": 5},
+	"265": {"soin": 1.0},
+}
+# libellés lisibles des clés d'effets (affichage des messages)
+const LIBELLES_EFFETS_FRUIT := {
+	"attack": "attaque", "defense": "défense", "vie": "PV max",
+	"vitalite": "vitalité", "force": "force", "intelligence": "intelligence",
+	"agilite": "agilité", "sagesse": "sagesse", "chance": "chance",
+}
 
 # Buffs temporaires des consommables utilisés : [{id: str, effets: {},
 # expire: float}] ; expire = temps unix ; les buffs échus sont purgés
@@ -237,6 +304,39 @@ func charger_classes() -> void:
 func nom_race() -> String:
 	return races.get(race_id, {}).get("nom", race_id)
 
+func a_une_apparence_humaine(id_race: String) -> bool:
+	return str(races.get(id_race, {}).get("id_technique", "human")) == "human"
+
+func normaliser_apparence_humaine(id_race: String, apparence: String) -> String:
+	if a_une_apparence_humaine(id_race) and APPARENCES_HUMAINES.has(apparence):
+		return apparence
+	return APPARENCE_HUMAINE_DEFAUT
+
+func prefixe_visuel(id_race: String, variante_sexe: String, apparence: String) -> String:
+	var id_technique := str(races.get(id_race, {}).get("id_technique", "human"))
+	var cle_sexe := "F" if variante_sexe == "F" else "M"
+	if id_technique == "human":
+		return APPARENCES_HUMAINES[normaliser_apparence_humaine(id_race, apparence)][cle_sexe]
+	return VISUELS_AUTRES_RACES.get(id_technique, {}).get(cle_sexe, "humain_pirate")
+
+func choisir_apparence_humaine(apparence: String) -> void:
+	var choix := normaliser_apparence_humaine(race_id, apparence)
+	if choix == apparence_humaine:
+		return
+	apparence_humaine = choix
+	sauvegarder()
+
+func portrait_visuel(prefixe: String) -> AtlasTexture:
+	var chemin := "res://assets/sprites/%s/%s_idle.png" % [prefixe, prefixe]
+	if not ResourceLoader.exists(chemin):
+		return null
+	var planche := load(chemin) as Texture2D
+	var portrait := AtlasTexture.new()
+	portrait.atlas = planche
+	portrait.region = Rect2(Vector2.ZERO, planche.get_size() / Vector2(4.0, 4.0))
+	portrait.filter_clip = true
+	return portrait
+
 func nom_classe() -> String:
 	return classes.get(classe_id, {}).get("nom", classe_id)
 
@@ -284,6 +384,21 @@ func niveau_fruit() -> int:
 		niveau += 1
 	return niveau
 
+# nom commercial du fruit mangé (table des items) ; vide sans fruit
+func nom_fruit() -> String:
+	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
+		return ""
+	var lignes := BaseDonnees.lire("SELECT name FROM items WHERE id = %d;" % fruit_id.to_int())
+	if lignes.is_empty():
+		return ""
+	return str(lignes[0]["name"])
+
+# seuil cumulé d'XP qu'un niveau de fruit exige (montée en niveau de
+# niveau_fruit) : le niveau 0 ne demande rien, le niveau 1 demande
+# XP_FRUIT_PAR_PALIER, le 2 en exige le triple cumulé, etc.
+func seuil_xp_fruit(niveau: int) -> int:
+	return XP_FRUIT_PAR_PALIER * niveau * (niveau + 1) / 2
+
 # ids des pouvoirs du fruit du démon mangé (table `fruit_skills`)
 # débloqués au niveau de fruit donné
 func _sorts_fruit_niveau(niveau: int) -> Array[String]:
@@ -299,9 +414,62 @@ func _sorts_fruit_niveau(niveau: int) -> Array[String]:
 			ids.append(id)
 	return ids
 
-# pouvoirs du fruit débloqués à son niveau actuel (4 sorts + 1 éveil)
+# pouvoirs du fruit débloqués à son niveau actuel (4 sorts + 1 éveil),
+# hors ceux du menu : les sorts de combat seuls peuplent la barre
 func sorts_fruit() -> Array[String]:
-	return _sorts_fruit_niveau(niveau_fruit())
+	var ids: Array[String] = []
+	for id in _sorts_fruit_niveau(niveau_fruit()):
+		if not POUVOIRS_FRUIT_MENU.has(id):
+			ids.append(id)
+	return ids
+
+# pouvoirs de menu du fruit mangé, débloqués à son niveau actuel : ils
+# vivent dans l'onglet Fruit du démon, jamais sur la barre de sorts
+func pouvoirs_fruit_menu() -> Array[String]:
+	var ids: Array[String] = []
+	for id in _sorts_fruit_niveau(niveau_fruit()):
+		if POUVOIRS_FRUIT_MENU.has(id):
+			ids.append(id)
+	return ids
+
+# pose (ou rafraîchit) le buff d'un pouvoir du fruit, sans objet : les
+# effets suivent le même format que ceux des consommables
+func poser_buff_fruit(id_pouvoir: String, effets: Dictionary, duree_minutes: int) -> void:
+	var expire := Time.get_unix_time_from_system() + 60.0 * maxi(duree_minutes, 1)
+	# l'id du buff porte un préfixe : il ne frotte jamais avec celui
+	# d'un consommable portant le même numéro
+	var cle_buff := "pouvoir_%s" % id_pouvoir
+	for i in range(buffs.size()):
+		if str(buffs[i].get("id", "")) == cle_buff:
+			buffs.remove_at(i)
+			break
+	buffs.append({"id": cle_buff, "effets": effets, "expire": expire})
+	recalculer_stats(false)
+	sauvegarder()
+
+# active un pouvoir de menu du fruit autre que la Greffe de Vie : un
+# soin ou un buff temporaire selon EFFETS_POUVOIRS_FRUIT ; renvoie le
+# message à montrer au joueur ("" si le pouvoir n'a pas d'effet ici)
+func activer_pouvoir_fruit(id_pouvoir: String) -> String:
+	if not EFFETS_POUVOIRS_FRUIT.has(id_pouvoir) or not sorts.has(id_pouvoir):
+		return ""
+	var effets: Dictionary = EFFETS_POUVOIRS_FRUIT[id_pouvoir]
+	var nom := str(sorts[id_pouvoir].get("nom", "Pouvoir du fruit"))
+	var soin := float(effets.get("soin", 0.0))
+	if soin > 0.0:
+		var montant := maxi(roundi(float(vie_max) * soin), 1)
+		soigner(montant)
+		sauvegarder()
+		return "%s : +%d PV." % [nom, montant]
+	var buff: Dictionary = effets.get("buff", {})
+	if buff.is_empty():
+		return ""
+	var duree_minutes := maxi(int(effets.get("duree", 5)), 1)
+	poser_buff_fruit(id_pouvoir, buff, duree_minutes)
+	var morceaux: Array[String] = []
+	for cle in buff:
+		morceaux.append("+%d %s" % [int(buff[cle]), str(LIBELLES_EFFETS_FRUIT.get(cle, cle))])
+	return "%s : %s pendant %d min." % [nom, " • ".join(morceaux), duree_minutes]
 
 # pouvoirs du fruit mangé pas encore débloqués, du plus tôt au plus
 # tard : [{"id": String, "niveau": int}]
@@ -497,6 +665,10 @@ func utiliser_objet(id_objet: String) -> String:
 	if str(details.get("type", "")) != "consumable":
 		return "Cet objet ne se consomme pas."
 	var effets: Dictionary = details.get("effets", {})
+	# les consommables ne se partagent qu'hors combat : potions,
+	# buffs et plats attendent la fin de la rencontre
+	if _est_en_combat():
+		return "Cet objet ne s'utilise pas en combat."
 	if bool(effets.get(EFFET_REATTRIBUTION, false)):
 		return _utiliser_parchemin_reattribution(id_objet)
 	# carte au trésor : elle se déchiffre et plante une croix sur la
@@ -508,16 +680,22 @@ func utiliser_objet(id_objet: String) -> String:
 		Inventaire.retirer_objet(id_objet, 1)
 		sauvegarder()
 		return ""
-	var soin := int(effets.get("heal", 0))
-	# un consommable qui soigne ne s'utilise qu'en combat : pas de
-	# restauration gratuite entre deux rencontres
-	if soin > 0 and not _est_en_combat():
-		return "Cet objet ne s’utilise qu’en combat."
+	# tablette des Flots Calmes : elle se brise en une bénédiction —
+	# les gains (XP et Berry) du prochain combat gagné seront doublés
+	if effets.has(EFFET_DOUBLE_COMBAT):
+		prochain_combat_double = true
+		Inventaire.retirer_objet(id_objet, 1)
+		sauvegarder()
+		return ""
+	# un consommable amélioré par son métier (cuisinier, médecin) soigne
+	# et buffe davantage : le facteur d'amélioration gonfle tout
+	var facteur := facteur_amelioration(id_objet)
+	var soin := roundi(int(effets.get("heal", 0)) * facteur)
 	# clés de bonus durable (hors soin et durée de l'effet)
 	var bonus := {}
 	for cle in effets:
 		if str(cle) != "heal" and str(cle) != "health" and str(cle) != "duration":
-			bonus[str(cle)] = int(effets[cle])
+			bonus[str(cle)] = roundi(int(effets[cle]) * facteur)
 	if soin == 0 and bonus.is_empty():
 		return "Cet objet n'a aucun effet."
 	Inventaire.retirer_objet(id_objet, 1)
@@ -532,7 +710,9 @@ func utiliser_objet(id_objet: String) -> String:
 				buffs.remove_at(i)
 				break
 		buffs.append({"id": id_objet, "effets": bonus, "expire": expire})
-	recalculer_stats()
+	# recalcul SANS remplir la vie : le soin de l'objet est le seul
+	# accordé, la potion ne soigne pas au-delà de sa valeur
+	recalculer_stats(false)
 	sauvegarder()
 	return ""
 
@@ -576,7 +756,8 @@ func recalculer_stats(remplir_vie := true) -> void:
 	for donnees in [races.get(race_id, {}), classes.get(classe_id, {})]:
 		vie_max += int(donnees.get("vie", 0))
 		attaque += int(donnees.get("attaque", 0))
-		defense += int(donnees.get("defense", 0))
+		# pas de defense ici : la boucle des caracteristiques la prend
+		# (clé « defense » présente), elle rejoint le total à la fin
 		vitesse += int(donnees.get("vitesse", 0))
 		for cle in caracteristiques:
 			caracteristiques[cle] += int(donnees.get(cle, 0))
@@ -590,12 +771,13 @@ func recalculer_stats(remplir_vie := true) -> void:
 	vie_max = maxi(vie_max, 1)
 	# bonus de points de vie accumulés par les niveaux gagnés
 	vie_max += 5 * maxi(niveau - 1, 0)
-	# bonus des objets équipés (effects_json des items)
+	# bonus des objets équipés (effects_json des items) — gonflés par
+	# les niveaux d'amélioration de l'atelier du métier
 	for emplacement in equipement:
 		var id_equipe: String = str(equipement[emplacement])
 		if id_equipe == "":
 			continue
-		_appliquer_effets_objet(Inventaire.details_objet(id_equipe).get("effets", {}))
+		_appliquer_effets_objet(_effets_ameliores(id_equipe))
 	# bonus passifs du fruit du démon mangé (effects_json de l'item fruit)
 	if fruit_id != "":
 		_appliquer_effets_objet(Inventaire.details_objet(fruit_id).get("effets", {}))
@@ -608,8 +790,17 @@ func recalculer_stats(remplir_vie := true) -> void:
 	buffs = actifs
 	for buff in actifs:
 		_appliquer_effets_objet(buff.get("effets", {}))
+	# le navire soutient son capitaine : sa solidité devient vie et
+	# défense (en combat), sa résistance aux tempêtes devient de la
+	# vitesse d'exploration (hors combat)
+	var navire := stats_bateau()
+	vie_max += int(navire["solidite"]) / 20
 	vie_max = maxi(vie_max, 1)
 	vie = vie_max if remplir_vie else clampi(vie, 0, vie_max)
+	# la défense répartie (race, classe, points dépensés) rejoint la
+	# défense des objets et des buffs : c'est le total qui absorbe les
+	# dégâts dans les combats
+	defense += int(caracteristiques.get("defense", 0)) + int(navire["solidite"]) / 200
 	caracteristiques_modifiees.emit()
 
 # applique les effets d'un objet (paires clé -> valeur de effects_json)
@@ -738,17 +929,338 @@ func desequiper(emplacement: String) -> void:
 	equipement[emplacement] = ""
 	recalculer_stats()
 
+# --- navire du personnage ---
+
+# emplacement de navire visé par un item ("" si ce n'est pas une
+# pièce de navire) : reconnu au préfixe « Navire : » de sa
+# description, puis au mot-clé de son nom
+func emplacement_navire(id: String) -> String:
+	if id == "" or not str(Inventaire.details_objet(id).get("description", "")).begins_with("Navire :"):
+		return ""
+	var nom_item := Inventaire.nom_objet(id)
+	for mot_cle in EMPLACEMENTS_NAVIRE:
+		if nom_item.begins_with(mot_cle):
+			return str(EMPLACEMENTS_NAVIRE[mot_cle])
+	return ""
+
+# une pièce de navire est-elle déjà installée sur l'emplacement ?
+func piece_navire_installee(id: String) -> bool:
+	return bateau.values().has(id)
+
+# installe une pièce de navire possédée : l'ancienne pièce de
+# l'emplacement rejoint l'inventaire ; renvoie l'emplacement, "" en
+# cas de refus
+func installer_piece_navire(id: String) -> String:
+	var emplacement := emplacement_navire(id)
+	if emplacement == "" or emplacement not in bateau or int(Inventaire.objets.get(id, 0)) <= 0:
+		return ""
+	# une pièce trop exigeante pour le capitaine ne s'installe pas,
+	# comme pour l'équipement porté
+	var details := Inventaire.details_objet(id)
+	if int(details.get("niveau_min", 1)) > niveau:
+		return ""
+	var ancienne := str(bateau[emplacement])
+	Inventaire.retirer_objet(id, 1)
+	if ancienne != "":
+		Inventaire.ajouter_objet(ancienne, 1)
+	bateau[emplacement] = id
+	recalculer_stats(false)
+	sauvegarder()
+	return emplacement
+
+# retire la pièce installée d'un emplacement : elle rejoint
+# l'inventaire
+func retirer_piece_navire(emplacement: String) -> bool:
+	if not bateau.has(emplacement) or str(bateau[emplacement]) == "":
+		return false
+	Inventaire.ajouter_objet(str(bateau[emplacement]), 1)
+	bateau[emplacement] = ""
+	recalculer_stats(false)
+	sauvegarder()
+	return true
+
+# lit la description d'une pièce (« Navire : +25 solidité et +0 % de
+# résistance aux tempêtes ») ; non reconnue → 0/0
+var _regex_navire: RegEx
+
+func _stats_piece_bateau(id: String) -> Dictionary:
+	var stats := {"solidite": 0, "tempete": 0.0}
+	var description := str(Inventaire.details_objet(id).get("description", ""))
+	if _regex_navire == null:
+		_regex_navire = RegEx.new()
+		_regex_navire.compile("Navire :\\s*\\+(\\d+) solidité et \\+(\\d+) % de résistance aux tempêtes")
+	var analyse := _regex_navire.search(description)
+	if analyse != null:
+		stats["solidite"] = int(analyse.get_string(1))
+		stats["tempete"] = float(analyse.get_string(2))
+	# une pièce améliorée par le charpentier encaisse davantage :
+	# ses niveaux gonflent la solidité comme les stats d'un équipement
+	var facteur := facteur_amelioration(id)
+	if facteur != 1.0:
+		stats["solidite"] = roundi(float(stats["solidite"]) * facteur)
+		stats["tempete"] = float(stats["tempete"]) * facteur
+	return stats
+
+# solidité et résistance aux tempêtes du navire : la somme des
+# pièces installées
+func stats_bateau() -> Dictionary:
+	var solidite := 0
+	var tempete := 0.0
+	for emplacement in bateau:
+		var id := str(bateau[emplacement])
+		if id == "":
+			continue
+		var stats := _stats_piece_bateau(id)
+		solidite += int(stats["solidite"])
+		tempete += float(stats["tempete"])
+	return {"solidite": solidite, "tempete": tempete}
+
+# bonus de vitesse d'exploration (hors combat) conféré par le
+# navire : +1% par point de résistance aux tempêtes, plafonné
+func bonus_vitesse_navire() -> float:
+	return clampf(stats_bateau()["tempete"] * 0.01, 0.0, 0.30)
+
+# attaque totale affichée : la base (race, classe, équipement, buffs)
+# plus la contribution de la Force — c'est exactement ce que chaque
+# coup reçoit dans la formule de dégâts (attaque + bonus de Force)
+func attaque_effective() -> int:
+	return attaque + int(caracteristiques.get("force", 0))
+
+# --- améliorations d'équipement (atelier du métier) ---
+
+# chaque niveau d'amélioration gonfle les stats de l'objet de 20 %,
+# jusqu'à dix niveaux (soit un triplement des stats au sommet)
+const AMELIORATION_MAX := 10
+const AMELIORATION_BONUS := 0.20
+# id objet -> niveau d'amélioration atteint
+var ameliorations: Dictionary = {}
+
+# familles d'objets qu'un métier sait améliorer : paires (type,
+# sous-type) — sous-type vide = tout le type — ou l'entrée spéciale
+# (« navire ») pour les pièces de navire, reconnues par leur
+# description. Chaque métier ne retouche que sa spécialité,
+# c'est-à-dire ce qu'il fabrique lui-même.
+const FAMILLES_AMELIORATION := {
+	"carpenter": [["navire", ""]],
+	"medic": [["consumable", "soin"]],
+	"cook": [["consumable", "energie"], ["consumable", "nourriture"]],
+	"musician": [["accessoire", "instrument"]],
+	"blacksmith": [["armure", ""], ["arme", "hache"], ["arme", "masse"], ["arme", "lance"], ["arme", "bâton"]],
+	"navigateur": [["accessoire", "boussole"], ["accessoire", "longue-vue"], ["accessoire", "sextant"]],
+	"combattant": [["arme", "gants"], ["armure", "protège-bras"], ["accessoire", "visage"], ["accessoire", "pieds"], ["accessoire", "ceinture"], ["accessoire", "bracelet"]],
+	"sabreur": [["arme", "épée"]],
+	"tireur": [["arme", "pistolet"], ["arme", "fusil"], ["arme", "mousquet"], ["arme", "carabine"], ["arme", "canon"], ["arme", "lance-roquettes"]],
+	"archeologue": [["accessoire", "monocle"]],
+}
+
+# le métier unique du personnage (clé de `metiers`), "" s'il n'en a pas
+func metier_perso() -> String:
+	if metiers.is_empty():
+		return ""
+	return str(metiers.keys()[0])
+
+func niveau_amelioration(id_objet: String) -> int:
+	return int(ameliorations.get(id_objet, 0))
+
+# multiplicateur courant des stats de l'objet (1.0 = vierge)
+func facteur_amelioration(id_objet: String) -> float:
+	return 1.0 + AMELIORATION_BONUS * float(niveau_amelioration(id_objet))
+
+# coût du prochain niveau : du fer et de l'or, en quantités
+# croissantes (deux fois le niveau visé en fer, une fois en or)
+func cout_amelioration(id_objet: String) -> Dictionary:
+	var niveau_vise := mini(niveau_amelioration(id_objet) + 1, AMELIORATION_MAX)
+	return {"16": 2 * niveau_vise, "17": niveau_vise}
+
+# l'objet appartient-il à une famille que le métier sait améliorer ?
+func objet_ameliorable(id_objet: String) -> bool:
+	var details := Inventaire.details_objet(id_objet)
+	var familles: Array = FAMILLES_AMELIORATION.get(metier_perso(), [])
+	for famille in familles:
+		var famille_type := str(famille[0])
+		var famille_sous_type := str(famille[1])
+		if famille_type == "navire":
+			if str(details.get("description", "")).begins_with("Navire :"):
+				return true
+		elif str(details.get("type", "")) == famille_type and (famille_sous_type == "" or str(details.get("sous_type", "")) == famille_sous_type):
+			return true
+	return false
+
+# engage le prochain niveau d'amélioration ; renvoie un message
+# d'explication en cas de refus, "" si l'atelier a travaillé
+func ameliorer_objet(id_objet: String) -> String:
+	if int(Inventaire.objets.get(id_objet, 0)) <= 0:
+		return "Tu ne possèdes pas cet objet."
+	if not objet_ameliorable(id_objet):
+		return "Ton métier ne sait pas améliorer cet objet."
+	var niveau := niveau_amelioration(id_objet)
+	if niveau >= AMELIORATION_MAX:
+		return "Cet objet est déjà au sommet de l'art de ton métier."
+	var cout := cout_amelioration(id_objet)
+	for id_ressource in cout:
+		if int(Inventaire.objets.get(str(id_ressource), 0)) < int(cout[id_ressource]):
+			return "Il te manque des ressources pour ce niveau."
+	for id_ressource in cout:
+		Inventaire.retirer_objet(str(id_ressource), int(cout[id_ressource]))
+	ameliorations[id_objet] = niveau + 1
+	# les effets de l'objet porté changent : les stats suivent
+	recalculer_stats(false)
+	sauvegarder()
+	return ""
+
+# effets d'un objet, gonflés par ses niveaux d'amélioration (chaque
+# valeur arrondie à l'entier le plus proche)
+func _effets_ameliores(id_objet: String) -> Dictionary:
+	var effets: Dictionary = Inventaire.details_objet(id_objet).get("effets", {})
+	var facteur := facteur_amelioration(id_objet)
+	if facteur == 1.0:
+		return effets
+	var copies := {}
+	for cle in effets:
+		copies[cle] = roundi(float(effets[cle]) * facteur)
+	return copies
+
+# équipe d'un coup, sur chaque emplacement, le meilleur objet atteignable
+# (score = somme des effets bénéfiques) ; l'arme principale exige une
+# arme accordée à la classe, l'arme secondaire accepte toute classe, les
+# deux meilleures bagues couvrent les anneaux ; un objet porté n'est
+# remplacé que par un score strictement supérieur — l'automatisation ne
+# régresse jamais. Renvoie le nombre d'emplacements modifiés.
+func equiper_les_meilleurs() -> int:
+	var candidats: Array = []
+	for id in Inventaire.objets:
+		var candidat := _candidat_equipement(str(id))
+		if not candidat.is_empty():
+			candidats.append(candidat)
+	for emplacement in equipement:
+		var id_porte := str(equipement[emplacement])
+		if id_porte == "":
+			continue
+		var candidat_porte := _candidat_equipement(id_porte, true)
+		if not candidat_porte.is_empty():
+			candidats.append(candidat_porte)
+	# meilleur de chaque emplacement simple (le porté gagne les égalités)
+	var fixes := ["tête", "visage", "cou", "corps", "cape", "ceinture", "pantalon", "pieds", "main"]
+	var meilleurs := {}
+	for candidat in candidats:
+		var emplacement := str(candidat["emplacement"])
+		if emplacement == "arme" or emplacement == "anneau":
+			continue
+		if not meilleurs.has(emplacement):
+			meilleurs[emplacement] = candidat
+			continue
+		var score := int(candidat["score"])
+		var porteur: bool = bool(candidat["porte"])
+		var actuel: Dictionary = meilleurs[emplacement]
+		if score > int(actuel["score"]) or (score == int(actuel["score"]) and porteur and not bool(actuel["porte"])):
+			meilleurs[emplacement] = candidat
+	# armes et bagues : classées par score décroissant
+	var armes: Array = []
+	var bagues: Array = []
+	for candidat in candidats:
+		if str(candidat["emplacement"]) == "arme":
+			armes.append(candidat)
+		elif str(candidat["emplacement"]) == "anneau":
+			bagues.append(candidat)
+	for liste in [armes, bagues]:
+		liste.sort_custom(func(a, b) -> bool: return int(a["score"]) > int(b["score"]))
+	var remplacements := {}
+	for emplacement in fixes:
+		if meilleurs.has(emplacement):
+			remplacements[emplacement] = str(meilleurs[emplacement]["id"])
+	# bagues : les deux meilleures ; une bague seule reste à sa place
+	if bagues.size() == 1:
+		var bague_seule: Dictionary = bagues[0]
+		if bool(bague_seule["porte"]):
+			remplacements[est_equipe(str(bague_seule["id"]))] = str(bague_seule["id"])
+		else:
+			remplacements["anneau1"] = str(bague_seule["id"])
+	elif bagues.size() >= 2:
+		remplacements["anneau1"] = str(bagues[0]["id"])
+		remplacements["anneau2"] = str(bagues[1]["id"])
+	# arme principale : la meilleure accordée à la classe ; l'arme
+	# secondaire : la meilleure des autres (l'actuelle incluse)
+	for candidat in armes:
+		if bool(candidat["accordee"]):
+			remplacements["arme"] = str(candidat["id"])
+			break
+	for candidat in armes:
+		if str(candidat["id"]) != str(remplacements.get("arme", "@")):
+			remplacements["arme2"] = str(candidat["id"])
+			break
+	# application : arme avant arme secondaire (l'ancienne arme
+	# retourne à l'inventaire et reste candidate pour arme2)
+	var changements := 0
+	for emplacement in remplacements:
+		if str(equipement.get(emplacement, "")) == str(remplacements[emplacement]):
+			continue
+		if _equiper_sur_emplacement(emplacement, str(remplacements[emplacement])):
+			changements += 1
+	if changements > 0:
+		recalculer_stats()
+		sauvegarder()
+	return changements
+
+# fiche de candidature d'un objet : vide s'il n'équipe aucun
+# emplacement ; porté = déjà sur le perso (l'objet des slots sortis
+# du combat garde son droit de place, il n'est pas dans l'inventaire)
+func _candidat_equipement(id: String, porte := false) -> Dictionary:
+	var details := Inventaire.details_objet(id)
+	var emplacement := emplacement_equipement(str(details.get("type", "")), str(details.get("sous_type", "")))
+	if emplacement == "":
+		return {}
+	if int(details.get("niveau_min", 1)) > niveau and not porte:
+		return {}
+	return {
+		"emplacement": emplacement,
+		"id": id,
+		"score": _score_equipement(details),
+		"accordee": arme_accordee(details),
+		"porte": porte,
+	}
+
+# score d'un équipement pour l'optimisation : somme des valeurs
+# positives de ses effets (attaque, défense, vie, caractéristiques...)
+func _score_equipement(details: Dictionary) -> int:
+	var score := 0
+	var effets: Dictionary = details.get("effets", {})
+	for cle in effets:
+		if str(cle) == "duration":
+			continue
+		score += maxi(int(effets[cle]), 0)
+	return score
+
+# équipe un objet sur un emplacement précis (l'ancien retourne à
+# l'inventaire) sans passer par la résolution automatique des slots
+func _equiper_sur_emplacement(emplacement: String, id: String) -> bool:
+	if not equipement.has(emplacement) or not Inventaire.objets.has(id):
+		return false
+	if equipement[emplacement] == id:
+		return false
+	var details := Inventaire.details_objet(id)
+	if int(details.get("niveau_min", 1)) > niveau:
+		return false
+	if equipement[emplacement] != "":
+		Inventaire.ajouter_objet(equipement[emplacement])
+	Inventaire.retirer_objet(id, 1)
+	equipement[emplacement] = id
+	return true
+
 # Création définitive du personnage (depuis l'interface de création)
 func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
-		id_profession: String = "", nouveau_sexe: String = "M") -> void:
+		id_profession: String = "", nouveau_sexe: String = "M",
+		nouvelle_apparence: String = APPARENCE_HUMAINE_DEFAUT) -> void:
 	# le nouveau perso ne garde rien de l'ancien : l'inventaire et
-	# l'historique des quêtes (fichiers locaux) repartent de zéro
+	# l'historique des quêtes (fichiers locaux) repartent de zéro,
+	# pas plus sa dernière position d'exploration
 	Inventaire.reinitialiser()
 	QuestManager.reinitialiser()
+	Reseau.oublier_position_memorisee()
 	nom = nouveau_nom
 	race_id = nouvelle_race
 	classe_id = nouvelle_classe
 	sexe = nouveau_sexe if VALEURS_SEXES_VALIDES.has(nouveau_sexe) else "M"
+	apparence_humaine = normaliser_apparence_humaine(race_id, nouvelle_apparence)
 	niveau = 1
 	xp = 0
 	berry = 0
@@ -773,11 +1285,12 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 		"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
 		"anneau1": "", "anneau2": "",
 	}
+	# le navire d'un nouveau perso est nu : aucune pièce installée
+	bateau = {"planche": "", "gouvernail": "", "mat": "", "coque": "", "proue": ""}
 	recalculer_stats()
 	perso_cree = true
 	sauvegarder()
 	barre_sorts_modifiee.emit()
-
 func sauvegarder() -> void:
 	# en ligne, le serveur est l'unique référence du perso : la
 	# sauvegarde locale n'est plus touchée pendant la session
@@ -798,6 +1311,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "race", race_id)
 	cfg.set_value("perso", "classe", classe_id)
 	cfg.set_value("perso", "sexe", sexe)
+	cfg.set_value("perso", "apparence_humaine", apparence_humaine)
 	cfg.set_value("perso", "berry", berry)
 	cfg.set_value("perso", "niveau", niveau)
 	cfg.set_value("perso", "xp", xp)
@@ -805,12 +1319,15 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "points_statistique", points_statistique)
 	cfg.set_value("perso", "points_depenses", points_depenses)
 	cfg.set_value("perso", "equipement", equipement)
+	cfg.set_value("perso", "bateau", bateau)
 	cfg.set_value("perso", "metiers", metiers)
 	cfg.set_value("perso", "barre_sorts", barre_sorts)
 	cfg.set_value("perso", "barre_objets", barre_objets)
 	cfg.set_value("perso", "fruit", fruit_id)
 	cfg.set_value("perso", "fruit_xp", fruit_xp)
 	cfg.set_value("perso", "buffs", buffs)
+	cfg.set_value("perso", "prochain_combat_double", prochain_combat_double)
+	cfg.set_value("perso", "ameliorations", ameliorations)
 	perso_cree = cfg.save(CHEMIN_PERSO) == OK
 
 func charger_perso() -> void:
@@ -831,8 +1348,15 @@ func charger_perso() -> void:
 		classe_remplacee = true
 	var sexe_lu := str(cfg.get_value("perso", "sexe", "M"))
 	sexe = sexe_lu if VALEURS_SEXES_VALIDES.has(sexe_lu) else "M"
+	apparence_humaine = normaliser_apparence_humaine(
+		race_id, str(cfg.get_value("perso", "apparence_humaine", APPARENCE_HUMAINE_DEFAUT)))
 	berry = int(cfg.get_value("perso", "berry", 0))
 	points_statistique = int(cfg.get_value("perso", "points_statistique", 0))
+	prochain_combat_double = bool(cfg.get_value("perso", "prochain_combat_double", false))
+	ameliorations = {}
+	var ameliorations_sauvees: Dictionary = cfg.get_value("perso", "ameliorations", {})
+	for id_ameliore in ameliorations_sauvees:
+		ameliorations[str(id_ameliore)] = int(ameliorations_sauvees[id_ameliore])
 	var depenses = cfg.get_value("perso", "points_depenses", {})
 	if depenses is Dictionary:
 		points_depenses = depenses
@@ -876,6 +1400,16 @@ func charger_perso() -> void:
 			var cible := _resoudre_emplacement(details)
 			if cible != "":
 				equipement[cible] = id_equipe
+	# pièces du navire : chaque emplacement reprend sa pièce ; les
+	# pièces installées ne sont pas dans l'inventaire (retirées à
+	# l'installation), leur id suffit
+	var navire_lu = cfg.get_value("perso", "bateau", {})
+	if navire_lu is Dictionary:
+		for emplacement in bateau:
+			bateau[emplacement] = ""
+		for emplacement_lu in navire_lu:
+			if bateau.has(emplacement_lu):
+				bateau[emplacement_lu] = str(navire_lu[emplacement_lu])
 	niveau = int(cfg.get_value("perso", "niveau", 1))
 	xp = int(cfg.get_value("perso", "xp", 0))
 	# filtrer la barre seulement ici : le niveau est connu, les sorts de
@@ -905,6 +1439,7 @@ func reinitialiser() -> void:
 	nom = "Héros"
 	race_id = "1"
 	classe_id = "1"
+	apparence_humaine = APPARENCE_HUMAINE_DEFAUT
 	niveau = 1
 	xp = 0
 	berry = 0
@@ -916,11 +1451,14 @@ func reinitialiser() -> void:
 	buffs = []
 	metiers = {}
 	points_depenses = {}
+	ameliorations = {}
 	equipement = {
 		"arme": "", "arme2": "", "corps": "", "tête": "", "visage": "", "cou": "",
 		"main": "", "cape": "", "ceinture": "", "pantalon": "", "pieds": "",
 		"anneau1": "", "anneau2": "",
 	}
+	# idem le navire
+	bateau = {"planche": "", "gouvernail": "", "mat": "", "coque": "", "proue": ""}
 	recalculer_stats()
 	# la barre repart à vide : l'interface suit
 	barre_sorts_modifiee.emit()
@@ -934,26 +1472,24 @@ func xp_prochain_niveau() -> int:
 
 # --- bonus de caractéristiques au gameplay ---
 
-# dégâts ajoutés à un sort selon son profil : force pour le corps à
-# corps (portée 1), intelligence pour la distance (portée >= 2)
-func bonus_degats_sort(type_sort: String, portee_sort: int) -> float:
+# dégâts ajoutés à tout sort d'attaque : la Force muscle chaque coup,
+# au corps à corps comme à distance (l'Intelligence, elle, soigne)
+func bonus_degats_sort(type_sort: String, _portee_sort: int) -> float:
 	if type_sort.to_lower() != "attack":
 		return 0.0
-	if portee_sort <= 1:
-		return float(caracteristiques.get("force", 0)) * DEGATS_PAR_FORCE
-	return float(caracteristiques.get("intelligence", 0)) * DEGATS_PAR_INTELLIGENCE
+	return float(caracteristiques.get("force", 0)) * DEGATS_PAR_FORCE
 
 # soin ajouté aux sorts de type heal (intelligence)
 func bonus_soin_sort() -> float:
 	return float(caracteristiques.get("intelligence", 0)) * SOIN_PAR_INTELLIGENCE
 
 # la caractéristique qui augmente les effets d'un sort ("" si aucune) :
-# la Force muscle le corps à corps, l'Intelligence la distance et les
-# soins — c'est elle qu'il faut améliorer pour renforcer ce sort
+# la Force muscle toutes les attaques, l'Intelligence les soins —
+# c'est elle qu'il faut améliorer pour renforcer ce sort
 func stat_booster_sort(sort: Dictionary) -> String:
 	var type := str(sort.get("type", "")).to_lower()
 	if type == "attack":
-		return "Force" if int(sort.get("portee", 1)) <= 1 else "Intelligence"
+		return "Force"
 	if type == "heal" or type == "healing":
 		return "Intelligence"
 	return ""
@@ -987,6 +1523,12 @@ func bonus_esquive() -> float:
 func chance_pm_supplementaire() -> float:
 	return clampf(float(caracteristiques.get("agilite", 0)) * CHANCE_PM_PAR_AGILITE, 0.0, 0.5)
 
+# chance de réussir sa fuite d'un combat contre des ennemis : une
+# base accueillante grandit avec l'agilité, plafonnée pour garder
+# un risque
+func chance_fuite() -> float:
+	return clampf(FUITE_BASE + float(caracteristiques.get("agilite", 0)) * FUITE_PAR_AGILITE, 0.0, FUITE_MAX)
+
 # probabilité de prendre l'initiative à l'ouverture du combat
 # (jouer avant les ennemis)
 func chance_initiative() -> float:
@@ -999,7 +1541,8 @@ func gagner_xp(montant: int) -> void:
 		xp -= xp_prochain_niveau()
 		niveau += 1
 		vie_max += 5
-		vie = vie_max
+		# pas de soin au passage de niveau : les points de vie
+		# actuels ne bougent pas
 		points_statistique += POINTS_PAR_NIVEAU
 	# un nouveau sort de classe s'est débloqué -> placé dans la barre
 	# s'il reste de la place ; les pouvoirs du fruit suivent une autre
@@ -1036,6 +1579,10 @@ func depenser_point(cle: String) -> bool:
 		vie += 5
 	else:
 		caracteristiques[cle] += 1
+	# la défense dépensée s'applique immédiatement (le total absorbs les
+	# dégâts) ; recalculer_stats la reconfirme au prochain passage
+	if cle == "defense":
+		defense += 1
 	caracteristiques_modifiees.emit()
 	return true
 
@@ -1055,6 +1602,8 @@ func appliquer_points(repartition: Dictionary) -> void:
 			vie += 5 * montant
 		else:
 			caracteristiques[cle] += montant
+		if cle == "defense":
+			defense += montant
 	sauvegarder()
 	caracteristiques_modifiees.emit()
 
@@ -1067,8 +1616,36 @@ func ajouter_berry(montant: int) -> void:
 	caracteristiques_modifiees.emit()
 
 func blesser(montant: int) -> void:
+	# le bouclier d'absorption paie d'abord, les PV ensuite
+	montant = absorber_bouclier(montant)
 	vie = clampi(vie - montant, 0, vie_max)
 	caracteristiques_modifiees.emit()
+
+# points de bouclier actifs (Égide des anciens) : un pool temporaire
+# qui encaisse les dégâts à la place des PV, pendant quelques tours
+var bouclier: int = 0
+
+# ajoute des points de bouclier (se cumule avec l'existant)
+func gagner_bouclier(montant: int) -> void:
+	if montant <= 0:
+		return
+	bouclier += montant
+	caracteristiques_modifiees.emit()
+
+# fait payer les dégâts au bouclier d'abord ; renvoie la part qui
+# déborde et ira aux PV
+func absorber_bouclier(montant: int) -> int:
+	if bouclier <= 0 or montant <= 0:
+		return montant
+	var absorb := mini(bouclier, montant)
+	bouclier -= absorb
+	return montant - absorb
+
+# dissipe le bouclier (fin de durée ou nouveau départ)
+func perdre_bouclier() -> void:
+	if bouclier != 0:
+		bouclier = 0
+		caracteristiques_modifiees.emit()
 
 # --- Métiers et artisanat ---
 

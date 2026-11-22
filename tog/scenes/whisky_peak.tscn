@@ -31,6 +31,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/agent_baroque.png" id="sprite_ile_agent_baroque"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/poule_du_quai.png" id="sprite_ile_poule_du_quai"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -93,6 +94,9 @@ position = Vector2(1300.0, 2010.0)
 [node name="DepuisLittleGarden" type="Marker2D" parent="Arrivees"]
 position = Vector2(1440.0, 2010.0)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(1038, 2010)
 [node name="CapitaineHalcion" parent="." instance=ExtResource("FerryReverse")]
 position = Vector2(1150.0, 2010.0)
 paroles = "Redescendre au col de Reverse Mountain ? Le courant rend mieux qu'il ne prend : dans le bon chenal, avec les balises, on y va. Embarque."

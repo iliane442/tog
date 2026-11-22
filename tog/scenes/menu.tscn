@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/gem.png" id="9_stat_intelligence"]
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/coin.png" id="10_stat_chance"]
 [ext_resource type="Texture2D" path="res://addons/pixel_ui_fantasy/icons/arrow_right.png" id="11_stat_agilite"]
+[ext_resource type="Texture2D" path="res://assets/items/217_bouclier_en_bois.png" id="15_stat_defense"]
 [ext_resource type="PackedScene" path="res://scenes/case_equipement.tscn" id="12_case_equipement"]
 
 [ext_resource type="StyleBox" path="res://themes/fiche_menu.tres" id="14_fiche"]
@@ -286,6 +287,7 @@ layout_mode = 2
 theme_type_variation = "InsetPanel"
 
 [node name="Portrait" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/PortraitCadre"]
+texture_filter = 1
 layout_mode = 2
 texture = ExtResource("3_portrait")
 expand_mode = 1
@@ -311,6 +313,26 @@ text = "Race : Humain | Classe : Épéiste"
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Niveau 1"
+
+[node name="Navire" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+autowrap_mode = 2
+text = "Navire : aucune pièce installée"
+
+[node name="LigneApparence" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LabelApparence" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/LigneApparence"]
+layout_mode = 2
+text = "Apparence"
+
+[node name="OptionApparence" type="OptionButton" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/CarteIdentite/IdentiteRow/Identite/LigneApparence"]
+layout_mode = 2
+
 [node name="XP" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
@@ -635,6 +657,41 @@ custom_minimum_size = Vector2(42, 38)
 layout_mode = 2
 text = "+"
 
+[node name="StatDefense" type="PanelContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ParchmentPanel"
+
+[node name="Ligne" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icone" type="TextureRect" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+texture = ExtResource("15_stat_defense")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Nom" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 19
+text = "Défense"
+
+[node name="Valeur" type="Label" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 2
+
+[node name="Ajouter" type="Button" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage/StatsGrid/StatDefense/Ligne"]
+custom_minimum_size = Vector2(42, 38)
+layout_mode = 2
+text = "+"
+
 [node name="ActionsStats" type="HBoxContainer" parent="Fenetre/Corps/ContenuPersonnage/DefilementPersonnage/ColonnePersonnage"]
 layout_mode = 2
 theme_override_constants/separation = 12
@@ -729,13 +786,29 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
-[node name="TitreEquipement" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
-custom_minimum_size = Vector2(0, 28)
+[node name="BasculeColonne" type="HBoxContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
 layout_mode = 2
-theme_type_variation = "Ribbon"
-theme_override_font_sizes/font_size = 20
-text = "ÉQUIPEMENT"
-horizontal_alignment = 1
+theme_override_constants/separation = 4
+
+[node name="BtnVueEquipement" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BasculeColonne"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_pressed = true
+text = "Équipement"
+
+[node name="BtnVueNavire" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BasculeColonne"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Navire"
+
+[node name="BtnAutoEquipement" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "Équiper les meilleurs"
 
 [node name="Silhouette" type="Control" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
 custom_minimum_size = Vector2(0, 410)
@@ -843,6 +916,29 @@ theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 horizontal_alignment = 1
 
+[node name="TitreNavire" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
+visible = false
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+theme_type_variation = "Ribbon"
+theme_override_font_sizes/font_size = 20
+text = "NAVIRE"
+horizontal_alignment = 1
+
+[node name="SlotsNavire" type="VBoxContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="BonusNavire" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 2
+text = "Aucune pièce installée."
+horizontal_alignment = 1
+
 [node name="PanneauSac" type="PanelContainer" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
@@ -890,6 +986,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 16
 placeholder_text = "Rechercher..."
+
+[node name="TriSac" type="OptionButton" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac"]
+custom_minimum_size = Vector2(148, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+tooltip_text = "Ordre d'affichage des objets"
 
 [node name="Monnaie" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSac/ColonneSac/FiltresSac"]
 custom_minimum_size = Vector2(132, 42)
@@ -1043,6 +1145,20 @@ text = "Manger le fruit"
 visible = false
 layout_mode = 2
 text = "Placer dans la barre d'objets"
+
+[node name="BtnVendre" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem"]
+visible = false
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Vendre"
+
+[node name="BtnNavire" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/DetailItem/MargesDetail/ColonneDetail/ActionsItem"]
+visible = false
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Installer sur le navire"
 
 [node name="ZoneInventaireCompacte" type="ScrollContainer" parent="Fenetre/Corps/ContenuInventaire"]
 visible = false

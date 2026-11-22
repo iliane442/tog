@@ -31,6 +31,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/mistral.png" id="sprite_ile_mistral"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/poule_du_quai.png" id="sprite_ile_poule_du_quai"]
 
+[ext_resource type="PackedScene" path="res://scenes/pnj_marchand.tscn" id="MarchandPnj"]
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
 
@@ -97,6 +98,9 @@ position = Vector2(1472.0, 2112.0)
 [node name="DepuisReverseMountain" type="Marker2D" parent="Arrivees"]
 position = Vector2(1600.0, 2112.0)
 
+
+[node name="MarchandAmbulant" parent="." instance=ExtResource("MarchandPnj")]
+position = Vector2(1257.6, 2080)
 [node name="CapitaineEsturgeon" parent="." instance=ExtResource("FerryCoco")]
 position = Vector2(1369.6, 2080.0)
 paroles = "Redescendre sur le village Coco ? Je connais la passe des mandarines par coeur. Embarque, je te laisse le fil du quart."

@@ -541,6 +541,13 @@ func noms_de_l_equipage(id_equipage: int) -> Array:
 		noms.append(str(ligne["nom_joueur"]))
 	return noms
 
+# nom d'un équipage par son id (message d'alliance du serveur)
+func nom_equipage(id_equipage: int) -> String:
+	var lignes := _lire("SELECT nom FROM equipages WHERE id = %d;" % id_equipage)
+	if lignes.is_empty():
+		return ""
+	return str(lignes[0]["nom"])
+
 # --- Journal de bord ---
 
 # ajoute une entrée au journal de l'équipage courant
@@ -691,7 +698,9 @@ func rompre_alliance() -> String:
 	equipage_modifie.emit()
 	return ""
 
-# retire un équipage de sa flotte et supprime la flotte vidée
+# retire un équipage de sa flotte et supprime la flotte vidée : une
+# flotte à un seul membre n'est plus une alliance — le survivant est
+# libéré (utile quand un équipage allié se dissout ou se retire)
 func _retirer_de_la_flotte(id_equipage: int) -> void:
 	var lignes := _lire(
 		"SELECT flotte_id FROM equipage_flotte WHERE equipage_id = %d;" % id_equipage)
@@ -701,7 +710,11 @@ func _retirer_de_la_flotte(id_equipage: int) -> void:
 	_ecrire("DELETE FROM equipage_flotte WHERE equipage_id = %d;" % id_equipage)
 	var restants := _lire(
 		"SELECT COUNT(*) AS total FROM equipage_flotte WHERE flotte_id = %d;" % id_flotte)
-	if not restants.is_empty() and int(restants[0]["total"]) == 0:
+	var restant := 0
+	if not restants.is_empty():
+		restant = int(restants[0]["total"])
+	if restant <= 1:
+		_ecrire("DELETE FROM equipage_flotte WHERE flotte_id = %d;" % id_flotte)
 		_ecrire("DELETE FROM flottes WHERE id = %d;" % id_flotte)
 
 # mon équipage est-il allié à l'équipage donné ?
