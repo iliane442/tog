@@ -157,7 +157,6 @@ const SCENE_CASE_EQUIPEMENT := preload("res://scenes/case_equipement.tscn")
 @onready var titre_navire_col: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/TitreNavire
 @onready var btn_vue_equipement: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BasculeColonne/BtnVueEquipement
 @onready var btn_vue_navire: Button = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/BasculeColonne/BtnVueNavire
-@onready var titre_equipement_col: Label = $Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage/TitreEquipement
 # vue courante de la colonne de gauche de l'inventaire : équipement
 # ou navire, jamais les deux à la fois
 var _vue_navire := false
@@ -2072,7 +2071,6 @@ func _basculer_vue_navire(vue_active: bool) -> void:
 	maj_panneau_navire()
 
 func _appliquer_vue_colonne() -> void:
-	titre_equipement_col.visible = not _vue_navire
 	btn_auto_equipement.visible = not _vue_navire
 	silhouette.visible = not _vue_navire
 	titre_navire_col.visible = _vue_navire

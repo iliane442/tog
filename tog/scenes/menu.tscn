@@ -792,14 +792,6 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Navire"
 
-[node name="TitreEquipement" type="Label" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
-custom_minimum_size = Vector2(0, 28)
-layout_mode = 2
-theme_type_variation = "Ribbon"
-theme_override_font_sizes/font_size = 20
-text = "ÉQUIPEMENT"
-horizontal_alignment = 1
-
 [node name="BtnAutoEquipement" type="Button" parent="Fenetre/Corps/ContenuInventaire/ZoneInventaire/PanneauSilhouette/ColonnePersonnage"]
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
