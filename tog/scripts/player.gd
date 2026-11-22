@@ -47,7 +47,12 @@ var _sort_preselectionne_combat := ""
 var _recharges_sorts: Dictionary = {}  # id_sort -> tours de recharge restants
 # sorts qui posent un bouclier d'absorption : id -> part des PV max
 const SORTS_BOUCLIER := {"247": 0.30}
-# tours restants au bouclier posé par une Égide (0 : aucun)
+# la Room du Bistouri (110) : salle d'opération autour du chirurgien,
+# gratuite en recharge mais payée en sang ; rayon en losange de 2
+# cases (13 cases d'une case à l'autre du plancher)
+const SORT_ROOM_CLE := "110"
+const ROOM_RAYON := 2
+const ROOM_COUT_PV := 0.20# tours restants au bouclier posé par une Égide (0 : aucun)
 var _tours_bouclier_restants := 0
 var _pa := 0
 var _pm := 0
@@ -516,6 +521,10 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 	if _pa < cout or distance > portee or (cible != self and not _combat_manager.ligne_de_vue_libre(ma_case(), _case_de(cible.global_position))):
 		_combat_manager.afficher_message("Cible hors portée ou ligne de vue bloquée.")
 		return false
+	# la Room ne se rate jamais : une salle d'opération englobe son
+	# chirurgien — aucun jet de précision, elle se déclenche toujours
+	if _id_sort == SORT_ROOM_CLE:
+		return _lancer_room(sort)
 	if not _combat_manager.precision_reussie(self):
 		_jouer_effet_sort(_id_sort, cible, false)
 		_pa -= cout
@@ -625,6 +634,58 @@ func _apercu_zone_sort() -> Array[Vector2i]:
 			cases.append(case_ennemi)
 			return cases
 	return vides
+
+# la Room se dresse autour de son chirurgien : chaque allié de la
+# salle (les états du sort — +25 % d'attaque et de défense, 3 tours)
+# est opéré, et le prix du scalpel est versé en sang — 20 % des PV
+# max ; jamais assez pour tuer, la salle refuse le sacrifice fatal
+func _lancer_room(sort: Dictionary) -> bool:
+	var cout_pa := int(sort.get("cout_pa", 1))
+	if _pa < cout_pa:
+		_combat_manager.afficher_message("Pas assez de PA pour lancer le sort.")
+		return false
+	var paiement := maxi(roundi(float(Personnage.vie_max) * ROOM_COUT_PV), 1)
+	if Personnage.vie <= paiement:
+		_combat_manager.afficher_message("La Room exige plus de sang que tu n'en as.")
+		return false
+	_jouer_effet_sort(SORT_ROOM_CLE, self)
+	var touches := _room_couvrir_allies(sort)
+	Personnage.blesser(paiement)
+	_pa -= cout_pa
+	_combat_manager.afficher_message("Room dressée : %d allié(s) opéré(s) (+25 %%, 3 tours) — %d PV versés." % [touches, paiement])
+	_scruter_fruit(SORT_ROOM_CLE)
+	_sort_selectionne = false
+	_maj_affichage()
+	_afficher_cases()
+	return true
+
+# chaque allié dans le losange de la salle d'opération reçoit les
+# états du sort (le joueur lui-même comme les miroirs du groupe)
+func _room_couvrir_allies(sort: Dictionary) -> int:
+	var centre := ma_case()
+	var touches := 0
+	if not _combat_manager.has_method("allies_actifs"):
+		return 0
+	for allie in _combat_manager.allies_actifs():
+		var noeud := allie as Node2D
+		if noeud == null or not is_instance_valid(noeud):
+			continue
+		var case_allie := centre if noeud == self else _case_de(noeud.global_position)
+		var distance := absi(case_allie.x - centre.x) + absi(case_allie.y - centre.y)
+		if distance > ROOM_RAYON:
+			continue
+		_combat_manager.appliquer_effets_sort(noeud, sort)
+		touches += 1
+	return touches
+
+# le fruit mangé progresse à chaque pouvoir utilisé : ses sorts se
+# débloquent par son niveau (voir Personnage.fruit_xp)
+func _scruter_fruit(id_sort: String) -> void:
+	if Personnage.fruit_id == "":
+		return
+	for id_debloque in Personnage.utiliser_pouvoir_fruit(id_sort):
+		var nom_nouveau: String = str(Personnage.sorts.get(id_debloque, {}).get("nom", "Nouveau pouvoir"))
+		_combat_manager.afficher_message("Ton fruit s'élève : %s débloqué !" % nom_nouveau)
 
 # le sort consommé part en recharge : base_cooldown tours séparent
 # deux lancements (1 = jouable à chaque tour, la recharge est
