@@ -23,6 +23,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/cerf_zou.png" id="sprite_ile_cerf"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/mercenaire_alabasta.png" id="sprite_ile_mercenaire"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/chasseur_baroque.png" id="sprite_ile_chasseur"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="Rochers"]
 
 [sub_resource type="CircleShape2D" id="RayonDialogue"]
 radius = 47.0
