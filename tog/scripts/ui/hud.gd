@@ -77,7 +77,7 @@ func _ready() -> void:
 	Personnage.caracteristiques_modifiees.connect(maj)
 	Personnage.barre_sorts_modifiee.connect(maj_barre_sorts)
 	Personnage.barre_objets_modifiee.connect(maj_barre_objets)
-	Inventaire.inventaire_modifie.connect(maj_barre_objets)
+	Inventaire.inventaire_modifie.connect(maj_barre_objets, CONNECT_DEFERRED)
 	Touches.touches_modifiees.connect(maj_barre_sorts)
 	Touches.touches_modifiees.connect(maj_barre_objets)
 	_construire_barre_objets()

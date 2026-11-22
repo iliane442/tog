@@ -54,6 +54,9 @@ signal prise_distante(prises: Array)
 signal coffre_modifie(coffre_id: String)
 
 var _etat := {}  # coffre_id -> {"ouvert": bool, "contenu": Array[{id, qte}]}
+# objets tirables par rareté (rarete -> lignes {id, type}) : la table
+# items est figée en jeu, la requête ne passe qu'une fois par rareté
+var _tirables_par_rarete := {}
 
 func _ready() -> void:
 	_charger_etat_local()
@@ -328,12 +331,17 @@ func _tirer_objet(rarete_coffre: int) -> Dictionary:
 	var rarete := _tirer_rarete(PALIERS.slice(0, pos_plafond))
 	if rarete == 0:
 		return {}
-	var lignes := BaseDonnees.lire(
-		"SELECT id, type FROM items"
-		+ " WHERE is_active = 1 AND is_droppable = 1 AND rarity_id = %d;" % rarete)
-	if lignes.is_empty():
+	# un gros lot de coffres tire des centaines d'objets : la liste
+	# des tirables d'une rareté est mise en cache après la 1re requête
+	if not _tirables_par_rarete.has(rarete):
+		var lignes := BaseDonnees.lire(
+			"SELECT id, type FROM items"
+			+ " WHERE is_active = 1 AND is_droppable = 1 AND rarity_id = %d;" % rarete)
+		_tirables_par_rarete[rarete] = lignes
+	var tirables: Array = _tirables_par_rarete[rarete]
+	if tirables.is_empty():
 		return {}
-	var ligne: Dictionary = lignes[randi() % lignes.size()]
+	var ligne: Dictionary = tirables[randi() % tirables.size()]
 	var qte := 1
 	if TYPES_EMPILABLES.has(str(ligne.get("type", ""))):
 		qte = randi_range(1, 3)
