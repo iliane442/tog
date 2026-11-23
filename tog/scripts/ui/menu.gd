@@ -971,9 +971,15 @@ func _construire_carte_sort(id: String, texte_verrou: String = "", hors_combat :
 	nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var btn_barre := Button.new()
 	if hors_combat and texte_verrou.is_empty():
-		btn_barre.text = "Utiliser"
-		btn_barre.tooltip_text = "Hors combat, depuis ce menu : le prochain clic sur la carte désigne le patient."
-		btn_barre.pressed.connect(_on_utiliser_pouvoir_fruit.bind(id))
+		var repos := Personnage.recharge_restante_pouvoir_fruit(id)
+		if repos > 0:
+			btn_barre.text = "Repos : %d min" % maxi(ceili(repos / 60.0), 1)
+			btn_barre.tooltip_text = "Ce pouvoir se repose encore."
+			btn_barre.disabled = true
+		else:
+			btn_barre.text = "Utiliser"
+			btn_barre.tooltip_text = "Hors combat, depuis ce menu : le prochain clic sur la carte désigne le patient."
+			btn_barre.pressed.connect(_on_utiliser_pouvoir_fruit.bind(id))
 	elif texte_verrou.is_empty():
 		_boutons_sorts[id] = btn_barre
 		_maj_action_sort(id, btn_barre)

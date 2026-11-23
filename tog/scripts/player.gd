@@ -140,6 +140,12 @@ func utiliser_sort_hors_combat(id_sort: String) -> void:
 # arme le ciblage : le prochain clic gauche désigne le patient — le
 # chirurgien lui-même ou un compagnon de groupe/équipage à côté de lui
 func _greffer_vie_hors_combat(interface_hud: Node) -> void:
+	var repos := Personnage.recharge_restante_pouvoir_fruit(SORT_GREFFE_VIE)
+	if repos > 0:
+		if interface_hud != null:
+			interface_hud.afficher_message_sort(
+				"La Greffe de Vie se repose encore (%d min)." % maxi(ceili(repos / 60.0), 1))
+		return
 	_greffe_armee = true
 	if interface_hud != null:
 		interface_hud.afficher_message_sort(
@@ -162,11 +168,13 @@ func _resoudre_greffe() -> void:
 	if (cible == "" or distance_soi < distance_cible) and distance_soi <= GREFFE_RAYON:
 		var soin := maxi(roundi(float(Personnage.vie_max) * GREFFE_FRACTION), 1)
 		Personnage.soigner(soin)
+		Personnage.amorcer_recharge_pouvoir_fruit(SORT_GREFFE_VIE)
 		_maj_affichage()
 		if interface_hud != null:
 			interface_hud.afficher_message_sort("Greffe de Vie : +%d PV" % soin)
 		return
 	if cible != "":
+		Personnage.amorcer_recharge_pouvoir_fruit(SORT_GREFFE_VIE)
 		Reseau.envoie_soin_groupe(cible, GREFFE_FRACTION)
 		return
 	if interface_hud != null:

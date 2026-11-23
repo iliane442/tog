@@ -146,24 +146,31 @@ const POUVOIRS_FRUIT_MENU: Array[String] = [
 	"259", "260", "261", "262", "263", "264", "265",
 ]
 # effets des pouvoirs de menu, par id de sort : soin (fraction des PV
-# max) ou buff (mêmes clés que les effets de consommables) et durée
+# max) ou buff (mêmes clés que les effets de consommables), durée du
+# buff et repos imposé avant la relance (minutes)
 const EFFETS_POUVOIRS_FRUIT := {
-	"251": {"buff": {"agilite": 8}, "duree": 5},
-	"252": {"buff": {"attack": 10}, "duree": 5},
-	"253": {"buff": {"agilite": 6, "chance": 4}, "duree": 5},
-	"254": {"buff": {"defense": 10}, "duree": 5},
-	"255": {"buff": {"force": 8}, "duree": 5},
-	"256": {"buff": {"chance": 10}, "duree": 5},
-	"257": {"buff": {"agilite": 12}, "duree": 3},
-	"258": {"buff": {"attack": 14}, "duree": 3},
-	"259": {"buff": {"intelligence": 8}, "duree": 5},
-	"260": {"buff": {"defense": 6, "agilite": 6}, "duree": 5},
-	"261": {"buff": {"defense": 4, "agilite": 6}, "duree": 5},
-	"262": {"buff": {"force": 12}, "duree": 5},
-	"263": {"buff": {"vitalite": 8}, "duree": 5},
-	"264": {"buff": {"force": 6, "chance": 6}, "duree": 5},
-	"265": {"soin": 1.0},
+	"250": {"repos": 10},
+	"251": {"buff": {"agilite": 8}, "duree": 5, "repos": 5},
+	"252": {"buff": {"attack": 10}, "duree": 5, "repos": 5},
+	"253": {"buff": {"agilite": 6, "chance": 4}, "duree": 5, "repos": 5},
+	"254": {"buff": {"defense": 10}, "duree": 5, "repos": 5},
+	"255": {"buff": {"force": 8}, "duree": 5, "repos": 5},
+	"256": {"buff": {"chance": 10}, "duree": 5, "repos": 5},
+	"257": {"buff": {"agilite": 12}, "duree": 3, "repos": 3},
+	"258": {"buff": {"attack": 14}, "duree": 3, "repos": 3},
+	"259": {"buff": {"intelligence": 8}, "duree": 5, "repos": 5},
+	"260": {"buff": {"defense": 6, "agilite": 6}, "duree": 5, "repos": 5},
+	"261": {"buff": {"defense": 4, "agilite": 6}, "duree": 5, "repos": 5},
+	"262": {"buff": {"force": 12}, "duree": 5, "repos": 5},
+	"263": {"buff": {"vitalite": 8}, "duree": 5, "repos": 5},
+	"264": {"buff": {"force": 6, "chance": 6}, "duree": 5, "repos": 5},
+	"265": {"soin": 1.0, "repos": 15},
 }
+
+# repos des pouvoirs du fruit (id -> instant unix de disponibilité) :
+# une capacité hors combat lancée part se reposer ; la table tient dans
+# la sauvegarde, une ligne échue ne gêne jamais
+var recharges_pouvoirs_fruit := {}
 # libellés lisibles des clés d'effets (affichage des messages)
 const LIBELLES_EFFETS_FRUIT := {
 	"attack": "attaque", "defense": "défense", "vie": "PV max",
@@ -455,21 +462,37 @@ func activer_pouvoir_fruit(id_pouvoir: String) -> String:
 		return ""
 	var effets: Dictionary = EFFETS_POUVOIRS_FRUIT[id_pouvoir]
 	var nom := str(sorts[id_pouvoir].get("nom", "Pouvoir du fruit"))
+	var repos_restant := recharge_restante_pouvoir_fruit(id_pouvoir)
+	if repos_restant > 0:
+		return "%s se repose encore (%d min)." % [nom, maxi(ceili(repos_restant / 60.0), 1)]
 	var soin := float(effets.get("soin", 0.0))
 	if soin > 0.0:
 		var montant := maxi(roundi(float(vie_max) * soin), 1)
 		soigner(montant)
-		sauvegarder()
+		amorcer_recharge_pouvoir_fruit(id_pouvoir)
 		return "%s : +%d PV." % [nom, montant]
 	var buff: Dictionary = effets.get("buff", {})
 	if buff.is_empty():
 		return ""
 	var duree_minutes := maxi(int(effets.get("duree", 5)), 1)
 	poser_buff_fruit(id_pouvoir, buff, duree_minutes)
+	amorcer_recharge_pouvoir_fruit(id_pouvoir)
 	var morceaux: Array[String] = []
 	for cle in buff:
 		morceaux.append("+%d %s" % [int(buff[cle]), str(LIBELLES_EFFETS_FRUIT.get(cle, cle))])
 	return "%s : %s pendant %d min." % [nom, " • ".join(morceaux), duree_minutes]
+
+# secondes de repos restantes pour un pouvoir du fruit (0 : prêt)
+func recharge_restante_pouvoir_fruit(id_pouvoir: String) -> int:
+	var expire := float(recharges_pouvoirs_fruit.get(id_pouvoir, 0.0))
+	return maxi(int(expire - Time.get_unix_time_from_system()), 0)
+
+# le pouvoir vient d'agir : il part en repos pour la durée prévue par
+# sa définition (EFFETS_POUVOIRS_FRUIT, clé « repos »)
+func amorcer_recharge_pouvoir_fruit(id_pouvoir: String) -> void:
+	var minutes := maxi(int(EFFETS_POUVOIRS_FRUIT.get(id_pouvoir, {}).get("repos", 5)), 1)
+	recharges_pouvoirs_fruit[id_pouvoir] = Time.get_unix_time_from_system() + 60.0 * minutes
+	sauvegarder()
 
 # pouvoirs du fruit mangé pas encore débloqués, du plus tôt au plus
 # tard : [{"id": String, "niveau": int}]
@@ -1269,6 +1292,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	barre_objets = []
 	fruit_id = ""
 	fruit_xp = 0
+	recharges_pouvoirs_fruit = {}
 	buffs = []
 	# sorts de base de la classe : placés d'office dans la barre de combat
 	for id_sort in classes.get(nouvelle_classe, {}).get("sorts_initiaux", []):
@@ -1328,6 +1352,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "buffs", buffs)
 	cfg.set_value("perso", "prochain_combat_double", prochain_combat_double)
 	cfg.set_value("perso", "ameliorations", ameliorations)
+	cfg.set_value("perso", "recharges_pouvoirs_fruit", recharges_pouvoirs_fruit)
 	perso_cree = cfg.save(CHEMIN_PERSO) == OK
 
 func charger_perso() -> void:
@@ -1357,6 +1382,10 @@ func charger_perso() -> void:
 	var ameliorations_sauvees: Dictionary = cfg.get_value("perso", "ameliorations", {})
 	for id_ameliore in ameliorations_sauvees:
 		ameliorations[str(id_ameliore)] = int(ameliorations_sauvees[id_ameliore])
+	recharges_pouvoirs_fruit = {}
+	var recharges_lues: Dictionary = cfg.get_value("perso", "recharges_pouvoirs_fruit", {})
+	for id_pouvoir in recharges_lues:
+		recharges_pouvoirs_fruit[str(id_pouvoir)] = float(recharges_lues[id_pouvoir])
 	var depenses = cfg.get_value("perso", "points_depenses", {})
 	if depenses is Dictionary:
 		points_depenses = depenses
@@ -1448,6 +1477,7 @@ func reinitialiser() -> void:
 	barre_objets = []
 	fruit_id = ""
 	fruit_xp = 0
+	recharges_pouvoirs_fruit = {}
 	buffs = []
 	metiers = {}
 	points_depenses = {}
