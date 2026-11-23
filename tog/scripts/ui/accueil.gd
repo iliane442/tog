@@ -8,6 +8,7 @@ const COULEUR_ERREUR := Color("#ffb9a0")
 @onready var _formulaire: PanelContainer = %Formulaire
 @onready var _solo: Button = %Solo
 @onready var _multijoueur: Button = %Multijoueur
+@onready var _serveur: Button = %Serveur
 @onready var _connexion: Button = %Connexion
 @onready var _inscription: Button = %Inscription
 @onready var _pseudo: LineEdit = %Pseudo
@@ -28,6 +29,8 @@ func _ready() -> void:
 		%Sauvegarde.show()
 	_solo.pressed.connect(_jouer_en_solo)
 	_multijoueur.pressed.connect(_ouvrir_multijoueur)
+	_serveur.pressed.connect(_lancer_serveur)
+	_actualiser_etat_serveur()
 	%Raccourcis.pressed.connect(_ouvrir_raccourcis)
 	%Quitter.pressed.connect(get_tree().quit)
 	%Retour.pressed.connect(_fermer_multijoueur)
@@ -169,3 +172,35 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+func _lancer_serveur() -> void:
+	if _serveur.disabled:
+		return
+	_serveur.disabled = true
+	if _serveur_en_ligne():
+		_serveur.text = "Serveur en ligne (%d)" % Reseau.PORT_DEFAUT
+		return
+	_serveur.text = "Lancement du serveur…"
+	var projet := ProjectSettings.globalize_path("res://")
+	OS.create_process(OS.get_executable_path(), ["--headless", "--path", projet, "scenes/serveur_monde.tscn"])
+	# le serveur vient d'être relancé : il lui faut quelques secondes
+	# pour ouvrir le port avant de confirmer son état
+	await get_tree().create_timer(3.0).timeout
+	_actualiser_etat_serveur()
+
+func _actualiser_etat_serveur() -> void:
+	if not is_instance_valid(_serveur):
+		return
+	var en_ligne := _serveur_en_ligne()
+	_serveur.disabled = en_ligne
+	_serveur.text = "Serveur en ligne (%d)" % Reseau.PORT_DEFAUT if en_ligne else "Lancer le serveur"
+
+func _serveur_en_ligne() -> bool:
+	# le serveur dédié écoute en UDP (ENet) : si le port se laisse
+	# lier, rien ne tourne dessus ; sur macOS un test TCP se
+	# déclare « connecté » même sans serveur, d'où la sonde UDP
+	var sonde := PacketPeerUDP.new()
+	if sonde.bind(Reseau.PORT_DEFAUT, "127.0.0.1") == OK:
+		sonde.close()
+		return false
+	return true

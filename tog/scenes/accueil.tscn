@@ -108,6 +108,13 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Multijoueur"
 
+[node name="Serveur" type="Button" parent="Colonne/Menu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Lancer le serveur"
+
 [node name="Pied" type="HBoxContainer" parent="Colonne/Menu"]
 layout_mode = 2
 theme_override_constants/separation = 13

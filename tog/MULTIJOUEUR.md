@@ -11,6 +11,10 @@ cd tog
 godot --headless --path . scenes/serveur_monde.tscn
 ```
 
+Depuis le jeu, le menu d'accueil propose aussi un bouton **Lancer le serveur**
+qui démarre ce même serveur en tâche de fond. Le bouton détecte un serveur
+déjà lancé (par le terminal, par exemple) et affiche « Serveur en ligne ».
+
 Le serveur écoute sur le port **7777** (64 joueurs max). Autre port :
 
 ```bash
