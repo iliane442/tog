@@ -40,6 +40,18 @@ const EMPLACEMENTS_NAVIRE := {
 	"Module de coque": "coque",
 	"Figure de proue": "proue",
 }
+const SCENE_NAVIRE := "res://scenes/lanterne.tscn"
+const PORT_NAVIRE_DEFAUT := "res://scenes/fushia.tscn"
+const PIECES_NAVIRE := {
+	"atelier": {"nom": "Atelier de bord", "prix": 150, "usage": "Fabriquer et améliorer les objets de ton métier. Installer les pièces du navire."},
+	"cale": {"nom": "Cale de stockage", "prix": 500, "usage": "Déposer le butin et les matériaux dans un coffre personnel."},
+	"cabine": {"nom": "Cabine du capitaine", "prix": 900, "usage": "Lire le journal de bord et exposer un trophée."},
+	"cartes": {"nom": "Salle des cartes", "prix": 1500, "usage": "Consulter les indices au trésor et marquer un point sur la carte de l’escale."},
+}
+var pieces_navire_ouvertes: Array[String] = []
+var escale_navire: Dictionary = {}
+var repere_navire: Dictionary = {}
+var trophee_navire := ""
 
 const POINTS_PAR_NIVEAU := 5
 const EFFET_REATTRIBUTION := "reset_stats"
@@ -954,6 +966,56 @@ func desequiper(emplacement: String) -> void:
 
 # --- navire du personnage ---
 
+func memoriser_escale_navire(port: String, position_quai: Vector2) -> void:
+	escale_navire = {"scene": port, "x": position_quai.x, "y": position_quai.y}
+	sauvegarder()
+
+func amenagement_navire() -> Dictionary:
+	return {
+		"pieces": pieces_navire_ouvertes,
+		"escale": escale_navire,
+		"repere": repere_navire,
+		"trophee": trophee_navire,
+	}
+
+func appliquer_amenagement_navire(donnees: Variant) -> void:
+	pieces_navire_ouvertes = []
+	escale_navire = {}
+	repere_navire = {}
+	trophee_navire = ""
+	if not donnees is Dictionary:
+		return
+	var pieces: Variant = donnees.get("pieces", [])
+	if pieces is Array:
+		for id in PIECES_NAVIRE:
+			if pieces.has(id):
+				pieces_navire_ouvertes.append(id)
+	var escale: Variant = donnees.get("escale")
+	if escale is Dictionary:
+		escale_navire = escale.duplicate()
+	var repere: Variant = donnees.get("repere")
+	if repere is Dictionary:
+		repere_navire = repere.duplicate()
+	trophee_navire = str(donnees.get("trophee", ""))
+
+func a_portee_poste_navire(id: String) -> bool:
+	var scene := get_tree().current_scene
+	return scene != null and scene.scene_file_path == SCENE_NAVIRE and scene.a_portee_poste(id)
+
+func debloquer_piece_navire(id: String) -> bool:
+	var scene := get_tree().current_scene
+	if not PIECES_NAVIRE.has(id) or id in pieces_navire_ouvertes or scene == null \
+			or scene.scene_file_path != SCENE_NAVIRE or not scene.a_portee_porte(id):
+		return false
+	if id != "atelier" and "atelier" not in pieces_navire_ouvertes:
+		return false
+	var prix := int(PIECES_NAVIRE[id]["prix"])
+	if berry < prix:
+		return false
+	pieces_navire_ouvertes.append(id)
+	ajouter_berry(-prix)
+	return true
+
 # emplacement de navire visé par un item ("" si ce n'est pas une
 # pièce de navire) : reconnu au préfixe « Navire : » de sa
 # description, puis au mot-clé de son nom
@@ -974,6 +1036,8 @@ func piece_navire_installee(id: String) -> bool:
 # l'emplacement rejoint l'inventaire ; renvoie l'emplacement, "" en
 # cas de refus
 func installer_piece_navire(id: String) -> String:
+	if not a_portee_poste_navire("atelier"):
+		return ""
 	var emplacement := emplacement_navire(id)
 	if emplacement == "" or emplacement not in bateau or int(Inventaire.objets.get(id, 0)) <= 0:
 		return ""
@@ -994,7 +1058,7 @@ func installer_piece_navire(id: String) -> String:
 # retire la pièce installée d'un emplacement : elle rejoint
 # l'inventaire
 func retirer_piece_navire(emplacement: String) -> bool:
-	if not bateau.has(emplacement) or str(bateau[emplacement]) == "":
+	if not a_portee_poste_navire("atelier") or not bateau.has(emplacement) or str(bateau[emplacement]) == "":
 		return false
 	Inventaire.ajouter_objet(str(bateau[emplacement]), 1)
 	bateau[emplacement] = ""
@@ -1098,7 +1162,9 @@ func cout_amelioration(id_objet: String) -> Dictionary:
 # l'objet appartient-il à une famille que le métier sait améliorer ?
 func objet_ameliorable(id_objet: String) -> bool:
 	var details := Inventaire.details_objet(id_objet)
-	var familles: Array = FAMILLES_AMELIORATION.get(metier_perso(), [])
+	var id_metier := metier_perso()
+	var code_metier := str(_professions.get(id_metier, {}).get("code", id_metier))
+	var familles: Array = FAMILLES_AMELIORATION.get(code_metier, [])
 	for famille in familles:
 		var famille_type := str(famille[0])
 		var famille_sous_type := str(famille[1])
@@ -1112,6 +1178,8 @@ func objet_ameliorable(id_objet: String) -> bool:
 # engage le prochain niveau d'amélioration ; renvoie un message
 # d'explication en cas de refus, "" si l'atelier a travaillé
 func ameliorer_objet(id_objet: String) -> String:
+	if not a_portee_poste_navire("atelier"):
+		return "Approche-toi de l’établi de la Lanterne."
 	if int(Inventaire.objets.get(id_objet, 0)) <= 0:
 		return "Tu ne possèdes pas cet objet."
 	if not objet_ameliorable(id_objet):
@@ -1294,6 +1362,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	fruit_xp = 0
 	recharges_pouvoirs_fruit = {}
 	buffs = []
+	ameliorations = {}
 	# sorts de base de la classe : placés d'office dans la barre de combat
 	for id_sort in classes.get(nouvelle_classe, {}).get("sorts_initiaux", []):
 		var id := str(id_sort)
@@ -1311,6 +1380,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	}
 	# le navire d'un nouveau perso est nu : aucune pièce installée
 	bateau = {"planche": "", "gouvernail": "", "mat": "", "coque": "", "proue": ""}
+	appliquer_amenagement_navire({})
 	recalculer_stats()
 	perso_cree = true
 	sauvegarder()
@@ -1344,6 +1414,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "points_depenses", points_depenses)
 	cfg.set_value("perso", "equipement", equipement)
 	cfg.set_value("perso", "bateau", bateau)
+	cfg.set_value("perso", "amenagement_navire", amenagement_navire())
 	cfg.set_value("perso", "metiers", metiers)
 	cfg.set_value("perso", "barre_sorts", barre_sorts)
 	cfg.set_value("perso", "barre_objets", barre_objets)
@@ -1439,6 +1510,7 @@ func charger_perso() -> void:
 		for emplacement_lu in navire_lu:
 			if bateau.has(emplacement_lu):
 				bateau[emplacement_lu] = str(navire_lu[emplacement_lu])
+	appliquer_amenagement_navire(cfg.get_value("perso", "amenagement_navire", {}))
 	niveau = int(cfg.get_value("perso", "niveau", 1))
 	xp = int(cfg.get_value("perso", "xp", 0))
 	# filtrer la barre seulement ici : le niveau est connu, les sorts de
@@ -1489,6 +1561,7 @@ func reinitialiser() -> void:
 	}
 	# idem le navire
 	bateau = {"planche": "", "gouvernail": "", "mat": "", "coque": "", "proue": ""}
+	appliquer_amenagement_navire({})
 	recalculer_stats()
 	# la barre repart à vide : l'interface suit
 	barre_sorts_modifiee.emit()
@@ -1696,9 +1769,10 @@ func charger_donnees_metiers() -> void:
 		return
 	_professions.clear()
 	for ligne in BaseDonnees.lire(
-		"SELECT id, display_name, description, icon, color FROM professions"
+		"SELECT id, name, display_name, description, icon, color FROM professions"
 		+ " WHERE is_active = 1 ORDER BY display_name;"):
 		_professions[str(ligne["id"])] = {
+			"code": str(ligne["name"]),
 			"nom": str(ligne["display_name"]),
 			"description": str(ligne["description"]),
 			"icone": str(ligne["icon"]),
@@ -1848,7 +1922,7 @@ func verifier_recette(id_recette: String) -> String:
 # fabrique l'objet de la recette : consomme Berry et ingrédients,
 # ajoute le résultat à l'inventaire et donne l'XP de métier
 func artisaner(id_recette: String) -> bool:
-	if verifier_recette(id_recette) != "":
+	if not a_portee_poste_navire("atelier") or verifier_recette(id_recette) != "":
 		return false
 	var r := recette(id_recette)
 	berry -= int(r["cout_berry"])

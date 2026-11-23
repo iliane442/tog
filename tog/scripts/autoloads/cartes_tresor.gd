@@ -283,7 +283,7 @@ func _tirer_unique(filtre: String) -> Dictionary:
 		var id := str(ligne["id"])
 		if id == Personnage.fruit_id:
 			continue
-		if not Inventaire.objets.has(id) and not pris.has(id):
+		if not Inventaire.dans_sac_ou_cale(id) and not pris.has(id):
 			ids.append(id)
 	if ids.is_empty():
 		return {}
@@ -344,6 +344,8 @@ func _marqueur_depuis_case(case_sol: Vector2i) -> Area2D:
 # aucune case exploitable
 func _case_aleatoire():
 	var scene := get_tree().current_scene
+	if scene != null and scene.scene_file_path == Personnage.SCENE_NAVIRE:
+		return null
 	var sol := _sol_de_scene(scene)
 	if sol == null:
 		return null

@@ -74,9 +74,24 @@ func _clic_sur_pnj(point: Vector2) -> bool:
 	return zone.has_point(point - global_position)
 
 func ouvrir_dialogue() -> void:
-	get_tree().current_scene.get_node("DialogueUI").ouvrir_choix(
-		nom_affiche, paroles, libelle_traversee, _traverser
-	)
+	var scene := get_tree().current_scene
+	var dialogue := scene.get_node("DialogueUI")
+	if not Personnage.perso_cree:
+		dialogue.ouvrir_choix(nom_affiche, paroles, libelle_traversee, _traverser)
+		return
+	var texte := paroles
+	if scene.scene_file_path == Personnage.PORT_NAVIRE_DEFAUT and Personnage.escale_navire.is_empty():
+		texte += "\n\nCorbin t’a laissé les clés de la Lanterne. Elle t’attend au quai."
+	dialogue.ouvrir_choix(nom_affiche, texte, libelle_traversee, _traverser,
+		"Monter à bord de la Lanterne", _embarquer)
+
+func _embarquer() -> void:
+	var scene := get_tree().current_scene
+	var joueur := get_tree().get_first_node_in_group("player") as Node2D
+	if joueur == null:
+		return
+	Personnage.memoriser_escale_navire(scene.scene_file_path, joueur.global_position)
+	scene.rejoindre_zone(Personnage.SCENE_NAVIRE, &"DepuisQuai")
 
 func _traverser() -> void:
 	if destination == "":

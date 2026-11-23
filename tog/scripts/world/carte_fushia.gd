@@ -139,6 +139,14 @@ func _actualiser_marqueurs() -> void:
 	_marqueurs.clear()
 	for position in reperes:
 		_marqueurs.append({"position": position, "categorie": "", "texte": reperes[position]})
+	var repere := Personnage.repere_navire
+	if scene != null and repere.get("scene", "") == scene.scene_file_path:
+		_marqueurs.append({
+			"position": Vector2(repere["x"], repere["y"]),
+			"categorie": "",
+			"texte": "Mon repère",
+			"couleur": Color("#ffda70"),
+		})
 	for categorie in par_categorie:
 		_marqueurs.append_array(par_categorie[categorie])
 	_calque.queue_redraw()
@@ -148,8 +156,8 @@ func _dessiner_marqueurs() -> void:
 		var point := _position_carte(marqueur["position"])
 		var categorie: String = marqueur["categorie"]
 		var style: Dictionary = CATEGORIES.get(categorie, {})
-		var rayon := float(style.get("rayon", 2.3))
-		var couleur: Color = style.get("couleur", Color("#ead2a7"))
+		var rayon := 4.8 if marqueur.has("couleur") else float(style.get("rayon", 2.3))
+		var couleur: Color = marqueur.get("couleur", style.get("couleur", Color("#ead2a7")))
 		if categorie == "ennemis" or categorie == "ressources":
 			_dessiner_pointe(point, rayon, couleur, categorie == "ennemis")
 			continue

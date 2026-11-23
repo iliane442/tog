@@ -50,6 +50,30 @@ var _room_tours_restants := 0
 # des PV max rendue au chirurgien ou à un compagnon de groupe/équipage
 # juste à côté (le clic désigne le patient)
 const SORT_GREFFE_VIE := "250"
+# le Shambles (148) : échange les places de deux éléments à portée —
+# soi, un allié, un ennemi, un mur ou une simple dalle ; il s'arme en
+# deux clics, un par case à échanger
+const SORT_SHAMBLES := "148"
+var _shambles_premier := false
+var _shambles_case := Vector2i.ZERO
+# l'Amputation (149) : coupe d'office 35 % des PV max de la victime,
+# et la part prélevée recoud le chirurgien pour 30 % de ses PV max
+const SORT_AMPUTATION := "149"
+const AMPUTATION_PV_CIBLE := 0.35
+const AMPUTATION_PV_SOIN := 0.30
+# le Gamma Scalpel (111) : lame en ligne, perce jusqu'à 3 cases dans
+# la direction visée — la première cible encaisse 30 % de ses PV
+# max, la deuxième 20 %, la troisième 10 % — l'arme et l'armure n'y
+# entrent pas, comme toute coupe du bistouri
+const SORT_GAMMA := "111"
+const GAMMA_PROFONDEUR := 3
+const GAMMA_PROPORTIONS := [0.30, 0.20, 0.10]
+# le K-Room Fatal (150) : point final de l'éveil du Bistouri — une
+# cible à l'agonie (moins de 15 % de ses PV max) est exécutée d'un
+# geste, les autres perdent 40 % de leurs PV max
+const SORT_KROOM := "150"
+const KROOM_SEUIL_EXECUTION := 0.15
+const KROOM_PROPORTION := 0.40
 const GREFFE_FRACTION := 0.5
 const GREFFE_RAYON := 96.0
 var _greffe_armee := false
@@ -341,6 +365,12 @@ func _gerer_clic_combat() -> void:
 	if not _tour_joueur or _occupe:
 		return
 	if _sort_selectionne:
+		if _sort_selectionne_id == SORT_SHAMBLES:
+			_gerer_clic_shambles(case_cliquee)
+			return
+		if _sort_selectionne_id == SORT_GAMMA:
+			_gerer_clic_gamma(case_cliquee)
+			return
 		var sort: Dictionary = Personnage.sorts.get(_sort_selectionne_id, {})
 		var cible: Node2D = self
 		if _sort_selectionne_id != "boule_de_feu" and _combat_manager.est_allie(sort):
@@ -356,6 +386,17 @@ func _gerer_clic_combat() -> void:
 			else:
 				_lancer_sort_etat(_sort_selectionne_id, sort, cible)
 			return
+		# sorts de zone : une case vide se vise aussi, la sienne
+		# comprise — la figure posée autour de soi frappe les voisins,
+		# jamais le chirurgien qui l'opère
+		if _est_sort_zone(_sort_selectionne_id) \
+				and _sol.get_cell_source_id(case_cliquee) != -1:
+			var depart := ma_case()
+			var portee_zone: int = int(sort.get("portee", 1))
+			var distance := absi(depart.x - case_cliquee.x) + absi(depart.y - case_cliquee.y)
+			if distance <= portee_zone and _combat_manager.ligne_de_vue_libre(depart, case_cliquee):
+				_lancer_sort_zone(_sort_selectionne_id, sort, case_cliquee)
+				return
 		var portee_deplacement := _calculer_portee()
 		if case_cliquee != ma_case() and portee_deplacement.has(case_cliquee):
 			_combat_manager.effacer_message()
@@ -366,9 +407,155 @@ func _gerer_clic_combat() -> void:
 		_deplacer_case_par_case(case_cliquee, int(portee[case_cliquee]))
 
 func _case_combat_sous_souris() -> Vector2i:
+	# les sorts qui se visent en cases (Shambles, Gamma Scalpel)
+	# suivent le sol nu : aucun accrochage au sprite d'un ennemi, la
+	# souris désigne exactement la case qu'elle couvre
+	if _sort_selectionne and (_sort_selectionne_id == SORT_SHAMBLES
+			or _sort_selectionne_id == SORT_GAMMA):
+		return _combat_manager.case_sous_point(get_global_mouse_position(), false)
 	var viser_ennemi: bool = _sort_selectionne and (_sort_selectionne_id == "boule_de_feu"
 		or not _combat_manager.est_allie(Personnage.sorts.get(_sort_selectionne_id, {})))
 	return _combat_manager.case_sous_point(get_global_mouse_position(), viser_ennemi)
+
+# un clic pendant que le Shambles est armé : le premier retient une
+# case, le second échange avec elle ; une case hors de la bulle
+# d'opération laisse le clic se replier sur le déplacement
+func _gerer_clic_shambles(case_cliquee: Vector2i) -> void:
+	var sort: Dictionary = Personnage.sorts.get(SORT_SHAMBLES, {})
+	var visables: Array[Vector2i] = _combat_manager.cases_permutables(self, int(sort.get("portee", 3)))
+	if not visables.has(case_cliquee):
+		var portee_deplacement := _calculer_portee()
+		if case_cliquee != ma_case() and portee_deplacement.has(case_cliquee):
+			_combat_manager.effacer_message()
+			_deplacer_case_par_case(case_cliquee, int(portee_deplacement[case_cliquee]))
+		return
+	if not _shambles_premier:
+		_shambles_premier = true
+		_shambles_case = case_cliquee
+		_combat_manager.afficher_message("Case retenue : clique sur l’autre case à échanger.")
+		return
+	if case_cliquee == _shambles_case:
+		_shambles_premier = false
+		_sort_selectionne = false
+		_combat_manager.afficher_message("Shambles annulé.")
+		if _overlay != null:
+			_overlay.effacer()
+		_afficher_cases()
+		return
+	_lancer_shambles(sort, _shambles_case, case_cliquee)
+
+# l'échange lui-même : les occupants et le terrain permutent (voir
+# CombatManager.permuter_cases), les PA partent, la recharge
+# s'amorce et le fruit progresse ; l'animation se joue sur les deux
+# cases échangées, portées par des ancres invisibles
+func _lancer_shambles(sort: Dictionary, case_a: Vector2i, case_b: Vector2i) -> void:
+	var cout: int = int(sort.get("cout_pa", 3))
+	if _pa < cout:
+		_combat_manager.afficher_message("Pas assez de PA pour lancer le sort.")
+		return
+	if not _combat_manager.permuter_cases(case_a, case_b):
+		_combat_manager.afficher_message("L’échange échoue : rien à permuter.")
+		return
+	_pa -= cout
+	_demarrer_recharge_sort(SORT_SHAMBLES, sort)
+	for case_vis in [case_a, case_b]:
+		var ancre := Node2D.new()
+		get_tree().current_scene.add_child(ancre)
+		ancre.global_position = _sol.to_global(_sol.map_to_local(case_vis))
+		_jouer_effet_sort(SORT_SHAMBLES, ancre)
+		get_tree().create_timer(3.0).timeout.connect(func():
+			if is_instance_valid(ancre):
+				ancre.queue_free())
+	_combat_manager.afficher_message("Shambles ! Les places s’échangent.")
+	if _combat_manager.pvp_actif or _combat_manager.groupe_actif:
+		_emettre_action_duel({"t": "echange",
+			"cases": [[case_a.x, case_a.y], [case_b.x, case_b.y]]})
+	_scruter_fruit(SORT_SHAMBLES)
+	_shambles_premier = false
+	_sort_selectionne = false
+	if _overlay != null:
+		_overlay.effacer()
+	_maj_affichage()
+	_afficher_cases()
+
+# l'axe cardinal visé par le Gamma Scalpel : ramené de la case cliquée
+# à sa composante dominante (diagonale tranchée vers l'axe le plus
+# marqué) ; sa propre case ne désigne aucune direction
+func _direction_gamma(case_visee: Vector2i) -> Vector2i:
+	var delta := case_visee - ma_case()
+	if delta == Vector2i.ZERO:
+		return Vector2i.ZERO
+	if absi(delta.x) >= absi(delta.y):
+		return Vector2i(1, 0) if delta.x > 0 else Vector2i(-1, 0)
+	return Vector2i(0, 1) if delta.y > 0 else Vector2i(0, -1)
+
+# un clic pendant que le Gamma Scalpel est armé : la case désigne la
+# direction, la lame part aussitôt ; cliquer sa propre case désarme
+func _gerer_clic_gamma(case_cliquee: Vector2i) -> void:
+	var direction := _direction_gamma(case_cliquee)
+	if direction == Vector2i.ZERO:
+		_sort_selectionne = false
+		_combat_manager.afficher_message("Gamma Scalpel désarmé.")
+		if _overlay != null:
+			_overlay.effacer()
+		_afficher_cases()
+		return
+	_lancer_gamma(Personnage.sorts.get(SORT_GAMMA, {}), direction)
+
+# la lame traverse jusqu'à 3 cases dans la direction visée : la
+# première cible traversée perd 30 % de ses PV max, la deuxième 20 %,
+# la troisième 10 % — ses états (dégâts interne) suivent, sans jet de
+# précision : une lame qui tranche tout le ne rate personne
+func _lancer_gamma(sort: Dictionary, direction: Vector2i) -> void:
+	var cout: int = int(sort.get("cout_pa", 4))
+	var profondeur := mini(maxi(int(sort.get("portee", GAMMA_PROFONDEUR)), 1), GAMMA_PROFONDEUR)
+	if _pa < cout:
+		_combat_manager.afficher_message("Pas assez de PA pour lancer le sort.")
+		return
+	var cases: Array[Vector2i] = _combat_manager.cases_ligne(ma_case(), direction, profondeur)
+	if cases.is_empty():
+		_combat_manager.afficher_message("La lame ne traverse rien dans cette direction.")
+		return
+	# ancre au bout de la ligne : le rayon anime la lame de part en part
+	var ancre := Node2D.new()
+	get_tree().current_scene.add_child(ancre)
+	ancre.global_position = _sol.to_global(_sol.map_to_local(cases[cases.size() - 1]))
+	_jouer_effet_sort(SORT_GAMMA, ancre)
+	get_tree().create_timer(3.0).timeout.connect(func():
+		if is_instance_valid(ancre):
+			ancre.queue_free())
+	var touches := 0
+	for case_traversee in cases:
+		var occupant: Node2D = _combat_manager.occupant_case(case_traversee)
+		if occupant == null or occupant == self or occupant.get("allie") == true:
+			continue
+		var pv_max_victime := maxi(int(occupant.get("pv_max")), 1)
+		var degats := maxi(roundi(float(pv_max_victime)
+			* float(GAMMA_PROPORTIONS[min(touches, GAMMA_PROPORTIONS.size() - 1)])), 1)
+		var evenement := _evenement_sort(SORT_GAMMA, occupant, "sort")
+		evenement["nom"] = str(sort.get("nom", "Sort"))
+		var impact_annonce := _annoncer_impact_final(evenement, occupant, degats)
+		occupant.recevoir_degats(degats)
+		var etats_appliques: Array = []
+		if _combat_manager.en_combat:
+			etats_appliques = _combat_manager.appliquer_effets_sort(occupant, sort)
+		if not impact_annonce and (_combat_manager.pvp_actif or _combat_manager.groupe_actif):
+			evenement["degats"] = degats
+			evenement["etats"] = etats_appliques
+			_emettre_action_duel(evenement)
+		touches += 1
+	_pa -= cout
+	_demarrer_recharge_sort(SORT_GAMMA, sort)
+	if touches > 0:
+		_combat_manager.afficher_message("Gamma Scalpel : %d cible(s) perforée(s)." % touches)
+	else:
+		_combat_manager.afficher_message("Gamma Scalpel lancé dans le vide.")
+	_scruter_fruit(SORT_GAMMA)
+	_sort_selectionne = false
+	if _overlay != null:
+		_overlay.effacer()
+	_maj_affichage()
+	_afficher_cases()
 
 func ma_case() -> Vector2i:
 	return _case_de(global_position)
@@ -514,6 +701,7 @@ func _on_combat_termine(_victoire: bool) -> void:
 	_tour_joueur = false
 	_arreter_chrono_tour()
 	_sort_selectionne = false
+	_shambles_premier = false
 	# plus de combat : plus de salle d'opération au sol
 	_room_cases.clear()
 	_room_tours_restants = 0
@@ -550,12 +738,60 @@ func _afficher_cases() -> void:
 		if _sort_selectionne_id != "boule_de_feu":
 			var sort: Dictionary = Personnage.sorts.get(_sort_selectionne_id, {})
 			portee = int(sort.get("portee", 1))
-			if _combat_manager.est_allie(sort):
+			if _combat_manager.est_allie(sort) or _est_sort_zone(_sort_selectionne_id):
 				portee_min = 0
-		_overlay.afficher_sort(_cases_du_sort(portee, portee_min))
+		if _sort_selectionne_id == SORT_SHAMBLES:
+			# le Shambles vise toute case à portée : dalles comme murs,
+			# sa propre case comprise
+			_overlay.afficher_sort(_combat_manager.cases_permutables(self, portee))
+		else:
+			_overlay.afficher_sort(_cases_du_sort(portee, portee_min))
 
 func _selectionner_boule_de_feu() -> void:
 	_selectionner_sort("boule_de_feu")
+
+# coût en PA d'un sort tel que le combat le paiera (barre du HUD)
+func cout_sort(id_sort: String) -> int:
+	if id_sort == "boule_de_feu":
+		return int(_sort_boule_de_feu.cout_pa)
+	return int(Personnage.sorts.get(id_sort, {}).get("cout_pa", 2))
+
+# survol d'un sort dans la barre du HUD : sa portée se dessine sur
+# la grille sans l'armer — pur renseignement, le bleu des déplacements
+# reste en place ; un sort déjà armé garde la priorité, le placement
+# n'est pas troublé non plus
+func previsualiser_sort(id_sort: String) -> void:
+	if _overlay == null or _combat_manager == null:
+		return
+	if not _combat_manager.en_combat or _combat_manager.en_placement or _sort_selectionne:
+		return
+	if id_sort == SORT_SHAMBLES and Personnage.sorts.has(SORT_SHAMBLES):
+		var portee_shambles: int = int(Personnage.sorts[SORT_SHAMBLES].get("portee", 3))
+		_overlay.afficher_sort(_combat_manager.cases_permutables(self, portee_shambles))
+		return
+	var portee := 1
+	var portee_min := 1
+	if id_sort == "boule_de_feu":
+		portee = int(_sort_boule_de_feu.portee_max)
+	elif Personnage.sorts.has(id_sort):
+		var sort: Dictionary = Personnage.sorts[id_sort]
+		portee = int(sort.get("portee", 1))
+		if _combat_manager.est_allie(sort) or _est_sort_zone(id_sort):
+			portee_min = 0
+	else:
+		return
+	_overlay.afficher_sort(_cases_du_sort(portee, portee_min))
+
+# la souris quitte un bouton de sort : la prévisualisation s'efface —
+# sans toucher au bleu des déplacements ; un sort armé redessine sa
+# propre portée (un mouvement ou un tour écoulé l'aura masquée)
+func effacer_previsualisation() -> void:
+	if _overlay == null:
+		return
+	if _sort_selectionne:
+		_afficher_cases()
+	else:
+		_overlay.afficher_sort([])
 
 func _selectionner_sort(id_sort: String) -> void:
 	if _combat_manager == null or not _combat_manager.en_combat or not _tour_joueur:
@@ -582,11 +818,48 @@ func _selectionner_sort(id_sort: String) -> void:
 	if _pa < cout:
 		_combat_manager.afficher_message("Pas assez de PA pour lancer le sort.")
 		return
+	# le Shambles ne vise pas une cible : il s'arme en deux clics, un
+	# par case à échanger — soi, un allié, un ennemi, un mur ou une
+	# dalle ; une seconde pression sur le sort abandonne l'échange
+	if id_sort == SORT_SHAMBLES:
+		if _shambles_premier:
+			_shambles_premier = false
+			_sort_selectionne = false
+			_combat_manager.afficher_message("Shambles : échange abandonné.")
+			if _overlay != null:
+				_overlay.effacer()
+			_afficher_cases()
+			return
+		_shambles_premier = false
+		_sort_selectionne_id = id_sort
+		_sort_selectionne = true
+		_afficher_cases()
+		_combat_manager.afficher_message("Shambles : clique sur deux cases à portée pour échanger leurs places — reclique la même case pour annuler.")
+		return
+	# le Gamma Scalpel se vise dans une direction : le clic désigne la
+	# ligne à percer (l'aperçu doré la suit au survol) ; une seconde
+	# pression sur le sort le désarme
+	if id_sort == SORT_GAMMA:
+		if _sort_selectionne and _sort_selectionne_id == SORT_GAMMA:
+			_sort_selectionne = false
+			_combat_manager.afficher_message("Gamma Scalpel désarmé.")
+			if _overlay != null:
+				_overlay.effacer()
+			_afficher_cases()
+			return
+		_sort_selectionne_id = id_sort
+		_sort_selectionne = true
+		_afficher_cases()
+		_combat_manager.afficher_message("Gamma Scalpel : clique dans une direction — la lame perce 3 cases (30 %, puis 20 %, puis 10 % des PV max des cibles traversées).")
+		return
 	_sort_selectionne_id = id_sort
 	_sort_selectionne = true
 	var cible: Node2D = self if id_sort != "boule_de_feu" and _combat_manager.est_allie(sort) else _combat_manager.cible_courante()
 	if _overlay != null:
-		_overlay.afficher_sort(_cases_du_sort(portee, 0 if cible == self else 1))
+		# un sort de zone se pose aussi sur sa propre case : la figure
+		# frappe alors les voisins du lanceur, lui-même épargné
+		var portee_min_affiche := 0 if cible == self or _est_sort_zone(id_sort) else 1
+		_overlay.afficher_sort(_cases_du_sort(portee, portee_min_affiche))
 	var distance := 0 if cible == self else _distance_ennemi()
 	if cible == null or not is_instance_valid(cible):
 		_combat_manager.afficher_message("Aucune cible disponible pour ce sort.")
@@ -602,7 +875,10 @@ func _selectionner_sort(id_sort: String) -> void:
 		else:
 			_lancer_sort_etat(id_sort, sort, cible)
 	else:
-		_combat_manager.afficher_message("Sort sélectionné : clique sur %s pour le lancer." % ("toi-même" if cible == self else "l’ennemi"))
+		var consigne := "l’ennemi"
+		if _est_sort_zone(id_sort):
+			consigne = "l’ennemi ou une case à portée"
+		_combat_manager.afficher_message("Sort sélectionné : clique sur %s pour le lancer." % ("toi-même" if cible == self else consigne))
 
 func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> bool:
 	var cout: int = int(sort.get("cout_pa", 2))
@@ -615,6 +891,15 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 	# chirurgien — aucun jet de précision, elle se déclenche toujours
 	if _id_sort == SORT_ROOM_CLE:
 		return _lancer_room(sort)
+	# l'Amputation ne calcule pas de dégâts d'attaque : elle retranche
+	# d'office une part des PV max de la victime et recoud le chirurgien
+	# en retour — ni l'attaque ni la défense n'y entrent
+	if _id_sort == SORT_AMPUTATION:
+		return _lancer_amputation(_id_sort, sort, cible)
+	# le K-Room Fatal suit son propre verdict : exécution d'une cible à
+	# l'agonie, 40 % des PV max sinon
+	if _id_sort == SORT_KROOM:
+		return _lancer_kroom(_id_sort, sort, cible)
 	if not _combat_manager.precision_reussie(self):
 		_jouer_effet_sort(_id_sort, cible, false)
 		_pa -= cout
@@ -671,6 +956,11 @@ func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> boo
 const SORTS_ZONE_CROIX := ["245"]
 const SORTS_ZONE_BARRE := ["21"]
 
+# true si le sort porte une figure de zone (croix ou barre) : il se
+# lance aussi sur une case vide, la figure posée autour du clic
+func _est_sort_zone(id_sort: String) -> bool:
+	return SORTS_ZONE_CROIX.has(id_sort) or SORTS_ZONE_BARRE.has(id_sort)
+
 func _degats_zone(id_sort: String, cible_principale: Node2D, degats: int, sort: Dictionary) -> void:
 	if degats <= 0 or cible_principale == null or not is_instance_valid(cible_principale) or _combat_manager == null:
 		return
@@ -708,27 +998,102 @@ func _cases_zone_sort(id_sort: String, case_centre: Vector2i) -> Array[Vector2i]
 		cases = [case_centre + lateral, case_centre - lateral]
 	return cases
 
+# lancement d'un sort de zone sur une case vide : le sort se pose
+# exactement là où le clic est tombé — aucun ennemi au centre, donc
+# aucun jet de précision ; les dégâts et les états touchent chaque
+# ennemi couvert par la figure (case centrale comprise)
+func _lancer_sort_zone(id_sort: String, sort: Dictionary, case_centre: Vector2i) -> bool:
+	var cout: int = int(sort.get("cout_pa", 2))
+	var portee: int = int(sort.get("portee", 1))
+	var depart := ma_case()
+	var distance := absi(depart.x - case_centre.x) + absi(depart.y - case_centre.y)
+	if _pa < cout:
+		_combat_manager.afficher_message("Pas assez de PA pour lancer le sort.")
+		return false
+	if distance > portee or not _combat_manager.ligne_de_vue_libre(depart, case_centre):
+		_combat_manager.afficher_message("Case hors portée ou ligne de vue bloquée.")
+		return false
+	# ancre invisible posée sur la case visée : l'animation du sort se
+	# joue dessus comme sur un ennemi (elle retombe sur un décalage
+	# fixe pour un nœud sans sprite, voir animation_sort._centre)
+	var ancre := Node2D.new()
+	get_tree().current_scene.add_child(ancre)
+	ancre.global_position = _sol.to_global(_sol.map_to_local(case_centre))
+	_jouer_effet_sort(id_sort, ancre)
+	get_tree().create_timer(3.0).timeout.connect(func():
+		if is_instance_valid(ancre):
+			ancre.queue_free())
+	var cases := _cases_zone_sort(id_sort, case_centre)
+	cases.append(case_centre)
+	var degats_base := int(sort.get("degats", 0))
+	var touches := 0
+	for ennemi in _combat_manager.ennemis_actifs():
+		if not cases.has(_case_de((ennemi as Node2D).global_position)):
+			continue
+		touches += 1
+		var evenement := _evenement_sort(id_sort, ennemi, "sort")
+		evenement["nom"] = str(sort.get("nom", "Sort"))
+		var degats: int = _combat_manager.calculer_degats(self, ennemi, degats_base,
+			str(sort.get("type", "")), portee)
+		var impact_annonce := _annoncer_impact_final(evenement, ennemi, degats)
+		ennemi.recevoir_degats(degats)
+		var etats_appliques: Array = []
+		if _combat_manager.en_combat:
+			etats_appliques = _combat_manager.appliquer_effets_sort(ennemi, sort)
+		if not impact_annonce and (_combat_manager.pvp_actif or _combat_manager.groupe_actif):
+			evenement["etats"] = etats_appliques
+			evenement["degats"] = degats
+			_emettre_action_duel(evenement)
+	_pa -= cout
+	_demarrer_recharge_sort(id_sort, sort)
+	if touches > 0:
+		_combat_manager.afficher_message("La zone du sort touche %d ennemi(s)." % touches)
+	else:
+		_combat_manager.afficher_message("%s lancé : aucun ennemi dans la zone." % str(sort.get("nom", "Sort")))
+	_scruter_fruit(id_sort)
+	_sort_selectionne = false
+	if _overlay != null:
+		_overlay.effacer()
+	_maj_affichage()
+	_afficher_cases()
+	return true
+
 # aperçu de la figure autour de l'ennemi survolé (case de la cible
 # comprise) : ce que le sort touchera si on le lance maintenant
 func _apercu_zone_sort() -> Array[Vector2i]:
 	var vides: Array[Vector2i] = []
 	if _sol == null or _combat_manager == null or not _combat_manager.en_combat or not _sort_selectionne:
 		return vides
+	var curseur := _case_combat_sous_souris()
 	# la Room se dessine autour de son chirurgien dès la sélection,
 	# sans attendre le survol d'une cible
 	if _sort_selectionne_id == SORT_ROOM_CLE:
 		return _cases_room(ma_case())
+	# le Gamma Scalpel suit la direction survolée : la lame dorée
+	# montre les cases qu'elle traverserait, murs exceptés
+	if _sort_selectionne_id == SORT_GAMMA:
+		return _combat_manager.cases_ligne(ma_case(), _direction_gamma(curseur), GAMMA_PROFONDEUR)
 	if not SORTS_ZONE_CROIX.has(_sort_selectionne_id) and not SORTS_ZONE_BARRE.has(_sort_selectionne_id):
 		return vides
 	var sort: Dictionary = Personnage.sorts.get(_sort_selectionne_id, {})
 	var portee := int(sort.get("portee", 1))
-	var curseur := _case_combat_sous_souris()
 	for ennemi in _combat_manager.ennemis_actifs():
 		var case_ennemi := _case_de(ennemi.global_position)
 		if case_ennemi == curseur and _distance_depuis(ennemi) <= portee and _combat_manager.ligne_de_vue_libre(ma_case(), case_ennemi):
 			var cases := _cases_zone_sort(_sort_selectionne_id, case_ennemi)
 			cases.append(case_ennemi)
 			return cases
+	# la figure suit aussi une case vide, la sienne comprise : le sort
+	# de zone se pose là où le joueur clique, ennemi au centre ou pavé
+	# de plancher nu — centré sur soi, il ne compte que ses voisins
+	var depart := ma_case()
+	var distance_curseur := absi(depart.x - curseur.x) + absi(depart.y - curseur.y)
+	if distance_curseur <= portee \
+			and _sol.get_cell_source_id(curseur) != -1 \
+			and _combat_manager.ligne_de_vue_libre(depart, curseur):
+		var cases_vides := _cases_zone_sort(_sort_selectionne_id, curseur)
+		cases_vides.append(curseur)
+		return cases_vides
 	return vides
 
 # la Room se dresse autour de son chirurgien : chaque allié de la
@@ -764,6 +1129,87 @@ func _lancer_room(sort: Dictionary) -> bool:
 		_combat_manager.call("definir_salle", _room_cases)
 	_combat_manager.afficher_message("Room dressée : %d allié(s) dans la salle (+25 %%, 3 tours) — %d PV versés." % [touches, paiement])
 	_scruter_fruit(SORT_ROOM_CLE)
+	_sort_selectionne = false
+	_maj_affichage()
+	_afficher_cases()
+	return true
+
+# l'Amputation : la coupe retranche 35 % des PV max de la victime —
+# pas de dégâts d'attaque, l'arme et l'armure n'y entrent pas — et
+# recoud le chirurgien pour 30 % de ses PV max, gain purement local
+# (les PV du lanceur ne se relaient pas) ; le coup garde son jet de
+# précision et, comme tout sort, sa recharge
+func _lancer_amputation(id_sort: String, sort: Dictionary, cible: Node2D) -> bool:
+	var cout: int = int(sort.get("cout_pa", 2))
+	if not _combat_manager.precision_reussie(self):
+		_jouer_effet_sort(id_sort, cible, false)
+		_pa -= cout
+		_demarrer_recharge_sort(id_sort, sort)
+		_combat_manager.afficher_message("Le sort rate sa cible.")
+		_emettre_action_duel(_evenement_sort(id_sort, cible, "manque"))
+	else:
+		var evenement := _evenement_sort(id_sort, cible, "sort")
+		evenement["nom"] = str(sort.get("nom", "Sort"))
+		_jouer_effet_sort(id_sort, cible)
+		var pv_max_victime := maxi(int(cible.get("pv_max")), 1)
+		var degats := maxi(roundi(float(pv_max_victime) * AMPUTATION_PV_CIBLE), 1)
+		var impact_annonce := _annoncer_impact_final(evenement, cible, degats)
+		cible.recevoir_degats(degats)
+		var soin := maxi(roundi(float(Personnage.vie_max) * AMPUTATION_PV_SOIN), 1)
+		Personnage.soigner(soin)
+		_maj_affichage()
+		if not impact_annonce and (_combat_manager.pvp_actif or _combat_manager.groupe_actif):
+			evenement["degats"] = degats
+			_emettre_action_duel(evenement)
+		_pa -= cout
+		_demarrer_recharge_sort(id_sort, sort)
+		_combat_manager.afficher_message("Amputation : la cible perd %d PV, le chirurgien en regagne %d." % [degats, soin])
+	_scruter_fruit(id_sort)
+	_sort_selectionne = false
+	_maj_affichage()
+	_afficher_cases()
+	return true
+
+# le K-Room Fatal : la salle traverse la cible de part en part — une
+# cible à l'agonie (moins de 15 % de ses PV max) est exécutée d'un
+# geste, les autres encaissent 40 % de leurs PV max ; le coup garde
+# son jet de précision, et ses états (dégâts internes accrus)
+# s'appliquent à un survivant
+func _lancer_kroom(id_sort: String, sort: Dictionary, cible: Node2D) -> bool:
+	var cout: int = int(sort.get("cout_pa", 2))
+	if not _combat_manager.precision_reussie(self):
+		_jouer_effet_sort(id_sort, cible, false)
+		_pa -= cout
+		_demarrer_recharge_sort(id_sort, sort)
+		_combat_manager.afficher_message("Le sort rate sa cible.")
+		_emettre_action_duel(_evenement_sort(id_sort, cible, "manque"))
+	else:
+		var evenement := _evenement_sort(id_sort, cible, "sort")
+		evenement["nom"] = str(sort.get("nom", "Sort"))
+		_jouer_effet_sort(id_sort, cible)
+		var pv_max_victime := maxi(int(cible.get("pv_max")), 1)
+		var pv_victime := maxi(int(cible.get("pv")), 0)
+		var execution := pv_victime < roundi(float(pv_max_victime) * KROOM_SEUIL_EXECUTION)
+		# l'exécution tranche tout ce qu'il reste : le coup tombe à
+		# hauteur exacte des PV restants
+		var degats := maxi(roundi(float(pv_max_victime) * KROOM_PROPORTION), 1) \
+			if not execution else maxi(pv_victime, 1)
+		var impact_annonce := _annoncer_impact_final(evenement, cible, degats)
+		cible.recevoir_degats(degats)
+		var etats_appliques: Array = []
+		if int(cible.get("pv")) > 0 and _combat_manager.en_combat:
+			etats_appliques = _combat_manager.appliquer_effets_sort(cible, sort)
+		if not impact_annonce and (_combat_manager.pvp_actif or _combat_manager.groupe_actif):
+			evenement["degats"] = degats
+			evenement["etats"] = etats_appliques
+			_emettre_action_duel(evenement)
+		_pa -= cout
+		_demarrer_recharge_sort(id_sort, sort)
+		if execution:
+			_combat_manager.afficher_message("K-Room Fatal : la salle traverse une cible à l'agonie — exécution !")
+		else:
+			_combat_manager.afficher_message("K-Room Fatal : la cible perd %d PV de ses %d max." % [degats, pv_max_victime])
+	_scruter_fruit(id_sort)
 	_sort_selectionne = false
 	_maj_affichage()
 	_afficher_cases()

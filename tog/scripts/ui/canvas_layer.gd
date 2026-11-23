@@ -12,6 +12,8 @@ var quest_id_actuel: String
 # arbitraire (ex. « Prendre le bateau ») au lieu d'une quête
 var _rappel_choix: Callable
 var _libelle_choix: String
+var _rappel_secondaire: Callable
+var _btn_secondaire: Button
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -19,6 +21,11 @@ func _ready() -> void:
 	panel.visible = false
 	btn_accepter.pressed.connect(_on_accepter)
 	btn_refuser.pressed.connect(_on_refuser)
+	_btn_secondaire = Button.new()
+	btn_refuser.get_parent().add_child(_btn_secondaire)
+	btn_refuser.get_parent().move_child(_btn_secondaire, btn_refuser.get_index())
+	_btn_secondaire.hide()
+	_btn_secondaire.pressed.connect(_on_secondaire)
 
 func ouvrir(quest_id: String, pnj: Node2D) -> void:
 	pnj_actuel = pnj
@@ -35,14 +42,19 @@ func ouvrir_texte(titre: String, description: String) -> void:
 	_libelle_choix = ""
 	_afficher(titre, description)
 
-func ouvrir_choix(titre: String, description: String, libelle_bouton: String, rappel: Callable) -> void:
+func ouvrir_choix(titre: String, description: String, libelle_bouton: String, rappel: Callable,
+		libelle_secondaire := "", rappel_secondaire := Callable()) -> void:
 	pnj_actuel = null
 	quest_id_actuel = ""
 	_rappel_choix = rappel
 	_libelle_choix = libelle_bouton
 	_afficher(titre, description)
+	_rappel_secondaire = rappel_secondaire
+	_btn_secondaire.text = libelle_secondaire
+	_btn_secondaire.visible = rappel_secondaire.is_valid()
 
 func _afficher(titre: String, description: String) -> void:
+	_btn_secondaire.hide()
 	var a_quete := quest_id_actuel != ""
 	var a_choix := _rappel_choix.is_valid()
 	btn_accepter.visible = a_quete or a_choix
@@ -69,6 +81,11 @@ func _on_accepter() -> void:
 
 func _on_refuser() -> void:
 	fermer()
+
+func _on_secondaire() -> void:
+	var rappel := _rappel_secondaire
+	fermer()
+	rappel.call()
 
 func fermer() -> void:
 	panel.visible = false

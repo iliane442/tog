@@ -2023,6 +2023,8 @@ func afficher_metier(id_profession: String) -> void:
 	var infos: Dictionary = Personnage.professions().get(id_profession, {})
 	nom_metier.text = str(infos.get("nom", "-"))
 	desc_metier.text = str(infos.get("description", ""))
+	if not Personnage.a_portee_poste_navire("atelier"):
+		desc_metier.text += "\n\nFabrication et améliorations à l’établi de la Lanterne. Embarque en parlant à un capitaine au port."
 	if not Personnage.a_metier(id_profession):
 		xp_metier.text = "Métier non choisi - un seul métier est accordé à la création du personnage."
 		titre_recettes.visible = false
@@ -2107,6 +2109,7 @@ func _construire_ameliorations() -> void:
 		if int(Inventaire.objets[id_objet]) > 0 and Personnage.objet_ameliorable(str(id_objet)):
 			possedes.append(str(id_objet))
 	possedes.sort_custom(func(a, b): return Inventaire.nom_objet(str(a)).to_lower() < Inventaire.nom_objet(str(b)).to_lower())
+	var a_l_atelier := Personnage.a_portee_poste_navire("atelier")
 	if possedes.is_empty():
 		var vide := Label.new()
 		vide.text = "Aucun objet de ta spécialité dans ton sac : fabrique-en ou améliore ce que tu possèdes déjà."
@@ -2139,7 +2142,9 @@ func _construire_ameliorations() -> void:
 			btn.disabled = true
 		else:
 			btn.text = "Améliorer"
-			btn.disabled = not complet
+			btn.disabled = not complet or not a_l_atelier
+			if not a_l_atelier:
+				btn.tooltip_text = "Approche-toi de l’établi de la Lanterne."
 			btn.pressed.connect(_on_ameliorer.bind(id_objet))
 		entete.add_child(nom)
 		entete.add_child(btn)
@@ -2177,6 +2182,7 @@ func _construire_recettes(id_profession: String) -> void:
 	for enfant in liste_recettes.get_children():
 		enfant.queue_free()
 	var recettes := Personnage.recettes(id_profession)
+	var a_l_atelier := Personnage.a_portee_poste_navire("atelier")
 	if recettes.is_empty():
 		var vide := Label.new()
 		vide.text = "Aucune recette pour ce métier."
@@ -2195,7 +2201,8 @@ func _construire_recettes(id_profession: String) -> void:
 		nom.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var btn := Button.new()
 		btn.text = "Fabriquer"
-		btn.disabled = Personnage.verifier_recette(str(r["id"])) != ""
+		btn.tooltip_text = Personnage.verifier_recette(str(r["id"])) if a_l_atelier else "Approche-toi de l’établi de la Lanterne."
+		btn.disabled = btn.tooltip_text != ""
 		btn.pressed.connect(_on_fabriquer.bind(str(r["id"])))
 		entete.add_child(nom)
 		entete.add_child(btn)
@@ -2288,6 +2295,14 @@ func _maj_bouton_navire(details: Dictionary, id: String) -> void:
 			btn_navire.tooltip_text = "Prend la place de %s." % (
 				Inventaire.nom_objet(str(Personnage.bateau[emplacement]))
 				if str(Personnage.bateau[emplacement]) != "" else "l'emplacement vide")
+	if not Personnage.a_portee_poste_navire("atelier"):
+		btn_navire.disabled = true
+		btn_navire.tooltip_text = "Approche-toi de l’établi de la Lanterne."
+
+func ouvrir_equipement_navire() -> void:
+	ouvrir("inventaire")
+	btn_vue_navire.set_pressed_no_signal(true)
+	_basculer_vue_navire(true)
 
 # installe ou retire la pièce de navire sélectionnée : la sortie
 # d'une pièce la renvoie à l'inventaire
