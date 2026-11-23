@@ -118,7 +118,7 @@ libelle_traversee = "Remonter vers Reverse Mountain"
 
 [node name="CapitaineAndage" parent="." instance=ExtResource("FerryCeleste")]
 position = Vector2(330.0, 2304.0)
-paroles = "Pour Skypiea, il faut mettre le cap sur le courant ascendant. Il porte les navires jusqu’à la mer Blanche. En haut, cherche Conis sur la plage des Anges. Elle connaît le chemin d’Upper Yard."
+paroles = "Pour Skypiea, il faut mettre le cap sur le courant ascendant. Il porte les navires jusqu’à la mer Blanche. Depuis le quai de la plage des Anges, monte jusqu’au marché. Conis t’indiquera le chemin vers Shandora."
 destination = "res://scenes/ile_celeste.tscn"
 arrivee = &"DepuisAlabasta"
 libelle_traversee = "Embarquer pour Skypiea"

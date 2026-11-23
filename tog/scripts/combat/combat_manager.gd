@@ -1271,6 +1271,7 @@ func _ouvrir_arene(index_plan: int) -> void:
 	if terrain != null:
 		_arene.dallage = terrain.dallage
 		_arene.maconnerie = terrain.maconnerie
+		_arene.fond_personnalise = terrain.fond_arene
 	_arene.position = POSITION_ARENE
 	get_tree().current_scene.add_child(_arene)
 

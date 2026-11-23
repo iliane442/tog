@@ -70,6 +70,7 @@ var index_plan: int
 var dimensions: Vector2i
 var dallage: Texture2D
 var maconnerie: Texture2D
+var fond_personnalise: Texture2D
 var sol: TileMapLayer
 var obstacles: TileMapLayer
 var _camera: Camera2D
@@ -139,17 +140,23 @@ func _creer_fond() -> void:
 	var couche := CanvasLayer.new()
 	couche.layer = -1
 	add_child(couche)
-	var degrade := Gradient.new()
-	degrade.colors = PackedColorArray([Color("#354047"), Color("#1a2128"), Color("#11171e")])
-	degrade.offsets = PackedFloat32Array([0.0, 0.64, 1.0])
-	var texture_fond := GradientTexture2D.new()
-	texture_fond.gradient = degrade
-	texture_fond.fill = GradientTexture2D.FILL_RADIAL
-	texture_fond.fill_from = Vector2(0.5, 0.46)
-	texture_fond.fill_to = Vector2(1.0, 1.0)
 	var fond := TextureRect.new()
-	fond.texture = texture_fond
-	fond.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	if fond_personnalise != null:
+		fond.texture = fond_personnalise
+		fond.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		fond.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		fond.modulate = Color(0.77, 0.86, 0.96)
+	else:
+		var degrade := Gradient.new()
+		degrade.colors = PackedColorArray([Color("#354047"), Color("#1a2128"), Color("#11171e")])
+		degrade.offsets = PackedFloat32Array([0.0, 0.64, 1.0])
+		var texture_fond := GradientTexture2D.new()
+		texture_fond.gradient = degrade
+		texture_fond.fill = GradientTexture2D.FILL_RADIAL
+		texture_fond.fill_from = Vector2(0.5, 0.46)
+		texture_fond.fill_to = Vector2(1.0, 1.0)
+		fond.texture = texture_fond
+		fond.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	fond.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	fond.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	couche.add_child(fond)

@@ -23,6 +23,7 @@ const SHADER_SOL := preload("res://assets/shaders/terrain_zone.gdshader")
 @export var shader_terrain: Shader = SHADER_SOL
 @export var dallage: Texture2D
 @export var maconnerie: Texture2D
+@export var fond_arene: Texture2D
 
 var apercu: Texture2D
 var _dimensions := Vector2i.ZERO

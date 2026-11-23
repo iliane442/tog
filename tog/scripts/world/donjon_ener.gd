@@ -1,6 +1,6 @@
 extends "res://scripts/map.gd"
 
-@export var emprise_sceau: Rect2i
+@export var fond_etiquette: StyleBox
 
 @onready var _sentinelles: Array[Node] = [
 	$Rencontres/SentinelleVestibule, $Rencontres/VeilleurVestibule,
@@ -8,16 +8,24 @@ extends "res://scripts/map.gd"
 ]
 
 func _enter_tree() -> void:
-	var emprises: Array[Rect2i] = $TerrainZone.emprises_decors.duplicate()
-	emprises.append(emprise_sceau)
-	$TerrainZone.emprises_decors = emprises
 	super._enter_tree()
+	# Un ancien point de reprise du temple souterrain peut tomber dans le ciel.
+	if $TerrainZone.surface_sous($player.global_position).is_empty():
+		$player.position = $Arrivees/DepuisSkypiea.position
 
 func _ready() -> void:
 	super._ready()
+	for rencontre in $Rencontres.get_children():
+		var etiquette := rencontre.get_node_or_null("EtiquetteMob") as Label
+		if etiquette != null:
+			etiquette.add_theme_stylebox_override("normal", fond_etiquette)
+			etiquette.reset_size()
+			etiquette.position.x = -etiquette.size.x * 0.5
+			etiquette.position.y -= 5.0
 	# Une reprise de sauvegarde dans la salle du trône doit laisser
 	# le passage ouvert pour pouvoir revenir au vestibule.
-	if $player.ma_case().y <= emprise_sceau.position.y:
+	var surface: String = $TerrainZone.surface_sous($player.global_position)
+	if surface == "S" or surface == "E":
 		_ouvrir_sceau()
 
 func _physics_process(_delta: float) -> void:
@@ -34,9 +42,5 @@ func _physics_process(_delta: float) -> void:
 func _ouvrir_sceau() -> void:
 	set_physics_process(false)
 	$Sceau.hide()
-	for y in range(emprise_sceau.position.y, emprise_sceau.end.y):
-		for x in range(emprise_sceau.position.x, emprise_sceau.end.x):
-			var cellule := Vector2i(x, y)
-			$cliffs.erase_cell(cellule)
-			$ground.set_cell(cellule, 0, Vector2i.ZERO)
+	$TerrainZone.ouvrir_escalier($ground)
 	$player._preparer_navigation()
