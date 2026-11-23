@@ -40,6 +40,18 @@ const EMPLACEMENTS_NAVIRE := {
 	"Module de coque": "coque",
 	"Figure de proue": "proue",
 }
+const SCENE_NAVIRE := "res://scenes/lanterne.tscn"
+const PORT_NAVIRE_DEFAUT := "res://scenes/fushia.tscn"
+const PIECES_NAVIRE := {
+	"atelier": {"nom": "Atelier de bord", "prix": 150, "usage": "Fabriquer et améliorer les objets de ton métier. Installer les pièces du navire."},
+	"cale": {"nom": "Cale de stockage", "prix": 500, "usage": "Déposer le butin et les matériaux dans un coffre personnel."},
+	"cabine": {"nom": "Cabine du capitaine", "prix": 900, "usage": "Lire le journal de bord et exposer un trophée."},
+	"cartes": {"nom": "Salle des cartes", "prix": 1500, "usage": "Consulter les indices au trésor et marquer un point sur la carte de l’escale."},
+}
+var pieces_navire_ouvertes: Array[String] = []
+var escale_navire: Dictionary = {}
+var repere_navire: Dictionary = {}
+var trophee_navire := ""
 
 const POINTS_PAR_NIVEAU := 5
 const EFFET_REATTRIBUTION := "reset_stats"
@@ -146,24 +158,31 @@ const POUVOIRS_FRUIT_MENU: Array[String] = [
 	"259", "260", "261", "262", "263", "264", "265",
 ]
 # effets des pouvoirs de menu, par id de sort : soin (fraction des PV
-# max) ou buff (mêmes clés que les effets de consommables) et durée
+# max) ou buff (mêmes clés que les effets de consommables), durée du
+# buff et repos imposé avant la relance (minutes)
 const EFFETS_POUVOIRS_FRUIT := {
-	"251": {"buff": {"agilite": 8}, "duree": 5},
-	"252": {"buff": {"attack": 10}, "duree": 5},
-	"253": {"buff": {"agilite": 6, "chance": 4}, "duree": 5},
-	"254": {"buff": {"defense": 10}, "duree": 5},
-	"255": {"buff": {"force": 8}, "duree": 5},
-	"256": {"buff": {"chance": 10}, "duree": 5},
-	"257": {"buff": {"agilite": 12}, "duree": 3},
-	"258": {"buff": {"attack": 14}, "duree": 3},
-	"259": {"buff": {"intelligence": 8}, "duree": 5},
-	"260": {"buff": {"defense": 6, "agilite": 6}, "duree": 5},
-	"261": {"buff": {"defense": 4, "agilite": 6}, "duree": 5},
-	"262": {"buff": {"force": 12}, "duree": 5},
-	"263": {"buff": {"vitalite": 8}, "duree": 5},
-	"264": {"buff": {"force": 6, "chance": 6}, "duree": 5},
-	"265": {"soin": 1.0},
+	"250": {"repos": 10},
+	"251": {"buff": {"agilite": 8}, "duree": 5, "repos": 5},
+	"252": {"buff": {"attack": 10}, "duree": 5, "repos": 5},
+	"253": {"buff": {"agilite": 6, "chance": 4}, "duree": 5, "repos": 5},
+	"254": {"buff": {"defense": 10}, "duree": 5, "repos": 5},
+	"255": {"buff": {"force": 8}, "duree": 5, "repos": 5},
+	"256": {"buff": {"chance": 10}, "duree": 5, "repos": 5},
+	"257": {"buff": {"agilite": 12}, "duree": 3, "repos": 3},
+	"258": {"buff": {"attack": 14}, "duree": 3, "repos": 3},
+	"259": {"buff": {"intelligence": 8}, "duree": 5, "repos": 5},
+	"260": {"buff": {"defense": 6, "agilite": 6}, "duree": 5, "repos": 5},
+	"261": {"buff": {"defense": 4, "agilite": 6}, "duree": 5, "repos": 5},
+	"262": {"buff": {"force": 12}, "duree": 5, "repos": 5},
+	"263": {"buff": {"vitalite": 8}, "duree": 5, "repos": 5},
+	"264": {"buff": {"force": 6, "chance": 6}, "duree": 5, "repos": 5},
+	"265": {"soin": 1.0, "repos": 15},
 }
+
+# repos des pouvoirs du fruit (id -> instant unix de disponibilité) :
+# une capacité hors combat lancée part se reposer ; la table tient dans
+# la sauvegarde, une ligne échue ne gêne jamais
+var recharges_pouvoirs_fruit := {}
 # libellés lisibles des clés d'effets (affichage des messages)
 const LIBELLES_EFFETS_FRUIT := {
 	"attack": "attaque", "defense": "défense", "vie": "PV max",
@@ -455,21 +474,37 @@ func activer_pouvoir_fruit(id_pouvoir: String) -> String:
 		return ""
 	var effets: Dictionary = EFFETS_POUVOIRS_FRUIT[id_pouvoir]
 	var nom := str(sorts[id_pouvoir].get("nom", "Pouvoir du fruit"))
+	var repos_restant := recharge_restante_pouvoir_fruit(id_pouvoir)
+	if repos_restant > 0:
+		return "%s se repose encore (%d min)." % [nom, maxi(ceili(repos_restant / 60.0), 1)]
 	var soin := float(effets.get("soin", 0.0))
 	if soin > 0.0:
 		var montant := maxi(roundi(float(vie_max) * soin), 1)
 		soigner(montant)
-		sauvegarder()
+		amorcer_recharge_pouvoir_fruit(id_pouvoir)
 		return "%s : +%d PV." % [nom, montant]
 	var buff: Dictionary = effets.get("buff", {})
 	if buff.is_empty():
 		return ""
 	var duree_minutes := maxi(int(effets.get("duree", 5)), 1)
 	poser_buff_fruit(id_pouvoir, buff, duree_minutes)
+	amorcer_recharge_pouvoir_fruit(id_pouvoir)
 	var morceaux: Array[String] = []
 	for cle in buff:
 		morceaux.append("+%d %s" % [int(buff[cle]), str(LIBELLES_EFFETS_FRUIT.get(cle, cle))])
 	return "%s : %s pendant %d min." % [nom, " • ".join(morceaux), duree_minutes]
+
+# secondes de repos restantes pour un pouvoir du fruit (0 : prêt)
+func recharge_restante_pouvoir_fruit(id_pouvoir: String) -> int:
+	var expire := float(recharges_pouvoirs_fruit.get(id_pouvoir, 0.0))
+	return maxi(int(expire - Time.get_unix_time_from_system()), 0)
+
+# le pouvoir vient d'agir : il part en repos pour la durée prévue par
+# sa définition (EFFETS_POUVOIRS_FRUIT, clé « repos »)
+func amorcer_recharge_pouvoir_fruit(id_pouvoir: String) -> void:
+	var minutes := maxi(int(EFFETS_POUVOIRS_FRUIT.get(id_pouvoir, {}).get("repos", 5)), 1)
+	recharges_pouvoirs_fruit[id_pouvoir] = Time.get_unix_time_from_system() + 60.0 * minutes
+	sauvegarder()
 
 # pouvoirs du fruit mangé pas encore débloqués, du plus tôt au plus
 # tard : [{"id": String, "niveau": int}]
@@ -931,6 +966,56 @@ func desequiper(emplacement: String) -> void:
 
 # --- navire du personnage ---
 
+func memoriser_escale_navire(port: String, position_quai: Vector2) -> void:
+	escale_navire = {"scene": port, "x": position_quai.x, "y": position_quai.y}
+	sauvegarder()
+
+func amenagement_navire() -> Dictionary:
+	return {
+		"pieces": pieces_navire_ouvertes,
+		"escale": escale_navire,
+		"repere": repere_navire,
+		"trophee": trophee_navire,
+	}
+
+func appliquer_amenagement_navire(donnees: Variant) -> void:
+	pieces_navire_ouvertes = []
+	escale_navire = {}
+	repere_navire = {}
+	trophee_navire = ""
+	if not donnees is Dictionary:
+		return
+	var pieces: Variant = donnees.get("pieces", [])
+	if pieces is Array:
+		for id in PIECES_NAVIRE:
+			if pieces.has(id):
+				pieces_navire_ouvertes.append(id)
+	var escale: Variant = donnees.get("escale")
+	if escale is Dictionary:
+		escale_navire = escale.duplicate()
+	var repere: Variant = donnees.get("repere")
+	if repere is Dictionary:
+		repere_navire = repere.duplicate()
+	trophee_navire = str(donnees.get("trophee", ""))
+
+func a_portee_poste_navire(id: String) -> bool:
+	var scene := get_tree().current_scene
+	return scene != null and scene.scene_file_path == SCENE_NAVIRE and scene.a_portee_poste(id)
+
+func debloquer_piece_navire(id: String) -> bool:
+	var scene := get_tree().current_scene
+	if not PIECES_NAVIRE.has(id) or id in pieces_navire_ouvertes or scene == null \
+			or scene.scene_file_path != SCENE_NAVIRE or not scene.a_portee_porte(id):
+		return false
+	if id != "atelier" and "atelier" not in pieces_navire_ouvertes:
+		return false
+	var prix := int(PIECES_NAVIRE[id]["prix"])
+	if berry < prix:
+		return false
+	pieces_navire_ouvertes.append(id)
+	ajouter_berry(-prix)
+	return true
+
 # emplacement de navire visé par un item ("" si ce n'est pas une
 # pièce de navire) : reconnu au préfixe « Navire : » de sa
 # description, puis au mot-clé de son nom
@@ -951,6 +1036,8 @@ func piece_navire_installee(id: String) -> bool:
 # l'emplacement rejoint l'inventaire ; renvoie l'emplacement, "" en
 # cas de refus
 func installer_piece_navire(id: String) -> String:
+	if not a_portee_poste_navire("atelier"):
+		return ""
 	var emplacement := emplacement_navire(id)
 	if emplacement == "" or emplacement not in bateau or int(Inventaire.objets.get(id, 0)) <= 0:
 		return ""
@@ -971,7 +1058,7 @@ func installer_piece_navire(id: String) -> String:
 # retire la pièce installée d'un emplacement : elle rejoint
 # l'inventaire
 func retirer_piece_navire(emplacement: String) -> bool:
-	if not bateau.has(emplacement) or str(bateau[emplacement]) == "":
+	if not a_portee_poste_navire("atelier") or not bateau.has(emplacement) or str(bateau[emplacement]) == "":
 		return false
 	Inventaire.ajouter_objet(str(bateau[emplacement]), 1)
 	bateau[emplacement] = ""
@@ -1075,7 +1162,9 @@ func cout_amelioration(id_objet: String) -> Dictionary:
 # l'objet appartient-il à une famille que le métier sait améliorer ?
 func objet_ameliorable(id_objet: String) -> bool:
 	var details := Inventaire.details_objet(id_objet)
-	var familles: Array = FAMILLES_AMELIORATION.get(metier_perso(), [])
+	var id_metier := metier_perso()
+	var code_metier := str(_professions.get(id_metier, {}).get("code", id_metier))
+	var familles: Array = FAMILLES_AMELIORATION.get(code_metier, [])
 	for famille in familles:
 		var famille_type := str(famille[0])
 		var famille_sous_type := str(famille[1])
@@ -1089,6 +1178,8 @@ func objet_ameliorable(id_objet: String) -> bool:
 # engage le prochain niveau d'amélioration ; renvoie un message
 # d'explication en cas de refus, "" si l'atelier a travaillé
 func ameliorer_objet(id_objet: String) -> String:
+	if not a_portee_poste_navire("atelier"):
+		return "Approche-toi de l’établi de la Lanterne."
 	if int(Inventaire.objets.get(id_objet, 0)) <= 0:
 		return "Tu ne possèdes pas cet objet."
 	if not objet_ameliorable(id_objet):
@@ -1269,7 +1360,9 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	barre_objets = []
 	fruit_id = ""
 	fruit_xp = 0
+	recharges_pouvoirs_fruit = {}
 	buffs = []
+	ameliorations = {}
 	# sorts de base de la classe : placés d'office dans la barre de combat
 	for id_sort in classes.get(nouvelle_classe, {}).get("sorts_initiaux", []):
 		var id := str(id_sort)
@@ -1287,6 +1380,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	}
 	# le navire d'un nouveau perso est nu : aucune pièce installée
 	bateau = {"planche": "", "gouvernail": "", "mat": "", "coque": "", "proue": ""}
+	appliquer_amenagement_navire({})
 	recalculer_stats()
 	perso_cree = true
 	sauvegarder()
@@ -1320,6 +1414,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "points_depenses", points_depenses)
 	cfg.set_value("perso", "equipement", equipement)
 	cfg.set_value("perso", "bateau", bateau)
+	cfg.set_value("perso", "amenagement_navire", amenagement_navire())
 	cfg.set_value("perso", "metiers", metiers)
 	cfg.set_value("perso", "barre_sorts", barre_sorts)
 	cfg.set_value("perso", "barre_objets", barre_objets)
@@ -1328,6 +1423,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "buffs", buffs)
 	cfg.set_value("perso", "prochain_combat_double", prochain_combat_double)
 	cfg.set_value("perso", "ameliorations", ameliorations)
+	cfg.set_value("perso", "recharges_pouvoirs_fruit", recharges_pouvoirs_fruit)
 	perso_cree = cfg.save(CHEMIN_PERSO) == OK
 
 func charger_perso() -> void:
@@ -1357,6 +1453,10 @@ func charger_perso() -> void:
 	var ameliorations_sauvees: Dictionary = cfg.get_value("perso", "ameliorations", {})
 	for id_ameliore in ameliorations_sauvees:
 		ameliorations[str(id_ameliore)] = int(ameliorations_sauvees[id_ameliore])
+	recharges_pouvoirs_fruit = {}
+	var recharges_lues: Dictionary = cfg.get_value("perso", "recharges_pouvoirs_fruit", {})
+	for id_pouvoir in recharges_lues:
+		recharges_pouvoirs_fruit[str(id_pouvoir)] = float(recharges_lues[id_pouvoir])
 	var depenses = cfg.get_value("perso", "points_depenses", {})
 	if depenses is Dictionary:
 		points_depenses = depenses
@@ -1410,6 +1510,7 @@ func charger_perso() -> void:
 		for emplacement_lu in navire_lu:
 			if bateau.has(emplacement_lu):
 				bateau[emplacement_lu] = str(navire_lu[emplacement_lu])
+	appliquer_amenagement_navire(cfg.get_value("perso", "amenagement_navire", {}))
 	niveau = int(cfg.get_value("perso", "niveau", 1))
 	xp = int(cfg.get_value("perso", "xp", 0))
 	# filtrer la barre seulement ici : le niveau est connu, les sorts de
@@ -1448,6 +1549,7 @@ func reinitialiser() -> void:
 	barre_objets = []
 	fruit_id = ""
 	fruit_xp = 0
+	recharges_pouvoirs_fruit = {}
 	buffs = []
 	metiers = {}
 	points_depenses = {}
@@ -1459,6 +1561,7 @@ func reinitialiser() -> void:
 	}
 	# idem le navire
 	bateau = {"planche": "", "gouvernail": "", "mat": "", "coque": "", "proue": ""}
+	appliquer_amenagement_navire({})
 	recalculer_stats()
 	# la barre repart à vide : l'interface suit
 	barre_sorts_modifiee.emit()
@@ -1666,9 +1769,10 @@ func charger_donnees_metiers() -> void:
 		return
 	_professions.clear()
 	for ligne in BaseDonnees.lire(
-		"SELECT id, display_name, description, icon, color FROM professions"
+		"SELECT id, name, display_name, description, icon, color FROM professions"
 		+ " WHERE is_active = 1 ORDER BY display_name;"):
 		_professions[str(ligne["id"])] = {
+			"code": str(ligne["name"]),
 			"nom": str(ligne["display_name"]),
 			"description": str(ligne["description"]),
 			"icone": str(ligne["icon"]),
@@ -1818,7 +1922,7 @@ func verifier_recette(id_recette: String) -> String:
 # fabrique l'objet de la recette : consomme Berry et ingrédients,
 # ajoute le résultat à l'inventaire et donne l'XP de métier
 func artisaner(id_recette: String) -> bool:
-	if verifier_recette(id_recette) != "":
+	if not a_portee_poste_navire("atelier") or verifier_recette(id_recette) != "":
 		return false
 	var r := recette(id_recette)
 	berry -= int(r["cout_berry"])

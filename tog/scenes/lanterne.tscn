@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="1_zone"]
+[ext_resource type="Script" path="res://scripts/world/lanterne.gd" id="2_navire"]
+[ext_resource type="Script" path="res://scripts/world/terrain_lanterne.gd" id="3_terrain"]
+[ext_resource type="Script" path="res://scripts/ui/lanterne_ui.gd" id="4_ui"]
+
+[node name="Lanterne" instance=ExtResource("1_zone")]
+script = ExtResource("2_navire")
+renouveler_rencontres = false
+
+[node name="TerrainZone" parent="." index="0"]
+script = ExtResource("3_terrain")
+
+[node name="DepuisQuai" type="Marker2D" parent="Arrivees" index="0"]
+position = Vector2(544, 672)
+
+[node name="player" parent="." index="5"]
+position = Vector2(544, 672)
+speed = 275.0
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "La Lanterne"
+
+[node name="LanterneUI" type="CanvasLayer" parent="." index="16"]
+layer = 25
+script = ExtResource("4_ui")

@@ -283,7 +283,7 @@ func _tirer_fruit() -> Dictionary:
 		# fruit mangé : il n'existe plus qu'un exemplaire par monde
 		if id == Personnage.fruit_id:
 			continue
-		if not Inventaire.objets.has(id) and not pris.has(id):
+		if not Inventaire.dans_sac_ou_cale(id) and not pris.has(id):
 			ids.append(id)
 	if ids.is_empty():
 		return {}
@@ -315,7 +315,7 @@ func _tirer_lame_unique() -> Dictionary:
 		+ " AND id IN (SELECT item_id FROM unique_items WHERE is_consumed = 0);"):
 		var id := str(ligne["id"])
 		# lame déjà trouvée : il n'existe plus qu'un exemplaire par monde
-		if not Inventaire.objets.has(id) and not pris.has(id):
+		if not Inventaire.dans_sac_ou_cale(id) and not pris.has(id):
 			ids.append(id)
 	if ids.is_empty():
 		return {}

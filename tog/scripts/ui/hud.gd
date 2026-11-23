@@ -40,6 +40,9 @@ var _parametres_touches: CanvasLayer
 var _tween_vie: Tween
 var _tween_xp: Tween
 var _tween_sorts: Tween
+# PA du joueur pendant le combat (-1 : hors combat, montant inconnu) ;
+# sert à teinter le coût d'un sort qu'il ne peut plus se payer
+var _pa_combat := -1
 
 # barre d'objets (consommables) : même place que la barre de sorts, une
 # seule des deux s'affiche — le bouton ⇄ des en-têtes intervertit
@@ -77,6 +80,9 @@ func _ready() -> void:
 		bouton.pressed.connect(_on_emplacement_sort_clique.bind(index))
 		bouton.mouse_entered.connect(_animer_case.bind(bouton, Vector2(1.08, 1.08)))
 		bouton.mouse_exited.connect(_animer_case.bind(bouton, Vector2.ONE))
+		bouton.mouse_entered.connect(_survol_sort.bind(index))
+		bouton.mouse_exited.connect(_quitte_survol_sort)
+	_construire_etiquettes_sorts()
 	Personnage.caracteristiques_modifiees.connect(maj)
 	Personnage.barre_sorts_modifiee.connect(maj_barre_sorts)
 	Personnage.barre_objets_modifiee.connect(maj_barre_objets)
@@ -192,6 +198,21 @@ func maj_barre_sorts() -> void:
 			if _joueur != null and is_instance_valid(_joueur) and _joueur.has_method("recharge_restante_sort"):
 				recharge = int(_joueur.call("recharge_restante_sort", id_sort))
 			bouton.modulate = Color(0.45, 0.45, 0.5) if recharge > 0 else Color.WHITE
+			# coût en PA lisible d'un coup d'œil : rouge quand les PA
+			# restants ne le couvrent plus ; recharge visible en haut à
+			# droite tant qu'elle dure
+			var etiquette_cout: Label = bouton.get_node_or_null("Cout") as Label
+			if etiquette_cout != null:
+				var cout := 2
+				if _joueur != null and is_instance_valid(_joueur) and _joueur.has_method("cout_sort"):
+					cout = int(_joueur.call("cout_sort", id_sort))
+				etiquette_cout.text = "%d PA" % cout
+				etiquette_cout.add_theme_color_override("font_color",
+					Color("#ff8a80") if _pa_combat >= 0 and _pa_combat < cout else Color.WHITE)
+			var etiquette_recharge: Label = bouton.get_node_or_null("Recharge") as Label
+			if etiquette_recharge != null:
+				etiquette_recharge.visible = recharge > 0
+				etiquette_recharge.text = "%d t" % recharge
 			# la caractéristique qui renforce ce sort suit son type :
 			# Force pour toutes les attaques, Intelligence pour les soins
 			var stat_boost: String = Personnage.stat_booster_sort(sort)
@@ -209,11 +230,68 @@ func maj_barre_sorts() -> void:
 			bouton.disabled = true
 			bouton.modulate = Color.WHITE
 			bouton.tooltip_text = "Ouvre Menu > Sorts pour équiper un sort."
+			var etiquette_cout_vide: Label = bouton.get_node_or_null("Cout") as Label
+			if etiquette_cout_vide != null:
+				etiquette_cout_vide.text = ""
+			var etiquette_recharge_vide: Label = bouton.get_node_or_null("Recharge") as Label
+			if etiquette_recharge_vide != null:
+				etiquette_recharge_vide.visible = false
 
 func _animer_case(bouton: Control, echelle: Vector2) -> void:
 	var tween: Tween = bouton.create_tween()
 	tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(bouton, "scale", echelle, 0.12)
+
+# petites étiquettes de chaque bouton de sort : coût en PA en bas à
+# droite, recharge restante en haut à droite ; le Badge de touche
+# garde son coin haut gauche
+func _construire_etiquettes_sorts() -> void:
+	for enfant in barre_sorts.get_children():
+		var bouton := enfant as Button
+		if bouton == null or bouton.get_node_or_null("Badge") == null:
+			continue
+		var modele: Label = bouton.get_node("Badge") as Label
+		var reglages_cout := (modele.label_settings as LabelSettings).duplicate()
+		reglages_cout.font_size = 11
+		var etiquette_cout := Label.new()
+		etiquette_cout.name = "Cout"
+		etiquette_cout.label_settings = reglages_cout
+		etiquette_cout.offset_left = 28.0
+		etiquette_cout.offset_top = 36.0
+		etiquette_cout.offset_right = 58.0
+		etiquette_cout.offset_bottom = 58.0
+		etiquette_cout.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		etiquette_cout.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		etiquette_cout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bouton.add_child(etiquette_cout)
+		var reglages_recharge := (modele.label_settings as LabelSettings).duplicate()
+		reglages_recharge.font_size = 13
+		reglages_recharge.font_color = Color("#ffb2a6")
+		var etiquette_recharge := Label.new()
+		etiquette_recharge.name = "Recharge"
+		etiquette_recharge.label_settings = reglages_recharge
+		etiquette_recharge.offset_left = 30.0
+		etiquette_recharge.offset_top = 0.0
+		etiquette_recharge.offset_right = 58.0
+		etiquette_recharge.offset_bottom = 22.0
+		etiquette_recharge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		etiquette_recharge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bouton.add_child(etiquette_recharge)
+
+# survol d'un sort de la barre : sa zone d'effet se dessine sur la
+# grille (fantôme d'information, le sort n'est pas armé)
+func _survol_sort(index: int) -> void:
+	if _gestionnaire_combat == null or not _gestionnaire_combat.en_combat:
+		return
+	if barre_objets_active or index >= Personnage.barre_sorts.size():
+		return
+	if _joueur != null and is_instance_valid(_joueur) and _joueur.has_method("previsualiser_sort"):
+		_joueur.call("previsualiser_sort", Personnage.barre_sorts[index])
+
+# la souris quitte la barre : le fantôme s'efface
+func _quitte_survol_sort() -> void:
+	if _joueur != null and is_instance_valid(_joueur) and _joueur.has_method("effacer_previsualisation"):
+		_joueur.call("effacer_previsualisation")
 
 func _raccourci(index: int) -> String:
 	return Touches.libelle_action("sort_%d" % (index + 1))
@@ -297,6 +375,7 @@ func maj_ressources_combat(pa: int, pa_max: int, pm: int, pm_max: int) -> void:
 	label_pa.text = "PA %d / %d" % [pa, pa_max]
 	label_pm.text = "PM %d / %d" % [pm, pm_max]
 	ligne_combat.visible = _gestionnaire_combat != null and _gestionnaire_combat.en_combat
+	_pa_combat = pa if _gestionnaire_combat != null and _gestionnaire_combat.en_combat else -1
 	# le joueur vient d'agir ou de reprendre son tour : les recharges
 	# de sorts ont pu bouger, la barre suit
 	maj_barre_sorts()
@@ -356,6 +435,7 @@ func _masquer_hud_menu() -> void:
 
 func _afficher_barre_sorts(_victoire: bool) -> void:
 	_afficher_stats_combat(false)
+	_pa_combat = -1
 	if _menu != null and bool((_menu.get_node("Fenetre") as Control).visible):
 		return
 	maj_barre_sorts()

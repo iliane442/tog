@@ -1,0 +1,1333 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="PackedScene" path="res://scenes/ennemy.tscn" id="Ennemi"]
+[ext_resource type="Script" path="res://scripts/world/passage_zone.gd" id="Passage"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="Recolte"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/wiper.png" id="Wiper"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/kamakiri.png" id="Kamakiri"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/nola.png" id="Nola"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/aigle_du_large.png" id="AigleLarge"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iles/skypiea/cerf_des_hauteurs.png" id="Cerf"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="Rochers"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/terrasses/dallage_arene.png" id="DallageArene"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/falaise.png" id="Falaise"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/mer_de_nuages.jpg" id="Ciel"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/arbre.png" id="Art02"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/arbre_ancien.png" id="Art03"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/banniere.png" id="Art07"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/lierre.png" id="Art28"]
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/ruines.png" id="Art34"]
+
+[ext_resource type="Script" path="res://scripts/world/terrain_upper_yard.gd" id="UpperYard"]
+
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/terrasses/colonne.png" id="Colonne"]
+
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/terrasses/gravats.png" id="Gravats"]
+
+[ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/fleurs.png" id="FleursDeSousBois"]
+
+[sub_resource type="RectangleShape2D" id="Retour"]
+size = Vector2(94, 80)
+
+[node name="ForetUpperYard" instance=ExtResource("Zone")]
+
+[node name="TerrainZone" parent="." index="0"]
+texture_filter = 1
+script = ExtResource("UpperYard")
+plan = PackedStringArray(
+	"...............sssssssss",
+	".............ssSSSSSSSSsss",
+	"............ssSSSSSSSSSSsss",
+	"...........ssSSSss...sSSSss",
+	"...........ssSSSss...ssSSss",
+	"............sSSSss...ssSSs",
+	"............ssSSss...ssSs",
+	"............mMMMmm...hhhhhhhHHHh",
+	"...........mmmMMmm...hhhhhHHHHHHHh",
+	"..........mmmMMMmm...hhhhHHHHHHHHHh",
+	".........mmmMMMMMM...HHHHHHhhhhHHHh",
+	".........mmmMMMMMM...HHHHHhhhhhhHHh",
+	"..........mmmMMmmm...hhHHHHHHHHHHHh",
+	"...........mmMMmmm...hhHHHHHHHHHHhh",
+	"...........mmMMMmm...hhHHHhhHHHHHh",
+	"..aaaaa",
+	".aaaaaaa....oOOOoo...eeEEEeeeEEEee",
+	"aaaAaaaaa...ooOOoo...eeEEEeeeEEEee",
+	"aaaAAAAaaa.ooOOOoo...eeeEEeeeEEEeee",
+	"aaaAAAAaaa.ooOOooo...eeeEEeeeEEEeee....pppp",
+	"aaaaaAAAAA.OOOOooo...eeeEEEeeeEEeee...pppppp",
+	"aaaaaaAAAA.OOOOooo...eeeeEEeeeEEEEE...PPPPPP",
+	"aaaaaAAAAA.OOOOooo...eeeeEEeeEEEEEE...PPPPPP",
+	"aaAAAAAaaa.oOOOOOO...EEEEEEEEEEEeee...pppppp",
+	"aaaAAAaaa.ooOOOOOO...EEEEEEEEEeeeee....pppp",
+	".aaaaaaa..ooOOoooo...eeeEEeeeeeeeee",
+	"..aaaaa..oooOOoooo...eeeEEeeeeeeee",
+	".........oooOOOooo...eeeEEeeeeeee",
+	".........ooooOOOOo...eeeEEEeeeee",
+	"..........ooooOOOo...eeeeEeeeee",
+	"............oooOOo...eeeeeeee"
+)
+dallage = ExtResource("DallageArene")
+maconnerie = ExtResource("Falaise")
+fond_arene = ExtResource("Ciel")
+
+[node name="player" parent="." index="5"]
+position = Vector2(3392, 2299.2)
+
+[node name="Camera2D" parent="player" index="2"]
+zoom = Vector2(1.13, 1.13)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Upper Yard"
+
+[node name="Carte" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="1"]
+reperes = Dictionary[Vector2, String]({Vector2(3392, 2299.2): "Pont de Skypiea", Vector2(2432, 1888): "Sentier des Cascades", Vector2(3411.2, 1505.6): "Clairière des Ruines", Vector2(1302.4, 1075.6): "Arbre monumental", Vector2(3184, 760.4): "Source d’Upper Yard"})
+
+[node name="DepuisSkypiea" type="Marker2D" parent="Arrivees"]
+position = Vector2(3392, 2299.2)
+
+[node name="CielDeLaForet" type="CanvasLayer" parent="."]
+layer = -4
+
+[node name="Nuages" type="TextureRect" parent="CielDeLaForet"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("Ciel")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="VersSkypiea" type="Area2D" parent="."]
+position = Vector2(3564.8, 2385.6)
+collision_layer = 0
+script = ExtResource("Passage")
+destination = "res://scenes/ile_celeste.tscn"
+arrivee = &"DepuisUpperYard"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VersSkypiea"]
+shape = SubResource("Retour")
+
+[node name="Etiquette" type="Label" parent="VersSkypiea"]
+z_index = 18
+offset_left = -180.0
+offset_top = -112.0
+offset_right = 180.0
+offset_bottom = -82.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.94, 0.73, 1)
+theme_override_colors/font_outline_color = Color(0.07, 0.17, 0.16, 1)
+theme_override_constants/outline_size = 9
+theme_override_font_sizes/font_size = 23
+text = "Retour à Skypiea"
+horizontal_alignment = 1
+
+[node name="BoisDeLaForet" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1081.6, 1080.4)
+script = ExtResource("Recolte")
+titre = "Écorces de la forêt suspendue"
+description = "L'arbre pousse au bord du vide : ses branches portent les nuages, son bois sent la foudre tiède."
+quete = ""
+objet = "817"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BoisDeLaForet"]
+position = Vector2(0, -44)
+texture = ExtResource("Art02")
+scale = Vector2(0.65, 0.65)
+
+[node name="Etiquette" type="Label" parent="BoisDeLaForet"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="FibresDuPlateau" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(3222.4, 754)
+script = ExtResource("Recolte")
+titre = "Fibres d’Upper Yard"
+description = "De hautes herbes poussent entre les pierres. Pagaya utilise ces fibres pour réparer les voiles qui prennent le vent de la mer Blanche."
+quete = ""
+objet = "793"
+quantite = 2
+retour_secondes = 60.0
+
+[node name="Sprite2D" type="Sprite2D" parent="FibresDuPlateau"]
+position = Vector2(0, -36.0)
+texture = ExtResource("FleursDeSousBois")
+
+[node name="Etiquette" type="Label" parent="FibresDuPlateau"]
+offset_left = -135.0
+offset_top = -80.0
+offset_right = 135.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.08, 0.05, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = ""
+horizontal_alignment = 1
+
+[node name="AigleDuLarge" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2182.4, 2060.8)
+nom = "Aigle du Large"
+pv_max = 710
+degats_attaque = 37
+portee_attaque = 1
+pm_max = 3
+mob_id = 16
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 36
+groupe = "rapaces_celeste"
+texture_personnalisee = ExtResource("AigleLarge")
+
+[node name="CerfDuPlateau" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(1363.2, 1606.4)
+nom = "Cerf des Hauteurs"
+pv_max = 620
+degats_attaque = 33
+portee_attaque = 1
+pm_max = 3
+mob_id = 21
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 36
+groupe = "faune_celeste"
+texture_personnalisee = ExtResource("Cerf")
+
+[node name="Kamakiri" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(3347.2, 1467.2)
+nom = "Kamakiri"
+pv_max = 600
+degats_attaque = 35
+portee_attaque = 1
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 37
+groupe = "entrainement_shandia"
+texture_personnalisee = ExtResource("Kamakiri")
+
+[node name="Wiper" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(3504, 1548.8)
+nom = "Wiper"
+pv_max = 660
+degats_attaque = 38
+portee_attaque = 2
+pm_max = 3
+mob_id = 3
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 38
+groupe = "entrainement_shandia"
+texture_personnalisee = ExtResource("Wiper")
+
+[node name="Nola" parent="Rencontres" instance=ExtResource("Ennemi")]
+position = Vector2(2246.4, 990.4)
+nom = "Nola"
+pv_max = 1200
+degats_attaque = 44
+portee_attaque = 2
+pm_max = 3
+mob_id = 0
+quetes_a_progresser = Array[String]([])
+niveau_personnalise = 40
+groupe = ""
+texture_personnalisee = ExtResource("Nola")
+attaques_par_tour = 2
+
+[node name="ArbreMonumental" type="Sprite2D" parent="Paysage"]
+position = Vector2(1177.6, 942.8)
+texture = ExtResource("Art03")
+offset = Vector2(0, -183)
+scale = Vector2(1.15, 1.15)
+metadata/emprise = Vector2(157, 143)
+
+[node name="VieuxFiguier" type="Sprite2D" parent="Paysage"]
+position = Vector2(1510.4, 1625.6)
+texture = ExtResource("Art03")
+offset = Vector2(0, -166)
+scale = Vector2(0.68, 0.68)
+metadata/emprise = Vector2(68, 66)
+
+[node name="FiguierDeLaRive" type="Sprite2D" parent="Paysage"]
+position = Vector2(2064, 1889.6)
+texture = ExtResource("Art03")
+offset = Vector2(0, -151)
+scale = Vector2(0.63, 0.63)
+metadata/emprise = Vector2(78, 70)
+
+[node name="ArbreDeLaSource" type="Sprite2D" parent="Paysage"]
+position = Vector2(3558.4, 960.4)
+texture = ExtResource("Art03")
+offset = Vector2(0, -157)
+scale = Vector2(0.7, 0.7)
+metadata/emprise = Vector2(78, 66)
+
+[node name="ArbreDeLaClairiere" type="Sprite2D" parent="Paysage"]
+position = Vector2(3763.2, 1540.8)
+texture = ExtResource("Art03")
+offset = Vector2(0, -159)
+scale = Vector2(0.68, 0.68)
+metadata/emprise = Vector2(72, 68)
+
+[node name="ArbreDesRapides" type="Sprite2D" parent="Paysage"]
+position = Vector2(2832, 1822.4)
+texture = ExtResource("Art03")
+offset = Vector2(0, -154)
+scale = Vector2(0.72, 0.72)
+metadata/emprise = Vector2(74, 76)
+
+[node name="ArbreDesMarches" type="Sprite2D" parent="Paysage"]
+position = Vector2(2291.2, 910.4)
+texture = ExtResource("Art03")
+offset = Vector2(0, -168)
+scale = Vector2(0.65, 0.65)
+metadata/emprise = Vector2(70, 68)
+
+[node name="RuinesDeLaClairiere" type="Sprite2D" parent="Paysage"]
+position = Vector2(3510.4, 1411.2)
+texture = ExtResource("Art34")
+offset = Vector2(0, -59)
+scale = Vector2(1.26, 1.26)
+metadata/emprise = Vector2(84, 62)
+
+[node name="RuinesDuBelvedere" type="Sprite2D" parent="Paysage"]
+position = Vector2(3017.6, 696.4)
+texture = ExtResource("Art34")
+offset = Vector2(0, -56)
+scale = Vector2(0.78, 0.78)
+metadata/emprise = Vector2(64, 59)
+
+[node name="RuinesDesRives" type="Sprite2D" parent="Paysage"]
+position = Vector2(2252.8, 1996.8)
+texture = ExtResource("Art34")
+offset = Vector2(0, -55)
+scale = Vector2(0.88, 0.88)
+metadata/emprise = Vector2(71, 60)
+
+[node name="ArcheDesTerrasses" type="Sprite2D" parent="Paysage"]
+position = Vector2(3152, 2008)
+texture = ExtResource("Art34")
+offset = Vector2(0, -59)
+scale = Vector2(1.1, 1.1)
+metadata/emprise = Vector2(75, 64)
+
+[node name="ArcheDuVieuxSentier" type="Sprite2D" parent="Paysage"]
+position = Vector2(1206.4, 1550.4)
+texture = ExtResource("Art34")
+offset = Vector2(0, -56)
+scale = Vector2(0.87, 0.87)
+metadata/emprise = Vector2(67, 58)
+
+[node name="PierreDeLaSource" type="Sprite2D" parent="Paysage"]
+position = Vector2(3318.4, 818)
+texture = ExtResource("Rochers")
+offset = Vector2(0, -37)
+scale = Vector2(0.94, 0.94)
+metadata/emprise = Vector2(66, 58)
+
+[node name="ColonneAncienne01" type="Sprite2D" parent="Paysage"]
+position = Vector2(1148.8, 819.6)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -80)
+metadata/emprise = Vector2(30, 27)
+
+[node name="ColonneAncienne02" type="Sprite2D" parent="Paysage"]
+position = Vector2(1536, 914)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -78)
+scale = Vector2(0.81, 0.81)
+metadata/emprise = Vector2(24, 25)
+
+[node name="ColonneAncienne03" type="Sprite2D" parent="Paysage"]
+position = Vector2(1097.6, 1165.2)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -75)
+scale = Vector2(0.83, 0.83)
+metadata/emprise = Vector2(26, 27)
+
+[node name="ColonneAncienne04" type="Sprite2D" parent="Paysage"]
+position = Vector2(825.6, 1045.2)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -85)
+scale = Vector2(0.72, 0.72)
+metadata/emprise = Vector2(23, 23)
+
+[node name="ColonneDeLaClairiere01" type="Sprite2D" parent="Paysage"]
+position = Vector2(3369.6, 1372.8)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -80)
+scale = Vector2(0.8, 0.8)
+metadata/emprise = Vector2(28, 27)
+
+[node name="ColonneDeLaClairiere02" type="Sprite2D" parent="Paysage"]
+position = Vector2(3660.8, 1480)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -78)
+scale = Vector2(0.9, 0.9)
+metadata/emprise = Vector2(28, 29)
+
+[node name="ColonneDeLaClairiere03" type="Sprite2D" parent="Paysage"]
+position = Vector2(3539.2, 1614.4)
+texture = ExtResource("Colonne")
+offset = Vector2(0, -75)
+scale = Vector2(0.76, 0.76)
+metadata/emprise = Vector2(27, 26)
+
+[node name="BanniereEntreeNord" type="Sprite2D" parent="Paysage"]
+position = Vector2(3076.48, 2020.16)
+texture = ExtResource("Art07")
+offset = Vector2(0, -57)
+scale = Vector2(0.89, 0.89)
+metadata/emprise = Vector2(16, 15)
+
+[node name="BanniereEntreeSud" type="Sprite2D" parent="Paysage"]
+position = Vector2(2886.4, 2115.2)
+texture = ExtResource("Art07")
+offset = Vector2(0, -57)
+scale = Vector2(0.89, 0.89)
+metadata/emprise = Vector2(16, 15)
+
+[node name="BanniereDuPalier01" type="Sprite2D" parent="Paysage"]
+position = Vector2(3635.2, 2315.2)
+texture = ExtResource("Art07")
+offset = Vector2(0, -59)
+scale = Vector2(0.92, 0.92)
+metadata/emprise = Vector2(15, 14)
+
+[node name="BanniereDuPalier02" type="Sprite2D" parent="Paysage"]
+position = Vector2(3417.6, 2424)
+texture = ExtResource("Art07")
+offset = Vector2(0, -59)
+scale = Vector2(0.92, 0.92)
+metadata/emprise = Vector2(15, 14)
+
+[node name="Arbre01" type="Sprite2D" parent="Paysage"]
+position = Vector2(1915.26, 2069.1)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8206, 0.8206)
+metadata/emprise = Vector2(22.1575, 23.7988)
+flip_h = true
+
+[node name="Arbre02" type="Sprite2D" parent="Paysage"]
+position = Vector2(2422.53, 1183.73)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7619, 0.7619)
+metadata/emprise = Vector2(20.5724, 22.0963)
+
+[node name="Arbre03" type="Sprite2D" parent="Paysage"]
+position = Vector2(1209.09, 1223.99)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.158, 1.158)
+metadata/emprise = Vector2(31.2562, 33.5715)
+
+[node name="Arbre04" type="Sprite2D" parent="Paysage"]
+position = Vector2(1797.87, 1249.35)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8827, 0.8827)
+metadata/emprise = Vector2(23.833, 25.5984)
+
+[node name="Arbre05" type="Sprite2D" parent="Paysage"]
+position = Vector2(2629.09, 1535.1)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.169, 1.169)
+metadata/emprise = Vector2(31.5641, 33.9022)
+
+[node name="Arbre06" type="Sprite2D" parent="Paysage"]
+position = Vector2(1902.5, 1829.01)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.9234, 0.9234)
+metadata/emprise = Vector2(24.9311, 26.7778)
+flip_h = true
+
+[node name="Arbre07" type="Sprite2D" parent="Paysage"]
+position = Vector2(2772.88, 2179.27)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7538, 0.7538)
+metadata/emprise = Vector2(20.3531, 21.8608)
+flip_h = true
+
+[node name="Arbre08" type="Sprite2D" parent="Paysage"]
+position = Vector2(2090.3, 1473.47)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.6782, 0.6782)
+metadata/emprise = Vector2(18.3114, 19.6678)
+
+[node name="Arbre09" type="Sprite2D" parent="Paysage"]
+position = Vector2(2433.83, 846.894)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8387, 0.8387)
+metadata/emprise = Vector2(22.6452, 24.3227)
+
+[node name="Arbre10" type="Sprite2D" parent="Paysage"]
+position = Vector2(1661.76, 994.474)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8918, 0.8918)
+metadata/emprise = Vector2(24.0799, 25.8636)
+flip_h = true
+
+[node name="Arbre11" type="Sprite2D" parent="Paysage"]
+position = Vector2(2939.87, 1685.06)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8532, 0.8532)
+metadata/emprise = Vector2(23.0356, 24.7419)
+flip_h = true
+
+[node name="Arbre12" type="Sprite2D" parent="Paysage"]
+position = Vector2(2091.56, 956.298)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7961, 0.7961)
+metadata/emprise = Vector2(21.4937, 23.0858)
+flip_h = true
+
+[node name="Arbre13" type="Sprite2D" parent="Paysage"]
+position = Vector2(880.1, 929.764)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7602, 0.7602)
+metadata/emprise = Vector2(20.5259, 22.0464)
+
+[node name="Arbre14" type="Sprite2D" parent="Paysage"]
+position = Vector2(3542.05, 1719.25)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8251, 0.8251)
+metadata/emprise = Vector2(22.2769, 23.927)
+
+[node name="Arbre15" type="Sprite2D" parent="Paysage"]
+position = Vector2(2365.21, 1663.64)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8544, 0.8544)
+metadata/emprise = Vector2(23.0694, 24.7783)
+flip_h = true
+
+[node name="Arbre16" type="Sprite2D" parent="Paysage"]
+position = Vector2(1846.29, 1474.65)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.9638, 0.9638)
+metadata/emprise = Vector2(26.022, 27.9496)
+
+[node name="Arbre17" type="Sprite2D" parent="Paysage"]
+position = Vector2(1329.43, 1469.66)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8246, 0.8246)
+metadata/emprise = Vector2(22.2639, 23.9131)
+
+[node name="Arbre18" type="Sprite2D" parent="Paysage"]
+position = Vector2(2605.45, 2045.81)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.219, 1.219)
+metadata/emprise = Vector2(32.918, 35.3564)
+
+[node name="Arbre19" type="Sprite2D" parent="Paysage"]
+position = Vector2(2502.3, 2180.09)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8608, 0.8608)
+metadata/emprise = Vector2(23.2412, 24.9628)
+
+[node name="Arbre20" type="Sprite2D" parent="Paysage"]
+position = Vector2(2772.56, 1339.5)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.166, 1.166)
+metadata/emprise = Vector2(31.4832, 33.8153)
+flip_h = true
+
+[node name="Arbre21" type="Sprite2D" parent="Paysage"]
+position = Vector2(2881.33, 874.688)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.9461, 0.9461)
+metadata/emprise = Vector2(25.5439, 27.436)
+
+[node name="Arbre22" type="Sprite2D" parent="Paysage"]
+position = Vector2(2752.2, 614.524)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.179, 1.179)
+metadata/emprise = Vector2(31.8232, 34.1805)
+flip_h = true
+
+[node name="Arbre23" type="Sprite2D" parent="Paysage"]
+position = Vector2(3068.71, 1252.79)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.909, 0.909)
+metadata/emprise = Vector2(24.5432, 26.3612)
+
+[node name="Arbre24" type="Sprite2D" parent="Paysage"]
+position = Vector2(1895.34, 1949.98)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.119, 1.119)
+metadata/emprise = Vector2(30.219, 32.4574)
+flip_h = true
+
+[node name="Arbre25" type="Sprite2D" parent="Paysage"]
+position = Vector2(1157.13, 1707.45)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.9077, 0.9077)
+metadata/emprise = Vector2(24.5092, 26.3246)
+flip_h = true
+
+[node name="Arbre26" type="Sprite2D" parent="Paysage"]
+position = Vector2(3345.25, 708.132)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8032, 0.8032)
+metadata/emprise = Vector2(21.6871, 23.2935)
+flip_h = true
+
+[node name="Arbre27" type="Sprite2D" parent="Paysage"]
+position = Vector2(2329.73, 1760.18)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.9694, 0.9694)
+metadata/emprise = Vector2(26.1735, 28.1123)
+
+[node name="Arbre28" type="Sprite2D" parent="Paysage"]
+position = Vector2(752.816, 1121.01)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8268, 0.8268)
+metadata/emprise = Vector2(22.3236, 23.9772)
+
+[node name="Arbre29" type="Sprite2D" parent="Paysage"]
+position = Vector2(1899.46, 1569.58)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.9767, 0.9767)
+metadata/emprise = Vector2(26.3699, 28.3232)
+flip_h = true
+
+[node name="Arbre30" type="Sprite2D" parent="Paysage"]
+position = Vector2(2172.24, 1043.11)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.072, 1.072)
+metadata/emprise = Vector2(28.9378, 31.0814)
+
+[node name="Arbre31" type="Sprite2D" parent="Paysage"]
+position = Vector2(2318.12, 2214.04)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.191, 1.191)
+metadata/emprise = Vector2(32.1475, 34.5288)
+
+[node name="Arbre32" type="Sprite2D" parent="Paysage"]
+position = Vector2(2619.27, 1917.06)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.138, 1.138)
+metadata/emprise = Vector2(30.7283, 33.0045)
+
+[node name="Arbre33" type="Sprite2D" parent="Paysage"]
+position = Vector2(3136.53, 816.091)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7274, 0.7274)
+metadata/emprise = Vector2(19.64, 21.0949)
+flip_h = true
+
+[node name="Arbre34" type="Sprite2D" parent="Paysage"]
+position = Vector2(2250.21, 2119.41)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7734, 0.7734)
+metadata/emprise = Vector2(20.8816, 22.4284)
+flip_h = true
+
+[node name="Arbre35" type="Sprite2D" parent="Paysage"]
+position = Vector2(3133.5, 1142.63)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.6872, 0.6872)
+metadata/emprise = Vector2(18.5542, 19.9285)
+flip_h = true
+
+[node name="Arbre36" type="Sprite2D" parent="Paysage"]
+position = Vector2(2422.99, 2076.87)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.189, 1.189)
+metadata/emprise = Vector2(32.107, 34.4853)
+flip_h = true
+
+[node name="Arbre37" type="Sprite2D" parent="Paysage"]
+position = Vector2(1723.98, 1911.16)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.6799, 0.6799)
+metadata/emprise = Vector2(18.3585, 19.7184)
+
+[node name="Arbre38" type="Sprite2D" parent="Paysage"]
+position = Vector2(1981.22, 1404.2)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.016, 1.016)
+metadata/emprise = Vector2(27.442, 29.4747)
+flip_h = true
+
+[node name="Arbre39" type="Sprite2D" parent="Paysage"]
+position = Vector2(3706.59, 1108.36)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.867, 0.867)
+metadata/emprise = Vector2(23.4101, 25.1442)
+
+[node name="Arbre40" type="Sprite2D" parent="Paysage"]
+position = Vector2(1268.87, 736.687)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.6821, 0.6821)
+metadata/emprise = Vector2(18.4177, 19.782)
+
+[node name="Arbre41" type="Sprite2D" parent="Paysage"]
+position = Vector2(998.009, 1568.54)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.082, 1.082)
+metadata/emprise = Vector2(29.219, 31.3833)
+
+[node name="Arbre42" type="Sprite2D" parent="Paysage"]
+position = Vector2(3498.82, 806.495)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7058, 0.7058)
+metadata/emprise = Vector2(19.0576, 20.4693)
+flip_h = true
+
+[node name="Arbre43" type="Sprite2D" parent="Paysage"]
+position = Vector2(1611.04, 831.033)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7701, 0.7701)
+metadata/emprise = Vector2(20.7921, 22.3323)
+
+[node name="Arbre44" type="Sprite2D" parent="Paysage"]
+position = Vector2(1482.69, 771.099)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.059, 1.059)
+metadata/emprise = Vector2(28.6056, 30.7246)
+flip_h = true
+
+[node name="Arbre45" type="Sprite2D" parent="Paysage"]
+position = Vector2(1778.7, 2015.06)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8585, 0.8585)
+metadata/emprise = Vector2(23.1793, 24.8962)
+
+[node name="Arbre46" type="Sprite2D" parent="Paysage"]
+position = Vector2(1520.07, 1759.36)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7714, 0.7714)
+metadata/emprise = Vector2(20.8282, 22.3711)
+flip_h = true
+
+[node name="Arbre47" type="Sprite2D" parent="Paysage"]
+position = Vector2(3315.59, 973.243)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.173, 1.173)
+metadata/emprise = Vector2(31.6802, 34.0269)
+flip_h = true
+
+[node name="Arbre48" type="Sprite2D" parent="Paysage"]
+position = Vector2(1732.55, 1658.53)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.167, 1.167)
+metadata/emprise = Vector2(31.5136, 33.848)
+
+[node name="Arbre49" type="Sprite2D" parent="Paysage"]
+position = Vector2(1480.31, 1022.45)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.91, 0.91)
+metadata/emprise = Vector2(24.571, 26.3911)
+flip_h = true
+
+[node name="Arbre50" type="Sprite2D" parent="Paysage"]
+position = Vector2(2169.29, 1697.14)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7691, 0.7691)
+metadata/emprise = Vector2(20.7651, 22.3033)
+flip_h = true
+
+[node name="Arbre51" type="Sprite2D" parent="Paysage"]
+position = Vector2(2056.47, 2147.57)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.141, 1.141)
+metadata/emprise = Vector2(30.8045, 33.0863)
+
+[node name="Arbre52" type="Sprite2D" parent="Paysage"]
+position = Vector2(2692.59, 1751.09)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7623, 0.7623)
+metadata/emprise = Vector2(20.5825, 22.1071)
+
+[node name="Arbre53" type="Sprite2D" parent="Paysage"]
+position = Vector2(2316.44, 1382.09)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.125, 1.125)
+metadata/emprise = Vector2(30.3695, 32.619)
+flip_h = true
+
+[node name="Arbre54" type="Sprite2D" parent="Paysage"]
+position = Vector2(3283.27, 1271.97)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8237, 0.8237)
+metadata/emprise = Vector2(22.2405, 23.888)
+flip_h = true
+
+[node name="Arbre55" type="Sprite2D" parent="Paysage"]
+position = Vector2(3719.96, 906.475)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.062, 1.062)
+metadata/emprise = Vector2(28.6767, 30.8009)
+
+[node name="Arbre56" type="Sprite2D" parent="Paysage"]
+position = Vector2(2637.69, 753.663)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.7366, 0.7366)
+metadata/emprise = Vector2(19.8894, 21.3627)
+flip_h = true
+
+[node name="Arbre57" type="Sprite2D" parent="Paysage"]
+position = Vector2(1596.47, 1094.34)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.9516, 0.9516)
+metadata/emprise = Vector2(25.6932, 27.5964)
+
+[node name="Arbre58" type="Sprite2D" parent="Paysage"]
+position = Vector2(1141.51, 1443.63)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8818, 0.8818)
+metadata/emprise = Vector2(23.8099, 25.5736)
+flip_h = true
+
+[node name="Arbre59" type="Sprite2D" parent="Paysage"]
+position = Vector2(2830.7, 1050.71)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.094, 1.094)
+metadata/emprise = Vector2(29.5407, 31.729)
+
+[node name="Arbre60" type="Sprite2D" parent="Paysage"]
+position = Vector2(3328.84, 1891.54)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.118, 1.118)
+metadata/emprise = Vector2(30.1832, 32.419)
+flip_h = true
+
+[node name="Arbre61" type="Sprite2D" parent="Paysage"]
+position = Vector2(3270.33, 1067.35)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.098, 1.098)
+metadata/emprise = Vector2(29.6573, 31.8541)
+flip_h = true
+
+[node name="Arbre62" type="Sprite2D" parent="Paysage"]
+position = Vector2(2490.04, 1607.72)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.021, 1.021)
+metadata/emprise = Vector2(27.5652, 29.6071)
+
+[node name="Arbre63" type="Sprite2D" parent="Paysage"]
+position = Vector2(3739.22, 1687.69)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.6857, 0.6857)
+metadata/emprise = Vector2(18.5135, 19.8849)
+
+[node name="Arbre64" type="Sprite2D" parent="Paysage"]
+position = Vector2(712.008, 962.498)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.154, 1.154)
+metadata/emprise = Vector2(31.1452, 33.4522)
+
+[node name="Arbre65" type="Sprite2D" parent="Paysage"]
+position = Vector2(886.22, 1176.18)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.116, 1.116)
+metadata/emprise = Vector2(30.1221, 32.3534)
+
+[node name="Arbre66" type="Sprite2D" parent="Paysage"]
+position = Vector2(3775.45, 990.532)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.8348, 0.8348)
+metadata/emprise = Vector2(22.5398, 24.2095)
+
+[node name="Arbre67" type="Sprite2D" parent="Paysage"]
+position = Vector2(958.849, 837.938)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(0.9488, 0.9488)
+metadata/emprise = Vector2(25.6175, 27.5151)
+flip_h = true
+
+[node name="Arbre68" type="Sprite2D" parent="Paysage"]
+position = Vector2(3450.43, 1298.91)
+texture = ExtResource("Art02")
+offset = Vector2(0, -65)
+scale = Vector2(1.057, 1.057)
+metadata/emprise = Vector2(28.5445, 30.659)
+flip_h = true
+
+[node name="SousBois01" type="Sprite2D" parent="Paysage"]
+position = Vector2(897.942, 869.231)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.8186, 0.8186)
+
+[node name="SousBois02" type="Sprite2D" parent="Paysage"]
+position = Vector2(2002.99, 1403.11)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.8163, 0.8163)
+flip_h = true
+
+[node name="SousBois03" type="Sprite2D" parent="Paysage"]
+position = Vector2(3250.28, 1267.98)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.8173, 0.8173)
+
+[node name="SousBois04" type="Sprite2D" parent="Paysage"]
+position = Vector2(3412.25, 935.765)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.8159, 0.8159)
+flip_h = true
+
+[node name="SousBois08" type="Sprite2D" parent="Paysage"]
+position = Vector2(1632.71, 1664.71)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.88, 0.88)
+flip_h = true
+
+[node name="SousBois09" type="Sprite2D" parent="Paysage"]
+position = Vector2(3047.94, 642.08)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.6142, 0.6142)
+
+[node name="SousBois11" type="Sprite2D" parent="Paysage"]
+position = Vector2(1943.68, 1560)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.5953, 0.5953)
+
+[node name="SousBois12" type="Sprite2D" parent="Paysage"]
+position = Vector2(2693.11, 1046.85)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.8483, 0.8483)
+flip_h = true
+
+[node name="SousBois14" type="Sprite2D" parent="Paysage"]
+position = Vector2(2488.25, 1678.56)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.8066, 0.8066)
+flip_h = true
+
+[node name="SousBois15" type="Sprite2D" parent="Paysage"]
+position = Vector2(1138.42, 1495.98)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.6019, 0.6019)
+
+[node name="SousBois19" type="Sprite2D" parent="Paysage"]
+position = Vector2(2854.48, 2081.12)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.6293, 0.6293)
+
+[node name="SousBois20" type="Sprite2D" parent="Paysage"]
+position = Vector2(1229.96, 1721.4)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.7431, 0.7431)
+flip_h = true
+
+[node name="SousBois21" type="Sprite2D" parent="Paysage"]
+position = Vector2(2923.49, 2134.96)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.7797, 0.7797)
+
+[node name="SousBois22" type="Sprite2D" parent="Paysage"]
+position = Vector2(953.358, 1229.45)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.867, 0.867)
+flip_h = true
+
+[node name="SousBois23" type="Sprite2D" parent="Paysage"]
+position = Vector2(1859.64, 1522.5)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.6265, 0.6265)
+
+[node name="SousBois25" type="Sprite2D" parent="Paysage"]
+position = Vector2(3733.54, 972.68)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.8082, 0.8082)
+
+[node name="SousBois26" type="Sprite2D" parent="Paysage"]
+position = Vector2(3651.63, 1147.85)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.8188, 0.8188)
+flip_h = true
+
+[node name="SousBois27" type="Sprite2D" parent="Paysage"]
+position = Vector2(3020.99, 801.385)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.8416, 0.8416)
+
+[node name="SousBois29" type="Sprite2D" parent="Paysage"]
+position = Vector2(942.999, 1206.6)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.7144, 0.7144)
+
+[node name="SousBois31" type="Sprite2D" parent="Paysage"]
+position = Vector2(1557.24, 1054.05)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.8057, 0.8057)
+
+[node name="SousBois32" type="Sprite2D" parent="Paysage"]
+position = Vector2(1634.63, 1726.66)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.6471, 0.6471)
+flip_h = true
+
+[node name="SousBois34" type="Sprite2D" parent="Paysage"]
+position = Vector2(1145.96, 1425.19)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.8035, 0.8035)
+flip_h = true
+
+[node name="SousBois36" type="Sprite2D" parent="Paysage"]
+position = Vector2(2782.5, 1889.1)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.6107, 0.6107)
+flip_h = true
+
+[node name="SousBois38" type="Sprite2D" parent="Paysage"]
+position = Vector2(2745.56, 1744.22)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.602, 0.602)
+flip_h = true
+
+[node name="SousBois39" type="Sprite2D" parent="Paysage"]
+position = Vector2(2746.59, 1862.84)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.8153, 0.8153)
+
+[node name="SousBois40" type="Sprite2D" parent="Paysage"]
+position = Vector2(3182.23, 1893.92)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.5828, 0.5828)
+flip_h = true
+
+[node name="SousBois48" type="Sprite2D" parent="Paysage"]
+position = Vector2(3262.02, 1009.27)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.6122, 0.6122)
+flip_h = true
+
+[node name="SousBois49" type="Sprite2D" parent="Paysage"]
+position = Vector2(2132.34, 1398.3)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.7533, 0.7533)
+
+[node name="SousBois50" type="Sprite2D" parent="Paysage"]
+position = Vector2(2231.93, 1970.79)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.6583, 0.6583)
+flip_h = true
+
+[node name="SousBois56" type="Sprite2D" parent="Paysage"]
+position = Vector2(3101.69, 1563.19)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.7671, 0.7671)
+flip_h = true
+
+[node name="SousBois57" type="Sprite2D" parent="Paysage"]
+position = Vector2(2428.48, 1646.25)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.7883, 0.7883)
+
+[node name="SousBois65" type="Sprite2D" parent="Paysage"]
+position = Vector2(3378, 1281.47)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.5577, 0.5577)
+
+[node name="SousBois70" type="Sprite2D" parent="Paysage"]
+position = Vector2(3007.28, 892.084)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.6541, 0.6541)
+flip_h = true
+
+[node name="SousBois71" type="Sprite2D" parent="Paysage"]
+position = Vector2(1471.18, 1666.1)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.8351, 0.8351)
+
+[node name="SousBois72" type="Sprite2D" parent="Paysage"]
+position = Vector2(3615.87, 876.183)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.773, 0.773)
+flip_h = true
+
+[node name="SousBois73" type="Sprite2D" parent="Paysage"]
+position = Vector2(3268.14, 1928.33)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.786, 0.786)
+
+[node name="SousBois74" type="Sprite2D" parent="Paysage"]
+position = Vector2(3664.62, 946.496)
+texture = ExtResource("FleursDeSousBois")
+offset = Vector2(0, -18)
+scale = Vector2(0.6319, 0.6319)
+flip_h = true
+
+[node name="SousBois78" type="Sprite2D" parent="Paysage"]
+position = Vector2(2394.7, 1987.6)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -18)
+scale = Vector2(0.5847, 0.5847)
+flip_h = true
+
+[node name="RochersDeRive01" type="Sprite2D" parent="Paysage"]
+position = Vector2(3052.8, 854.8)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.4055, 0.4055)
+
+[node name="RochersDeRive02" type="Sprite2D" parent="Paysage"]
+position = Vector2(3337.6, 981.2)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.4427, 0.4427)
+flip_h = true
+
+[node name="RochersDeRive03" type="Sprite2D" parent="Paysage"]
+position = Vector2(2787.2, 1062.4)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.45, 0.45)
+
+[node name="RochersDeRive04" type="Sprite2D" parent="Paysage"]
+position = Vector2(2784, 1323.2)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.4292, 0.4292)
+flip_h = true
+
+[node name="RochersDeRive05" type="Sprite2D" parent="Paysage"]
+position = Vector2(2236.8, 1425.6)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.5417, 0.5417)
+
+[node name="RochersDeRive06" type="Sprite2D" parent="Paysage"]
+position = Vector2(2390.4, 1579.2)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.3853, 0.3853)
+flip_h = true
+
+[node name="RochersDeRive07" type="Sprite2D" parent="Paysage"]
+position = Vector2(2054.4, 1523.2)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.528, 0.528)
+
+[node name="RochersDeRive08" type="Sprite2D" parent="Paysage"]
+position = Vector2(1941.12, 1808.96)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.5502, 0.5502)
+flip_h = true
+
+[node name="RochersDeRive09" type="Sprite2D" parent="Paysage"]
+position = Vector2(1568, 1760)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.5455, 0.5455)
+
+[node name="RochersDeRive10" type="Sprite2D" parent="Paysage"]
+position = Vector2(1438.72, 1818.24)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.343, 0.343)
+flip_h = true
+
+[node name="RochersDeRive11" type="Sprite2D" parent="Paysage"]
+position = Vector2(1664, 1955.2)
+texture = ExtResource("Gravats")
+offset = Vector2(0, -16)
+scale = Vector2(0.5498, 0.5498)
+
+[node name="Lierre01" type="Sprite2D" parent="Paysage"]
+position = Vector2(2627.2, 782.8)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.7584, 0.7584)
+z_index = -19
+
+[node name="Lierre02" type="Sprite2D" parent="Paysage"]
+position = Vector2(3209.6, 1074)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.8876, 0.8876)
+z_index = -19
+
+[node name="Lierre03" type="Sprite2D" parent="Paysage"]
+position = Vector2(2336, 1230.4)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.7217, 0.7217)
+z_index = -19
+
+[node name="Lierre04" type="Sprite2D" parent="Paysage"]
+position = Vector2(2073.6, 1092.8)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.8488, 0.8488)
+z_index = -19
+
+[node name="Lierre05" type="Sprite2D" parent="Paysage"]
+position = Vector2(809.6, 1171.6)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.7376, 0.7376)
+z_index = -19
+
+[node name="Lierre06" type="Sprite2D" parent="Paysage"]
+position = Vector2(1654.4, 1085.2)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.744, 0.744)
+z_index = -19
+
+[node name="Lierre07" type="Sprite2D" parent="Paysage"]
+position = Vector2(1948.8, 2126.4)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.8739, 0.8739)
+z_index = -19
+
+[node name="Lierre08" type="Sprite2D" parent="Paysage"]
+position = Vector2(2599.68, 2227.84)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.7184, 0.7184)
+z_index = -19
+
+[node name="Lierre09" type="Sprite2D" parent="Paysage"]
+position = Vector2(3673.6, 1697.6)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.7175, 0.7175)
+z_index = -19
+
+[node name="Lierre10" type="Sprite2D" parent="Paysage"]
+position = Vector2(2995.2, 1553.6)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.7781, 0.7781)
+z_index = -19
+
+[node name="Lierre11" type="Sprite2D" parent="Paysage"]
+position = Vector2(1072, 1688)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.9147, 0.9147)
+z_index = -19
+
+[node name="Lierre12" type="Sprite2D" parent="Paysage"]
+position = Vector2(1328, 1816)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.8334, 0.8334)
+z_index = -19
+
+[node name="Lierre13" type="Sprite2D" parent="Paysage"]
+position = Vector2(3571.2, 2459.2)
+texture = ExtResource("Art28")
+offset = Vector2(0, 52)
+scale = Vector2(0.9213, 0.9213)
+z_index = -19

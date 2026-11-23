@@ -2,6 +2,7 @@
 extends Node
 
 var objets: Dictionary = {}  # id -> quantité
+var _cales_navire: Dictionary = {}
 
 # Noms affichés dans l'inventaire (déclarez vos objets ici)
 var noms: Dictionary = {
@@ -64,16 +65,62 @@ func _charger_objets() -> bool:
 	if cfg.load(CHEMIN_SAUVEGARDE) != OK:
 		return false
 	objets = cfg.get_value("inventaire", "objets", {}).duplicate()
-	return not objets.is_empty()
+	var cales: Variant = cfg.get_value("inventaire", "cales_navire", {})
+	if cales is Dictionary:
+		_cales_navire = cales
+	return cfg.has_section_key("inventaire", "objets")
 
-func _sauver_objets() -> void:
+func _sauver_objets() -> Error:
 	var cfg := ConfigFile.new()
 	cfg.set_value("inventaire", "objets", objets)
-	cfg.save(CHEMIN_SAUVEGARDE)
+	cfg.set_value("inventaire", "cales_navire", _cales_navire)
+	var temporaire := CHEMIN_SAUVEGARDE + ".tmp"
+	var erreur := cfg.save(temporaire)
+	if erreur != OK:
+		return erreur
+	return DirAccess.rename_absolute(temporaire, CHEMIN_SAUVEGARDE)
+
+func _proprietaire_cale() -> String:
+	if Personnage.en_ligne:
+		return JSON.stringify([Reseau.adresse_preferee, Reseau.pseudo.to_lower()])
+	return "solo"
+
+func objets_en_cale() -> Dictionary:
+	var cale: Variant = _cales_navire.get(_proprietaire_cale(), {})
+	return cale.duplicate() if cale is Dictionary else {}
+
+func dans_sac_ou_cale(id: String) -> bool:
+	return objets.has(id) or _cales_navire.get(_proprietaire_cale(), {}).has(id)
+
+func transferer_cale(id: String, quantite: int, depot: bool) -> bool:
+	if not ("cale" in Personnage.pieces_navire_ouvertes) or not Personnage.a_portee_poste_navire("cale"):
+		return false
+	var cle := _proprietaire_cale()
+	var cale := objets_en_cale()
+	var source := objets if depot else cale
+	var destination := cale if depot else objets
+	var disponible := int(source.get(id, 0))
+	if quantite <= 0 or quantite > disponible:
+		return false
+	var objets_avant := objets.duplicate()
+	if quantite == disponible:
+		source.erase(id)
+	else:
+		source[id] = disponible - quantite
+	destination[id] = int(destination.get(id, 0)) + quantite
+	var cale_avant: Dictionary = _cales_navire.get(cle, {})
+	_cales_navire[cle] = cale
+	if _sauver_objets() != OK:
+		objets = objets_avant
+		_cales_navire[cle] = cale_avant
+		return false
+	inventaire_modifie.emit()
+	return true
 
 # remet l'inventaire aux objets de départ (réinitialisation debug du perso)
 func reinitialiser() -> void:
 	objets.clear()
+	_cales_navire.erase(_proprietaire_cale())
 	items_connus.clear()
 	_sauver_connus()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(CHEMIN_SAUVEGARDE))

@@ -551,6 +551,8 @@ func envoie_scene(nom_scene: String, x: float = INF, y: float = INF) -> void:
 	if not _sessions.has(peer_id):
 		return
 	nom_scene = nom_scene.strip_edges().substr(0, 64)
+	if nom_scene == "Lanterne" or nom_scene.begins_with("Lanterne:"):
+		nom_scene = "Lanterne:%d" % peer_id
 	var session: Dictionary = _sessions[peer_id]
 	var ancienne_scene: String = session["scene"]
 	if nom_scene == "" or nom_scene == ancienne_scene or str(session["nom_personnage"]).is_empty():
@@ -2169,6 +2171,8 @@ func _client_annoncer_scene() -> void:
 	if scene == null or joueur == null or not Personnage.perso_cree:
 		return
 	var nom := str(scene.name)
+	if scene.scene_file_path == Personnage.SCENE_NAVIRE:
+		nom = "Lanterne:%d" % multiplayer.get_unique_id()
 	if nom == _scene_locale:
 		return
 	_retirer_tous_avatars()
@@ -3114,6 +3118,8 @@ func serialiser_perso() -> Dictionary:
 		"points_statistique": Personnage.points_statistique,
 		"points_depenses": Personnage.points_depenses, "equipement": Personnage.equipement,
 		"bateau": Personnage.bateau,
+		"amenagement_navire": Personnage.amenagement_navire(),
+		"ameliorations": Personnage.ameliorations,
 		"metiers": Personnage.metiers, "barre_sorts": Personnage.barre_sorts,
 		"barre_objets": Personnage.barre_objets,
 		"fruit": Personnage.fruit_id, "fruit_xp": Personnage.fruit_xp, "buffs": Personnage.buffs,
@@ -3157,6 +3163,9 @@ func _appliquer_perso(perso_json: String) -> void:
 	if navire is Dictionary:
 		for emplacement in Personnage.bateau:
 			Personnage.bateau[emplacement] = str(navire.get(emplacement, ""))
+	Personnage.appliquer_amenagement_navire(d.get("amenagement_navire", {}))
+	var ameliorations: Variant = d.get("ameliorations", {})
+	Personnage.ameliorations = ameliorations if ameliorations is Dictionary else {}
 	var metiers = d.get("metiers", {})
 	if metiers is Dictionary:
 		Personnage.metiers = metiers

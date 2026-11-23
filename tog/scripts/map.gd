@@ -11,6 +11,7 @@ var _animation_notification: Tween
 var _changement_zone := false
 static var _scene_arrivee := ""
 static var _point_arrivee: StringName
+static var _position_arrivee := Vector2.INF
 
 func _enter_tree() -> void:
 	var terrain := get_node_or_null("TerrainZone")
@@ -23,11 +24,15 @@ func _enter_tree() -> void:
 		camera.limit_right = int(taille.x)
 		camera.limit_bottom = int(taille.y)
 	if _scene_arrivee == scene_file_path:
-		var arrivee := get_node_or_null(NodePath("Arrivees/" + str(_point_arrivee))) as Marker2D
-		if arrivee != null:
-			$player.position = arrivee.position
+		if _position_arrivee.is_finite():
+			$player.position = _position_arrivee
+		elif not _point_arrivee.is_empty():
+			var arrivee := get_node_or_null(NodePath("Arrivees/" + str(_point_arrivee))) as Marker2D
+			if arrivee != null:
+				$player.position = arrivee.position
 		_scene_arrivee = ""
 		_point_arrivee = &""
+		_position_arrivee = Vector2.INF
 	else:
 		# retour sur une map sans arrivée précise (lancement du jeu,
 		# reconnexion) : le joueur reprend sa dernière position
@@ -76,22 +81,24 @@ func _ready() -> void:
 		}
 		_surveille_renfort(ennemi, donnees)
 
-func rejoindre_zone(fichier: String, arrivee: StringName) -> void:
+func rejoindre_zone(fichier: String, arrivee: StringName, position_arrivee := Vector2.INF) -> void:
 	if _changement_zone or get_tree().paused or $CombatManager.en_combat:
 		return
 	_changement_zone = true
-	_charger_zone.call_deferred(fichier, arrivee)
+	_charger_zone.call_deferred(fichier, arrivee, position_arrivee)
 
-func _charger_zone(fichier: String, arrivee: StringName) -> void:
+func _charger_zone(fichier: String, arrivee: StringName, position_arrivee: Vector2) -> void:
 	if get_tree().paused or $CombatManager.en_combat:
 		_changement_zone = false
 		return
 	_scene_arrivee = fichier
 	_point_arrivee = arrivee
+	_position_arrivee = position_arrivee
 	if get_tree().change_scene_to_file(fichier) != OK:
 		_changement_zone = false
 		_scene_arrivee = ""
 		_point_arrivee = &""
+		_position_arrivee = Vector2.INF
 		afficher_info_fushia("Ce passage est momentanément fermé.")
 
 func _afficher_carte_en_exploration() -> void:

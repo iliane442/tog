@@ -50,6 +50,19 @@ L’équipage de Shanks fait escale à Fushia. Makino prête son bar, Woop Slap 
 
 **À côté de la trame.** Makino fait découvrir les repères de Fushia. Le pont du navire Roux, les provisions de Dadan sur le mont Corvo, le bois flotté des plages et les nasses des pêcheurs donnent de bonnes raisons de parcourir le village. La Grotte des Os reste un donjon d’exploration ; son gardien est le Seigneur de la Côte, rejouable en combat une fois le joueur assez avancé.
 
+#### La Lanterne, le navire du joueur
+
+Corbin laisse les clés de sa goélette au quai des Voiles. Le capitaine du port permet de monter à bord. Sur le pont, la passerelle mène au quai de l’escale et une trappe descend vers les pièces à aménager. Les portes indiquent leur prix et leur usage.
+
+| Pièce | Prix | Usage à bord |
+|---|---:|---|
+| **Atelier de bord** | 150 Berry | L’établi s’adapte au métier choisi. C’est le seul endroit où fabriquer et améliorer ses objets de métier, ainsi qu’installer ou retirer les pièces du navire. |
+| **Cale de stockage** | 500 Berry | Un coffre où déposer ses matériaux et son butin entre deux expéditions. |
+| **Cabine du capitaine** | 900 Berry | Le journal de bord et un emplacement où exposer un trophée. |
+| **Salle des cartes** | 1 500 Berry | La carte de l’escale, les indices au trésor découverts sur cette île et un repère à poser pour la prochaine sortie. |
+
+L’atelier s’ouvre en premier. Le joueur choisit ensuite l’ordre des autres aménagements. Les recettes et la progression du métier restent consultables depuis le menu.
+
 ### Chapitre 1 — Le capitaine qui se prenait pour un roi
 
 *Shells Town · zone jouable*

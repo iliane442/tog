@@ -70,6 +70,7 @@ var index_plan: int
 var dimensions: Vector2i
 var dallage: Texture2D
 var maconnerie: Texture2D
+var fond_personnalise: Texture2D
 var sol: TileMapLayer
 var obstacles: TileMapLayer
 var _camera: Camera2D
@@ -98,11 +99,7 @@ func _ready() -> void:
 	_plateau.draw.connect(_dessiner_plateau)
 	add_child(_plateau)
 	for case in obstacles.get_used_cells():
-		var bloc := Node2D.new()
-		bloc.position = _contour_mur(case)[2]
-		bloc.self_modulate.a = OPACITE_MUR
-		bloc.draw.connect(_dessiner_mur.bind(bloc, case))
-		add_child(bloc)
+		creer_decor_mur(case)
 
 	var coins := _contour(Rect2(Vector2.ZERO, Vector2(dimensions * TAILLE_CASE)))
 	_cadre_camera = Rect2(Vector2(coins[3].x, -96.0),
@@ -116,6 +113,36 @@ func _ready() -> void:
 func activer_camera() -> void:
 	_camera.make_current()
 	_camera.force_update_scroll()
+
+# un mur occupe cette case (couche des obstacles)
+func est_mur(case: Vector2i) -> bool:
+	return obstacles.get_cell_source_id(case) != -1
+
+# le décor dessiné d'un mur : bloc placé sur la case, nommé pour
+# qu'un déplacement (Shambles) puisse le retrouver et le suivre
+func creer_decor_mur(case: Vector2i) -> void:
+	var bloc := Node2D.new()
+	bloc.name = "Mur_%d_%d" % [case.x, case.y]
+	bloc.position = _contour_mur(case)[2]
+	bloc.self_modulate.a = OPACITE_MUR
+	bloc.draw.connect(_dessiner_mur.bind(bloc, case))
+	add_child(bloc)
+
+# un mur traverse la grille (Shambles) : les couches échangent leurs
+# tuiles — l'ancienne case redevient une dalle praticable, l'arrivée
+# devient mur — et le décor suit ; le plateau se redessine pour
+# accorder les teintes
+func deplacer_mur(depart: Vector2i, arrivee: Vector2i) -> void:
+	obstacles.erase_cell(depart)
+	sol.set_cell(depart, 0, Vector2i.ZERO)
+	sol.erase_cell(arrivee)
+	obstacles.set_cell(arrivee, 0, Vector2i.ZERO)
+	var ancien := get_node_or_null("Mur_%d_%d" % [depart.x, depart.y])
+	if ancien != null:
+		ancien.queue_free()
+	creer_decor_mur(arrivee)
+	if _plateau != null:
+		_plateau.queue_redraw()
 
 func _ajuster_camera() -> void:
 	var disponible := get_viewport_rect().size * Vector2(0.84, 0.70)
@@ -139,17 +166,23 @@ func _creer_fond() -> void:
 	var couche := CanvasLayer.new()
 	couche.layer = -1
 	add_child(couche)
-	var degrade := Gradient.new()
-	degrade.colors = PackedColorArray([Color("#354047"), Color("#1a2128"), Color("#11171e")])
-	degrade.offsets = PackedFloat32Array([0.0, 0.64, 1.0])
-	var texture_fond := GradientTexture2D.new()
-	texture_fond.gradient = degrade
-	texture_fond.fill = GradientTexture2D.FILL_RADIAL
-	texture_fond.fill_from = Vector2(0.5, 0.46)
-	texture_fond.fill_to = Vector2(1.0, 1.0)
 	var fond := TextureRect.new()
-	fond.texture = texture_fond
-	fond.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	if fond_personnalise != null:
+		fond.texture = fond_personnalise
+		fond.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		fond.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		fond.modulate = Color(0.77, 0.86, 0.96)
+	else:
+		var degrade := Gradient.new()
+		degrade.colors = PackedColorArray([Color("#354047"), Color("#1a2128"), Color("#11171e")])
+		degrade.offsets = PackedFloat32Array([0.0, 0.64, 1.0])
+		var texture_fond := GradientTexture2D.new()
+		texture_fond.gradient = degrade
+		texture_fond.fill = GradientTexture2D.FILL_RADIAL
+		texture_fond.fill_from = Vector2(0.5, 0.46)
+		texture_fond.fill_to = Vector2(1.0, 1.0)
+		fond.texture = texture_fond
+		fond.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	fond.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	fond.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	couche.add_child(fond)

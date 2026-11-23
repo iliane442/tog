@@ -144,6 +144,90 @@ func ennemi_sur_case(case_sol: Vector2i) -> Node:
 			return ennemi
 	return null
 
+# l'occupant d'une case de l'arène : le joueur local, un ennemi
+# engagé ou un miroir de coéquipier (une future invocation s'y
+# ajoutera : tout combattant positionné suffit)
+func occupant_case(case_sol: Vector2i) -> Node2D:
+	var sol := sol_combat()
+	if sol == null:
+		return null
+	if _joueur is Node2D and is_instance_valid(_joueur) \
+			and sol.local_to_map(sol.to_local((_joueur as Node2D).global_position)) == case_sol:
+		return _joueur
+	var ennemi := ennemi_sur_case(case_sol)
+	if ennemi != null:
+		return ennemi as Node2D
+	for miroir in _miroirs_groupe.values():
+		if miroir is Node2D and is_instance_valid(miroir) \
+				and sol.local_to_map(sol.to_local((miroir as Node2D).global_position)) == case_sol:
+			return miroir
+	return null
+
+# Shambles (pouvoir du Bistouri) : échange le contenu de deux cases
+# de l'arène — leurs occupants et leur terrain. Un mur échangé avec
+# autre chose prend réellement la place de l'autre case, qui redevient
+# une dalle praticable ; une case sans occupant sert de destination
+# (téléportation de l'autre occupant). Les occupants atterrissent
+# toujours sur une dalle : le terrain accompagne le mouvement
+func permuter_cases(case_a: Vector2i, case_b: Vector2i) -> bool:
+	var sol := sol_combat()
+	if sol == null or _arene == null or case_a == case_b:
+		return false
+	if not dans_zone_combat(case_a) or not dans_zone_combat(case_b):
+		return false
+	var occupant_a := occupant_case(case_a)
+	var occupant_b := occupant_case(case_b)
+	var mur_a := _arene.est_mur(case_a)
+	var mur_b := _arene.est_mur(case_b)
+	# deux dalles sans occupant : rien à échanger ; deux murs non
+	# plus : ils sont identiques, la permutation ne se voit pas
+	if (not mur_a and not mur_b and occupant_a == null and occupant_b == null) \
+			or (mur_a and mur_b):
+		return false
+	if mur_a != mur_b:
+		_arene.deplacer_mur(case_a if mur_a else case_b, case_b if mur_a else case_a)
+	if occupant_a != null:
+		occupant_a.global_position = sol.to_global(sol.map_to_local(case_b))
+	if occupant_b != null:
+		occupant_b.global_position = sol.to_global(sol.map_to_local(case_a))
+	return true
+
+# cases que le Shambles peut viser : autour du lanceur jusqu'à la
+# portée du sort, dalles et murs confondus — un mur se vise jusqu'à
+# son bord (sa propre cellule n'entrave pas la ligne de vue)
+func cases_permutables(lanceur: Node2D, portee: int) -> Array[Vector2i]:
+	var cases: Array[Vector2i] = []
+	var sol := sol_combat()
+	if sol == null or _arene == null or not is_instance_valid(lanceur):
+		return cases
+	var depart := sol.local_to_map(sol.to_local(lanceur.global_position))
+	for dy in range(-portee, portee + 1):
+		for dx in range(-portee, portee + 1):
+			var case_cible := depart + Vector2i(dx, dy)
+			if absi(dx) + absi(dy) > portee or not dans_zone_combat(case_cible):
+				continue
+			var mur := _arene.est_mur(case_cible)
+			if not mur and sol.get_cell_source_id(case_cible) == -1:
+				continue
+			if ligne_de_vue_libre(depart, case_cible, mur):
+				cases.append(case_cible)
+	return cases
+
+# les cases traversées par une lame en ligne (Gamma Scalpel) : jusqu'à
+# profondeur cases dans la direction cardinale donnée, en s'arrêtant
+# au bord de l'arène et au premier mur — la lame ne le traverse jamais
+func cases_ligne(depart: Vector2i, direction: Vector2i, profondeur: int) -> Array[Vector2i]:
+	var cases: Array[Vector2i] = []
+	var sol := sol_combat()
+	if sol == null or _arene == null or direction == Vector2i.ZERO:
+		return cases
+	for i in range(1, profondeur + 1):
+		var case_suivante := depart + direction * i
+		if not dans_zone_combat(case_suivante) or _arene.est_mur(case_suivante):
+			break
+		cases.append(case_suivante)
+	return cases
+
 # l'ennemi le plus proche du joueur (engagés d'abord, connus sinon)
 func ennemi_proche() -> Node:
 	if _joueur == null or not is_instance_valid(_joueur):
@@ -257,7 +341,7 @@ func case_sous_point(point: Vector2, viser_ennemi: bool) -> Vector2i:
 func dans_zone_combat(case: Vector2i) -> bool:
 	return _arene != null and Rect2i(Vector2i.ZERO, _arene.dimensions).has_point(case)
 
-func ligne_de_vue_libre(depart: Vector2i, arrivee: Vector2i) -> bool:
+func ligne_de_vue_libre(depart: Vector2i, arrivee: Vector2i, ignorer_arrivee := false) -> bool:
 	var sol := sol_combat()
 	if sol == null:
 		return false
@@ -276,7 +360,10 @@ func ligne_de_vue_libre(depart: Vector2i, arrivee: Vector2i) -> bool:
 		if double_erreur < dx:
 			erreur += dx
 			y += sy
-		if sol.get_cell_source_id(Vector2i(x, y)) == -1:
+		# ignorer_arrivee : viser un mur jusqu'à son bord — sa propre
+		# cellule ne bloque pas la ligne de vue qui le désigne
+		if not (ignorer_arrivee and x == arrivee.x and y == arrivee.y) \
+				and sol.get_cell_source_id(Vector2i(x, y)) == -1:
 			return false
 	return true
 
@@ -948,6 +1035,9 @@ func pvp_action_recue(evenement: Dictionary) -> void:
 				adversaire.rejouer_trajet(evenement.get("trajet", []), sol)
 		"manque", "sort":
 			_rejouer_sort_distant(evenement)
+		"echange":
+			_rejouer_echange_distant(evenement)
+			afficher_message("%s utilise Shambles !" % _nom_adversaire())
 		"fin_tour":
 			if adversaire != null:
 				adversaire.terminer_tour_distant()
@@ -995,6 +1085,17 @@ func _rejouer_sort_distant(evenement: Dictionary) -> void:
 		pvp_appliquer_etats(cible, etats)
 	var nom_sort := str(evenement.get("nom", "un sort"))
 	afficher_message("%s lance %s." % [_nom_adversaire(), nom_sort])
+
+# un Shambles relancé ici : les deux cases de l'échange partent telles
+# quelles — les grilles étant identiques, la permutation rejouée
+# déplace exactement les mêmes occupants (et le même mur)
+func _rejouer_echange_distant(evenement: Dictionary) -> void:
+	var cases_recues: Array = evenement.get("cases", [])
+	if cases_recues.size() != 2:
+		return
+	permuter_cases(
+		Vector2i(int(cases_recues[0][0]), int(cases_recues[0][1])),
+		Vector2i(int(cases_recues[1][0]), int(cases_recues[1][1])))
 
 # états appliqués chez le lanceur, rejoués ici à l'identique (pas de
 # nouveaux jets de dés : les valeurs font foi)
@@ -1078,6 +1179,9 @@ func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionar
 				miroir_depl.rejouer_trajet(evenement.get("trajet", []), sol)
 		"manque", "sort":
 			_rejouer_sort_groupe(peer_exp, pseudo_exp, evenement)
+		"echange":
+			_rejouer_echange_distant(evenement)
+			afficher_message("%s utilise Shambles !" % pseudo_exp)
 		"fin_tour":
 			afficher_message("%s termine son tour." % pseudo_exp)
 			# les états de son miroir se décomptent à sa fin de tour,
@@ -1271,6 +1375,7 @@ func _ouvrir_arene(index_plan: int) -> void:
 	if terrain != null:
 		_arene.dallage = terrain.dallage
 		_arene.maconnerie = terrain.maconnerie
+		_arene.fond_personnalise = terrain.fond_arene
 	_arene.position = POSITION_ARENE
 	get_tree().current_scene.add_child(_arene)
 
