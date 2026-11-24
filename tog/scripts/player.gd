@@ -814,6 +814,18 @@ func previsualiser_sort(id_sort: String) -> void:
 		var portee_shambles: int = int(Personnage.sorts[SORT_SHAMBLES].get("portee", 3))
 		_overlay.afficher_sort(_combat_manager.cases_permutables(self, portee_shambles))
 		return
+	# la Room se survole par sa vraie salle : le losange de 13 cases
+	# autour du chirurgien, pas une vulgaire portée circulaire
+	if id_sort == SORT_ROOM_CLE and Personnage.sorts.has(SORT_ROOM_CLE):
+		_overlay.afficher_sort(_cases_room(ma_case()))
+		return
+	# la lame du Gamma Scalpel se survole en direct : elle suit la
+	# direction de la souris, comme si le sort était armé
+	if id_sort == SORT_GAMMA and Personnage.sorts.has(SORT_GAMMA):
+		var cases_lame: Array[Vector2i] = _combat_manager.cases_ligne(ma_case(),
+			_direction_gamma(_case_combat_sous_souris()), GAMMA_PROFONDEUR)
+		_overlay.afficher_sort(cases_lame)
+		return
 	var portee := 1
 	var portee_min := 1
 	if id_sort == "boule_de_feu":
@@ -1370,6 +1382,10 @@ func _apercu_zone_sort() -> Array[Vector2i]:
 	# montre les cases qu'elle traverserait, murs exceptés
 	if _sort_selectionne_id == SORT_GAMMA:
 		return _combat_manager.cases_ligne(ma_case(), _direction_gamma(curseur), GAMMA_PROFONDEUR)
+	# le Shambles marque sa première case retenue : le chirurgien voit
+	# ce qu'il tient déjà avant de choisir l'autre
+	if _sort_selectionne_id == SORT_SHAMBLES and _shambles_premier:
+		return [_shambles_case]
 	if not SORTS_ZONE_CROIX.has(_sort_selectionne_id) and not SORTS_ZONE_BARRE.has(_sort_selectionne_id):
 		return vides
 	var sort: Dictionary = Personnage.sorts.get(_sort_selectionne_id, {})
