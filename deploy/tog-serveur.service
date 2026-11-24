@@ -1,0 +1,13 @@
+[Unit]
+Description=Serveur ToG (Godot headless, port 7777)
+After=network.target
+
+[Service]
+User=tog
+WorkingDirectory=/opt/tog/tog
+ExecStart=/usr/local/bin/godot --headless --path /opt/tog/tog scenes/serveur_monde.tscn
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

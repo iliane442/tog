@@ -1,0 +1,8 @@
+[Unit]
+Description=Mise à jour de ToG depuis la branche main de GitHub
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=tog
+ExecStart=/opt/tog/deploy/maj-tog.sh

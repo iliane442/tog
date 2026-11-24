@@ -1,0 +1,10 @@
+[Unit]
+Description=Vérification chaque minute de la branche main de GitHub
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target
