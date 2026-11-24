@@ -11,11 +11,12 @@ const PISTE := preload(ASSETS_ALABASTA + "terrain/route.png")
 const ROCHE_ROUGE := preload(ASSETS_ALABASTA + "terrain/roche.png")
 const MUR_CALCAIRE := preload(ASSETS_ALABASTA + "terrain/maconnerie.png")
 
-enum Sol { SABLE, DALLAGE, PISTE }
+enum Sol { SABLE, DALLAGE, PISTE, CANAL }
 enum Relief { SOL, VILLE, MESA }
 
 const TEXTURES := [SABLE, DALLAGE, PISTE]
-const COULEURS_SOL := [Color("#dfaf65"), Color("#f2ce9c"), Color("#edc48a")]
+const COULEUR_CANAL := Color("#25858c")
+const COULEURS_SOL := [Color("#dfaf65"), Color("#f2ce9c"), Color("#edc48a"), COULEUR_CANAL]
 const COULEUR_QUAI := Color("#b97c47")
 const COULEUR_MER := Color("#22658a")
 const NIVEAU_MER := -46
@@ -52,6 +53,7 @@ const QUAIS := [
 
 var escaliers: Array = ESCALIERS
 var quais: Array = QUAIS
+var ponts: Array = []
 var _carreaux: Dictionary[Vector2i, Vector3i] = {}
 var _ordre: Array[Vector2i] = []
 
@@ -89,6 +91,8 @@ func preparer(sol: TileMapLayer, _falaises: TileMapLayer, paysage: Node2D) -> vo
 		_peindre_escalier(carte, escalier)
 	for quai in quais:
 		_peindre_carte(carte, _polygone_liaison(quai, 12.0), COULEUR_QUAI)
+	for pont in ponts:
+		_peindre_carte(carte, _polygone_liaison(pont, 12.0), COULEURS_SOL[Sol.DALLAGE])
 	for decor in paysage.get_children():
 		if decor.has_meta("emprise"):
 			_bloquer_emprise(carte, decor)
@@ -166,7 +170,7 @@ func _altitude_mesa(cellule: Vector2i) -> int:
 	return hauteur
 
 func _est_sol(couleur: Color) -> bool:
-	return couleur != COULEUR_MER and couleur != OBSTACLE
+	return couleur != COULEUR_MER and couleur != COULEUR_CANAL and couleur != OBSTACLE
 
 func _bloquer_bords_de_terrasse(carte: Image, cellule: Vector2i, altitude: int, contour: PackedVector2Array) -> void:
 	var centre := _projeter(cellule, altitude)

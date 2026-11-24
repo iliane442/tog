@@ -65,8 +65,7 @@ reperes = Dictionary[Vector2, String]({
 	Vector2(804, 1123): "Entrée de Nanohana",
 	Vector2(1532.16, 1148.48): "Yuba · Palmeraie et puits",
 	Vector2(2107.52, 1493.12): "Sphinx de Nanohana",
-	Vector2(822.4, 492.4): "Rainbase · Casino",
-	Vector2(850.56, 745.12): "Rainbase · Canaux",
+	Vector2(921.6, 636): "Entrée de Rainbase",
 	Vector2(2012.8, 1093.6): "Alubarna · Escalier des remparts",
 	Vector2(2181.12, 671.44): "Alubarna · Tour de l’horloge",
 	Vector2(2501.12, 587.36): "Alubarna · Palais royal",
@@ -98,6 +97,33 @@ theme_override_colors/font_outline_color = Color(0.17, 0.11, 0.08, 1)
 theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 18
 text = "Entrer dans Nanohana"
+horizontal_alignment = 1
+
+[node name="DepuisRainbase" type="Marker2D" parent="Arrivees"]
+position = Vector2(1014, 669)
+
+[node name="VersRainbase" type="Area2D" parent="."]
+position = Vector2(921.6, 636)
+collision_layer = 0
+script = ExtResource("Passage")
+destination = "res://scenes/rainbase.tscn"
+arrivee = &"DepuisAlabasta"
+
+[node name="Seuil" type="CollisionPolygon2D" parent="VersRainbase"]
+polygon = PackedVector2Array(-68, -31, 21, -43, 59, -16, 36, 30, -49, 28)
+
+[node name="Etiquette" type="Label" parent="VersRainbase"]
+z_index = 10
+offset_left = -175.0
+offset_top = -122.0
+offset_right = 175.0
+offset_bottom = -95.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.91, 0.72, 1)
+theme_override_colors/font_outline_color = Color(0.19, 0.06, 0.19, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 19
+text = "Entrer dans Rainbase"
 horizontal_alignment = 1
 
 [node name="Interprete" type="Node2D" parent="." groups=["pnj_fushia"]]

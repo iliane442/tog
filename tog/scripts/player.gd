@@ -32,6 +32,9 @@ var _temps_tour_restant := 0.0
 var _derniere_seconde_tour := -1
 var _sort_selectionne := false
 var _sort_selectionne_id := "boule_de_feu"
+# sort survolé dans la barre du HUD : sa figure s'aperçoit en orange
+# avant même de l'armer (voir _apercu_zone_sort)
+var _sort_survole_id := ""
 var _sort_preselectionne_combat := ""
 var _recharges_sorts: Dictionary = {}  # id_sort -> tours de recharge restants
 # sorts qui posent un bouclier d'absorption : id -> part des PV max
@@ -405,16 +408,27 @@ func _gerer_clic_combat() -> void:
 			else:
 				_lancer_sort_etat(_sort_selectionne_id, sort, cible)
 			return
-		# sorts de zone : une case vide se vise aussi, la sienne
-		# comprise — la figure posée autour de soi frappe les voisins,
-		# jamais le chirurgien qui l'opère
-		if _est_sort_zone(_sort_selectionne_id) \
-				and _sol.get_cell_source_id(case_cliquee) != -1:
+		# tout sort d'attaque se pose sur une case aimée, vide ou non :
+		# la figure centrée sur le clic frappe chacun de ses occupants
+		# (le centre seul pour un sort de cible unique — un pavé nu le
+		# consume sans victime) ; les sorts de zone gardent le droit de
+		# se centrer sur soi (portée nulle admise)
+		if not _combat_manager.est_allie(sort) and _sol.get_cell_source_id(case_cliquee) != -1:
 			var depart := ma_case()
-			var portee_zone: int = int(sort.get("portee", 1))
+			var portee_visee: int = int(sort.get("portee", 1))
+			var sort_vise := sort
+			if _sort_selectionne_id == "boule_de_feu":
+				portee_visee = int(_sort_boule_de_feu.portee_max)
+				sort_vise = {"nom": "Boule de feu",
+					"cout_pa": int(_sort_boule_de_feu.cout_pa),
+					"portee": int(_sort_boule_de_feu.portee_max),
+					"degats": int(_sort_boule_de_feu.degats),
+					"type": "attack"}
+			var portee_min_visee := 0 if _est_sort_zone(_sort_selectionne_id) else 1
 			var distance := absi(depart.x - case_cliquee.x) + absi(depart.y - case_cliquee.y)
-			if distance <= portee_zone and _combat_manager.ligne_de_vue_libre(depart, case_cliquee):
-				_lancer_sort_zone(_sort_selectionne_id, sort, case_cliquee)
+			if distance >= portee_min_visee and distance <= portee_visee \
+					and _combat_manager.ligne_de_vue_libre(depart, case_cliquee):
+				_lancer_sort_zone(_sort_selectionne_id, sort_vise, case_cliquee)
 				return
 		var portee_deplacement := _calculer_portee()
 		if case_cliquee != ma_case() and portee_deplacement.has(case_cliquee):
@@ -798,6 +812,9 @@ func previsualiser_sort(id_sort: String) -> void:
 		return
 	if not _combat_manager.en_combat or _combat_manager.en_placement or _sort_selectionne:
 		return
+	# la figure du sort survolé s'aperçoit en orange dès le survol,
+	# avant même de l'armer (voir _apercu_zone_sort)
+	_sort_survole_id = id_sort
 	# pouvoirs du Séisme : la zone réelle du sort se dessine, pas le
 	# simple rayon de portée (Fracas et Secousse se déclenchent sur
 	# soi, la Vague garde son losange de portée le temps de viser)
@@ -845,6 +862,7 @@ func previsualiser_sort(id_sort: String) -> void:
 func effacer_previsualisation() -> void:
 	if _overlay == null:
 		return
+	_sort_survole_id = ""
 	if _sort_selectionne:
 		_afficher_cases()
 	else:
@@ -953,9 +971,7 @@ func _selectionner_sort(id_sort: String) -> void:
 		else:
 			_lancer_sort_etat(id_sort, sort, cible)
 	else:
-		var consigne := "l’ennemi"
-		if _est_sort_zone(id_sort):
-			consigne = "l’ennemi ou une case à portée"
+		var consigne := "une case à portée, vide ou occupée par l’ennemi"
 		_combat_manager.afficher_message("Sort sélectionné : clique sur %s pour le lancer." % ("toi-même" if cible == self else consigne))
 
 func _lancer_sort_etat(_id_sort: String, sort: Dictionary, cible: Node2D) -> bool:
@@ -1122,6 +1138,13 @@ func _lancer_sort_zone(id_sort: String, sort: Dictionary, case_centre: Vector2i)
 			evenement["etats"] = etats_appliques
 			evenement["degats"] = degats
 			_emettre_action_duel(evenement)
+	# réseau : un sort sans victime part aussi — sans cet événement,
+	# l'adversaire ne voyait strictement rien du lancer sur case vide
+	# (aucun impact n'annonçait l'animation à sa place)
+	if touches == 0 and (_combat_manager.pvp_actif or _combat_manager.groupe_actif):
+		_emettre_action_duel({"t": "sort_case", "id": id_sort,
+			"case": [case_centre.x, case_centre.y],
+			"nom": str(sort.get("nom", "un sort"))})
 	_pa -= cout
 	_demarrer_recharge_sort(id_sort, sort)
 	if touches > 0:
@@ -1367,47 +1390,59 @@ func _progresser_fruit_gura(id_sort: String) -> void:
 		var nom_nouveau: String = str(Personnage.sorts.get(id_debloque, {}).get("nom", "Nouveau pouvoir"))
 		_combat_manager.afficher_message("Ton fruit s'élève : %s débloqué !" % nom_nouveau)
 
-# aperçu de la figure autour de l'ennemi survolé (case de la cible
-# comprise) : ce que le sort touchera si on le lance maintenant
+# aperçu de ce que le sort touchera s'il partait maintenant : figure
+# de zone (croix, barre) centrée sur la case survolée, ennemi dessus
+# ou pavé de plancher nu ; le centre seul pour un sort de cible
+# unique. Le sort armé passe devant la prévisualisation du HUD
 func _apercu_zone_sort() -> Array[Vector2i]:
 	var vides: Array[Vector2i] = []
-	if _sol == null or _combat_manager == null or not _combat_manager.en_combat or not _sort_selectionne:
+	if _sol == null or _combat_manager == null or not _combat_manager.en_combat:
+		return vides
+	var id_vise := _sort_selectionne_id if _sort_selectionne else _sort_survole_id
+	if id_vise == "":
 		return vides
 	var curseur := _case_combat_sous_souris()
 	# la Room se dessine autour de son chirurgien dès la sélection,
 	# sans attendre le survol d'une cible
-	if _sort_selectionne_id == SORT_ROOM_CLE:
+	if id_vise == SORT_ROOM_CLE:
 		return _cases_room(ma_case())
 	# le Gamma Scalpel suit la direction survolée : la lame dorée
 	# montre les cases qu'elle traverserait, murs exceptés
-	if _sort_selectionne_id == SORT_GAMMA:
+	if id_vise == SORT_GAMMA and _sort_selectionne:
 		return _combat_manager.cases_ligne(ma_case(), _direction_gamma(curseur), GAMMA_PROFONDEUR)
 	# le Shambles marque sa première case retenue : le chirurgien voit
 	# ce qu'il tient déjà avant de choisir l'autre
-	if _sort_selectionne_id == SORT_SHAMBLES and _shambles_premier:
+	if id_vise == SORT_SHAMBLES and _sort_selectionne and _shambles_premier:
 		return [_shambles_case]
-	if not SORTS_ZONE_CROIX.has(_sort_selectionne_id) and not SORTS_ZONE_BARRE.has(_sort_selectionne_id):
+	# les pouvoirs du Séisme frappent des figures déjà affichées en
+	# rouge à la sélection : pas d'aperçu supplémentaire
+	if SORTS_GURA.has(id_vise):
 		return vides
-	var sort: Dictionary = Personnage.sorts.get(_sort_selectionne_id, {})
-	var portee := int(sort.get("portee", 1))
-	for ennemi in _combat_manager.ennemis_actifs():
-		var case_ennemi := _case_de(ennemi.global_position)
-		if case_ennemi == curseur and _distance_depuis(ennemi) <= portee and _combat_manager.ligne_de_vue_libre(ma_case(), case_ennemi):
-			var cases := _cases_zone_sort(_sort_selectionne_id, case_ennemi)
-			cases.append(case_ennemi)
-			return cases
-	# la figure suit aussi une case vide, la sienne comprise : le sort
-	# de zone se pose là où le joueur clique, ennemi au centre ou pavé
-	# de plancher nu — centré sur soi, il ne compte que ses voisins
+	var sort: Dictionary = {}
+	var portee := 1
+	var portee_min := 1
+	if id_vise == "boule_de_feu":
+		portee = int(_sort_boule_de_feu.portee_max)
+		portee_min = maxi(int(_sort_boule_de_feu.portee_min), 1)
+	elif Personnage.sorts.has(id_vise):
+		sort = Personnage.sorts[id_vise]
+		portee = int(sort.get("portee", 1))
+		if _combat_manager.est_allie(sort):
+			# un sort allié ne touche que son lanceur
+			return [ma_case()]
+		if _est_sort_zone(id_vise):
+			portee_min = 0
+	else:
+		return vides
 	var depart := ma_case()
 	var distance_curseur := absi(depart.x - curseur.x) + absi(depart.y - curseur.y)
-	if distance_curseur <= portee \
-			and _sol.get_cell_source_id(curseur) != -1 \
-			and _combat_manager.ligne_de_vue_libre(depart, curseur):
-		var cases_vides := _cases_zone_sort(_sort_selectionne_id, curseur)
-		cases_vides.append(curseur)
-		return cases_vides
-	return vides
+	if distance_curseur < portee_min or distance_curseur > portee \
+			or _sol.get_cell_source_id(curseur) == -1 \
+			or not _combat_manager.ligne_de_vue_libre(depart, curseur):
+		return vides
+	var cases := _cases_zone_sort(id_vise, curseur)
+	cases.append(curseur)
+	return cases
 
 # la Room se dresse autour de son chirurgien : chaque allié de la
 # salle (les états du sort — +25 % d'attaque et de défense, 3 tours)

@@ -1085,6 +1085,16 @@ func pvp_action_recue(evenement: Dictionary) -> void:
 				adversaire.rejouer_trajet(evenement.get("trajet", []), sol)
 		"manque", "sort":
 			_rejouer_sort_distant(evenement)
+		"sort_case":
+			# sort adverse posé sur une case vide : aucune victime
+			# n'annoncera l'animation, l'ancre la joue à sa place
+			var case_sort = evenement.get("case", [])
+			if adversaire != null and case_sort is Array \
+					and (case_sort as Array).size() == 2:
+				_rejouer_sort_sur_case(str(evenement.get("id", "")), adversaire,
+					Vector2i(int(case_sort[0]), int(case_sort[1])))
+				afficher_message("%s lance %s." % [_nom_adversaire(),
+					str(evenement.get("nom", "un sort"))])
 		"echange":
 			_rejouer_echange_distant(evenement)
 			afficher_message("%s utilise Shambles !" % _nom_adversaire())
@@ -1135,6 +1145,23 @@ func _rejouer_sort_distant(evenement: Dictionary) -> void:
 		pvp_appliquer_etats(cible, etats)
 	var nom_sort := str(evenement.get("nom", "un sort"))
 	afficher_message("%s lance %s." % [_nom_adversaire(), nom_sort])
+
+# un sort distant posé sur une case vide, rejoué : une ancre invisible
+# remplace la victime absente — l'animation part du miroir du lanceur
+# vers la case visée, comme dans l'arène de son propriétaire
+func _rejouer_sort_sur_case(id_sort: String, lanceur: Node2D, case_visee: Vector2i) -> void:
+	var sol := sol_combat()
+	if lanceur == null or not is_instance_valid(lanceur) or sol == null:
+		return
+	if not dans_zone_combat(case_visee):
+		return
+	var ancre := Node2D.new()
+	get_tree().current_scene.add_child(ancre)
+	ancre.global_position = sol.to_global(sol.map_to_local(case_visee))
+	jouer_animation_sort(id_sort, lanceur, ancre, true)
+	get_tree().create_timer(3.0).timeout.connect(func():
+		if is_instance_valid(ancre):
+			ancre.queue_free())
 
 # un Shambles relancé ici : les deux cases de l'échange partent telles
 # quelles — les grilles étant identiques, la permutation rejouée
@@ -1262,6 +1289,17 @@ func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionar
 		"echange":
 			_rejouer_echange_distant(evenement)
 			afficher_message("%s utilise Shambles !" % pseudo_exp)
+		"sort_case":
+			# sort de coéquipier posé sur une case vide : l'ancre en
+			# joue l'animation, aucune victime ne la portera
+			var lanceur_case = _miroirs_groupe.get(peer_exp)
+			var case_sort_groupe = evenement.get("case", [])
+			if is_instance_valid(lanceur_case) and case_sort_groupe is Array \
+					and (case_sort_groupe as Array).size() == 2:
+				_rejouer_sort_sur_case(str(evenement.get("id", "")), lanceur_case,
+					Vector2i(int(case_sort_groupe[0]), int(case_sort_groupe[1])))
+				afficher_message("%s lance %s." % [pseudo_exp,
+					str(evenement.get("nom", "un sort"))])
 		"fin_tour":
 			afficher_message("%s termine son tour." % pseudo_exp)
 			# les états de son miroir se décomptent à sa fin de tour,
@@ -1776,6 +1814,9 @@ func valider_placement() -> void:
 		var reseau := get_tree().root.get_node_or_null("/root/Reseau")
 		if reseau != null:
 			reseau.call("emettre_action_groupe", _profil_groupe())
+			# le combat démarre réellement : le serveur ne laisse plus
+			# personne le rejoindre
+			reseau.call("combat_local_lance")
 		# tour synchronisé : notre initiative part à l'arbitre du combat
 		# (le pair d'identifiant le plus bas), qui construit et diffuse
 		# l'ordre des tours ; nous seuls, il n'y a rien à attendre

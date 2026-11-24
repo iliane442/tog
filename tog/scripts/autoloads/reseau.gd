@@ -85,6 +85,10 @@ var etat_rencontres_recu: Array = []
 var combat_groupe_local := ""
 # invitation en attente : [chef, groupe]
 var invitation_en_attente: Array = []
+# pair qui a lancé le combat proposé par l'invitation (0 : inconnu) ;
+# l'acceptation se valide par lui : le serveur refuse si son combat a
+# démarré entre-temps
+var invitation_chef_id := 0
 # notre groupe de joueurs (distinct des équipages) :
 # [{peer: int, pseudo: String, chef: bool}, ...]
 var groupe_local: Array = []
@@ -106,6 +110,9 @@ var _combats_actifs := {}           # peer_id -> {pseudo, position, annonce}
 var _positions_a_relais := {}  # peer_id -> Vector2
 # membres d'un combat de groupe en cours : "scene|groupe" -> {peer_id: true}
 var _membres_groupe := {}
+# combats de groupe démarrés (placement validé) : "scene|groupe|partie" ->
+# true — interdits aux retardataires tant qu'un membre les combat
+var _combats_lances := {}
 var _temps_relais := 0.0
 var _limiteurs := {}          # peer_id -> {position: ms, chat: ms}
 # duels en cours : peer_id -> peer_id de l'adversaire
@@ -739,6 +746,13 @@ func envoie_debut_combat(groupe: String) -> void:
 	groupe = groupe.strip_edges().substr(0, 64)
 	if nom_scene == "" or groupe == "":
 		return
+	# un combat démarré (placement validé) ne se rejoint plus : le
+	# retardataire repart explorer, son instance ne participera pas
+	if _combats_lances.has(_cle_combat_groupe(peer_id, nom_scene, groupe)):
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"Ce combat est déjà lancé : impossible de le rejoindre.")
+		rpc_id(peer_id, "combat_refuse")
+		return
 	session["en_combat"] = true
 	session["combat_groupe"] = groupe
 	var combats_scene: Dictionary = _combats_actifs.get(nom_scene, {})
@@ -782,9 +796,24 @@ func envoie_debut_combat(groupe: String) -> void:
 				continue
 			if bool(_sessions[autre].get("en_combat", false)):
 				continue
-			rpc_id(autre, "invitation_combat", str(session["nom_personnage"]), groupe)
+			rpc_id(autre, "invitation_combat", str(session["nom_personnage"]), groupe, peer_id)
 	# le panneau du groupe suit le statut en combat de chacun
 	_annoncer_groupes_du_pair(peer_id)
+
+# RPC serveur : le combat de groupe du pair démarre réellement (fin du
+# placement) — le serveur ne laisse plus personne le rejoindre
+@rpc("any_peer", "call_remote", "reliable")
+func envoie_combat_lance() -> void:
+	if not multiplayer.is_server():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not _sessions.has(peer_id):
+		return
+	var session: Dictionary = _sessions[peer_id]
+	var groupe := str(session.get("combat_groupe", ""))
+	if groupe == "":
+		return
+	_combats_lances[_cle_combat_groupe(peer_id, str(session["scene"]), groupe)] = true
 
 # clé d'un combat de groupe : même scène, même camp étiqueté, même
 # groupe de joueurs (sans groupe : identifiant du pair — combat isolé)
@@ -818,6 +847,9 @@ func envoie_fin_combat(groupe: String) -> void:
 			rpc_id(int(autre), "sortie_combat_groupe", peer_id)
 		if membres.is_empty():
 			_membres_groupe.erase(cle)
+			# le combat est vide : il se rejoindra de nouveau s'il
+			# repart un jour
+			_combats_lances.erase(cle)
 	for autre in _pairs_sur_scene(nom_scene):
 		if int(autre) != peer_id:
 			rpc_id(int(autre), "etre_en_combat", peer_id, false)
@@ -1836,6 +1868,11 @@ func demande_rejoindre_combat(peer_cible: int) -> void:
 		rpc_id(peer_id, "recoit_message_chat", "Serveur",
 			"%s est dans un combat qui ne se rejoint pas." % nom_cible)
 		return
+	# un combat démarré (placement validé) ne se rejoint plus
+	if _combats_lances.has(_cle_combat_groupe(peer_cible, str(cible["scene"]), combat_cible)):
+		rpc_id(peer_id, "recoit_message_chat", "Serveur",
+			"Le combat de %s est déjà lancé : impossible de le rejoindre." % nom_cible)
+		return
 	if str(cible["scene"]) != str(_sessions[peer_id]["scene"]):
 		rpc_id(peer_id, "recoit_message_chat", "Serveur",
 			"Rejoins la même map que %s pour combattre à ses côtés." % nom_cible)
@@ -1882,6 +1919,19 @@ func _nettoyer_session(peer_id: int) -> void:
 		if int(_invites_echange[cible_invite_echange]) == peer_id:
 			_invites_echange.erase(cible_invite_echange)
 	# son groupe de joueurs l'oublie (partance de tête si nécessaire)
+	# son combat de groupe l'oublie : les autres perdent son miroir ;
+	# vide, il redevient rejoignable
+	for cle in _membres_groupe.keys():
+		var membres_combat: Dictionary = _membres_groupe[cle]
+		if not membres_combat.has(peer_id):
+			continue
+		membres_combat.erase(peer_id)
+		for autre in membres_combat:
+			if _pair_connecte(int(autre)):
+				rpc_id(int(autre), "sortie_combat_groupe", peer_id)
+		if membres_combat.is_empty():
+			_membres_groupe.erase(cle)
+			_combats_lances.erase(cle)
 	_sortir_du_groupe(peer_id, false)
 	_liberer_combats(peer_id)
 	_invites_groupe.erase(peer_id)
@@ -2290,14 +2340,36 @@ func fin_combat_local(groupe: String) -> void:
 	combat_groupe_local = ""
 	rpc_id(1, "envoie_fin_combat", groupe)
 
+# API appelée par combat_manager quand le combat de groupe démarre
+# réellement (placement validé) : le serveur refuse les retardataires
+func combat_local_lance() -> void:
+	if mode != Mode.CLIENT or pseudo == "" or combat_groupe_local == "":
+		return
+	rpc_id(1, "envoie_combat_lance")
+
+# RPC client : le serveur refuse notre engagement (combat déjà lancé)
+# — la partie locale se referme, on n'y a jamais participé
+@rpc("any_peer", "call_remote", "reliable")
+func combat_refuse() -> void:
+	if multiplayer.is_server():
+		return
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var cm := scene.get_node_or_null("CombatManager")
+	if cm != null and bool(cm.get("en_combat")):
+		cm.call("terminer_combat", false)
+	combat_groupe_local = ""
+
 # RPC client : un joueur de la map engage un groupe étiqueté
 @rpc("any_peer", "call_remote", "reliable")
-func invitation_combat(chef: String, groupe: String) -> void:
+func invitation_combat(chef: String, groupe: String, chef_id := 0) -> void:
 	if multiplayer.is_server():
 		return
 	if combat_groupe_local != "" or not _combat_joinable():
 		return
 	invitation_en_attente = [chef, groupe]
+	invitation_chef_id = int(chef_id)
 	_groupe_ui.montrer_invite_combat(chef)
 
 # RPC client : le combat du chef est terminé, l'invitation tombe
@@ -3708,9 +3780,19 @@ func _sur_fin_combat_groupe(_victoire: bool) -> void:
 
 func _cacher_invitation() -> void:
 	_groupe_ui.cacher_invite_combat()
+	invitation_chef_id = 0
 
 func _on_invitation_rejoint() -> void:
-	if not invitation_en_attente.is_empty() and _combat_joinable():
+	if invitation_en_attente.is_empty() or not _combat_joinable():
+		return
+	# l'acceptation se valide par le serveur : il refuse si le combat a
+	# démarré entre-temps (le fondateur a validé son placement)
+	if invitation_chef_id != 0:
+		var chef_combat := invitation_chef_id
+		invitation_en_attente = []
+		_cacher_invitation()
+		demander_rejoindre_combat(chef_combat)
+	else:
 		rejoindre_combat(str(invitation_en_attente[1]))
 
 func _unhandled_key_input(event: InputEvent) -> void:
