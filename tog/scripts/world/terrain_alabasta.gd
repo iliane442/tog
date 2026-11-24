@@ -267,6 +267,8 @@ func _draw() -> void:
 		_dessiner_escalier(escalier)
 
 func _dessiner_dalle(cellule: Vector2i, dalle: Vector3i, contour: PackedVector2Array) -> void:
+	if dalle.y == Sol.CANAL:
+		return
 	var echelle := 0.29 if dalle.y == Sol.SABLE else 1.0
 	var debut := Vector2(cellule) * echelle
 	var teinte := Color.WHITE.lightened(0.035) if dalle.z == Relief.MESA else Color.WHITE

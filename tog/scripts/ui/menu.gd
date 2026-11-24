@@ -855,8 +855,21 @@ func _construire_fiche_fruit(ids_fruit: Array[String], verrous_fruit: Array[Dict
 	barre.value = xp_palier
 	barre.show_percentage = false
 	colonne.add_child(barre)
+	# fruit pas encore au plafond : un bouton l'y porte d'un coup,
+	# débloquant tous ses pouvoirs restants
+	if niveau < Personnage.niveau_max_fruit():
+		var bouton_max := Button.new()
+		bouton_max.text = "Monter au niveau max"
+		bouton_max.pressed.connect(_monter_fruit_niveau_max)
+		colonne.add_child(bouton_max)
 	encadre.add_child(colonne)
 	liste_sorts.add_child(encadre)
+
+# bouton de la fiche du fruit : tous ses pouvoirs débloqués d'un coup,
+# la fiche se reconstruit sur-le-champ
+func _monter_fruit_niveau_max() -> void:
+	Personnage.monter_fruit_niveau_max()
+	maj_sorts()
 
 # la rangée de sous-onglets des sorts : classe d'un côté, pouvoirs du
 # fruit mangé de l'autre ; elle n'apparaît qu'avec un fruit dans

@@ -418,6 +418,39 @@ func nom_fruit() -> String:
 func seuil_xp_fruit(niveau: int) -> int:
 	return XP_FRUIT_PAR_PALIER * niveau * (niveau + 1) / 2
 
+# plus haut niveau du fruit mangé qui débloque encore un pouvoir (1 si
+# la base n'en liste aucun) : le plafond du bouton du menu
+func niveau_max_fruit() -> int:
+	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
+		return 1
+	var lignes := BaseDonnees.lire(
+		("SELECT MAX(unlock_level) AS maxi FROM fruit_skills"
+		+ " WHERE fruit_item_id = %d;") % fruit_id.to_int())
+	if lignes.is_empty() or lignes[0].get("maxi") == null:
+		return 1
+	return maxi(int(lignes[0]["maxi"]), 1)
+
+# porte d'un coup le fruit mangé à son niveau max (bouton du menu) :
+# l'expérience saute au seuil du dernier palier utile, les pouvoirs
+# fraîchement débloqués rejoignent la barre s'il reste de la place —
+# exactement une montée de niveau ordinaire
+func monter_fruit_niveau_max() -> void:
+	if fruit_id == "":
+		return
+	var niveau_avant := niveau_fruit()
+	fruit_xp = maxi(fruit_xp, seuil_xp_fruit(niveau_max_fruit()))
+	var niveau_apres := niveau_fruit()
+	if niveau_apres > niveau_avant:
+		var connus := {}
+		for id in _sorts_fruit_niveau(niveau_avant):
+			connus[id] = true
+		for id in _sorts_fruit_niveau(niveau_apres):
+			if not connus.has(id) and not sort_dans_barre(id) and not barre_sorts_pleine():
+				barre_sorts.append(id)
+		caracteristiques_modifiees.emit()
+		barre_sorts_modifiee.emit()
+	sauvegarder()
+
 # ids des pouvoirs du fruit du démon mangé (table `fruit_skills`)
 # débloqués au niveau de fruit donné
 func _sorts_fruit_niveau(niveau: int) -> Array[String]:

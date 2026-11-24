@@ -6,10 +6,12 @@ const VILLE := Rect2i(4, 5, 22, 20)
 const TERRASSE_CASINO := Rect2i(8, 5, 9, 7)
 const CANAUX := [Rect2i(8, 19, 16, 2), Rect2i(22, 21, 2, 4)]
 const NIVEAU_CANAL := -36
+const MURS_ENTREE := [Vector2(5.35, 13.36), Vector2(16.51, 24.8)]
+const AXE_PORTE := 4.2
 
 func _init() -> void:
-	origine = Vector2(1536, -152)
-	taille_monde = Vector2(3072, 1728)
+	origine = Vector2(1536, -24)
+	taille_monde = Vector2(3072, 1856)
 	quais = []
 	escaliers = [
 		[Vector2(12.5, 10.7), 70, Vector2(12.5, 13.0), 0, 1.42],
@@ -58,20 +60,42 @@ func _carreaux_ajouter(cellule: Vector2i) -> void:
 	else:
 		var route := cellule.x < 4 and absi(cellule.y - 15) <= 1
 		var dune := absi(cellule.x - 14) > 13 or absi(cellule.y - 15) > 12
-		var hauteur := 72 + roundi(22.0 * sin(cellule.x * 0.30 + cellule.y * 0.22))
+		var relief := sin(cellule.x * 0.25 + cellule.y * 0.19)
+		var hauteur := 80 if relief > 0.45 else 60
 		if dune and not route:
 			_carreaux[cellule] = Vector3i(hauteur, Sol.SABLE, Relief.MESA)
 		else:
 			_carreaux[cellule] = Vector3i(0, Sol.PISTE if route else Sol.SABLE, Relief.SOL)
 
-func _dessiner_dalle(cellule: Vector2i, dalle: Vector3i, contour: PackedVector2Array) -> void:
-	if dalle.y != Sol.CANAL:
-		super._dessiner_dalle(cellule, dalle, contour)
-
 func _draw() -> void:
 	super._draw()
 	for pont in ponts:
 		_dessiner_pont(pont)
+	for mur: Vector2 in MURS_ENTREE:
+		_dessiner_mur(mur)
+
+func _dessiner_mur(limites: Vector2) -> void:
+	var hauteur := 75
+	var devant := AXE_PORTE + 0.09
+	var arriere := AXE_PORTE - 0.13
+	var a := _projeter(Vector2(devant, limites.y), hauteur)
+	var b := _projeter(Vector2(devant, limites.x), hauteur)
+	var c := _projeter(Vector2(arriere, limites.x), hauteur)
+	var d := _projeter(Vector2(arriere, limites.y), hauteur)
+	var pied := Vector2.DOWN * hauteur
+	_dessiner_paroi(PackedVector2Array([d, a, a + pied, d + pied]), 2, true, hauteur)
+	_dessiner_paroi(PackedVector2Array([a, b, b + pied, a + pied]), 1, true, hauteur)
+	draw_colored_polygon(PackedVector2Array([a, b, c, d]), Color("#f1c58c"))
+	draw_line(a, b, Color("#ffdda8"), 4.0)
+	for v in range(ceili(limites.x * 2.0), floori(limites.y * 2.0)):
+		var centre := float(v) * 0.5 + 0.23
+		var avant := _projeter(Vector2(devant, centre - 0.13), hauteur)
+		var apres := _projeter(Vector2(devant, centre + 0.13), hauteur)
+		var haut := Vector2(0, -12)
+		var profondeur := _projeter(Vector2(arriere - devant, 0), 0) - origine
+		draw_colored_polygon(PackedVector2Array([avant + haut, apres + haut, apres + haut + profondeur, avant + haut + profondeur]), Color("#ffe2ab"))
+		draw_colored_polygon(PackedVector2Array([avant + haut, apres + haut, apres, avant]), Color("#d3a16e"))
+		draw_colored_polygon(PackedVector2Array([apres + haut, apres + haut + profondeur, apres + profondeur, apres]), Color("#b78757"))
 
 func _dessiner_pont(pont: Array) -> void:
 	var bords := _extremites(pont, float(pont[4]) + 0.13)
