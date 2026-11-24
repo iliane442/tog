@@ -8,12 +8,12 @@ var _cases_foudre: Array[Vector2i] = []
 var _sort_charge := ""
 var _overlay_foudre: Node
 
-func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
+func jouer_tour(joueur: Node2D, sol: TileMapLayer, emetteur := Callable()) -> void:
 	if not is_instance_valid(joueur) or sol == null or not is_instance_valid(_combat_manager):
 		return
 	if _cases_foudre.is_empty() and _tours_avant_foudre > 0:
 		_tours_avant_foudre -= 1
-		await super.jouer_tour(joueur, sol)
+		await super.jouer_tour(joueur, sol, emetteur)
 		return
 	if _combat_manager.preparer_tour(self) or not _combat_manager.sort_autorise(self):
 		_effacer_foudre()
