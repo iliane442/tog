@@ -398,10 +398,11 @@ func sorts_de_classe_verrouilles() -> Array[Dictionary]:
 
 # niveau actuel du fruit mangé (0 tant qu'il n'a pas été utilisé)
 func niveau_fruit() -> int:
-	var niveau := 0
-	while fruit_xp >= XP_FRUIT_PAR_PALIER * (niveau + 1) * (niveau + 2) / 2:
-		niveau += 1
-	return niveau
+	var palier := 0
+	@warning_ignore("integer_division")
+	while fruit_xp >= XP_FRUIT_PAR_PALIER * (palier + 1) * (palier + 2) / 2:
+		palier += 1
+	return palier
 
 # nom commercial du fruit mangé (table des items) ; vide sans fruit
 func nom_fruit() -> String:
@@ -415,8 +416,9 @@ func nom_fruit() -> String:
 # seuil cumulé d'XP qu'un niveau de fruit exige (montée en niveau de
 # niveau_fruit) : le niveau 0 ne demande rien, le niveau 1 demande
 # XP_FRUIT_PAR_PALIER, le 2 en exige le triple cumulé, etc.
-func seuil_xp_fruit(niveau: int) -> int:
-	return XP_FRUIT_PAR_PALIER * niveau * (niveau + 1) / 2
+func seuil_xp_fruit(palier: int) -> int:
+	@warning_ignore("integer_division")
+	return XP_FRUIT_PAR_PALIER * palier * (palier + 1) / 2
 
 # plus haut niveau du fruit mangé qui débloque encore un pouvoir (1 si
 # la base n'en liste aucun) : le plafond du bouton du menu
@@ -453,14 +455,14 @@ func monter_fruit_niveau_max() -> void:
 
 # ids des pouvoirs du fruit du démon mangé (table `fruit_skills`)
 # débloqués au niveau de fruit donné
-func _sorts_fruit_niveau(niveau: int) -> Array[String]:
+func _sorts_fruit_niveau(palier: int) -> Array[String]:
 	var ids: Array[String] = []
 	if fruit_id == "" or not fruit_id.is_valid_int() or not BaseDonnees.disponible:
 		return ids
 	for ligne in BaseDonnees.lire(
 		("SELECT skill_id FROM fruit_skills"
 		+ " WHERE fruit_item_id = %d AND unlock_level <= %d"
-		+ " ORDER BY unlock_level;") % [fruit_id.to_int(), niveau]):
+		+ " ORDER BY unlock_level;") % [fruit_id.to_int(), palier]):
 		var id := str(ligne["skill_id"])
 		if sorts.has(id):
 			ids.append(id)
@@ -506,16 +508,16 @@ func activer_pouvoir_fruit(id_pouvoir: String) -> String:
 	if not EFFETS_POUVOIRS_FRUIT.has(id_pouvoir) or not sorts.has(id_pouvoir):
 		return ""
 	var effets: Dictionary = EFFETS_POUVOIRS_FRUIT[id_pouvoir]
-	var nom := str(sorts[id_pouvoir].get("nom", "Pouvoir du fruit"))
+	var nom_pouvoir := str(sorts[id_pouvoir].get("nom", "Pouvoir du fruit"))
 	var repos_restant := recharge_restante_pouvoir_fruit(id_pouvoir)
 	if repos_restant > 0:
-		return "%s se repose encore (%d min)." % [nom, maxi(ceili(repos_restant / 60.0), 1)]
+		return "%s se repose encore (%d min)." % [nom_pouvoir, maxi(ceili(repos_restant / 60.0), 1)]
 	var soin := float(effets.get("soin", 0.0))
 	if soin > 0.0:
 		var montant := maxi(roundi(float(vie_max) * soin), 1)
 		soigner(montant)
 		amorcer_recharge_pouvoir_fruit(id_pouvoir)
-		return "%s : +%d PV." % [nom, montant]
+		return "%s : +%d PV." % [nom_pouvoir, montant]
 	var buff: Dictionary = effets.get("buff", {})
 	if buff.is_empty():
 		return ""
@@ -525,7 +527,7 @@ func activer_pouvoir_fruit(id_pouvoir: String) -> String:
 	var morceaux: Array[String] = []
 	for cle in buff:
 		morceaux.append("+%d %s" % [int(buff[cle]), str(LIBELLES_EFFETS_FRUIT.get(cle, cle))])
-	return "%s : %s pendant %d min." % [nom, " • ".join(morceaux), duree_minutes]
+	return "%s : %s pendant %d min." % [nom_pouvoir, " • ".join(morceaux), duree_minutes]
 
 # secondes de repos restantes pour un pouvoir du fruit (0 : prêt)
 func recharge_restante_pouvoir_fruit(id_pouvoir: String) -> int:
@@ -742,8 +744,8 @@ func utiliser_objet(id_objet: String) -> String:
 	# carte au trésor : elle se déchiffre et plante une croix sur la
 	# carte du monde (aucun soin ni buff)
 	if str(details.get("sous_type", "")) == "carte_tresor":
-		var niveau := clampi(int(effets.get("tresor", 1)), 1, 4)
-		if not CartesTresor.creer_croix(niveau):
+		var niveau_tresor := clampi(int(effets.get("tresor", 1)), 1, 4)
+		if not CartesTresor.creer_croix(niveau_tresor):
 			return "Aucun emplacement exploitable sur la carte."
 		Inventaire.retirer_objet(id_objet, 1)
 		sauvegarder()
@@ -862,13 +864,16 @@ func recalculer_stats(remplir_vie := true) -> void:
 	# défense (en combat), sa résistance aux tempêtes devient de la
 	# vitesse d'exploration (hors combat)
 	var navire := stats_bateau()
+	@warning_ignore("integer_division")
 	vie_max += int(navire["solidite"]) / 20
 	vie_max = maxi(vie_max, 1)
 	vie = vie_max if remplir_vie else clampi(vie, 0, vie_max)
 	# la défense répartie (race, classe, points dépensés) rejoint la
 	# défense des objets et des buffs : c'est le total qui absorbe les
 	# dégâts dans les combats
-	defense += int(caracteristiques.get("defense", 0)) + int(navire["solidite"]) / 200
+	defense += int(caracteristiques.get("defense", 0))
+	@warning_ignore("integer_division")
+	defense += int(navire["solidite"]) / 200
 	caracteristiques_modifiees.emit()
 
 # applique les effets d'un objet (paires clé -> valeur de effects_json)
@@ -1217,8 +1222,8 @@ func ameliorer_objet(id_objet: String) -> String:
 		return "Tu ne possèdes pas cet objet."
 	if not objet_ameliorable(id_objet):
 		return "Ton métier ne sait pas améliorer cet objet."
-	var niveau := niveau_amelioration(id_objet)
-	if niveau >= AMELIORATION_MAX:
+	var niveau_actuel := niveau_amelioration(id_objet)
+	if niveau_actuel >= AMELIORATION_MAX:
 		return "Cet objet est déjà au sommet de l'art de ton métier."
 	var cout := cout_amelioration(id_objet)
 	for id_ressource in cout:
@@ -1226,7 +1231,7 @@ func ameliorer_objet(id_objet: String) -> String:
 			return "Il te manque des ressources pour ce niveau."
 	for id_ressource in cout:
 		Inventaire.retirer_objet(str(id_ressource), int(cout[id_ressource]))
-	ameliorations[id_objet] = niveau + 1
+	ameliorations[id_objet] = niveau_actuel + 1
 	# les effets de l'objet porté changent : les stats suivent
 	recalculer_stats(false)
 	sauvegarder()

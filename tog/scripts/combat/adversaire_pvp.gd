@@ -7,6 +7,9 @@ extends Node2D
 
 signal sante_modifiee(vie: int, vie_max: int)
 
+# nombre de dégâts flottant (chiffre qui jaillit, rebondit, s'envole)
+const DEGATS_FLOTTANTS := preload("res://scripts/combat/degats_flottants.gd")
+
 const VISUEL_DEFAUT := "humain_pirate"
 # planches d'idle et de marche : 4 colonnes/6 colonnes d'animation,
 # 4 lignes de direction (cf. player.gd)
@@ -125,12 +128,26 @@ func _ligne_cardinale(direction: Vector2) -> int:
 func recevoir_degats(montant: int) -> void:
 	pv = maxi(pv - maxi(montant, 0), 0)
 	sante_modifiee.emit(pv, pv_max)
+	# les dégâts infligés à l'adversaire se voient, comme sur un
+	# ennemi de la map : le chiffre jaillit au-dessus du miroir
+	_nombre_flottant(self, "-%d" % maxi(montant, 0), "degats")
 	# pas de fin automatique : le propriétaire des pv annonce sa
 	# défaite lui-même (les pv ici ne sont qu'une image)
 
 func soigner(montant: int) -> void:
 	pv = mini(pv + maxi(montant, 0), pv_max)
 	sante_modifiee.emit(pv, pv_max)
+	_nombre_flottant(self, "+%d" % maxi(montant, 0), "soin")
+
+# affiche un texte flottant au-dessus du miroir puis se libère
+func _nombre_flottant(cible: Node2D, texte: String, type: String) -> void:
+	if not is_inside_tree() or cible == null or not is_instance_valid(cible):
+		return
+	var nombre := DEGATS_FLOTTANTS.new()
+	nombre.texte = texte
+	nombre.type = type
+	nombre.position = cible.global_position + Vector2(0, -26)
+	get_tree().current_scene.add_child(nombre)
 
 # le tour de l'adversaire : on attend la fin envoyée par le réseau,
 # pendant laquelle ses actions (déplacements, sorts) nous parviennent ;

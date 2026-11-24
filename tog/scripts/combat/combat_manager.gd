@@ -75,6 +75,10 @@ var _ma_initiative := 0       # notre jet, calculé à la fin du placement
 var _cle_active := ""         # clé "p:peer" / "e:nom" du combattant qui joue
 var _fins_ennemis_recues := {}  # nom d'ennemi -> fin de tour reçue (arbitre)
 var _pilote_en_cours := false
+# barrière de placement : le serveur la lève (groupe_pret) quand
+# chaque membre du combat a validé sa place — aucun tour ne commence
+# tant qu'un allié ajuste encore ses pions
+var groupe_placement_complet := false
 var _ui: CanvasLayer
 var _fiche_ennemi: PanelContainer
 var _barre_vie_ennemi: ProgressBar
@@ -1085,6 +1089,15 @@ func pvp_action_recue(evenement: Dictionary) -> void:
 				adversaire.rejouer_trajet(evenement.get("trajet", []), sol)
 		"manque", "sort":
 			_rejouer_sort_distant(evenement)
+		"etats_tour":
+			# régénération ou brûlure d'état du début de son tour :
+			# le miroir vit la même variation de pv, chiffre flottant
+			# compris
+			var delta_etats := int(evenement.get("delta", 0))
+			if adversaire != null and delta_etats > 0:
+				adversaire.soigner(delta_etats)
+			elif adversaire != null and delta_etats < 0:
+				adversaire.recevoir_degats(-delta_etats)
 		"sort_case":
 			# sort adverse posé sur une case vide : aucune victime
 			# n'annoncera l'animation, l'ancre la joue à sa place
@@ -1100,6 +1113,14 @@ func pvp_action_recue(evenement: Dictionary) -> void:
 			afficher_message("%s utilise Shambles !" % _nom_adversaire())
 		"fin_tour":
 			if adversaire != null:
+				# ses pv repartent de chez lui : le miroir reflète la
+				# réalité (régénérations et brûlures d'états comprises)
+				var pv_fin_tour := int(evenement.get("pv", -1))
+				var pv_max_fin := int(evenement.get("pv_max", 0))
+				if pv_max_fin > 0 and pv_fin_tour >= 0:
+					adversaire.pv_max = pv_max_fin
+					adversaire.pv = clampi(pv_fin_tour, 0, pv_max_fin)
+					adversaire.sante_modifiee.emit(adversaire.pv, adversaire.pv_max)
 				adversaire.terminer_tour_distant()
 				# ses états se décomptent aussi chez nous : le roster
 				# du haut droit suit leurs durées réelles
@@ -1238,8 +1259,9 @@ func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionar
 	match str(evenement.get("t", "")):
 		"pret":
 			_prets_groupe[peer_exp] = int(evenement.get("init", 0))
-			if _suis_arbitre_groupe():
-				_diffuser_ordre_groupe()
+			# pas de diffusion ici : l'ordre n'est construit que quand
+			# la barrière de placement tombe (groupe_pret), toutes les
+			# initiatives en main — personne ne joue avant
 		"ordre":
 			if int(peer_exp) == _arbitre_groupe():
 				_appliquer_ordre_groupe(evenement)
@@ -1300,12 +1322,29 @@ func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionar
 					Vector2i(int(case_sort_groupe[0]), int(case_sort_groupe[1])))
 				afficher_message("%s lance %s." % [pseudo_exp,
 					str(evenement.get("nom", "un sort"))])
+		"etats_tour":
+			# régénération ou brûlure d'état du début de son tour :
+			# son miroir vit la même variation de pv
+			var miroir_etats = _miroirs_groupe.get(peer_exp)
+			var delta_groupe := int(evenement.get("delta", 0))
+			if is_instance_valid(miroir_etats):
+				if delta_groupe > 0:
+					miroir_etats.soigner(delta_groupe)
+				elif delta_groupe < 0:
+					miroir_etats.recevoir_degats(-delta_groupe)
 		"fin_tour":
 			afficher_message("%s termine son tour." % pseudo_exp)
 			# les états de son miroir se décomptent à sa fin de tour,
 			# comme côté propriétaire (le roster suit les durées)
 			var miroir_fin = _miroirs_groupe.get(peer_exp)
 			if is_instance_valid(miroir_fin):
+				# ses pv repartent de chez lui : le miroir resynchronise
+				var pv_tour_fin := int(evenement.get("pv", -1))
+				var pv_max_tour_fin := int(evenement.get("pv_max", 0))
+				if pv_max_tour_fin > 0 and pv_tour_fin >= 0:
+					miroir_fin.set("pv_max", pv_max_tour_fin)
+					miroir_fin.set("pv", clampi(pv_tour_fin, 0, pv_max_tour_fin))
+					miroir_fin.emit_signal("sante_modifiee", pv_tour_fin, pv_max_tour_fin)
 				terminer_tour(miroir_fin)
 				# le pilote de tours attendait sa fin : il repart
 				miroir_fin.terminer_tour_distant()
@@ -1562,11 +1601,29 @@ func fin_de_mon_tour_groupe() -> void:
 	_cle_active = ""
 	_demarrer_pilote_groupe()
 
+# le serveur constate que tous les membres du combat ont validé leur
+# placement : la barrière tombe — l'arbitre construit l'ordre des tours
+# (il a toutes les initiatives, la barrière garantit qu'aucune ne
+# manque), les autres l'attendent ; ensuite chacun joue à son tour,
+# jamais en même temps qu'un allié
+func groupe_pret() -> void:
+	if not en_combat or not groupe_actif:
+		return
+	groupe_placement_complet = true
+	if _suis_arbitre_groupe():
+		_diffuser_ordre_groupe()
+	else:
+		_demarrer_pilote_groupe()
+
 # pilote du tour synchronisé : avance l'ordre combatant par
 # combatant, saute les morts et les partis, et s'arrête dès qu'un
 # humain doit jouer (nous ou l'attente de la fin de tour d'un miroir)
 func _demarrer_pilote_groupe() -> void:
-	if _pilote_en_cours or not combat_groupe_synchro() or en_placement:
+	# barrière : tant que tous les membres n'ont pas validé leur
+	# placement (groupe_pret, annoncé par le serveur), personne ne
+	# joue — l'ordre peut déjà être arrivé, il attend la barrière
+	if _pilote_en_cours or not combat_groupe_synchro() or en_placement \
+			or not groupe_placement_complet:
 		return
 	if _joueur != null and is_instance_valid(_joueur) and bool(_joueur.get("_tour_joueur")):
 		return  # je joue déjà : le pilote repartira à ma fin de tour
@@ -1720,6 +1777,7 @@ func _raz_tours_groupe() -> void:
 	_cle_active = ""
 	_fins_ennemis_recues = {}
 	_pilote_en_cours = false
+	groupe_placement_complet = false
 
 # un ennemi du groupe est vaincu : le combat continue tant qu'il en
 # reste un debout
@@ -1812,18 +1870,29 @@ func valider_placement() -> void:
 	# leur miroir de nous rejoint notre vraie place (grille partagée)
 	if groupe_actif:
 		var reseau := get_tree().root.get_node_or_null("/root/Reseau")
-		if reseau != null:
+		var en_ligne := reseau != null \
+			and str(reseau.get("combat_groupe_local")) != ""
+		if en_ligne:
 			reseau.call("emettre_action_groupe", _profil_groupe())
-			# le combat démarre réellement : le serveur ne laisse plus
-			# personne le rejoindre
-			reseau.call("combat_local_lance")
-		# tour synchronisé : notre initiative part à l'arbitre du combat
-		# (le pair d'identifiant le plus bas), qui construit et diffuse
-		# l'ordre des tours ; nous seuls, il n'y a rien à attendre
+		# tour synchronisé : notre initiative part d'abord à l'arbitre
+		# du combat (le pair d'identifiant le plus bas) ; en ligne, la
+		# validation suit : quand TOUS les membres ont validé, le
+		# serveur lève la barrière (combat_groupe_pret) et l'arbitre
+		# seul construit alors l'ordre des tours — jusqu'à la barrière,
+		# personne ne joue, chacun attend les placements des autres
 		_ma_initiative = int(Personnage.caracteristiques.get("agilite", 0)) * 2 \
 			+ Personnage.niveau + _hasard.randi_range(1, 20)
-		_emettre_groupe({"t": "pret", "init": _ma_initiative})
-		if _suis_arbitre_groupe():
+		if en_ligne:
+			_emettre_groupe({"t": "pret", "init": _ma_initiative})
+			# le combat démarre réellement : le serveur ne laisse plus
+			# personne le rejoindre, et attend que chacun ait validé
+			# pour annoncer le feu vert à tous (l'initiative est déjà
+			# partie : l'arbitre la connaît avant le feu vert)
+			reseau.call("combat_local_lance")
+		else:
+			# hors réseau, aucun allié à attendre : la barrière tombe
+			# immédiatement et l'arbitre local — nous — ordonne les tours
+			groupe_placement_complet = true
 			_diffuser_ordre_groupe()
 
 func terminer_combat(victoire: bool, fuite := false) -> void:

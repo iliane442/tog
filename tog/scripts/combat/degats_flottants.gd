@@ -38,7 +38,6 @@ var _ecrase := 0.0
 
 func _ready() -> void:
 	z_index = 100
-	var teinte: Color = TEINTES.get(type, TEINTES["degats"])
 
 	# gerbe de pointes à l'impact : longueurs et directions tirées
 	# une fois pour que le rendu soit stable pendant ses ~0,1 s

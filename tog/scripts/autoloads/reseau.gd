@@ -113,6 +113,10 @@ var _membres_groupe := {}
 # combats de groupe démarrés (placement validé) : "scene|groupe|partie" ->
 # true — interdits aux retardataires tant qu'un membre les combat
 var _combats_lances := {}
+# membres qui ont validé leur placement, par combat de groupe : "clé" ->
+# {peer_id: true} ; quand tous les membres du combat y figurent, le
+# serveur annonce le feu vert : les tours commencent, chacun à son tour
+var _prets_combat := {}
 var _temps_relais := 0.0
 var _limiteurs := {}          # peer_id -> {position: ms, chat: ms}
 # duels en cours : peer_id -> peer_id de l'adversaire
@@ -143,6 +147,10 @@ func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connecte_au_serveur)
 	multiplayer.connection_failed.connect(_on_echec_connexion)
 	multiplayer.server_disconnected.connect(_on_serveur_perdu)
+	# la croix de la fenêtre éteint aussi le serveur dédié amorcé par
+	# ce jeu (get_tree().quit() passe par NOTIFICATION_PREDELETE, la
+	# croix n'y mène pas toujours : le signal la prend en charge)
+	get_tree().root.close_requested.connect(_couper_serveur_local)
 	charger_preferences()
 	_construire_chat()
 	_chat.hide()
@@ -166,6 +174,26 @@ func _process(delta: float) -> void:
 # ============================================================
 #  SERVEUR
 # ============================================================
+
+# pid du serveur dédié amorcé depuis ce jeu (0 : aucun) : il ne lui
+# survit pas — fermer le jeu éteint aussi le serveur
+var pid_serveur_local := 0
+
+# tue le serveur dédié démarré par ce client (bouton « Serveur » de
+# l'accueil) ; sans ce nettoyage il restait en tâche de fond après la
+# fermeture du jeu
+func _couper_serveur_local() -> void:
+	if pid_serveur_local <= 0:
+		return
+	OS.kill(pid_serveur_local)
+	pid_serveur_local = 0
+
+func _notification(quoi: int) -> void:
+	# destruction de l'autoload (get_tree().quit(), fermeture finale) :
+	# le serveur s'éteint avec le jeu — la croix de la fenêtre se
+	# prend en compte par le signal close_requested branché dans _ready
+	if quoi == NOTIFICATION_PREDELETE:
+		_couper_serveur_local()
 
 # démarre le serveur (appelé par la scène serveur_monde.tscn)
 func demarrer_serveur(port := PORT_DEFAUT) -> bool:
@@ -801,7 +829,9 @@ func envoie_debut_combat(groupe: String) -> void:
 	_annoncer_groupes_du_pair(peer_id)
 
 # RPC serveur : le combat de groupe du pair démarre réellement (fin du
-# placement) — le serveur ne laisse plus personne le rejoindre
+# placement) — le serveur ne laisse plus personne le rejoindre, et
+# quand TOUS les membres ont validé leur place, il lève la barrière :
+# l'arbitre construit l'ordre des tours et chacun joue à son tour
 @rpc("any_peer", "call_remote", "reliable")
 func envoie_combat_lance() -> void:
 	if not multiplayer.is_server():
@@ -813,7 +843,22 @@ func envoie_combat_lance() -> void:
 	var groupe := str(session.get("combat_groupe", ""))
 	if groupe == "":
 		return
-	_combats_lances[_cle_combat_groupe(peer_id, str(session["scene"]), groupe)] = true
+	var cle := _cle_combat_groupe(peer_id, str(session["scene"]), groupe)
+	_combats_lances[cle] = true
+	var prets: Dictionary = _prets_combat.get(cle, {})
+	prets[peer_id] = true
+	_prets_combat[cle] = prets
+	var membres: Dictionary = _membres_groupe.get(cle, {})
+	var tous := true
+	for membre in membres:
+		if not prets.has(int(membre)):
+			tous = false
+			break
+	if not tous:
+		return
+	_prets_combat.erase(cle)
+	for membre in membres:
+		rpc_id(int(membre), "combat_groupe_pret")
 
 # clé d'un combat de groupe : même scène, même camp étiqueté, même
 # groupe de joueurs (sans groupe : identifiant du pair — combat isolé)
@@ -850,6 +895,7 @@ func envoie_fin_combat(groupe: String) -> void:
 			# le combat est vide : il se rejoindra de nouveau s'il
 			# repart un jour
 			_combats_lances.erase(cle)
+			_prets_combat.erase(cle)
 	for autre in _pairs_sur_scene(nom_scene):
 		if int(autre) != peer_id:
 			rpc_id(int(autre), "etre_en_combat", peer_id, false)
@@ -884,8 +930,8 @@ func _liberer_combats(peer_id: int) -> void:
 # ============================================================
 
 # Recherche par identifiant de compte pour les équipages persistants.
-func _peer_du_pseudo(pseudo: String) -> int:
-	var cherche := pseudo.to_lower()
+func _peer_du_pseudo(pseudo_cherche: String) -> int:
+	var cherche := pseudo_cherche.to_lower()
 	for peer_id in _sessions:
 		if str(_sessions[peer_id]["pseudo"]).to_lower() == cherche:
 			return int(peer_id)
@@ -1932,6 +1978,7 @@ func _nettoyer_session(peer_id: int) -> void:
 		if membres_combat.is_empty():
 			_membres_groupe.erase(cle)
 			_combats_lances.erase(cle)
+			_prets_combat.erase(cle)
 	_sortir_du_groupe(peer_id, false)
 	_liberer_combats(peer_id)
 	_invites_groupe.erase(peer_id)
@@ -2484,6 +2531,19 @@ func membres_groupe(presents: Array) -> void:
 	var cm := scene.get_node_or_null("CombatManager")
 	if cm != null:
 		cm.call("groupe_membres_recus", presents)
+
+# RPC client : le serveur a vu tous les membres du combat valider leur
+# placement — la barrière tombe, les tours synchronisés commencent
+@rpc("any_peer", "call_remote", "reliable")
+func combat_groupe_pret() -> void:
+	if multiplayer.is_server():
+		return
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var cm := scene.get_node_or_null("CombatManager")
+	if cm != null:
+		cm.call("groupe_pret")
 
 # RPC client : une action d'un coéquipier, rejouée dans notre arène
 @rpc("any_peer", "call_remote", "reliable")

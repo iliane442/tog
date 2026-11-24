@@ -182,7 +182,10 @@ func _lancer_serveur() -> void:
 		return
 	_serveur.text = "Lancement du serveur…"
 	var projet := ProjectSettings.globalize_path("res://")
-	OS.create_process(OS.get_executable_path(), ["--headless", "--path", projet, "scenes/serveur_monde.tscn"])
+	var pid := OS.create_process(OS.get_executable_path(), ["--headless", "--path", projet, "scenes/serveur_monde.tscn"])
+	# le serveur s'éteindra avec le jeu : Reseau le coupe à la fermeture
+	if pid > 0:
+		Reseau.pid_serveur_local = pid
 	# le serveur vient d'être relancé : il lui faut quelques secondes
 	# pour ouvrir le port avant de confirmer son état
 	await get_tree().create_timer(3.0).timeout

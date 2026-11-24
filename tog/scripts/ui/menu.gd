@@ -732,7 +732,9 @@ func _on_reinitialiser_points() -> void:
 	maj_personnage()
 
 # debug : efface le perso (fichier + mémoire), remet quêtes et inventaire
-# à zéro, puis recharge la map — l'écran de création réapparaît
+# à zéro, puis repart du village : l'écran de création réapparaît sur
+# Fushia — un nouveau perso ne reprend pas la carte où l'ancien se
+# tenait quand il a été effacé
 func _on_effacer_perso() -> void:
 	Personnage.supprimer_perso()
 	QuestManager.reinitialiser()
@@ -740,7 +742,10 @@ func _on_effacer_perso() -> void:
 	HotelVentes.reinitialiser()
 	Equipages.reinitialiser()
 	Coffres.reinitialiser()
-	get_tree().reload_current_scene()
+	# la dernière position d'exploration disparaît aussi : la reprise
+	# de partie ne retrouverait pas une scène mémorisée de l'ancien
+	Reseau.oublier_position_memorisee()
+	get_tree().change_scene_to_file("res://scenes/fushia.tscn")
 
 # debug : mène le perso au niveau 200 (montées de niveau normales :
 # points, vie, sorts débloqués inclus)

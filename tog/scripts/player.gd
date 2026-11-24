@@ -708,13 +708,15 @@ func _on_combat_commence() -> void:
 			_combat_manager.definir_combattant_actif(_combat_manager.adversaire_duel())
 			_attendre_tour_adverse_pvp()
 		return
-	if _combat_manager.combat_groupe_synchro():
+	if _combat_manager.groupe_actif:
 		# combat de groupe synchronisé : l'ordre des tours arrive de
-		# l'arbitre (initiative) et le pilote nous donnera la main —
-		# pas de jet d'initiative local, pas d'ouverture automatique
+		# l'arbitre (initiative) après que TOUS les alliés ont validé
+		# leur placement (barrière du serveur) — pas de jet
+		# d'initiative local, pas d'ouverture automatique : le pilote
+		# seul donne la main, un combattant à la fois
 		_recharges_sorts.clear()
 		_maj_affichage()
-		_combat_manager.afficher_message("Le combat démarre : l’ordre des tours s’annonce…")
+		_combat_manager.afficher_message("Placement validé : les tours démarrent quand tous les alliés ont validé.")
 		return
 	if randf() >= Personnage.chance_initiative():
 		# initiative perdue (Vitesse) : les ennemis ouvrent le combat
@@ -1810,9 +1812,12 @@ func _fin_du_tour() -> void:
 	if _overlay != null:
 		_overlay.effacer()
 	_combat_manager.terminer_tour(self)
-	# duel/groupe : notre tour fini part aux autres avant d'attendre le leur
+	# duel/groupe : notre tour fini part aux autres avant d'attendre le
+	# leur — nos pv réels voyagent avec : le miroir distant se resyn-
+	# chronise (régénérations, brûlures, absorptions : tout y passe)
 	if _combat_manager.pvp_actif or _combat_manager.groupe_actif:
-		_emettre_action_duel({"t": "fin_tour"})
+		_emettre_action_duel({"t": "fin_tour",
+			"pv": int(Personnage.vie), "pv_max": int(Personnage.vie_max)})
 	if _combat_manager.combat_groupe_synchro():
 		# synchronisé : le pilote du combat_manager passe au tour
 		# suivant de l'ordre — les ennemis ne se résolvent plus
@@ -1874,7 +1879,16 @@ func _commencer_mon_tour(numero: int) -> void:
 		return
 	if _combat_manager.conclusion_en_cours:
 		return
+	var vie_avant_tour := int(Personnage.vie)
 	var tour_bloque: bool = _combat_manager.preparer_tour(self)
+	# les régénérations et brûlures de début de tour partent au
+	# réseau : le miroir distant vit les mêmes variations de pv que
+	# nous, au même moment — un soin d'état ne restaure jamais ses pv
+	# en silence
+	if (_combat_manager.pvp_actif or _combat_manager.groupe_actif) \
+			and int(Personnage.vie) != vie_avant_tour:
+		_emettre_action_duel({"t": "etats_tour",
+			"delta": int(Personnage.vie) - vie_avant_tour})
 	if tour_bloque:
 		_combat_manager.terminer_tour(self)
 		_combat_manager.afficher_message("Tu es immobilisé et perds ton tour.")
