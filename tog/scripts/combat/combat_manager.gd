@@ -1012,9 +1012,15 @@ func lancer_duel(adversaire: SCRIPT_ADVERSAIRE_PVP, premier: bool) -> void:
 	numero_combat += 1
 	en_combat = true
 	en_placement = true
-	_placer_dans_arene(_joueur, _arene.case_joueur())
+	# sans symétrie imposée, chaque duelliste plaçait SON joueur sur la
+	# case joueur de sa grille — la même case des deux côtés — pendant
+	# que le miroir campait sur une case que son propriétaire
+	# n'occupait jamais : le premier déplacement révélait l'écart par un
+	# téléportage ; le premier part donc à gauche, le second en face à
+	# droite, et chaque miroir naît sur la vraie case de son propriétaire
+	_placer_dans_arene(_joueur, case_depart_duel(premier))
 	_connecter_survol_ennemi(adversaire)
-	_placer_dans_arene(adversaire, _arene.cases_ennemis()[0])
+	_placer_dans_arene(adversaire, case_depart_duel(not premier))
 	_arene.activer_camera()
 	_maj_ennemi_principal()
 	_mettre_a_jour_etiquette_etats()
@@ -1028,6 +1034,23 @@ func lancer_duel(adversaire: SCRIPT_ADVERSAIRE_PVP, premier: bool) -> void:
 	defplier_roster()
 	_rafraichir_roster()
 
+# case de départ d'un duelliste : le premier à gauche (case joueur),
+# son adversaire en vis-à-vis sur la même ligne, à droite ; les deux
+# grilles étant identiques, chaque client calcule la même paire et le
+# miroir de l'adversaire occupe, dès l'ouverture de l'arène, la case
+# que son propriétaire occupe vraiment chez lui
+func case_depart_duel(premier: bool) -> Vector2i:
+	var gauche := _arene.case_joueur()
+	if premier:
+		return gauche
+	var sol := _arene.sol
+	var colonne := _arene.dimensions.x - 3
+	while colonne > gauche.x \
+			and (sol.get_cell_source_id(Vector2i(colonne, gauche.y)) == -1 \
+			or _arene.est_mur(Vector2i(colonne, gauche.y))):
+		colonne -= 1
+	return Vector2i(maxi(colonne, gauche.x + 1), gauche.y)
+
 # une action de l'adversaire distant, relayée par le serveur, rejouée
 # sur notre grille : profil, déplacements, sorts résolus chez lui
 # (dégâts, soins, états) et fin de son tour
@@ -1040,6 +1063,22 @@ func pvp_action_recue(evenement: Dictionary) -> void:
 		"profil":
 			if adversaire != null:
 				adversaire.appliquer_profil(evenement.get("profil", {}))
+		"placement":
+			# l'adversaire vient de valider sa place : le miroir la
+			# rejoint instantanément (la case est relayée, la grille est
+			# la même) — sans cet événement, il restait sur sa case de
+			# naissance et le premier trajet de combat le corrigeait
+			# d'un glissement
+			var case_recue = evenement.get("case", [])
+			var sol_place := sol_combat()
+			if adversaire != null and sol_place != null and case_recue is Array \
+					and (case_recue as Array).size() == 2:
+				var case_arrivee := Vector2i(int(case_recue[0]), int(case_recue[1]))
+				if dans_zone_combat(case_arrivee) \
+						and sol_place.get_cell_source_id(case_arrivee) != -1:
+					adversaire.arreter_deplacement_combat()
+					adversaire.global_position = sol_place.to_global(
+						sol_place.map_to_local(case_arrivee))
 		"deplacement":
 			var sol := sol_combat()
 			if adversaire != null and sol != null:
@@ -1720,6 +1759,17 @@ func valider_placement() -> void:
 		return
 	en_placement = false
 	combat_commence.emit()
+	# duel : notre case de placement part à l'adversaire — son miroir
+	# de nous rejoint notre vraie place (grille identique), exactement
+	# comme son miroir de nous suit la nôtre dans un combat de groupe
+	if pvp_actif:
+		var case_mine := Vector2i(2, 2)
+		if _joueur != null and is_instance_valid(_joueur) and _joueur.has_method("ma_case"):
+			case_mine = _joueur.call("ma_case")
+		var reseau_duel := get_tree().root.get_node_or_null("/root/Reseau")
+		if reseau_duel != null:
+			reseau_duel.call("emettre_action_duel",
+				{"t": "placement", "case": [case_mine.x, case_mine.y]})
 	# combat de groupe : notre case de départ part aux coéquipiers —
 	# leur miroir de nous rejoint notre vraie place (grille partagée)
 	if groupe_actif:
