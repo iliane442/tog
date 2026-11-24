@@ -135,7 +135,7 @@ largeur_zone_clic = 88.0
 hauteur_zone_clic = 112.0
 nom_affiche = "Amazone"
 paroles = "Je tiens le registre des voyageurs. Tu redescends vers Alabasta ? La mer Blanche est calme. Dis-moi quand le bateau est prêt, je te montrerai le passage."
-destination = "res://scenes/alabasta.tscn"
+destination = "res://scenes/nanohana.tscn"
 arrivee = &"DepuisIleCeleste"
 libelle_traversee = "Embarquer pour Alabasta"
 

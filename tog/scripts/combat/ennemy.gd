@@ -376,7 +376,13 @@ func _jouer_animation_attaque(cible: Node2D) -> void:
 	get_tree().current_scene.add_child(effet)
 	effet.jouer(cible.global_position)
 
-func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
+# tour de l'ennemi : approche la cible puis frappe tant qu'il reste
+# des attaques ; en combat de groupe synchronisé, emetteur (fourni par
+# le combat_manager de l'arbitre) diffuse chaque pas et chaque coup aux
+# coéquipiers, qui les rejouent au lieu de résoudre l'IA localement
+func jouer_tour(joueur: Node2D, sol: TileMapLayer, emetteur := Callable()) -> void:
+	var nom := str(name)
+	var emet := emetteur.is_valid()
 	if not is_instance_valid(joueur) or sol == null:
 		return
 	if _combat_manager != null and _combat_manager.preparer_tour(self):
@@ -402,6 +408,9 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 			arreter_deplacement_combat()
 			global_position = position_cible
 		depart = _case_de(sol, global_position)
+		if emet:
+			emetteur.call({"t": "ennemi_deplacement", "nom": nom,
+				"trajet": [[depart.x, depart.y]]})
 	if _peut_attaquer(depart, cible):
 		# le Sceau du silence (état 7) prive l'ennemi de sa capacité
 		# spéciale, comme il prive le joueur de ses sorts
@@ -423,6 +432,11 @@ func jouer_tour(joueur: CharacterBody2D, sol: TileMapLayer) -> void:
 					var degats: int = int(_combat_manager.calculer_degats(self, joueur, degats_attaque))
 					joueur.recevoir_degats(degats)
 					_nombre_flottant(joueur, "-%d" % degats, "degats")
+					if emet:
+						emetteur.call({"t": "ennemi_attaque", "nom": nom, "degats": degats})
+				else:
+					if emet:
+						emetteur.call({"t": "ennemi_manque", "nom": nom})
 			attaques -= 1
 			# laisser lire la salve : une courte pause entre chaque coup
 			# (le combat peut finir entre-temps : mêmes gardes que le
@@ -438,6 +452,28 @@ func arreter_deplacement_combat() -> void:
 	if _deplacement_combat != null:
 		_deplacement_combat.kill()
 		_deplacement_combat = null
+
+# rejoue un déplacement décidé par l'arbitre du combat de groupe :
+# chaque étape arrive sous forme [x, y] sur la grille partagée
+func rejouer_deplacement(trajet: Array, sol: TileMapLayer) -> void:
+	arreter_deplacement_combat()
+	if trajet.is_empty() or sol == null:
+		return
+	_deplacement_combat = create_tween()
+	for etape_brute in trajet:
+		var coordonnee := Vector2i(int(etape_brute[0]), int(etape_brute[1]))
+		var position_etape := sol.to_global(sol.map_to_local(coordonnee))
+		_deplacement_combat.tween_property(self, "global_position", position_etape, 0.2)
+
+# rejoue un coup porté par l'arbitre du combat de groupe : l'animation
+# part d'ici, la victime encaisse la valeur résolue chez l'arbitre
+func rejouer_attaque(cible: Node2D, degats: int, touche: bool) -> void:
+	if cible == null or not is_instance_valid(cible):
+		return
+	_jouer_animation_attaque(cible)
+	if touche:
+		cible.recevoir_degats(degats)
+		_nombre_flottant(cible, "-%d" % maxi(degats, 0), "degats")
 
 func _peut_attaquer(depart: Vector2i, cible: Vector2i) -> bool:
 	var distance := absi(depart.x - cible.x) + absi(depart.y - cible.y)

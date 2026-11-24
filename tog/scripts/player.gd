@@ -77,6 +77,22 @@ const KROOM_PROPORTION := 0.40
 const GREFFE_FRACTION := 0.5
 const GREFFE_RAYON := 96.0
 var _greffe_armee := false
+# --- Fruit du Séisme (Gura Gura no Mi) : ses pouvoirs frappent
+# alliés comme ennemis — le séisme ne fait pas de quartier — et ne
+# tirent pas leur force de l'arme : chaque sort porte sa part de
+# Force (degats de la fiche + ratio x Force)
+const SORT_FRACAS_SISMIQUE := "122"
+const SORT_SECOUSSE_TELLURIQUE := "166"
+const SORT_VAGUE_RELACHEE := "167"
+const SORT_FRAPPE_MONDE := "168"
+const SORTS_GURA := [SORT_FRACAS_SISMIQUE, SORT_SECOUSSE_TELLURIQUE,
+	SORT_VAGUE_RELACHEE, SORT_FRAPPE_MONDE]
+const GURA_RATIO_FORCE := {
+	"122": 1.2, "166": 1.0, "167": 1.5, "168": 2.0,
+}
+const GURA_VAGUE_PORTEE := 3
+const GURA_VAGUE_DECROISSANCE := 0.25
+const GURA_FRACAS_REPOUSSE := 2
 # tours restants au bouclier posé par une Égide (0 : aucun)
 var _tours_bouclier_restants := 0
 var _pa := 0
@@ -370,6 +386,9 @@ func _gerer_clic_combat() -> void:
 			return
 		if _sort_selectionne_id == SORT_GAMMA:
 			_gerer_clic_gamma(case_cliquee)
+			return
+		if SORTS_GURA.has(_sort_selectionne_id):
+			_gerer_clic_gura(_sort_selectionne_id, case_cliquee)
 			return
 		var sort: Dictionary = Personnage.sorts.get(_sort_selectionne_id, {})
 		var cible: Node2D = self
@@ -675,6 +694,14 @@ func _on_combat_commence() -> void:
 			_combat_manager.definir_combattant_actif(_combat_manager.adversaire_duel())
 			_attendre_tour_adverse_pvp()
 		return
+	if _combat_manager.combat_groupe_synchro():
+		# combat de groupe synchronisé : l'ordre des tours arrive de
+		# l'arbitre (initiative) et le pilote nous donnera la main —
+		# pas de jet d'initiative local, pas d'ouverture automatique
+		_recharges_sorts.clear()
+		_maj_affichage()
+		_combat_manager.afficher_message("Le combat démarre : l’ordre des tours s’annonce…")
+		return
 	if randf() >= Personnage.chance_initiative():
 		# initiative perdue (Vitesse) : les ennemis ouvrent le combat
 		_combat_manager.afficher_message("L’ennemi prend l’initiative !")
@@ -744,6 +771,12 @@ func _afficher_cases() -> void:
 			# le Shambles vise toute case à portée : dalles comme murs,
 			# sa propre case comprise
 			_overlay.afficher_sort(_combat_manager.cases_permutables(self, portee))
+		elif _sort_selectionne_id == SORT_FRACAS_SISMIQUE:
+			_overlay.afficher_sort(_cases_gura_fracas())
+		elif _sort_selectionne_id == SORT_SECOUSSE_TELLURIQUE:
+			_overlay.afficher_sort(_cases_gura_secousse())
+		elif _sort_selectionne_id == SORT_VAGUE_RELACHEE:
+			_overlay.afficher_sort(_cases_du_sort(GURA_VAGUE_PORTEE, 1))
 		else:
 			_overlay.afficher_sort(_cases_du_sort(portee, portee_min))
 
@@ -764,6 +797,18 @@ func previsualiser_sort(id_sort: String) -> void:
 	if _overlay == null or _combat_manager == null:
 		return
 	if not _combat_manager.en_combat or _combat_manager.en_placement or _sort_selectionne:
+		return
+	# pouvoirs du Séisme : la zone réelle du sort se dessine, pas le
+	# simple rayon de portée (Fracas et Secousse se déclenchent sur
+	# soi, la Vague garde son losange de portée le temps de viser)
+	if id_sort == SORT_FRACAS_SISMIQUE:
+		_overlay.afficher_sort(_cases_gura_fracas())
+		return
+	if id_sort == SORT_SECOUSSE_TELLURIQUE:
+		_overlay.afficher_sort(_cases_gura_secousse())
+		return
+	if id_sort == SORT_VAGUE_RELACHEE:
+		_overlay.afficher_sort(_cases_du_sort(GURA_VAGUE_PORTEE, 1))
 		return
 	if id_sort == SORT_SHAMBLES and Personnage.sorts.has(SORT_SHAMBLES):
 		var portee_shambles: int = int(Personnage.sorts[SORT_SHAMBLES].get("portee", 3))
@@ -791,7 +836,7 @@ func effacer_previsualisation() -> void:
 	if _sort_selectionne:
 		_afficher_cases()
 	else:
-		_overlay.afficher_sort([])
+		_overlay.afficher_sort([] as Array[Vector2i])
 
 func _selectionner_sort(id_sort: String) -> void:
 	if _combat_manager == null or not _combat_manager.en_combat or not _tour_joueur:
@@ -851,6 +896,27 @@ func _selectionner_sort(id_sort: String) -> void:
 		_sort_selectionne = true
 		_afficher_cases()
 		_combat_manager.afficher_message("Gamma Scalpel : clique dans une direction — la lame perce 3 cases (30 %, puis 20 %, puis 10 % des PV max des cibles traversées).")
+		return
+	# les pouvoirs du Séisme ne visent pas l'ennemi le plus proche :
+	# Fracas et Secousse frappent autour du lanceur, la Vague part
+	# dans une direction choisie au clic — une seconde pression sur
+	# un pouvoir déjà armé le désarme
+	var gura_zone := id_sort == SORT_FRACAS_SISMIQUE or id_sort == SORT_SECOUSSE_TELLURIQUE or id_sort == SORT_VAGUE_RELACHEE
+	if gura_zone and _sort_selectionne and _sort_selectionne_id == id_sort:
+		_sort_selectionne = false
+		_combat_manager.afficher_message("%s désarmé." % str(sort.get("nom", "Sort")))
+		if _overlay != null:
+			_overlay.effacer()
+		_afficher_cases()
+		return
+	if gura_zone:
+		_sort_selectionne_id = id_sort
+		_sort_selectionne = true
+		_afficher_cases()
+		if id_sort == SORT_VAGUE_RELACHEE:
+			_combat_manager.afficher_message("Vague Relâchée : clique dans une direction — le poing frappe 1 case puis 3 puis 5 (%d + 150%% Force, -25%% par case d’éloignement)." % int(sort.get("degats", 0)))
+		else:
+			_combat_manager.afficher_message("%s : clique n’importe où pour déclencher le séisme (alliés comme ennemis dans la zone)." % str(sort.get("nom", "Sort")))
 		return
 	_sort_selectionne_id = id_sort
 	_sort_selectionne = true
@@ -1057,6 +1123,237 @@ func _lancer_sort_zone(id_sort: String, sort: Dictionary, case_centre: Vector2i)
 	_maj_affichage()
 	_afficher_cases()
 	return true
+
+# ============================================================
+#  FRUIT DU SÉISME (GURA GURA NO MI)
+# ============================================================
+
+# dégâts propres à un pouvoir du Séisme : la fiche (base) + sa part
+# de Force — ni l'arme ni l'attaque n'y entrent, le fruit frappe avec
+# la force brute du personnage
+func _degats_gura(id_sort: String) -> int:
+	var sort: Dictionary = Personnage.sorts.get(id_sort, {})
+	var base := int(sort.get("degats", 0))
+	var ratio := float(GURA_RATIO_FORCE.get(id_sort, 0.0))
+	return maxi(base + roundi(float(int(Personnage.caracteristiques.get("force", 0))) * ratio), 0)
+
+# Fracas Sismique : tout occupant à 2 cases du lanceur (sa case
+# exceptée)
+func _cases_gura_fracas() -> Array[Vector2i]:
+	var cases: Array[Vector2i] = []
+	if _sol == null:
+		return cases
+	var depart := ma_case()
+	for x in range(-GURA_FRACAS_REPOUSSE, GURA_FRACAS_REPOUSSE + 1):
+		for y in range(-GURA_FRACAS_REPOUSSE, GURA_FRACAS_REPOUSSE + 1):
+			var candidate := depart + Vector2i(x, y)
+			if candidate != depart and absi(x) + absi(y) <= GURA_FRACAS_REPOUSSE and _sol.get_cell_source_id(candidate) != -1:
+				cases.append(candidate)
+	return cases
+
+# Secousse Tellurique : les 8 cases autour du lanceur plus 3 cases
+# dans chacune des quatre directions
+func _cases_gura_secousse() -> Array[Vector2i]:
+	var cases: Array[Vector2i] = []
+	if _sol == null:
+		return cases
+	var depart := ma_case()
+	for dx in [-1, 0, 1]:
+		for dy in [-1, 0, 1]:
+			if dx != 0 or dy != 0:
+				cases.append(depart + Vector2i(dx, dy))
+	for direction: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		for portee in range(1, 4):
+			var candidate := depart + direction * portee
+			if _sol.get_cell_source_id(candidate) != -1:
+				cases.append(candidate)
+	return cases
+
+# Vague Relâchée : le cône du coup d'air — 1 case à distance 1,
+# 3 à distance 2, 5 à distance 3 dans la direction visée
+func _cases_gura_vague(direction: Vector2i) -> Array[Vector2i]:
+	var cases: Array[Vector2i] = []
+	if _sol == null or direction == Vector2i.ZERO:
+		return cases
+	var depart := ma_case()
+	var lateral := Vector2i(-direction.y, direction.x)
+	for distance in range(1, GURA_VAGUE_PORTEE + 1):
+		var demi := distance - 1
+		for ecart in range(-demi, demi + 1):
+			var candidate := depart + direction * distance + lateral * ecart
+			if _sol.get_cell_source_id(candidate) != -1:
+				cases.append(candidate)
+	return cases
+
+# un pouvoir du Séisme est armé : le clic le déclenche (zone autour
+# du lanceur, direction pour la Vague, cible au contact pour la
+# Frappe du Monde)
+func _gerer_clic_gura(id_sort: String, case_cliquee: Vector2i) -> void:
+	var sort: Dictionary = Personnage.sorts.get(id_sort, {})
+	if id_sort == SORT_FRAPPE_MONDE:
+		var cible = _combat_manager.ennemi_sur_case(case_cliquee)
+		if cible == null:
+			cible = _combat_manager.cible_courante()
+		if cible == null or not is_instance_valid(cible):
+			return
+		if case_cliquee != _case_de((cible as Node2D).global_position) or _distance_depuis(cible) > 1:
+			_combat_manager.afficher_message("La Frappe du Monde ne touche qu’une cible au contact.")
+			return
+		_lancer_gura_frappe(sort, cible as Node2D)
+		return
+	if id_sort == SORT_VAGUE_RELACHEE:
+		var delta := case_cliquee - ma_case()
+		if delta == Vector2i.ZERO:
+			_combat_manager.afficher_message("Choisis une direction pour la Vague Relâchée.")
+			return
+		var direction := Vector2i.RIGHT if absi(delta.x) >= absi(delta.y) else Vector2i.DOWN
+		if absi(delta.x) < absi(delta.y) and delta.y < 0:
+			direction = Vector2i.UP
+		elif absi(delta.x) >= absi(delta.y) and delta.x < 0:
+			direction = Vector2i.LEFT
+		var degats_pleins := _degats_gura(id_sort)
+		var cases_vague: Array[Vector2i] = []
+		var degats_vague := {}
+		var depart := ma_case()
+		var lateral := Vector2i(-direction.y, direction.x)
+		# chaque anneau d'éloignement encaisse 25 % de moins que le
+		# précédent : 100 %, 75 %, 50 % de la pleine puissance
+		for distance in range(1, GURA_VAGUE_PORTEE + 1):
+			var facteur := 1.0 - GURA_VAGUE_DECROISSANCE * float(distance - 1)
+			var demi := distance - 1
+			for ecart in range(-demi, demi + 1):
+				var candidate := depart + direction * distance + lateral * ecart
+				if _sol.get_cell_source_id(candidate) != -1:
+					cases_vague.append(candidate)
+					degats_vague[candidate] = maxi(roundi(float(degats_pleins) * facteur), 1)
+		_lancer_gura_zone(id_sort, sort, cases_vague, degats_vague)
+		return
+	if id_sort == SORT_FRACAS_SISMIQUE:
+		_lancer_gura_zone(id_sort, sort, _cases_gura_fracas())
+	else:
+		_lancer_gura_zone(id_sort, sort, _cases_gura_secousse())
+
+# Fracas Sismique, Secousse Tellurique et Vague Relâchée : chaque
+# occupant de la zone encaisse — alliés compris, le séisme ne fait
+# pas de quartier ; le Fracas repousse en plus les ennemis de
+# 2 cases ; la Vague décroît de 25 % par case d'éloignement
+# (degats_par_case vide : dégâts pleins partout)
+func _lancer_gura_zone(id_sort: String, sort: Dictionary, cases: Array[Vector2i],
+		degats_par_case := {}) -> bool:
+	var cout: int = int(sort.get("cout_pa", 3))
+	if _pa < cout:
+		_combat_manager.afficher_message("Pas assez de PA pour lancer le sort.")
+		return false
+	if cases.is_empty():
+		return false
+	var degats_base := _degats_gura(id_sort)
+	# une ancre invisible porte l'animation de l'onde sur le lanceur
+	var ancre := Node2D.new()
+	get_tree().current_scene.add_child(ancre)
+	ancre.global_position = global_position
+	_jouer_effet_sort(id_sort, ancre)
+	get_tree().create_timer(3.0).timeout.connect(func():
+		if is_instance_valid(ancre):
+			ancre.queue_free())
+	var touches := 0
+	for ennemi in _combat_manager.ennemis_actifs():
+		var victime := ennemi as Node2D
+		if not is_instance_valid(victime) or not cases.has(_case_de(victime.global_position)):
+			continue
+		var case_victime := _case_de(victime.global_position)
+		var degats := int(degats_par_case.get(case_victime, degats_base))
+		touches += 1
+		var evenement := _evenement_sort(id_sort, victime, "sort")
+		evenement["nom"] = str(sort.get("nom", "Sort"))
+		var impact := _annoncer_impact_final(evenement, victime, degats)
+		victime.recevoir_degats(degats)
+		var etats_appliques: Array = _combat_manager.appliquer_effets_sort(victime, sort)
+		if not impact and (_combat_manager.pvp_actif or _combat_manager.groupe_actif):
+			evenement["etats"] = etats_appliques
+			evenement["degats"] = degats
+			_emettre_action_duel(evenement)
+		# le Fracas repousse ses victimes ennemies — et les coéquipiers
+		# rejouent le recul sur leur propre copie de l'ennemi
+		if id_sort == SORT_FRACAS_SISMIQUE and is_instance_valid(victime) and int(victime.get("pv")) > 0:
+			_combat_manager.call("_deplacer_par_etat", victime, GURA_FRACAS_REPOUSSE, true)
+			if _combat_manager.groupe_actif:
+				_emettre_action_duel({"t": "gura_pousse", "id": id_sort,
+					"nom": str((victime as Node).name)})
+	# le séisme frappe aussi les alliés présents dans la zone : leur
+	# miroir encaisse ici, les vrais PV partent chez leur propriétaire
+	for miroir in _combat_manager.miroirs_groupe():
+		var allie := miroir as Node2D
+		if not is_instance_valid(allie) or not cases.has(_case_de(allie.global_position)):
+			continue
+		var case_allie := _case_de(allie.global_position)
+		var degats_allie := int(degats_par_case.get(case_allie, degats_base))
+		touches += 1
+		allie.recevoir_degats(degats_allie)
+		_combat_manager.afficher_message("%s encaisse le séisme de plein fouet !" % str(allie.get("nom")))
+		if _combat_manager.groupe_actif:
+			_emettre_action_duel({"t": "gura_allie", "id": id_sort,
+				"degats": degats_allie,
+				"cible": "p:%d" % _combat_manager.peer_du_miroir(allie)})
+	_pa -= cout
+	_demarrer_recharge_sort(id_sort, sort)
+	if touches > 0:
+		_combat_manager.afficher_message("%s ! %d occupant(s) touché(s)." % [str(sort.get("nom", "Sort")), touches])
+	else:
+		_combat_manager.afficher_message("%s lancé : la zone est vide." % str(sort.get("nom", "Sort")))
+	_progresser_fruit_gura(id_sort)
+	_sort_selectionne = false
+	if _overlay != null:
+		_overlay.effacer()
+	_maj_affichage()
+	_afficher_cases()
+	return true
+
+# Frappe du Monde (éveil) : coup unique au contact, la Force entière
+# passe dans le poing
+func _lancer_gura_frappe(sort: Dictionary, cible: Node2D) -> void:
+	var id_sort := SORT_FRAPPE_MONDE
+	var cout: int = int(sort.get("cout_pa", 3))
+	if _pa < cout:
+		_combat_manager.afficher_message("Pas assez de PA pour lancer le sort.")
+		return
+	_sort_selectionne = false
+	if _overlay != null:
+		_overlay.effacer()
+	if not _combat_manager.precision_reussie(self):
+		_jouer_effet_sort(id_sort, cible, false)
+		_pa -= cout
+		_demarrer_recharge_sort(id_sort, sort)
+		_combat_manager.afficher_message("La Frappe du Monde rate sa cible.")
+		_emettre_action_duel(_evenement_sort(id_sort, cible, "manque"))
+		_maj_affichage()
+		_afficher_cases()
+		return
+	var degats := _degats_gura(id_sort)
+	var evenement := _evenement_sort(id_sort, cible, "sort")
+	evenement["nom"] = str(sort.get("nom", "Sort"))
+	_jouer_effet_sort(id_sort, cible)
+	var impact := _annoncer_impact_final(evenement, cible, degats)
+	cible.recevoir_degats(degats)
+	var etats_appliques: Array = _combat_manager.appliquer_effets_sort(cible, sort)
+	if not impact and (_combat_manager.pvp_actif or _combat_manager.groupe_actif):
+		evenement["etats"] = etats_appliques
+		evenement["degats"] = degats
+		_emettre_action_duel(evenement)
+	_pa -= cout
+	_demarrer_recharge_sort(id_sort, sort)
+	_combat_manager.afficher_message("Frappe du Monde : %d dégâts !" % degats)
+	_progresser_fruit_gura(id_sort)
+	_maj_affichage()
+	_afficher_cases()
+
+# le fruit mangé progresse à chaque pouvoir du Séisme utilisé : ses
+# sorts se débloquent par son niveau (voir Personnage.fruit_xp)
+func _progresser_fruit_gura(id_sort: String) -> void:
+	if Personnage.fruit_id == "":
+		return
+	for id_debloque in Personnage.utiliser_pouvoir_fruit(id_sort):
+		var nom_nouveau: String = str(Personnage.sorts.get(id_debloque, {}).get("nom", "Nouveau pouvoir"))
+		_combat_manager.afficher_message("Ton fruit s'élève : %s débloqué !" % nom_nouveau)
 
 # aperçu de la figure autour de l'ennemi survolé (case de la cible
 # comprise) : ce que le sort touchera si on le lance maintenant
@@ -1465,6 +1762,12 @@ func _fin_du_tour() -> void:
 	# duel/groupe : notre tour fini part aux autres avant d'attendre le leur
 	if _combat_manager.pvp_actif or _combat_manager.groupe_actif:
 		_emettre_action_duel({"t": "fin_tour"})
+	if _combat_manager.combat_groupe_synchro():
+		# synchronisé : le pilote du combat_manager passe au tour
+		# suivant de l'ordre — les ennemis ne se résolvent plus
+		# localement, seul l'arbitre du combat les joue
+		_combat_manager.fin_de_mon_tour_groupe()
+		return
 	# suivi des tours : on sait toujours qui joue
 	if _combat_manager.pvp_actif:
 		_combat_manager.afficher_message("Au tour de %s…" % _combat_manager._nom_adversaire())

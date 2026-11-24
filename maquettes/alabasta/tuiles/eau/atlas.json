@@ -1,0 +1,74 @@
+{
+  "images": 24,
+  "colonnes": 6,
+  "rangees": 4,
+  "duree_image_ms": 100,
+  "boucle": true,
+  "atlas": {
+    "mer_128x64.png": {
+      "taille_cellule": [
+        128,
+        64
+      ]
+    },
+    "canal_128x64.png": {
+      "taille_cellule": [
+        128,
+        64
+      ]
+    },
+    "ecume_gauche_128x80.png": {
+      "taille_cellule": [
+        128,
+        80
+      ],
+      "premier_point_haut": [
+        127,
+        5
+      ]
+    },
+    "ecume_droite_128x80.png": {
+      "taille_cellule": [
+        128,
+        80
+      ],
+      "premier_point_haut": [
+        0,
+        5
+      ]
+    },
+    "reflets_bassin_canal.png": {
+      "taille_cellule": [
+        312,
+        158
+      ],
+      "sprite_support": "../../sprites/rainbase/bassin_canal.png",
+      "decalage_pixels": [
+        63,
+        56
+      ]
+    },
+    "reflets_fontaine.png": {
+      "taille_cellule": [
+        302,
+        284
+      ],
+      "sprite_support": "../../sprites/desert/fontaine.png",
+      "decalage_pixels": [
+        52,
+        3
+      ]
+    },
+    "reflets_puits.png": {
+      "taille_cellule": [
+        134,
+        48
+      ],
+      "sprite_support": "../../sprites/desert/puits.png",
+      "decalage_pixels": [
+        97,
+        230
+      ]
+    }
+  }
+}

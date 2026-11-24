@@ -10,7 +10,7 @@ radius = 24.020824
 script = ExtResource("1_cap")
 nom_affiche = "Capitaine Simoun"
 paroles = "Alabasta, première escale de Grand Line. Un royaume de sable qui se méfie des cartes trop jolies. Blinde tes outres, supporte ton sable, et surtout : ne t'approche du plateau d'Alubarna qu'avec quelqu'un qui sait lire."
-destination = "res://scenes/alabasta.tscn"
+destination = "res://scenes/nanohana.tscn"
 arrivee = &"DepuisReverseMountain"
 libelle_traversee = "Embarquer pour Alabasta"
 

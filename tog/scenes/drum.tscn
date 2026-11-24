@@ -109,7 +109,7 @@ libelle_traversee = "Embarquer pour Little Garden"
 [node name="CapitaineSimoun" parent="." instance=ExtResource("FerryAlabasta")]
 position = Vector2(1530.0, 2160.0)
 paroles = "Descendre plein sud jusqu'à Alabasta : on troque la neige contre le sable, et le médecin du royaume contre... aucun, en fait : le docteur Kureha n'a pas d'équivalent. Bon vent, moussaillon."
-destination = "res://scenes/alabasta.tscn"
+destination = "res://scenes/nanohana.tscn"
 arrivee = &"DepuisDrum"
 libelle_traversee = "Embarquer pour Alabasta"
 

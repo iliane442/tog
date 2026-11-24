@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/world/alabasta/alubarna/rempart.png" id="Rempart"]
+
+[node name="MurDesCaravanes" type="Sprite2D"]
+rotation = -0.1088802
+scale = Vector2(0.4651824, 0.47)
+skew = 0.1088802
+texture = ExtResource("Rempart")
+centered = false
+offset = Vector2(-146.5375, -267.8323)
+region_enabled = true
+region_rect = Rect2(74, 0, 368, 358)
+metadata/emprise = Vector2(9, 80)

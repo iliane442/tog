@@ -95,7 +95,7 @@ position = Vector2(1138, 1900)
 [node name="CapitaineSimoun" parent="." instance=ExtResource("FerryAlabasta")]
 position = Vector2(1250.0, 1900.0)
 paroles = "Redescendre vers Alabasta avant que le désert ne s'endorme ? La marée nous porte sur le chemin du retour, embarque vite."
-destination = "res://scenes/alabasta.tscn"
+destination = "res://scenes/nanohana.tscn"
 arrivee = &"DepuisZou"
 libelle_traversee = "Embarquer pour Alabasta"
 

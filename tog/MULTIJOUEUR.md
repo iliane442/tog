@@ -46,6 +46,15 @@ Sur la carte, appuie sur **T** pour écrire dans le chat global. Entrée
 envoie le message et Échap ferme la saisie. Le nom du personnage est
 affiché sur la carte, dans le chat, dans les groupes et dans les duels.
 
+**Combats de groupe synchronisés** : quand plusieurs membres d'un
+groupe combattent le même camp, le combat se joue au tour par tour.
+L'ordre des combattants — joueurs et ennemis — est décidé par
+l'initiative (agilité, niveau et un dé 20) et seul le joueur dont
+c'est le tour agit. L'arbitre du combat (le pair d'identifiant le
+plus bas) résout seul l'IA des ennemis : ses pas et ses coups sont
+rejoués à l'identique chez les coéquipiers, si bien que les ennemis
+ont les mêmes actions et les mêmes PV chez tout le monde.
+
 **Rencontres partagées** : quand quelqu'un vainc une rencontre (un
 groupe d'ennemis étiqueté), elle disparaît pour tous les joueurs de
 la même map jusqu'à ce que le serveur la fasse réapparaître (5

@@ -1,0 +1,62 @@
+{
+  "projection": "Isométrique 2:1",
+  "indexation": "Colonnes de gauche à droite et rangées de haut en bas",
+  "sols_128x64.png": {
+    "taille_cellule": [
+      128,
+      64
+    ],
+    "grille": [
+      [
+        "sable",
+        "dallage",
+        "planches",
+        "mer"
+      ],
+      [
+        "route",
+        "canal",
+        "sable_variante",
+        "route_variante"
+      ],
+      [
+        "dallage_variante",
+        "canal_variante",
+        "mer_variante",
+        "planches_variante"
+      ]
+    ]
+  },
+  "parois_128x128.png": {
+    "taille_cellule": [
+      128,
+      128
+    ],
+    "grille": [
+      [
+        "roche_descend_vers_la_droite",
+        "roche_descend_vers_la_gauche",
+        "maconnerie_descend_vers_la_droite",
+        "maconnerie_descend_vers_la_gauche"
+      ]
+    ],
+    "hauteur_face": 64
+  },
+  "textures": {
+    "taille": [
+      128,
+      128
+    ],
+    "noms": [
+      "sable",
+      "dallage",
+      "planches",
+      "mer",
+      "roche",
+      "maconnerie",
+      "route",
+      "canal"
+    ]
+  },
+  "animations": "eau/atlas.json"
+}

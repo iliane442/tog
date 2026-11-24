@@ -65,6 +65,16 @@ var groupe_actif := false     # combat de groupe : les coéquipiers rejouent ici
 var _pvp_adversaire: SCRIPT_ADVERSAIRE_PVP   # miroir du joueur distant dans notre arène
 # miroirs des coéquipiers dans notre arène : peer_id -> combattant distant
 var _miroirs_groupe := {}
+# --- combat de groupe synchronisé : tour par tour, ordre par initiative ---
+# ordre des combattants diffusé par l'arbitre : chaque entrée porte
+# k ("p" joueur / "e" ennemi), id (peer ou nom du node ennemi) et init
+var _ordre_tours: Array = []
+var _position_tour := -1     # index dans _ordre_tours du tour en cours
+var _prets_groupe := {}       # peer -> jet d'initiative annoncé
+var _ma_initiative := 0       # notre jet, calculé à la fin du placement
+var _cle_active := ""         # clé "p:peer" / "e:nom" du combattant qui joue
+var _fins_ennemis_recues := {}  # nom d'ennemi -> fin de tour reçue (arbitre)
+var _pilote_en_cours := false
 var _ui: CanvasLayer
 var _fiche_ennemi: PanelContainer
 var _barre_vie_ennemi: ProgressBar
@@ -960,6 +970,7 @@ func lancer_combat(groupe = null) -> void:
 	# monde partagé : annoncer le combat contre ce camp (lookup au
 	# runtime : Reseau n'est pas chargé dans l'éditeur)
 	groupe_actif = groupe_combat != "" and not pvp_actif
+	_raz_tours_groupe()
 	if groupe_combat != "":
 		var reseau := get_tree().root.get_node_or_null("/root/Reseau")
 		if reseau != null:
@@ -1159,6 +1170,13 @@ func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionar
 	if not groupe_actif or evenement == null or evenement is not Dictionary:
 		return
 	match str(evenement.get("t", "")):
+		"pret":
+			_prets_groupe[peer_exp] = int(evenement.get("init", 0))
+			if _suis_arbitre_groupe():
+				_diffuser_ordre_groupe()
+		"ordre":
+			if int(peer_exp) == _arbitre_groupe():
+				_appliquer_ordre_groupe(evenement)
 		"profil_groupe":
 			var profil: Dictionary = evenement.duplicate()
 			profil["pseudo"] = pseudo_exp
@@ -1177,6 +1195,29 @@ func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionar
 			var sol := sol_combat()
 			if is_instance_valid(miroir_depl) and sol != null:
 				miroir_depl.rejouer_trajet(evenement.get("trajet", []), sol)
+		"ennemi_deplacement":
+			var ennemi_dep = _ennemi_du_nom(str(evenement.get("nom", "")))
+			if ennemi_dep != null:
+				ennemi_dep.rejouer_deplacement(evenement.get("trajet", []), sol_combat())
+		"ennemi_attaque":
+			_rejouer_attaque_ennemie(evenement, true)
+		"ennemi_manque":
+			_rejouer_attaque_ennemie(evenement, false)
+			afficher_message("L’ennemi rate son coup.")
+		"ennemi_fin":
+			_fins_ennemis_recues[str(evenement.get("nom", ""))] = true
+		"gura_allie":
+			# le Séisme frappe les alliés : la vraie victime encaisse
+			# chez elle (nous : notre joueur, sinon notre miroir du pair)
+			var victime_gura = _cible_par_cle(str(evenement.get("cible", "")))
+			if victime_gura != null and is_instance_valid(victime_gura):
+				victime_gura.recevoir_degats(int(evenement.get("degats", 0)))
+		"gura_pousse":
+			# le Fracas Sismique repousse un ennemi : chaque copie
+			# locale recule du même pas (2 cases), loin du lanceur
+			var pousse = _ennemi_du_nom(str(evenement.get("nom", "")))
+			if pousse != null and is_instance_valid(pousse) and int(pousse.get("pv")) > 0:
+				_deplacer_par_etat(pousse, 2, true)
 		"manque", "sort":
 			_rejouer_sort_groupe(peer_exp, pseudo_exp, evenement)
 		"echange":
@@ -1189,6 +1230,8 @@ func groupe_action_recue(peer_exp: int, pseudo_exp: String, evenement: Dictionar
 			var miroir_fin = _miroirs_groupe.get(peer_exp)
 			if is_instance_valid(miroir_fin):
 				terminer_tour(miroir_fin)
+				# le pilote de tours attendait sa fin : il repart
+				miroir_fin.terminer_tour_distant()
 		"tombe":
 			afficher_message("%s est a terre !" % pseudo_exp)
 			_retirer_miroir_groupe(peer_exp)
@@ -1332,6 +1375,275 @@ func _retirer_tous_miroirs_groupe() -> void:
 	for peer_id in _miroirs_groupe.keys():
 		_retirer_miroir_groupe(int(peer_id))
 
+# les miroirs de coéquipiers engagés dans notre combat de groupe
+func miroirs_groupe() -> Array:
+	var liste: Array = []
+	for miroir in _miroirs_groupe.values():
+		if is_instance_valid(miroir):
+			liste.append(miroir)
+	return liste
+
+# le pair propriétaire d'un miroir de coéquipier (0 si introuvable)
+func peer_du_miroir(miroir: Node2D) -> int:
+	for pair in _miroirs_groupe:
+		if _miroirs_groupe[pair] == miroir:
+			return int(pair)
+	return 0
+
+# ============================================================
+#  TOURS SYNCHRONISES DU COMBAT DE GROUPE
+# ============================================================
+
+# le combat tourne au tour par tour : l'ordre est décidé par
+# l'initiative (agilité, niveau et un dé 20 pour chacun), l'arbitre du
+# combat — le pair d'identifiant le plus bas — le calcule et le
+# diffuse ; seul l'arbitre résout l'IA des ennemis, les autres
+# rejouent ses événements, et personne ne joue hors de son tour
+
+func combat_groupe_synchro() -> bool:
+	return en_combat and groupe_actif and not _ordre_tours.is_empty()
+
+func _emettre_groupe(evenement: Dictionary) -> void:
+	var reseau := get_tree().root.get_node_or_null("/root/Reseau")
+	if reseau != null:
+		reseau.call("emettre_action_groupe", evenement)
+
+# pairs engagés dans ce combat : nous, nos miroirs et ceux qui ont
+# annoncé leur initiative (les événements peuvent se croiser : un pret
+# arrive avant le profil)
+func _pairs_du_combat() -> Array:
+	var pairs := [multiplayer.get_unique_id()]
+	for peer in _miroirs_groupe:
+		pairs.append(int(peer))
+	for peer in _prets_groupe:
+		pairs.append(int(peer))
+	return pairs
+
+func _arbitre_groupe() -> int:
+	var pairs := _pairs_du_combat()
+	var plus_bas := int(pairs[0])
+	for pair in pairs:
+		if int(pair) < plus_bas:
+			plus_bas = int(pair)
+	return plus_bas
+
+func _mon_peer() -> int:
+	return int(multiplayer.get_unique_id())
+
+func _suis_arbitre_groupe() -> bool:
+	return _arbitre_groupe() == _mon_peer()
+
+# l'arbitre construit l'ordre complet — joueurs et ennemis, triés par
+# initiative décroissante — et le diffuse ; l'entrée active repart
+# avec pour que chacun reprenne le combat à l'identique
+func _diffuser_ordre_groupe() -> void:
+	if not _suis_arbitre_groupe() or not en_combat:
+		return
+	var entrees: Array = [
+		{"k": "p", "id": _mon_peer(), "init": _ma_initiative}]
+	for peer in _prets_groupe:
+		entrees.append({"k": "p", "id": int(peer),
+			"init": int(_prets_groupe[peer])})
+	for ennemi in ennemis_actifs():
+		var initiative := int(maxi(int(ennemi.get("degats_attaque")), 1)) + _hasard.randi_range(1, 15)
+		entrees.append({"k": "e", "id": str((ennemi as Node).name),
+			"init": initiative})
+	entrees.sort_custom(func(a, b): return int(a["init"]) > int(b["init"]))
+	var evenement := {"t": "ordre", "ordre": entrees, "actuel": _cle_active}
+	_emettre_groupe(evenement)
+	_appliquer_ordre_groupe(evenement)
+
+func _cle_de(entree: Dictionary) -> String:
+	if str(entree.get("k", "")) == "p":
+		return "p:%d" % int(entree.get("id", 0))
+	return "e:%s" % str(entree.get("id", ""))
+
+# l'ordre arrive (premier jet ou mise à jour après un pret) : chacun
+# adopte la liste et pointe sur le combattant en cours — sans relancer
+# un tour déjà commencé
+func _appliquer_ordre_groupe(evenement: Dictionary) -> void:
+	var nouvelles: Array = evenement.get("ordre", [])
+	if nouvelles.is_empty():
+		return
+	_ordre_tours = nouvelles
+	var recherche := _cle_active
+	if recherche == "":
+		recherche = str(evenement.get("actuel", ""))
+	_position_tour = -1
+	if recherche != "":
+		for index in _ordre_tours.size():
+			if _cle_de(_ordre_tours[index]) == recherche:
+				# déjà en train de jouer : rester sur place ; en
+				# retard (rejoin) : reprendre ce tour-ci
+				_position_tour = index if _cle_active != "" else index - 1
+				break
+	if not en_placement:
+		_demarrer_pilote_groupe()
+
+# notre joueur a fini son tour : le pilote passe au suivant de l'ordre
+func fin_de_mon_tour_groupe() -> void:
+	_cle_active = ""
+	_demarrer_pilote_groupe()
+
+# pilote du tour synchronisé : avance l'ordre combatant par
+# combatant, saute les morts et les partis, et s'arrête dès qu'un
+# humain doit jouer (nous ou l'attente de la fin de tour d'un miroir)
+func _demarrer_pilote_groupe() -> void:
+	if _pilote_en_cours or not combat_groupe_synchro() or en_placement:
+		return
+	if _joueur != null and is_instance_valid(_joueur) and bool(_joueur.get("_tour_joueur")):
+		return  # je joue déjà : le pilote repartira à ma fin de tour
+	_pilote_en_cours = true
+	var numero := numero_combat
+	while en_combat and not conclusion_en_cours and numero == numero_combat:
+		var entree := _entree_active_valide()
+		if entree.is_empty():
+			break
+		var cle := _cle_de(entree)
+		_cle_active = cle
+		if cle.begins_with("p:"):
+			if int(entree["id"]) == _mon_peer():
+				# à nous : notre tour démarre et le pilote rend la
+				# main (relancé à notre fin de tour)
+				definir_combattant_actif(_joueur)
+				_cle_active = cle
+				_joueur.call("_commencer_mon_tour", numero)
+				_pilote_en_cours = false
+				return
+			var miroir = _miroirs_groupe.get(int(entree["id"]))
+			if miroir == null or not is_instance_valid(miroir):
+				_cle_active = ""
+				continue
+			definir_combattant_actif(miroir)
+			afficher_message("Au tour de %s…" % str(miroir.nom))
+			await miroir.jouer_tour(null, sol_combat())
+			_cle_active = ""
+			continue
+		var nom_ennemi := str(entree["id"])
+		var ennemi_local = _ennemi_du_nom(nom_ennemi)
+		if ennemi_local == null:
+			_cle_active = ""
+			continue
+		definir_combattant_actif(ennemi_local)
+		afficher_message("C’est au tour de %s…" % str(ennemi_local.get("nom")))
+		if _suis_arbitre_groupe():
+			await _resoudre_tour_ennemi_groupe(ennemi_local, numero)
+		else:
+			await _attendre_fin_ennemi(nom_ennemi, numero)
+		_cle_active = ""
+	_pilote_en_cours = false
+
+# prochaine entrée jouable : les vaincus (joueur mort, miroir disparu,
+# ennemi tombé) ne prennent jamais la main
+func _entree_active_valide() -> Dictionary:
+	for tour in _ordre_tours.size():
+		_position_tour += 1
+		if _position_tour >= _ordre_tours.size():
+			_position_tour = 0
+		var entree: Dictionary = _ordre_tours[_position_tour]
+		if str(entree.get("k", "")) == "p":
+			var pair := int(entree.get("id", 0))
+			if pair == _mon_peer():
+				if Personnage.vie > 0:
+					return entree
+				continue
+			var miroir = _miroirs_groupe.get(pair)
+			if is_instance_valid(miroir) and int(miroir.get("pv")) > 0:
+				return entree
+			continue
+		if _ennemi_du_nom(str(entree.get("id", ""))) != null:
+			return entree
+	return {}
+
+func _ennemi_du_nom(nom: String) -> Node2D:
+	for ennemi in ennemis_actifs():
+		if str((ennemi as Node).name) == nom:
+			return ennemi
+	return null
+
+# Le tour d'un ennemi, résolu par l'arbitre : la cible la plus proche
+# parmi les combattants, chaque pas et chaque coup partent aux
+# coéquipiers qui les rejouent à l'identique
+func _resoudre_tour_ennemi_groupe(ennemi: Node2D, _numero: int) -> void:
+	var sol := sol_combat()
+	var cible := _cible_proche_combattant(ennemi)
+	var cle_cible := ""
+	if cible == _joueur:
+		cle_cible = "p:%d" % _mon_peer()
+	else:
+		for pair in _miroirs_groupe:
+			if _miroirs_groupe[pair] == cible:
+				cle_cible = "p:%d" % int(pair)
+				break
+	if cible != null and sol != null:
+		var emission := func(evenement: Dictionary):
+			var type := str(evenement.get("t", ""))
+			if type == "ennemi_attaque" or type == "ennemi_manque":
+				evenement["cible"] = cle_cible
+			_emettre_groupe(evenement)
+		await ennemi.jouer_tour(cible, sol, emission)
+	_fins_ennemis_recues[str(ennemi.name)] = true
+	_emettre_groupe({"t": "ennemi_fin", "nom": str(ennemi.name)})
+
+func _cible_proche_combattant(ennemi: Node2D) -> Node2D:
+	var plus_proche: Node2D = null
+	var distance_mini := INF
+	if ennemi == null or not is_instance_valid(ennemi):
+		return null
+	for combattant in _combattants_groupe():
+		var distance: float = (combattant as Node2D).global_position.distance_squared_to(
+			ennemi.global_position)
+		if distance < distance_mini:
+			distance_mini = distance
+			plus_proche = combattant
+	return plus_proche
+
+func _combattants_groupe() -> Array:
+	var liste: Array = []
+	if _joueur is Node2D and Personnage.vie > 0:
+		liste.append(_joueur)
+	for miroir in _miroirs_groupe.values():
+		if is_instance_valid(miroir) and int(miroir.get("pv")) > 0:
+			liste.append(miroir)
+	return liste
+
+# côté coéquipier : le tour d'un ennemi de l'arbitre se joue quand sa
+# fin arrive (événement fiable ordonné)
+func _attendre_fin_ennemi(nom_ennemi: String, numero: int) -> void:
+	while en_combat and numero == numero_combat and not _fins_ennemis_recues.has(nom_ennemi):
+		await get_tree().process_frame
+	_fins_ennemis_recues.erase(nom_ennemi)
+
+# un coup d'ennemi résolu par l'arbitre, rejoué ici : la victime est
+# la nôtre ("peer:moi") ou le miroir d'un coéquipier
+func _rejouer_attaque_ennemie(evenement: Dictionary, touche: bool) -> void:
+	var ennemi_partant = _ennemi_du_nom(str(evenement.get("nom", "")))
+	var cible = _cible_par_cle(str(evenement.get("cible", "")))
+	if ennemi_partant == null or cible == null or not is_instance_valid(cible):
+		return
+	ennemi_partant.rejouer_attaque(cible,
+		int(evenement.get("degats", 0)), touche)
+
+func _cible_par_cle(cle: String) -> Node2D:
+	if not cle.begins_with("p:"):
+		return null
+	var pair := int(cle.substr(2))
+	if pair == _mon_peer():
+		return _joueur as Node2D
+	var miroir = _miroirs_groupe.get(pair)
+	if miroir is Node2D:
+		return miroir
+	return null
+
+func _raz_tours_groupe() -> void:
+	_ordre_tours = []
+	_position_tour = -1
+	_prets_groupe = {}
+	_ma_initiative = 0
+	_cle_active = ""
+	_fins_ennemis_recues = {}
+	_pilote_en_cours = false
+
 # un ennemi du groupe est vaincu : le combat continue tant qu'il en
 # reste un debout
 func ennemi_vaincu(ennemi: Node) -> void:
@@ -1414,6 +1726,14 @@ func valider_placement() -> void:
 		var reseau := get_tree().root.get_node_or_null("/root/Reseau")
 		if reseau != null:
 			reseau.call("emettre_action_groupe", _profil_groupe())
+		# tour synchronisé : notre initiative part à l'arbitre du combat
+		# (le pair d'identifiant le plus bas), qui construit et diffuse
+		# l'ordre des tours ; nous seuls, il n'y a rien à attendre
+		_ma_initiative = int(Personnage.caracteristiques.get("agilite", 0)) * 2 \
+			+ Personnage.niveau + _hasard.randi_range(1, 20)
+		_emettre_groupe({"t": "pret", "init": _ma_initiative})
+		if _suis_arbitre_groupe():
+			_diffuser_ordre_groupe()
 
 func terminer_combat(victoire: bool, fuite := false) -> void:
 	if not en_combat:
@@ -1425,6 +1745,7 @@ func terminer_combat(victoire: bool, fuite := false) -> void:
 	# plus de combat : la salle d'opération, si elle restait dressée, ferme
 	effacer_salle()
 	groupe_actif = false
+	_raz_tours_groupe()
 	# le combat est fini : plus personne ne joue, le roster et le
 	# marqueur de tour disparaissent
 	_combattant_actif = null
