@@ -10,7 +10,7 @@
 #
 # Après installation :
 #  - serveur lancé par systemd :   systemctl status tog-serveur
-#  - mise à jour auto toutes les 1 min depuis GitHub main, puis relance.
+#  - mise à jour auto toutes les 30 min depuis GitHub main, puis relance.
 set -euo pipefail
 
 GODOT_VERSION=4.7.2
