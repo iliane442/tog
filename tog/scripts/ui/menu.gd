@@ -769,7 +769,7 @@ func _on_effacer_perso() -> void:
 	# la dernière position d'exploration disparaît aussi : la reprise
 	# de partie ne retrouverait pas une scène mémorisée de l'ancien
 	Reseau.oublier_position_memorisee()
-	get_tree().change_scene_to_file("res://scenes/fushia.tscn")
+	get_tree().change_scene_to_file(Personnage.PORT_NAVIRE_DEFAUT)
 
 # debug : mène le perso au niveau 200 (montées de niveau normales :
 # points, vie, sorts débloqués inclus)

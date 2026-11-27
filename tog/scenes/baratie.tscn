@@ -12,13 +12,10 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-dock-bollard-v1.png" id="Bollard"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/cabane_de_peche.png" id="Cabane"]
-[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-sacs-de-cale.png" id="Sacs"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tonneaux.png" id="Tonneaux"]
-[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
-[ext_resource type="Texture2D" path="res://assets/world/world-ship-brig-v1.png" id="Brig"]
 [ext_resource type="Texture2D" path="res://assets/sprites/fauna/colombe-statique.png" id="Mouette"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/zeff.png" id="sprite_ile_zeff"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/carne.png" id="sprite_ile_carne"]
@@ -33,6 +30,8 @@
 radius = 47.0
 
 [node name="Baratie" instance=ExtResource("Zone")]
+mouillage_chaloupe = Vector2(1142, 1632)
+quai_chaloupe = Vector2(1248, 1600)
 
 [node name="TerrainZone" parent="." index="0"]
 plan = PackedStringArray(
@@ -101,27 +100,6 @@ paroles = "Le village Coco t'attend là où l'eau devient plus dure. Je te prév
 destination = "res://scenes/coco_village.tscn"
 arrivee = &"DepuisBaratie"
 libelle_traversee = "Embarquer pour le village Coco"
-
-[node name="BrigAuLarge" type="Sprite2D" parent="Paysage"]
-position = Vector2(2355.2, 371.2)
-texture = ExtResource("Brig")
-offset = Vector2(0, -250.0)
-scale = Vector2(0.55, 0.55)
-z_index = -3
-
-[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
-position = Vector2(1024.0, 1700.0)
-texture = ExtResource("Barque")
-offset = Vector2(0, -70.0)
-scale = Vector2(0.9, 0.9)
-z_index = -3
-
-[node name="BarqueDuPontonSud" type="Sprite2D" parent="Paysage"]
-position = Vector2(1088.0, 1676.8)
-texture = ExtResource("Barque")
-offset = Vector2(0, -70.0)
-scale = Vector2(0.85, 0.85)
-z_index = -3
 
 [node name="LeBaratie" type="Sprite2D" parent="Paysage"]
 position = Vector2(1280.0, 896.0)

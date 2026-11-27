@@ -28,14 +28,11 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-planches-ressource-grandline-nasse.png" id="dnasse"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tonneaux.png" id="dtonneau"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tonneaux.png" id="dtonneau_couche"]
-[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-barque-retournee.png" id="dbarque"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="dcaisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-sacs-de-cale.png" id="dsacs"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="dpanneau"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-statue-de-place.png" id="dstatue"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-tas-de-buches.png" id="dbois"]
-[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="dsloop"]
-[ext_resource type="Texture2D" path="res://assets/world/world-ship-brig-v1.png" id="dbrick"]
 [ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/rocher_falaise.png" id="drocher1"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="drocher2"]
 [ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/rochers_plats.png" id="drocher3"]
@@ -143,36 +140,6 @@ position = Vector2(5509.67, 1416.77)
 texture = ExtResource("dcamp")
 offset = Vector2(0, -76)
 scale = Vector2(1.75, 1.75)
-
-[node name="Brick17" type="Sprite2D" parent="."]
-position = Vector2(5510, 7118)
-texture = ExtResource("dbrick")
-offset = Vector2(0, -313)
-scale = Vector2(0.62, 0.62)
-
-[node name="Sloop18" type="Sprite2D" parent="."]
-position = Vector2(610, 5620)
-texture = ExtResource("dsloop")
-offset = Vector2(0, -249)
-scale = Vector2(0.48, 0.48)
-
-[node name="Barque19" type="Sprite2D" parent="."]
-position = Vector2(3885.39, 6325.39)
-texture = ExtResource("dbarque")
-offset = Vector2(0, -31)
-scale = Vector2(0.72, 0.72)
-
-[node name="Barque20" type="Sprite2D" parent="."]
-position = Vector2(8658.06, 6396.94)
-texture = ExtResource("dbarque")
-offset = Vector2(0, -31)
-scale = Vector2(0.66, 0.66)
-
-[node name="Barque21" type="Sprite2D" parent="."]
-position = Vector2(1316.6, 5402.34)
-texture = ExtResource("dbarque")
-offset = Vector2(0, -31)
-scale = Vector2(0.65, 0.65)
 
 [node name="Caisses22" type="Sprite2D" parent="."]
 position = Vector2(4114.37, 6046.33)

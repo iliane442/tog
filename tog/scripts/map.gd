@@ -4,9 +4,8 @@ const SCENE_ENNEMI := preload("res://scenes/ennemy.tscn")
 const ESCALE_NAVIRES := preload("res://scripts/world/escale_navires.gd")
 
 @export var renouveler_rencontres := true
-@export var mouillage_joueurs := Vector2.INF
-@export var mouillage_galions := Vector2.INF
-@export var mouillage_en_canal := false
+@export var mouillage_chaloupe := Vector2.INF
+@export var quai_chaloupe := Vector2.INF
 
 @onready var notification: PanelContainer = $CarteFushia/Notification
 @onready var texte_notification: Label = $CarteFushia/Notification/Texte
@@ -41,11 +40,17 @@ func _enter_tree() -> void:
 		# retour sur une map sans arrivée précise (lancement du jeu,
 		# reconnexion) : le joueur reprend sa dernière position
 		# mémorisée sur cette carte
-		Reseau.appliquer_position_memorisee(scene_file_path, $player)
+		var reprendre_au_port := scene_file_path == Personnage.PORT_NAVIRE_DEFAUT \
+			or scene_file_path == "res://scenes/fushia.tscn"
+		if Reseau.appliquer_position_memorisee(scene_file_path, $player) and reprendre_au_port \
+				and quai_chaloupe.is_finite():
+			var sol: TileMapLayer = $ground
+			if sol.get_cell_source_id(sol.local_to_map(sol.to_local($player.global_position))) == -1:
+				$player.position = quai_chaloupe
 
 func _ready() -> void:
 	_styliser_notification()
-	_installer_navires_du_port()
+	_installer_chaloupe()
 	var terrain := get_node_or_null("TerrainZone")
 	if terrain != null:
 		var mini_carte := $CarteFushia/PanneauCarte/Marges/Colonne/Carte
@@ -86,25 +91,13 @@ func _ready() -> void:
 		}
 		_surveille_renfort(ennemi, donnees)
 
-func _installer_navires_du_port() -> void:
-	for capitaine in get_children():
-		if not capitaine.is_in_group("capitaines_ferry"):
-			continue
-		var port := ESCALE_NAVIRES.new()
-		port.name = "EscaleNavires"
-		add_child(port)
-		var bateau := get_node_or_null("Paysage/SloopDuFerry") as Node2D
-		if bateau == null:
-			bateau = get_node_or_null("Paysage/FerryDesAnges") as Node2D
-		var ancrage: Vector2 = capitaine.position + Vector2(270, 360)
-		if bateau != null:
-			ancrage = bateau.position + Vector2(540, 60)
-		var terrain := get_node_or_null("TerrainZone")
-		if terrain != null:
-			ancrage.y = minf(ancrage.y, terrain.dimensions_monde().y - 32)
-		port.installer(self, capitaine.position, mouillage_joueurs if mouillage_joueurs.is_finite() else ancrage,
-			mouillage_en_canal, mouillage_galions)
-		break
+func _installer_chaloupe() -> void:
+	if not mouillage_chaloupe.is_finite() or not quai_chaloupe.is_finite():
+		return
+	var port := ESCALE_NAVIRES.new()
+	port.name = "EscaleNavires"
+	add_child(port)
+	port.installer(self, quai_chaloupe, mouillage_chaloupe)
 
 func rejoindre_zone(fichier: String, arrivee: StringName, position_arrivee := Vector2.INF) -> void:
 	if _changement_zone or get_tree().paused or $CombatManager.en_combat:

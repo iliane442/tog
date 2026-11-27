@@ -112,7 +112,7 @@ nombre_marches = 4
 position = Vector2(2016, 3296)
 collision_layer = 0
 script = ExtResource("Passage")
-destination = "res://scenes/fushia.tscn"
+destination = "res://scenes/village_fushia.tscn"
 arrivee = &"DepuisCorvo"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="VersFushia"]

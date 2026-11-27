@@ -77,6 +77,9 @@ func port_info(fichier: String) -> Dictionary:
 			if repere is Marker2D:
 				arrivees[str(repere.name)] = repere.position
 	var info := {"routes": routes, "nom": str(carte.name), "arrivees": arrivees}
+	var quai: Variant = carte.get("quai_chaloupe")
+	if quai is Vector2 and quai.is_finite():
+		info["quai_chaloupe"] = quai
 	carte.free()
 	_ports[fichier] = info if not routes.is_empty() else {}
 	return _ports[fichier]
@@ -86,7 +89,11 @@ func peut_traverser(scene: Node) -> bool:
 		and not scene.get("_changement_zone") and not scene.get_node("CombatManager").en_combat
 
 func _position_ancrage(port: String) -> Vector2:
-	var routes: Dictionary = port_info(port).get("routes", {})
+	var info := port_info(port)
+	var quai: Vector2 = info.get("quai_chaloupe", Vector2.INF)
+	if quai.is_finite():
+		return quai
+	var routes: Dictionary = info.get("routes", {})
 	return routes.values()[0]["quai"] if not routes.is_empty() else Vector2.INF
 
 func modele_a_bord() -> String:
@@ -529,6 +536,9 @@ func _proche_du_quai(pair: int, port: String) -> bool:
 	if _session(pair).get("scene", "") != info.get("nom", ""):
 		return false
 	var pos: Vector2 = _session(pair).get("position", Vector2.INF)
+	var quai: Vector2 = info.get("quai_chaloupe", Vector2.INF)
+	if quai.is_finite() and pos.distance_to(quai) <= PORTEE_QUAI:
+		return true
 	for route: Dictionary in info.get("routes", {}).values():
 		if pos.distance_to(route["quai"]) <= PORTEE_QUAI:
 			return true

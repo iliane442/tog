@@ -1,6 +1,5 @@
 extends Control
 
-const CHEMIN_PARTIE := "res://scenes/fushia.tscn"
 const RACCOURCIS := preload("res://scripts/ui/parametres_touches.gd")
 const COULEUR_ERREUR := Color("#ffb9a0")
 
@@ -69,7 +68,7 @@ func _charger_partie() -> void:
 	if chemin_partie != "" and get_tree().change_scene_to_file(chemin_partie) == OK:
 		return
 	Reseau.position_memorisee = {}
-	if get_tree().change_scene_to_file(CHEMIN_PARTIE) == OK:
+	if get_tree().change_scene_to_file(Personnage.PORT_NAVIRE_DEFAUT) == OK:
 		return
 	_chargement_partie = false
 	Reseau.jouer_hors_ligne()

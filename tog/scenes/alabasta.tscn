@@ -18,7 +18,6 @@
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/nanohana/maison_portuaire.png" id="p_maison_portuaire"]
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/nanohana/etal_portuaire.png" id="p_etal_portuaire"]
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/nanohana/appontement.png" id="p_appontement"]
-[ext_resource type="Texture2D" path="res://assets/world/alabasta/nanohana/voilier.png" id="p_voilier"]
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/rainbase/casino.png" id="p_casino"]
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/rainbase/bassin_canal.png" id="p_bassin_canal"]
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/rainbase/pont_de_pierre.png" id="p_pont_de_pierre"]
@@ -474,28 +473,6 @@ position = Vector2(697.6, 1635.32)
 scale = Vector2(0.4344, 0.4344)
 texture = ExtResource("p_appontement")
 offset = Vector2(0, -136.22)
-z_index = -1
-
-[node name="Voilier" type="Sprite2D" parent="Paysage"]
-position = Vector2(60.8, 1461.56)
-scale = Vector2(0.4615, 0.4615)
-texture = ExtResource("p_voilier")
-offset = Vector2(0, -184.58)
-z_index = -1
-
-[node name="Voilier2" type="Sprite2D" parent="Paysage"]
-position = Vector2(470.4, 1638.55)
-scale = Vector2(0.429, 0.429)
-texture = ExtResource("p_voilier")
-offset = Vector2(0, -184.58)
-flip_h = true
-z_index = -1
-
-[node name="Voilier3" type="Sprite2D" parent="Paysage"]
-position = Vector2(568.32, 1789.68)
-scale = Vector2(0.3314, 0.3314)
-texture = ExtResource("p_voilier")
-offset = Vector2(0, -184.58)
 z_index = -1
 
 [node name="Phare" type="Sprite2D" parent="Paysage"]

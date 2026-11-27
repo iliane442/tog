@@ -1,0 +1,305 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zone_exploration.tscn" id="Zone"]
+[ext_resource type="Script" path="res://scripts/world/passage_zone.gd" id="Passage"]
+[ext_resource type="Shader" path="res://assets/shaders/mer_alabasta.gdshader" id="Vagues"]
+[ext_resource type="Texture2D" path="res://assets/world/alabasta/terrain/mer.png" id="TextureMer"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Chaloupe"]
+[ext_resource type="Script" path="res://scripts/pnj.gd" id="pnj"]
+[ext_resource type="PackedScene" path="res://scenes/pnj_shanks.tscn" id="19_shanks"]
+[ext_resource type="Script" path="res://scripts/world/point_fushia.gd" id="PointFushia"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
+[ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/navire.png" id="art_navire"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/benn.png" id="art_benn"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/lucky.png" id="art_lucky"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/yasopp.png" id="art_yasopp"]
+
+[sub_resource type="ShaderMaterial" id="Mer"]
+shader = ExtResource("Vagues")
+shader_parameter/mer = ExtResource("TextureMer")
+shader_parameter/dimensions = Vector2(2944, 2176)
+
+[sub_resource type="CircleShape2D" id="RayonDialogue"]
+radius = 47.0
+
+[sub_resource type="RectangleShape2D" id="SeuilRetour"]
+size = Vector2(144, 48)
+
+[node name="NavireDuRouxAuLarge" instance=ExtResource("Zone")]
+renouveler_rencontres = false
+
+[node name="TerrainZone" parent="." index="0"]
+visible = false
+plan = PackedStringArray(
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~+++++++++++++++++++++++~~~~~~~~~~~",
+	"~~~~~~~~~~~+++++++++++++++++++++++++~~~~~~~~~~",
+	"~~~~~~~~~~~+++++++++++++++++++++++++~~~~~~~~~~",
+	"~~~~~~~~~~~~+++++++++++++++++++++++~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+	"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+)
+
+[node name="player" parent="." index="5"]
+position = Vector2(1440, 1440)
+
+[node name="Titre" parent="CarteFushia/PanneauCarte/Marges/Colonne" index="0"]
+text = "Navire de Shanks"
+
+[node name="DepuisChaloupe" type="Marker2D" parent="Arrivees"]
+position = Vector2(1440, 1440)
+
+[node name="Mer" type="ColorRect" parent="."]
+z_index = -20
+material = SubResource("Mer")
+offset_right = 2944.0
+offset_bottom = 2176.0
+mouse_filter = 2
+
+[node name="ChaloupeDeRetour" type="Sprite2D" parent="."]
+position = Vector2(1435, 1160)
+z_index = -8
+texture = ExtResource("Chaloupe")
+texture_filter = 1
+scale = Vector2(0.86, 0.86)
+
+[node name="RetourFushia" type="Area2D" parent="."]
+position = Vector2(1440, 1312)
+collision_layer = 0
+script = ExtResource("Passage")
+destination = "res://scenes/village_fushia.tscn"
+arrivee = &"DepuisNavireDuRoux"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RetourFushia"]
+shape = SubResource("SeuilRetour")
+
+[node name="Etiquette" type="Label" parent="RetourFushia"]
+z_index = 4
+offset_left = -100.0
+offset_top = -69.0
+offset_right = 100.0
+offset_bottom = -41.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.93, 0.74, 1)
+theme_override_colors/font_outline_color = Color(0.09, 0.17, 0.20, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 19
+text = "Chaloupe · Retour à Fushia"
+horizontal_alignment = 1
+
+[node name="shanks" parent="." groups=["pnj_fushia"] instance=ExtResource("19_shanks")]
+position = Vector2(1568.0, 1440.0)
+nom_affiche = "Shanks"
+paroles = "Bienvenue sur mon pont. Si tu veux connaître le navire, commence par la proue. Puis passe devant la lanterne et viens me retrouver à la poupe."
+chain_quetes = Array[String](["fushia_pont_roux"])
+
+[node name="NavireDuRoux" type="Sprite2D" parent="."]
+position = Vector2(322.0, 198.80000000000018)
+z_index = -6
+texture = ExtResource("art_navire")
+centered = false
+
+[node name="BennBeckman" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1120.0, 1376.0)
+script = ExtResource("pnj")
+largeur_zone_clic = 58.0
+hauteur_zone_clic = 118.0
+chain_quetes = Array[String]([])
+nom_affiche = "Benn Beckman"
+paroles = "La passerelle est étroite. À bord, laisse de la place entre la lanterne et le mât."
+
+[node name="Sprite2D" type="Sprite2D" parent="BennBeckman"]
+position = Vector2(0, -50)
+texture = ExtResource("art_benn")
+
+[node name="Area2D" type="Area2D" parent="BennBeckman"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BennBeckman/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="BennBeckman"]
+z_index = 16
+offset_left = -140.0
+offset_top = -129.0
+offset_right = 140.0
+offset_bottom = -103.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = "Benn Beckman"
+horizontal_alignment = 1
+
+[node name="LuckyRoux" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(1824.0, 1504.0)
+script = ExtResource("pnj")
+largeur_zone_clic = 103.0
+hauteur_zone_clic = 115.0
+chain_quetes = Array[String]([])
+nom_affiche = "Lucky Roux"
+paroles = "Si tu entends rire, c’est que le repas est prêt. Pour un vrai festin, va donc voir Makino à terre."
+
+[node name="Sprite2D" type="Sprite2D" parent="LuckyRoux"]
+position = Vector2(0, -48.5)
+texture = ExtResource("art_lucky")
+
+[node name="Area2D" type="Area2D" parent="LuckyRoux"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LuckyRoux/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="LuckyRoux"]
+z_index = 16
+offset_left = -140.0
+offset_top = -126.0
+offset_right = 140.0
+offset_bottom = -100.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = "Lucky Roux"
+horizontal_alignment = 1
+
+[node name="Yasopp" type="Node2D" parent="." groups=["pnj_fushia"]]
+position = Vector2(2080.0, 1312.0)
+script = ExtResource("pnj")
+largeur_zone_clic = 60.0
+hauteur_zone_clic = 118.0
+chain_quetes = Array[String]([])
+nom_affiche = "Yasopp"
+paroles = "De la poupe tu vois toute la baie. Quand le vent tourne, le premier à le sentir est celui qui tient la barre."
+
+[node name="Sprite2D" type="Sprite2D" parent="Yasopp"]
+position = Vector2(0, -50)
+texture = ExtResource("art_yasopp")
+
+[node name="Area2D" type="Area2D" parent="Yasopp"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Yasopp/Area2D"]
+shape = SubResource("RayonDialogue")
+
+[node name="Nom" type="Label" parent="Yasopp"]
+z_index = 16
+offset_left = -140.0
+offset_top = -129.0
+offset_right = 140.0
+offset_bottom = -103.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = "Yasopp"
+horizontal_alignment = 1
+
+[node name="ProueDuRoux" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(800.0, 1440.0)
+script = ExtResource("PointFushia")
+titre = "Proue du navire"
+description = "La figure de proue domine la baie. Les cordages sont prêts pour le prochain départ."
+quete = "fushia_pont_roux"
+objet = ""
+
+[node name="Sprite2D" type="Sprite2D" parent="ProueDuRoux"]
+texture = ExtResource("Panneau")
+offset = Vector2(0, -46)
+scale = Vector2(0.7, 0.7)
+
+[node name="Etiquette" type="Label" parent="ProueDuRoux"]
+z_index = 16
+offset_left = -140.0
+offset_top = -95.0
+offset_right = 140.0
+offset_bottom = -69.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = ""
+horizontal_alignment = 1
+
+[node name="ClocheDuRoux" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(1440.0, 1312.0)
+script = ExtResource("PointFushia")
+titre = "Lanterne de quart"
+description = "À la nuit tombée, on l’allume pour que l’équipage voie le passage entre la passerelle et le mât."
+quete = "fushia_pont_roux"
+objet = ""
+
+[node name="Sprite2D" type="Sprite2D" parent="ClocheDuRoux"]
+texture = ExtResource("Lanterne")
+offset = Vector2(0, -65)
+scale = Vector2(0.66, 0.66)
+
+[node name="Etiquette" type="Label" parent="ClocheDuRoux"]
+z_index = 16
+offset_left = -140.0
+offset_top = -116.0
+offset_right = 140.0
+offset_bottom = -90.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = ""
+horizontal_alignment = 1
+
+[node name="BarreDuRoux" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2208.0, 1440.0)
+script = ExtResource("PointFushia")
+titre = "Poupe du navire"
+description = "Depuis la poupe, la barre permet de garder le cap à la sortie du port."
+quete = "fushia_pont_roux"
+objet = ""
+
+[node name="Sprite2D" type="Sprite2D" parent="BarreDuRoux"]
+texture = ExtResource("Panneau")
+offset = Vector2(0, -46)
+scale = Vector2(0.72, 0.72)
+
+[node name="Etiquette" type="Label" parent="BarreDuRoux"]
+z_index = 16
+offset_left = -140.0
+offset_top = -97.0
+offset_right = 140.0
+offset_bottom = -71.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = ""
+horizontal_alignment = 1

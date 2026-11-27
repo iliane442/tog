@@ -10,7 +10,7 @@ radius = 24.020824
 script = ExtResource("1_cap")
 nom_affiche = "Capitaine Marée"
 paroles = "Moussaillon ! La navette pour Fushia lève l'ancre quand tu veux. Le village de Luffy n'est qu'à quelques brasses d'ici — l'eau est calme, on fait la traversée d'une traite."
-destination = "res://scenes/fushia.tscn"
+destination = "res://scenes/village_fushia.tscn"
 arrivee = &"DepuisShells"
 libelle_traversee = "Embarquer pour Fushia"
 

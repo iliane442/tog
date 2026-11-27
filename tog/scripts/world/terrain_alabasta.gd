@@ -76,6 +76,7 @@ func preparer(sol: TileMapLayer, _falaises: TileMapLayer, paysage: Node2D) -> vo
 	var taille := Vector2i(taille_monde / PAS_NAVIGATION)
 	var carte := Image.create_empty(taille.x, taille.y, false, Image.FORMAT_RGB8)
 	carte.fill(COULEUR_MER)
+	_peindre_fond_carte(carte)
 
 	for cellule in _ordre:
 		var dalle := _carreaux[cellule]
@@ -84,8 +85,8 @@ func preparer(sol: TileMapLayer, _falaises: TileMapLayer, paysage: Node2D) -> vo
 			var face := _face(cellule, dalle.x, contour, direction)
 			if not face.is_empty():
 				_peindre_carte(carte, face, OBSTACLE)
-		var couleur: Color = COULEURS_SOL[dalle.y] if dalle.z != Relief.MESA else OBSTACLE
-		_peindre_carte(carte, contour, couleur)
+		var couleur := _couleur_dalle(dalle)
+		_peindre_carte(carte, _contour_surface(cellule, dalle, contour), couleur)
 		if dalle.z != Relief.MESA:
 			_bloquer_bords_de_terrasse(carte, cellule, dalle.x, contour)
 	for escalier in escaliers:
@@ -172,6 +173,15 @@ func _altitude_mesa(cellule: Vector2i) -> int:
 
 func _est_sol(couleur: Color) -> bool:
 	return couleur != COULEUR_MER and couleur != COULEUR_CANAL and couleur != OBSTACLE
+
+func _couleur_dalle(dalle: Vector3i) -> Color:
+	return COULEURS_SOL[dalle.y] if dalle.z != Relief.MESA else OBSTACLE
+
+func _peindre_fond_carte(_carte: Image) -> void:
+	pass
+
+func _contour_surface(_cellule: Vector2i, _dalle: Vector3i, contour: PackedVector2Array) -> PackedVector2Array:
+	return contour
 
 func _bloquer_bords_de_terrasse(carte: Image, cellule: Vector2i, altitude: int, contour: PackedVector2Array) -> void:
 	var centre := _projeter(cellule, altitude)
@@ -336,6 +346,8 @@ func _creer_mer() -> void:
 	var animations := EAUX.animations_ecume()
 	var cadre := Rect2(Vector2.ZERO, taille_monde).grow(100.0)
 	for cellule in _ordre:
+		if not _ecume_standard(cellule):
+			continue
 		var dalle := _carreaux[cellule]
 		var contour := _contour_dalle(_projeter(cellule, dalle.x))
 		for cote in [1, 2]:
@@ -346,6 +358,9 @@ func _creer_mer() -> void:
 			var fin := contour[cote + 1] + descente
 			if cadre.has_point(debut) or cadre.has_point(fin):
 				EAUX.ajouter_ecume(rive, debut, fin, animations[cote - 1])
+
+func _ecume_standard(_cellule: Vector2i) -> bool:
+	return true
 
 func etendre_mer_du_port(dimensions: Vector2) -> void:
 	_fond_mer.size = taille_monde.max(dimensions)

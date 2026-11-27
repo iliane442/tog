@@ -16,7 +16,6 @@
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/nanohana/maison_portuaire.png" id="p_maison_portuaire"]
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/nanohana/etal_portuaire.png" id="p_etal_portuaire"]
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/nanohana/appontement.png" id="p_appontement"]
-[ext_resource type="Texture2D" path="res://assets/world/alabasta/nanohana/voilier.png" id="p_voilier"]
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/nanohana/porte_des_caravanes.png" id="p_porte_des_caravanes"]
 [ext_resource type="Texture2D" path="res://assets/world/alabasta/alubarna/tour_horloge.png" id="p_tour_horloge"]
 [ext_resource type="PackedScene" path="res://scenes/rempart_nanohana.tscn" id="MurEnceinte"]
@@ -39,7 +38,8 @@ radius = 47.0
 
 [node name="Nanohana" instance=ExtResource("Zone")]
 script = ExtResource("CarteAlabasta")
-mouillage_galions = Vector2(2830, 1990)
+mouillage_chaloupe = Vector2(2475, 1535)
+quai_chaloupe = Vector2(2313.6, 1480.8)
 
 [node name="TerrainZone" parent="." index="0"]
 texture_filter = 1
@@ -809,28 +809,6 @@ scale = Vector2(0.622, 0.622)
 texture = ExtResource("p_appontement")
 offset = Vector2(0, 38.72)
 flip_h = true
-z_index = -1
-
-[node name="Voilier" type="Sprite2D" parent="Paysage"]
-position = Vector2(2857.6, 1405.6)
-scale = Vector2(0.695, 0.695)
-texture = ExtResource("p_voilier")
-offset = Vector2(0, -181.2)
-z_index = -1
-
-[node name="Voilier2" type="Sprite2D" parent="Paysage"]
-position = Vector2(2563.2, 1588)
-scale = Vector2(0.775, 0.775)
-texture = ExtResource("p_voilier")
-offset = Vector2(0, -181.2)
-flip_h = true
-z_index = -1
-
-[node name="Voilier3" type="Sprite2D" parent="Paysage"]
-position = Vector2(2124.8, 1775.2)
-scale = Vector2(0.666, 0.666)
-texture = ExtResource("p_voilier")
-offset = Vector2(0, -181.2)
 z_index = -1
 
 [node name="RochersDuRivage" type="Sprite2D" parent="Paysage"]

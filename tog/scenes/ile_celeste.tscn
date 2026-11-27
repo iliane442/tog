@@ -42,7 +42,6 @@
 [ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/epicerie.png" id="Art16"]
 [ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/etal_bleu.png" id="Art17"]
 [ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/etal_rouge.png" id="Art18"]
-[ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/ferry.png" id="Art19"]
 [ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/fleurs.png" id="Art20"]
 [ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/fontaine.png" id="Art21"]
 [ext_resource type="Texture2D" path="res://assets/world/skypiea/ville/forge.png" id="Art22"]
@@ -73,6 +72,8 @@ size = Vector2(94, 68)
 
 [node name="IleCeleste" instance=ExtResource("Zone")]
 script = ExtResource("CarteSkypiea")
+mouillage_chaloupe = Vector2(736, 2624)
+quai_chaloupe = Vector2(1091.2, 2774.4)
 
 [node name="TerrainZone" parent="." index="0"]
 texture_filter = 1
@@ -422,12 +423,6 @@ position = Vector2(4982.4, 1416)
 texture = ExtResource("Art36")
 offset = Vector2(0, -97)
 metadata/emprise = Vector2(77, 77)
-
-[node name="FerryDesAnges" type="Sprite2D" parent="Paysage"]
-position = Vector2(755.2, 2625.6)
-texture = ExtResource("Art19")
-offset = Vector2(0, -41)
-scale = Vector2(1.05, 1.05)
 
 [node name="Fontaine" type="Sprite2D" parent="Paysage"]
 position = Vector2(3104, 1856)

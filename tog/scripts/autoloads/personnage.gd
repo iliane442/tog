@@ -42,7 +42,7 @@ const EMPLACEMENTS_NAVIRE := {
 }
 const SCENE_NAVIRE := "res://scenes/lanterne.tscn"
 const NAVIRES := preload("res://scripts/world/catalogue_navires.gd")
-const PORT_NAVIRE_DEFAUT := "res://scenes/fushia.tscn"
+const PORT_NAVIRE_DEFAUT := "res://scenes/village_fushia.tscn"
 const PIECES_NAVIRE := {
 	"atelier": {"nom": "Atelier de bord", "prix": 150, "usage": "Fabriquer et améliorer les objets de ton métier. Installer les pièces du navire."},
 	"cale": {"nom": "Cale de stockage", "prix": 500, "usage": "Déposer le butin et les matériaux dans un coffre personnel."},

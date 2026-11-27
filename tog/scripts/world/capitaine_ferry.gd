@@ -24,7 +24,6 @@ var interaction_en_attente := false
 
 func _ready() -> void:
 	add_to_group("entites_minicarte")
-	add_to_group("capitaines_ferry")
 	var mat := ShaderMaterial.new()
 	mat.shader = shader_surlignage
 	mat.set_shader_parameter("surligne", false)
@@ -83,10 +82,10 @@ func ouvrir_dialogue() -> void:
 	var texte := paroles
 	var cout := int(Personnage.NAVIRES.fiche(Personnage.modele_bateau())["entretien"])
 	if scene.scene_file_path == Personnage.PORT_NAVIRE_DEFAUT and Personnage.escale_navire.is_empty():
-		texte += "\n\nCorbin t’a laissé les clés de la Lanterne. Elle t’attend au quai."
+		texte += "\n\nCorbin t’a laissé les clés de la Lanterne. La chaloupe t’y emmènera."
 	var quai := scene.get_node_or_null("EscaleNavires")
 	dialogue.ouvrir_choix(nom_affiche, texte, "%s · %d Berry" % [libelle_traversee, cout], _traverser,
-		"Navires du port", quai.ouvrir if quai != null else _embarquer)
+		"Prendre la chaloupe", quai.approcher if quai != null else _embarquer)
 
 func _embarquer() -> void:
 	Navires.embarquer()

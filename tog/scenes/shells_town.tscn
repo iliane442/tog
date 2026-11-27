@@ -15,7 +15,6 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-statue-de-place.png" id="statue"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="caisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="panneau"]
-[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="bateau"]
 [ext_resource type="Texture2D" path="res://assets/sprites/pnj/coby.png" id="coby"]
 [ext_resource type="Texture2D" path="res://assets/sprites/pnj/alba.png" id="alba"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="lanterne"]
@@ -25,6 +24,8 @@
 radius = 47.0
 
 [node name="ShellsTown" instance=ExtResource("Zone")]
+mouillage_chaloupe = Vector2(255, 1690)
+quai_chaloupe = Vector2(416, 1696)
 
 [node name="TerrainZone" parent="." index="0"]
 plan = PackedStringArray(
@@ -108,13 +109,6 @@ position = Vector2(480, 1568)
 
 [node name="capitaine_ferry" parent="." instance=ExtResource("Capitaine")]
 position = Vector2(448, 2256)
-
-[node name="PatrouilleurGolfe" type="Sprite2D" parent="."]
-position = Vector2(150, 2100)
-z_index = -2
-scale = Vector2(1.1, 1.1)
-texture = ExtResource("bateau")
-offset = Vector2(0, -48)
 
 [node name="BaseDeLaMarine" type="Sprite2D" parent="Paysage"]
 position = Vector2(2432, 640)

@@ -14,7 +14,6 @@
 [ext_resource type="Texture2D" path="res://assets/world/orange_town/oranger.png" id="Oranger"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="Borne"]
-[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/cabane_de_peche.png" id="Cabane"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/chene_ancien.png" id="Chene"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/fleurs_medicinales.png" id="Fleurs"]
@@ -23,7 +22,6 @@
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-panneau-bois.png" id="Panneau"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-caisses-empilees.png" id="Caisses"]
 [ext_resource type="Texture2D" path="res://assets/world/world-pixellab-decors-v1-tempere-coffre-de-marin.png" id="Coffre"]
-[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
 [ext_resource type="Texture2D" path="res://assets/world/fushia_aventure/phare.png" id="Poste"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/kaya.png" id="sprite_ile_kaya"]
 [ext_resource type="Texture2D" path="res://assets/sprites/iles/usopp.png" id="sprite_ile_usopp"]
@@ -40,6 +38,8 @@
 radius = 47.0
 
 [node name="SyrupVillage" instance=ExtResource("Zone")]
+mouillage_chaloupe = Vector2(1435, 2416)
+quai_chaloupe = Vector2(1440, 2336)
 
 [node name="TerrainZone" parent="." index="0"]
 plan = PackedStringArray(
@@ -118,21 +118,6 @@ paroles = "Un café et un pont vers la suite du monde : le Baratie m'attend au l
 destination = "res://scenes/baratie.tscn"
 arrivee = &"DepuisSyrupVillage"
 libelle_traversee = "Embarquer pour le Baratie"
-
-[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
-position = Vector2(1088, 2752)
-texture = ExtResource("Sloop")
-offset = Vector2(0, -250.0)
-scale = Vector2(0.7, 0.7)
-z_index = -3
-
-[node name="BarqueAuMouillage" type="Sprite2D" parent="Paysage"]
-position = Vector2(1984, 2752)
-texture = ExtResource("Barque")
-offset = Vector2(0, -70.0)
-scale = Vector2(0.9, 0.9)
-flip_h = true
-z_index = -3
 
 [node name="BorneDuQuai" type="Sprite2D" parent="Paysage"]
 position = Vector2(1305.6, 2201.6)

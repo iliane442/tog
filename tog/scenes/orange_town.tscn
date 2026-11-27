@@ -15,8 +15,6 @@
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/cabane_de_peche.png" id="Cabane"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/lanterne_de_quai.png" id="Lanterne"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="Borne"]
-[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/barque_de_peche.png" id="Barque"]
-[ext_resource type="Texture2D" path="res://assets/world/world-ship-sloop-v1.png" id="Sloop"]
 [ext_resource type="Texture2D" path="res://assets/world/orange_town/maison_abricot.png" id="MaisonAbricot"]
 [ext_resource type="Texture2D" path="res://assets/world/orange_town/maison_tuile.png" id="MaisonTuile"]
 [ext_resource type="Texture2D" path="res://assets/world/orange_town/maison_ardoise.png" id="MaisonArdoise"]
@@ -42,6 +40,8 @@
 radius = 47.0
 
 [node name="OrangeTown" instance=ExtResource("Zone")]
+mouillage_chaloupe = Vector2(555, 1966)
+quai_chaloupe = Vector2(544, 1824)
 
 [node name="TerrainZone" parent="." index="0"]
 plan = PackedStringArray(
@@ -133,20 +133,6 @@ paroles = "Je repars pour Shells Town. La marée remonte et le chenal est libre.
 destination = "res://scenes/shells_town.tscn"
 arrivee = &"DepuisOrangeTown"
 libelle_traversee = "Embarquer pour Shells Town"
-
-[node name="SloopDuFerry" type="Sprite2D" parent="Paysage"]
-position = Vector2(320.000, 1728.000)
-texture = ExtResource("Sloop")
-offset = Vector2(0, -250.0)
-scale = Vector2(0.73, 0.73)
-z_index = -3
-
-[node name="BarqueDePeche" type="Sprite2D" parent="Paysage"]
-position = Vector2(678.400, 1932.800)
-texture = ExtResource("Barque")
-offset = Vector2(0, -45.0)
-scale = Vector2(1.03, 1.03)
-z_index = -3
 
 [node name="CabaneDuQuai" type="Sprite2D" parent="Paysage"]
 position = Vector2(1056.000, 1593.600)
@@ -420,13 +406,6 @@ position = Vector2(2048.000, 2393.600)
 texture = ExtResource("Chene")
 offset = Vector2(0, -100.0)
 scale = Vector2(0.92, 0.92)
-flip_h = true
-
-[node name="BarqueEchouee" type="Sprite2D" parent="Paysage"]
-position = Vector2(3086.080, 2464.000)
-texture = ExtResource("Barque")
-offset = Vector2(0, -45.0)
-scale = Vector2(0.84, 0.84)
 flip_h = true
 
 [node name="Oranger01" type="Sprite2D" parent="Paysage"]
