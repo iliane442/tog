@@ -1,10 +1,7 @@
 # equipages.gd — autoload : équipages (guildes de joueurs), alliances, flottes
 # Prévu pour un MMO : les membres sont des joueurs identifiés par le nom de
-# leur personnage (unique par compte), et les données vivent dans une base
-# et les données vivent dans une base SQLite dédiée (user://equipages.db),
-# séparée de la base de contenu glo.db réimportable. L'acceptation des
-# invitations et des alliances sera portée par le serveur quand le réseau
-# existera ; en attendant, l'écriture locale sert de prototype.
+# leur personnage (unique par compte). Les données vivent dans une base
+# SQLite dédiée, séparée de la base de contenu glo.db réimportable.
 #
 # Rangs : capitaine (le fondateur), vice-capitaine (peut recruter, virer,
 # gérer les alliances, la caisse et la description), matelot.
@@ -12,6 +9,10 @@ extends Node
 
 const MEMBRES_MAX := 20        # capitaine compris
 const DESCRIPTION_MAX := 200   # caractères
+const GALIONS_MAX := 10
+const PRIX_GALION := 100000
+const NAVIRES := preload("res://scripts/world/catalogue_navires.gd")
+const MONTANT_MAX := 999999999
 const CHEMIN_BASE := "user://equipages.db"
 # le serveur MMO porte les équipages en ligne dans sa propre base, sur
 # la même machine que le jeu solo elle ne doit jamais toucher la même
@@ -22,11 +23,13 @@ const RANG_VICE := "vice-capitaine"
 const RANG_MATELOT := "matelot"
 
 # état de l'équipage du joueur local :
-# {id, nom, capitaine, niveau, caisse, description, mon_rang}
+# {id, nom, capitaine, niveau, caisse, galions, description, mon_rang}
 # (vide si le joueur n'est ni capitaine ni membre d'un équipage)
 var mon_equipage: Dictionary = {}
 var db: SQLite
 var disponible := false
+var _base_serveur := false
+var _comptes_lies := false
 
 # compte connecté : l'équipage vit sur le serveur, l'état local n'est
 # plus lu ni écrit (les lectures servent le miroir reçu par le réseau)
@@ -93,6 +96,7 @@ func _recharger_mon_equipage() -> void:
 		"capitaine": str(ligne["capitaine"]),
 		"niveau": int(ligne["niveau"]),
 		"caisse": int(ligne.get("caisse", 0)),
+		"galions": int(ligne.get("galions", 0)),
 		"description": str(ligne.get("description", "")),
 		"mon_rang": RANG_CAPITAINE if capitaine else str(ligne.get("mon_rang", RANG_MATELOT)),
 	}
@@ -120,7 +124,7 @@ func puis_je_gerer() -> bool:
 
 # le serveur MMO porte les équipages en ligne : sa base est dédiée pour
 # ne jamais mélanger avec le fichier du jeu solo de la même machine
-func basculer_serveur() -> void:
+func basculer_serveur(chemin_comptes: String) -> void:
 	if db != null:
 		db.close_db()
 	db = SQLite.new()
@@ -129,6 +133,8 @@ func basculer_serveur() -> void:
 	_creer_schema()
 	db.query("SELECT COUNT(*) AS total FROM equipages;")
 	disponible = not db.query_result.is_empty()
+	_base_serveur = true
+	_comptes_lies = _ecrire("ATTACH DATABASE '%s' AS comptes;" % _echapper(ProjectSettings.globalize_path(chemin_comptes)))
 	if disponible:
 		_recharger_mon_equipage()
 
@@ -222,10 +228,17 @@ func dissoudre() -> void:
 	if not suis_capitaine():
 		return
 	var id_equipage := int(mon_equipage["id"])
-	_ecrire("DELETE FROM equipages_membres WHERE equipage_id = %d;" % id_equipage)
-	_ecrire("DELETE FROM equipages_journal WHERE equipage_id = %d;" % id_equipage)
-	_retirer_de_la_flotte(id_equipage)
-	_ecrire("DELETE FROM equipages WHERE id = %d;" % id_equipage)
+	var requetes: Array[String] = [
+		"DELETE FROM equipages_membres WHERE equipage_id = %d;" % id_equipage,
+		"DELETE FROM equipages_journal WHERE equipage_id = %d;" % id_equipage,
+		"DELETE FROM equipages_diplomatie WHERE equipage_a = %d OR equipage_b = %d;" % [id_equipage, id_equipage],
+		"DELETE FROM galions_equipage WHERE equipage_id = %d;" % id_equipage,
+	]
+	requetes.append_array(_requetes_depart_alliance(id_equipage))
+	requetes.append("DELETE FROM equipages WHERE id = %d;" % id_equipage)
+	if not _transaction(requetes):
+		message_serveur("Impossible de dissoudre l’équipage.")
+		return
 	mon_equipage = {}
 	equipage_modifie.emit()
 
@@ -238,8 +251,8 @@ func quitter() -> void:
 	if mon_equipage.is_empty() or suis_capitaine():
 		return
 	var rang := str(mon_equipage.get("mon_rang", RANG_MATELOT))
-	_ecrire("DELETE FROM equipages_membres WHERE equipage_id = %d AND nom_joueur = '%s';" % [
-		int(mon_equipage["id"]), _echapper(_joueur())])
+	if not _retirer_membre(_joueur()):
+		return
 	if rang == RANG_VICE:
 		_journaliser("Le vice-capitaine %s quitte l'équipage." % _joueur())
 	else:
@@ -340,8 +353,7 @@ func virer(nom: String) -> String:
 			int(mon_equipage["id"]), _echapper(nom_propre)])
 	if lignes.is_empty():
 		return "Membre introuvable"
-	if not _ecrire("DELETE FROM equipages_membres WHERE equipage_id = %d AND nom_joueur = '%s';" % [
-			int(mon_equipage["id"]), _echapper(nom_propre)]):
+	if not _retirer_membre(nom_propre):
 		return "Échec du virement"
 	if str(lignes[0]["rang"]) == RANG_VICE:
 		_journaliser("%s révoque le vice-capitaine %s." % [_joueur(), nom_propre])
@@ -349,6 +361,13 @@ func virer(nom: String) -> String:
 		_journaliser("%s vire %s de l'équipage." % [_joueur(), nom_propre])
 	equipage_modifie.emit()
 	return ""
+
+func _retirer_membre(nom: String) -> bool:
+	var id := int(mon_equipage["id"])
+	return _transaction([
+		"UPDATE galions_equipage SET pilote = NULL WHERE equipage_id = %d AND pilote = '%s';" % [id, _echapper(nom)],
+		"DELETE FROM equipages_membres WHERE equipage_id = %d AND nom_joueur = '%s';" % [id, _echapper(nom)],
+	])
 
 # --- Rangs ---
 
@@ -405,59 +424,194 @@ func rang_de(nom: String) -> String:
 
 # --- Caisse commune ---
 
-# verse des Berry à la caisse (n'importe quel membre)
+# Dépôt depuis la bourse personnelle, accessible à tout membre.
 func deposer_berry(montant: int) -> String:
+	if mon_equipage.is_empty():
+		return "Vous n’êtes pas dans un équipage."
+	if not montant_valide(montant):
+		return "Montant invalide."
+	if Personnage.berry < montant:
+		return "Pas assez de Berry dans votre bourse."
 	if en_ligne:
-		# le Berry en ligne vit dans la sauvegarde serveur : c'est le
-		# serveur qui le débite et renvoie le solde à jour
-		if mon_equipage.is_empty():
-			return "Vous n'êtes pas dans un équipage"
-		if montant <= 0:
-			return "Montant invalide"
-		if Personnage.berry < montant:
-			return "Pas assez de Berry"
 		Reseau.demander_equipage("deposer", "", montant)
 		return ""
+	var erreur := echanger_bourse(montant)
+	if erreur.is_empty():
+		Personnage.ajouter_berry(-montant)
+		equipage_modifie.emit()
+	return erreur
+
+func retirer_berry(montant: int) -> String:
+	if not puis_je_gerer():
+		return "Seul le capitaine ou le vice-capitaine peut effectuer un retrait."
+	if not montant_valide(montant):
+		return "Montant invalide."
+	if int(mon_equipage["caisse"]) < montant:
+		return "Caisse insuffisante (%d Berry)." % int(mon_equipage["caisse"])
+	if en_ligne:
+		Reseau.demander_equipage("retirer", "", montant)
+		return ""
+	var erreur := echanger_bourse(-montant)
+	if erreur.is_empty():
+		Personnage.ajouter_berry(montant)
+		equipage_modifie.emit()
+	return erreur
+
+func montant_valide(montant: int) -> bool:
+	return montant > 0 and montant <= MONTANT_MAX
+
+# Le solde du compte en ligne et le journal sont écrits avec la caisse.
+func echanger_bourse(delta_caisse: int, id_compte: int = 0, profil_json: String = "") -> String:
 	if mon_equipage.is_empty():
-		return "Vous n'êtes pas dans un équipage"
-	if montant <= 0:
-		return "Montant invalide"
-	if Personnage.berry < montant:
-		return "Pas assez de Berry"
-	Personnage.ajouter_berry(-montant)
+		return "Vous n’êtes pas dans un équipage."
+	if not montant_valide(absi(delta_caisse)):
+		return "Montant invalide."
+	if delta_caisse < 0 and not puis_je_gerer():
+		return "Seul le capitaine ou le vice-capitaine peut effectuer un retrait."
+	var caisse := int(mon_equipage["caisse"])
+	if caisse + delta_caisse < 0:
+		return "Caisse insuffisante (%d Berry)." % caisse
 	var id_equipage := int(mon_equipage["id"])
-	_ecrire("UPDATE equipages SET caisse = caisse + %d WHERE id = %d;" % [
-		montant, id_equipage])
-	mon_equipage["caisse"] = int(mon_equipage["caisse"]) + montant
-	_journaliser("%s dépose %d Berry à la caisse." % [_joueur(), montant])
+	var message := "%s dépose %d Berry à la caisse." if delta_caisse > 0 else "%s retire %d Berry de la caisse."
+	var a_ecrire: Array[String] = [
+		"UPDATE equipages SET caisse = caisse + (%d) WHERE id = %d;" % [delta_caisse, id_equipage],
+		_requete_journal(id_equipage, message % [_joueur(), absi(delta_caisse)]),
+	]
+	if id_compte > 0:
+		if not _comptes_lies:
+			return "La caisse est momentanément indisponible."
+		a_ecrire.append("UPDATE comptes.mmo_persos SET donnees = '%s', maj_le = datetime('now') WHERE compte_id = %d;" %
+			[_echapper(profil_json), id_compte])
+	if not _transaction(a_ecrire):
+		return "Impossible de modifier la caisse."
+	mon_equipage["caisse"] = caisse + delta_caisse
+	return ""
+
+func virer_berry(id_cible: int, montant: int) -> String:
+	if not puis_je_gerer():
+		return "Seul le capitaine ou le vice-capitaine peut faire un virement."
+	if not montant_valide(montant):
+		return "Montant invalide."
+	var id_equipage := int(mon_equipage["id"])
+	if id_cible <= 0 or id_cible == id_equipage:
+		return "Choisissez un autre équipage."
+	var caisse := int(mon_equipage["caisse"])
+	if caisse < montant:
+		return "Caisse insuffisante (%d Berry)." % caisse
+	if en_ligne:
+		Reseau.demander_equipage("virement", str(id_cible), montant)
+		return ""
+	var nom_cible := nom_equipage(id_cible)
+	if nom_cible.is_empty():
+		return "Équipage destinataire introuvable."
+	if not _transaction([
+		"UPDATE equipages SET caisse = caisse - %d WHERE id = %d;" % [montant, id_equipage],
+		"UPDATE equipages SET caisse = caisse + %d WHERE id = %d;" % [montant, id_cible],
+		_requete_journal(id_equipage, "%s vire %d Berry à « %s »." % [_joueur(), montant, nom_cible]),
+		_requete_journal(id_cible, "« %s » a versé %d Berry dans la caisse." % [mon_equipage["nom"], montant]),
+	]):
+		return "Le virement a échoué."
+	mon_equipage["caisse"] = caisse - montant
 	equipage_modifie.emit()
 	return ""
 
-# retire des Berry de la caisse vers la bourse du joueur (gestion, auto : capitaine ou vice)
-func retirer_berry(montant: int) -> String:
-	if en_ligne:
-		if not puis_je_gerer():
-			return "Seul le capitaine ou le vice-capitaine retire de la caisse"
-		if montant <= 0:
-			return "Montant invalide"
-		if int(mon_equipage["caisse"]) < montant:
-			return "Caisse insuffisante (%d Berry)" % int(mon_equipage["caisse"])
-		Reseau.demander_equipage("retirer", "", montant)
-		return ""
+func acheter_galions(quantite: int, modele: String = "ateliers") -> String:
 	if not puis_je_gerer():
-		return "Seul le capitaine ou le vice-capitaine retire de la caisse"
-	if montant <= 0:
-		return "Montant invalide"
-	if int(mon_equipage["caisse"]) < montant:
-		return "Caisse insuffisante (%d Berry)" % int(mon_equipage["caisse"])
+		return "Seul le capitaine ou le vice-capitaine peut acheter des galions."
+	if modele not in NAVIRES.GALIONS:
+		return "Choisis un modèle de galion."
+	if quantite < 1 or quantite > GALIONS_MAX:
+		return "Quantité invalide."
+	var galions := int(mon_equipage.get("galions", 0))
+	if galions + quantite > GALIONS_MAX:
+		return "La flotte ne peut pas dépasser %d galions." % GALIONS_MAX
+	var prix := quantite * PRIX_GALION
+	var caisse := int(mon_equipage["caisse"])
+	if caisse < prix:
+		return "Caisse insuffisante. L’achat coûte %d Berry." % prix
+	if en_ligne:
+		Reseau.demander_equipage("acheter_galions", modele, quantite)
+		return ""
 	var id_equipage := int(mon_equipage["id"])
-	_ecrire("UPDATE equipages SET caisse = caisse - %d WHERE id = %d;" % [
-		montant, id_equipage])
-	Personnage.ajouter_berry(montant)
-	mon_equipage["caisse"] = int(mon_equipage["caisse"]) - montant
-	_journaliser("%s retire %d Berry de la caisse." % [_joueur(), montant])
+	var requetes: Array[String] = [
+		"UPDATE equipages SET caisse = caisse - %d, galions = galions + %d WHERE id = %d;" %
+			[prix, quantite, id_equipage],
+		_requete_journal(id_equipage, "%s achète %d × %s pour %d Berry." % [_joueur(), quantite, NAVIRES.fiche(modele)["nom"], prix]),
+	]
+	for _indice in range(quantite):
+		requetes.append("INSERT INTO galions_equipage (equipage_id, modele) VALUES (%d, '%s');" % [id_equipage, modele])
+	if not _transaction(requetes):
+		return "Impossible d’acheter les galions."
+	mon_equipage["caisse"] = caisse - prix
+	mon_equipage["galions"] = galions + quantite
 	equipage_modifie.emit()
 	return ""
+
+func liste_galions() -> Array:
+	if mon_equipage.is_empty():
+		return []
+	if en_ligne:
+		return mon_equipage.get("flotte_navires", [])
+	return _lire("SELECT id, modele, COALESCE(pilote, '') AS pilote FROM galions_equipage WHERE equipage_id = %d ORDER BY id;" % int(mon_equipage["id"]))
+
+func galion_du_joueur(nom: String) -> Dictionary:
+	if en_ligne:
+		for galion: Dictionary in liste_galions():
+			if galion["pilote"] == nom:
+				return galion
+		return {}
+	var lignes := _lire("SELECT id, equipage_id, modele, pilote, donnees FROM galions_equipage WHERE pilote = '%s';" % _echapper(nom))
+	return {} if lignes.is_empty() else lignes[0]
+
+func assigner_galion(id: int, pilote: String) -> String:
+	if not suis_capitaine():
+		return "Seul le capitaine assigne les galions."
+	if en_ligne:
+		Reseau.demander_equipage("assigner_galion", pilote, id)
+		return ""
+	var equipage := int(mon_equipage["id"])
+	if pilote != "" and pilote not in noms_de_l_equipage(equipage):
+		return "Ce joueur ne fait pas partie de l’équipage."
+	var galions := _lire("SELECT modele, pilote FROM galions_equipage WHERE id = %d AND equipage_id = %d;" % [id, equipage])
+	if galions.is_empty() or galions[0]["modele"] not in NAVIRES.GALIONS:
+		return "Ce galion doit être choisi avant son attribution."
+	var requetes: Array[String] = []
+	var valeur := "NULL"
+	if pilote != "":
+		valeur = "'%s'" % _echapper(pilote)
+		requetes.append("UPDATE galions_equipage SET pilote = NULL WHERE equipage_id = %d AND pilote = %s;" % [equipage, valeur])
+	requetes.append("UPDATE galions_equipage SET pilote = %s WHERE id = %d;" % [valeur, id])
+	if not _transaction(requetes):
+		return "L’attribution du galion a échoué."
+	equipage_modifie.emit()
+	return ""
+
+func choisir_galion(id: int, modele: String) -> String:
+	if not suis_capitaine() or modele not in NAVIRES.GALIONS:
+		return "Le capitaine choisit le modèle du galion."
+	if en_ligne:
+		Reseau.demander_equipage("choisir_galion", modele, id)
+		return ""
+	var ligne := _lire("SELECT id FROM galions_equipage WHERE id = %d AND equipage_id = %d AND modele = '';" % [id, int(mon_equipage["id"])])
+	if ligne.is_empty() or not _ecrire("UPDATE galions_equipage SET modele = '%s' WHERE id = %d;" % [modele, id]):
+		return "Ce galion possède déjà un modèle."
+	equipage_modifie.emit()
+	return ""
+
+func donnees_galion(galion: Dictionary) -> Dictionary:
+	var donnees: Variant = JSON.parse_string(str(galion.get("donnees", "{}")))
+	return donnees if donnees is Dictionary else {}
+
+func enregistrer_galion(galion: Dictionary, donnees: Dictionary, compte := 0, profil: Dictionary = {}) -> bool:
+	var requetes: Array[String] = [
+		"UPDATE galions_equipage SET donnees = '%s' WHERE id = %d;" % [_echapper(JSON.stringify(donnees)), int(galion["id"])],
+	]
+	if compte != 0:
+		if not _comptes_lies:
+			return false
+		requetes.append("UPDATE comptes.mmo_persos SET donnees = '%s', maj_le = datetime('now') WHERE compte_id = %d;" %
+			[_echapper(JSON.stringify(profil)), compte])
+	return _transaction(requetes)
 
 # --- Description ---
 
@@ -484,38 +638,6 @@ func changer_description(texte: String) -> String:
 	return ""
 
 # --- Aides serveur ---
-
-# le serveur verse dans la caisse le Berry déjà débité du perso serveur
-# (le Berry en ligne vit dans la sauvegarde du compte, pas Personnage)
-func verser_caisse(montant: int) -> String:
-	if mon_equipage.is_empty():
-		return "Vous n'êtes pas dans un équipage"
-	if montant <= 0:
-		return "Montant invalide"
-	_ecrire("UPDATE equipages SET caisse = caisse + %d WHERE id = %d;" % [
-		montant, int(mon_equipage["id"])])
-	mon_equipage["caisse"] = int(mon_equipage["caisse"]) + montant
-	_journaliser("%s dépose %d Berry à la caisse." % [_joueur(), montant])
-	equipage_modifie.emit()
-	return ""
-
-# le serveur prend dans la caisse ; le versement au compte du joueur est
-# fait par Reseau (le processus serveur n'a pas de Personnage)
-func prendre_caisse(montant: int) -> String:
-	if not puis_je_gerer():
-		return "Seul le capitaine ou le vice-capitaine retire de la caisse"
-	if mon_equipage.is_empty():
-		return "Vous n'êtes pas dans un équipage"
-	if montant <= 0:
-		return "Montant invalide"
-	if int(mon_equipage["caisse"]) < montant:
-		return "Caisse insuffisante (%d Berry)" % int(mon_equipage["caisse"])
-	_ecrire("UPDATE equipages SET caisse = caisse - %d WHERE id = %d;" % [
-		montant, int(mon_equipage["id"])])
-	mon_equipage["caisse"] = int(mon_equipage["caisse"]) - montant
-	_journaliser("%s retire %d Berry de la caisse." % [_joueur(), montant])
-	equipage_modifie.emit()
-	return ""
 
 # ids des équipages de la flotte d'un équipage donné (lui compris s'il
 # en fait partie) — le serveur s'en sert pour rafraîchir les membres de
@@ -554,8 +676,10 @@ func nom_equipage(id_equipage: int) -> String:
 func _journaliser(message: String) -> void:
 	if mon_equipage.is_empty():
 		return
-	_ecrire("INSERT INTO equipages_journal (equipage_id, message) VALUES (%d, '%s');" % [
-		int(mon_equipage["id"]), _echapper(message)])
+	_ecrire(_requete_journal(int(mon_equipage["id"]), message))
+
+func _requete_journal(id_equipage: int, message: String) -> String:
+	return "INSERT INTO equipages_journal (equipage_id, message) VALUES (%d, '%s');" % [id_equipage, _echapper(message)]
 
 # dernières entrées du journal : [{heure, message}], plus récentes d'abord
 # (l'heure est découpée côté GDScript : le "%" de strftime casserait
@@ -604,118 +728,203 @@ func membres_de_ma_flotte() -> Array:
 		+ " JOIN equipage_flotte ef ON ef.equipage_id = e.id"
 		+ " WHERE ef.flotte_id = %d ORDER BY e.nom;" % int(flotte["id"]))
 
-# tous les autres équipages du monde (pour proposer des alliances)
+# Annuaire des autres équipages avec effectifs et état diplomatique.
 func autres_equipages() -> Array:
 	if en_ligne:
 		return _miroir_autres.duplicate(true)
 	if not disponible:
 		return []
-	var requete := "SELECT id, nom, capitaine, niveau FROM equipages"
-	if not mon_equipage.is_empty():
-		requete += " WHERE id != %d" % int(mon_equipage["id"])
-	requete += " ORDER BY nom;"
-	return _lire(requete)
+	var id_equipage := int(mon_equipage.get("id", 0))
+	return _lire((
+		"SELECT e.id, e.nom, e.capitaine, e.niveau,"
+		+ " COALESCE(d.etat, '') AS etat, COALESCE(d.initiateur, 0) AS initiateur,"
+		+ " 1 + (SELECT COUNT(*) FROM equipages_membres m WHERE m.equipage_id = e.id) AS membres"
+		+ " FROM equipages e LEFT JOIN equipages_diplomatie d"
+		+ " ON d.equipage_a = MIN(e.id, %d) AND d.equipage_b = MAX(e.id, %d)"
+		+ " WHERE e.id != %d ORDER BY e.nom;") % [id_equipage, id_equipage, id_equipage])
 
-func nb_membres_de(id_equipage: int) -> int:
-	if en_ligne:
-		for ligne in _miroir_autres:
-			if int(ligne.get("id", -1)) == id_equipage:
-				return maxi(int(ligne.get("membres", 1)), 1)
-		return 1
-	var lignes := _lire(
-		"SELECT COUNT(*) AS total FROM equipages_membres WHERE equipage_id = %d;" % id_equipage)
-	if lignes.is_empty():
-		return 1
-	return 1 + int(lignes[0]["total"])  # capitaine compris
-
-# conclut une alliance avec un autre équipage : les deux équipages
-# rejoignent la même flotte ; renvoie "" si réussi. En MMO, la proposition
-# devra être acceptée par le capitaine adverse.
 func proposer_alliance(id_cible: int) -> String:
+	if not puis_je_gerer():
+		return "Seul le capitaine ou le vice-capitaine gère les alliances."
+	var id_equipage := int(mon_equipage["id"])
+	if id_cible <= 0 or id_cible == id_equipage:
+		return "Choisissez un autre équipage."
 	if en_ligne:
-		if not puis_je_gerer():
-			return "Seul le capitaine ou le vice-capitaine gère les alliances"
 		Reseau.demander_equipage("alliance", str(id_cible))
 		return ""
-	if mon_equipage.is_empty():
-		return "Vous n'êtes pas engagé dans un équipage"
-	if not puis_je_gerer():
-		return "Seul le capitaine ou le vice-capitaine gère les alliances"
-	var lignes := _lire("SELECT id, nom FROM equipages WHERE id = %d;" % id_cible)
-	if lignes.is_empty():
-		return "Équipage introuvable"
-	var nom_cible := str(lignes[0]["nom"])
-	var ma_flotte_avant := ma_flotte()
-	var lignes_cible := _lire(
-		"SELECT f.id, f.nom FROM flottes f"
-		+ " JOIN equipage_flotte ef ON ef.flotte_id = f.id"
-		+ " WHERE ef.equipage_id = %d;" % id_cible)
-	var flotte_cible: Dictionary = {}
-	if not lignes_cible.is_empty():
-		flotte_cible = {"id": int(lignes_cible[0]["id"]), "nom": str(lignes_cible[0]["nom"])}
-	if not ma_flotte_avant.is_empty() and not flotte_cible.is_empty():
-		if int(ma_flotte_avant["id"]) == int(flotte_cible["id"]):
-			return "Alliance déjà conclue"
-		return "Les deux équipages sont déjà dans des flottes différentes"
-	# les deux équipages sans flotte : la première alliance fonde la leur
-	if ma_flotte_avant.is_empty() and flotte_cible.is_empty():
-		var nom_flotte := "Flotte " + str(mon_equipage["nom"])
-		if not _ecrire("INSERT INTO flottes (nom) VALUES ('%s');" % _echapper(nom_flotte)):
-			return "Une flotte homonyme existe déjà"
-		var id_flotte := _dernier_id()
-		_ecrire("INSERT INTO equipage_flotte (equipage_id, flotte_id) VALUES (%d, %d);" % [
-			int(mon_equipage["id"]), id_flotte])
-		_ecrire("INSERT INTO equipage_flotte (equipage_id, flotte_id) VALUES (%d, %d);" % [
-			id_cible, id_flotte])
-	elif flotte_cible.is_empty():
-		# la cible rejoint ma flotte
-		_ecrire("INSERT INTO equipage_flotte (equipage_id, flotte_id) VALUES (%d, %d);" % [
-			id_cible, int(ma_flotte_avant["id"])])
-	else:
-		# je rejoins la flotte de la cible
-		_ecrire("INSERT INTO equipage_flotte (equipage_id, flotte_id) VALUES (%d, %d);" % [
-			int(mon_equipage["id"]), int(flotte_cible["id"])])
-	_journaliser("Alliance conclue avec « %s »." % nom_cible)
+	var nom_cible := nom_equipage(id_cible)
+	if nom_cible.is_empty():
+		return "Équipage introuvable."
+	var erreur := _verifier_alliance(id_equipage, id_cible)
+	if not erreur.is_empty():
+		return erreur
+	if not _base_serveur:
+		return _conclure_alliance(id_equipage, id_cible, nom_cible)
+	if not _relation_entre(id_equipage, id_cible).is_empty():
+		return "Une demande d’alliance est déjà en attente."
+	if not _transaction([
+		"INSERT INTO equipages_diplomatie VALUES (%d, %d, %d, 'proposition');" %
+			[mini(id_equipage, id_cible), maxi(id_equipage, id_cible), id_equipage],
+		_requete_journal(id_equipage, "Demande d’alliance envoyée à « %s »." % nom_cible),
+		_requete_journal(id_cible, "« %s » propose une alliance." % mon_equipage["nom"]),
+	]):
+		return "Impossible d’envoyer la demande d’alliance."
 	equipage_modifie.emit()
 	return ""
 
-# rompt l'alliance de mon équipage : il quitte sa flotte ; la flotte se
-# dissout si elle se vide
-func rompre_alliance() -> String:
+func repondre_alliance(id_cible: int, accepter: bool) -> String:
+	if not puis_je_gerer():
+		return "Seul le capitaine ou le vice-capitaine gère les alliances."
 	if en_ligne:
-		if not puis_je_gerer():
-			return "Seul le capitaine ou le vice-capitaine rompt l'alliance"
+		Reseau.demander_equipage("accepter_alliance" if accepter else "refuser_alliance", str(id_cible))
+		return ""
+	var id_equipage := int(mon_equipage["id"])
+	var relation := _relation_entre(id_equipage, id_cible)
+	if relation.get("etat", "") != "proposition":
+		return "Cette proposition n’est plus disponible."
+	if accepter:
+		if int(relation["initiateur"]) != id_cible:
+			return "Seul l’équipage destinataire peut accepter l’alliance."
+		var erreur := _verifier_alliance(id_equipage, id_cible)
+		if not erreur.is_empty():
+			return erreur
+		return _conclure_alliance(id_equipage, id_cible, nom_equipage(id_cible))
+	var action := "retire sa proposition d’alliance" if int(relation["initiateur"]) == id_equipage else "refuse l’alliance"
+	if not _transaction([
+		_requete_supprimer_relation(id_equipage, id_cible),
+		_requete_journal(id_cible, "« %s » %s." % [mon_equipage["nom"], action]),
+	]):
+		return "Impossible de fermer la proposition."
+	equipage_modifie.emit()
+	return ""
+
+func declarer_guerre(id_cible: int) -> String:
+	if not puis_je_gerer():
+		return "Seul le capitaine ou le vice-capitaine peut déclarer une guerre."
+	var id_equipage := int(mon_equipage["id"])
+	if id_cible <= 0 or id_cible == id_equipage:
+		return "Choisissez un autre équipage."
+	if est_allie(id_cible):
+		return "Quittez l’alliance avant de déclarer la guerre à cet équipage."
+	if en_ligne:
+		Reseau.demander_equipage("guerre", str(id_cible))
+		return ""
+	var nom_cible := nom_equipage(id_cible)
+	if nom_cible.is_empty():
+		return "Équipage introuvable."
+	if _relation_entre(id_equipage, id_cible).get("etat", "") == "guerre":
+		return "Vos équipages sont déjà en guerre."
+	if not _transaction([
+		_requete_supprimer_relation(id_equipage, id_cible),
+		"INSERT INTO equipages_diplomatie VALUES (%d, %d, %d, 'guerre');" %
+			[mini(id_equipage, id_cible), maxi(id_equipage, id_cible), id_equipage],
+		_requete_journal(id_equipage, "Guerre déclarée à « %s »." % nom_cible),
+		_requete_journal(id_cible, "« %s » vous déclare la guerre." % mon_equipage["nom"]),
+	]):
+		return "Impossible de déclarer la guerre."
+	equipage_modifie.emit()
+	return ""
+
+func lever_guerre(id_cible: int) -> String:
+	if not puis_je_gerer():
+		return "Seul le capitaine ou le vice-capitaine peut lever une guerre."
+	if en_ligne:
+		Reseau.demander_equipage("lever_guerre", str(id_cible))
+		return ""
+	var id_equipage := int(mon_equipage["id"])
+	var relation := _relation_entre(id_equipage, id_cible)
+	if relation.get("etat", "") != "guerre" or int(relation["initiateur"]) != id_equipage:
+		return "Seul l’équipage qui a déclaré la guerre peut la lever."
+	if not _transaction([
+		_requete_supprimer_relation(id_equipage, id_cible),
+		_requete_journal(id_equipage, "Fin de la guerre contre « %s »." % nom_equipage(id_cible)),
+		_requete_journal(id_cible, "« %s » a levé sa déclaration de guerre." % mon_equipage["nom"]),
+	]):
+		return "Impossible de lever la guerre."
+	equipage_modifie.emit()
+	return ""
+
+func _relation_entre(id_a: int, id_b: int) -> Dictionary:
+	var lignes := _lire("SELECT initiateur, etat FROM equipages_diplomatie WHERE equipage_a = %d AND equipage_b = %d;" %
+		[mini(id_a, id_b), maxi(id_a, id_b)])
+	return {} if lignes.is_empty() else lignes[0]
+
+func _requete_supprimer_relation(id_a: int, id_b: int) -> String:
+	return "DELETE FROM equipages_diplomatie WHERE equipage_a = %d AND equipage_b = %d;" % [mini(id_a, id_b), maxi(id_a, id_b)]
+
+func _verifier_alliance(id_equipage: int, id_cible: int) -> String:
+	if est_allie(id_cible):
+		return "Alliance déjà conclue."
+	var membres := equipages_de_la_flotte_de(id_equipage)
+	var membres_cible := equipages_de_la_flotte_de(id_cible)
+	if not membres.is_empty() and not membres_cible.is_empty():
+		return "Les deux équipages sont déjà dans des alliances différentes."
+	if membres.is_empty():
+		membres = [id_equipage]
+	if membres_cible.is_empty():
+		membres_cible = [id_cible]
+	for id: int in membres:
+		for autre: int in membres_cible:
+			if _relation_entre(id, autre).get("etat", "") == "guerre":
+				return "Une guerre en cours empêche cette alliance."
+	return ""
+
+func _conclure_alliance(id_equipage: int, id_cible: int, nom_cible: String) -> String:
+	var flotte := ma_flotte()
+	var flotte_cible := _lire("SELECT flotte_id FROM equipage_flotte WHERE equipage_id = %d;" % id_cible)
+	var a_ecrire: Array[String] = []
+	if flotte.is_empty() and flotte_cible.is_empty():
+		var nom_base := "Flotte " + str(mon_equipage["nom"])
+		var nom_flotte := nom_base
+		var numero := 1
+		while not _lire("SELECT 1 FROM flottes WHERE nom = '%s';" % _echapper(nom_flotte)).is_empty():
+			numero += 1
+			nom_flotte = "%s (%d)" % [nom_base, numero]
+		a_ecrire.append("INSERT INTO flottes (nom) VALUES ('%s');" % _echapper(nom_flotte))
+		a_ecrire.append("INSERT INTO equipage_flotte (equipage_id, flotte_id)"
+			+ " SELECT id, (SELECT MAX(id) FROM flottes) FROM equipages WHERE id IN (%d, %d);" % [id_equipage, id_cible])
+	else:
+		var id_flotte := int(flotte["id"]) if not flotte.is_empty() else int(flotte_cible[0]["flotte_id"])
+		var nouveau := id_cible if not flotte.is_empty() else id_equipage
+		a_ecrire.append("INSERT INTO equipage_flotte (equipage_id, flotte_id) VALUES (%d, %d);" % [nouveau, id_flotte])
+	var membres := "SELECT equipage_id FROM equipage_flotte WHERE flotte_id = (SELECT flotte_id FROM equipage_flotte WHERE equipage_id = %d)" % id_equipage
+	a_ecrire.append("DELETE FROM equipages_diplomatie WHERE etat = 'proposition' AND equipage_a IN (%s) AND equipage_b IN (%s);" % [membres, membres])
+	a_ecrire.append(_requete_journal(id_equipage, "Alliance conclue avec « %s »." % nom_cible))
+	a_ecrire.append(_requete_journal(id_cible, "Alliance conclue avec « %s »." % mon_equipage["nom"]))
+	if not _transaction(a_ecrire):
+		return "Impossible de conclure l’alliance."
+	equipage_modifie.emit()
+	return ""
+
+func rompre_alliance() -> String:
+	if not puis_je_gerer():
+		return "Seul le capitaine ou le vice-capitaine peut rompre l’alliance."
+	if ma_flotte().is_empty():
+		return "Votre équipage n’est dans aucune alliance."
+	if en_ligne:
 		Reseau.demander_equipage("rompre", "")
 		return ""
-	if mon_equipage.is_empty():
-		return "Vous n'êtes pas engagé dans un équipage"
-	if not puis_je_gerer():
-		return "Seul le capitaine ou le vice-capitaine rompt l'alliance"
-	if ma_flotte().is_empty():
-		return "Votre équipage n'est pas en flotte"
-	_retirer_de_la_flotte(int(mon_equipage["id"]))
-	_journaliser("%s rompt l'alliance de l'équipage." % _joueur())
+	var id_equipage := int(mon_equipage["id"])
+	var a_ecrire := _requetes_depart_alliance(id_equipage)
+	a_ecrire.append(_requete_journal(id_equipage, "%s quitte l’alliance." % _joueur()))
+	if not _transaction(a_ecrire):
+		return "Impossible de quitter l’alliance."
 	equipage_modifie.emit()
 	return ""
 
-# retire un équipage de sa flotte et supprime la flotte vidée : une
-# flotte à un seul membre n'est plus une alliance — le survivant est
-# libéré (utile quand un équipage allié se dissout ou se retire)
-func _retirer_de_la_flotte(id_equipage: int) -> void:
-	var lignes := _lire(
-		"SELECT flotte_id FROM equipage_flotte WHERE equipage_id = %d;" % id_equipage)
+# Une alliance à un seul équipage se dissout.
+func _requetes_depart_alliance(id_equipage: int) -> Array[String]:
+	var lignes := _lire("SELECT flotte_id FROM equipage_flotte WHERE equipage_id = %d;" % id_equipage)
 	if lignes.is_empty():
-		return
+		return []
 	var id_flotte := int(lignes[0]["flotte_id"])
-	_ecrire("DELETE FROM equipage_flotte WHERE equipage_id = %d;" % id_equipage)
-	var restants := _lire(
-		"SELECT COUNT(*) AS total FROM equipage_flotte WHERE flotte_id = %d;" % id_flotte)
-	var restant := 0
-	if not restants.is_empty():
-		restant = int(restants[0]["total"])
-	if restant <= 1:
-		_ecrire("DELETE FROM equipage_flotte WHERE flotte_id = %d;" % id_flotte)
-		_ecrire("DELETE FROM flottes WHERE id = %d;" % id_flotte)
+	return [
+		"DELETE FROM equipage_flotte WHERE equipage_id = %d;" % id_equipage,
+		"DELETE FROM equipage_flotte WHERE flotte_id = %d AND (SELECT COUNT(*) FROM equipage_flotte WHERE flotte_id = %d) <= 1;" %
+			[id_flotte, id_flotte],
+		"DELETE FROM flottes WHERE id = %d AND NOT EXISTS (SELECT 1 FROM equipage_flotte WHERE flotte_id = %d);" %
+			[id_flotte, id_flotte],
+	]
 
 # mon équipage est-il allié à l'équipage donné ?
 func est_allie(id_equipage: int) -> bool:
@@ -780,10 +989,29 @@ func _creer_schema() -> void:
 		+ " message TEXT NOT NULL,"
 		+ " date_evenement TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
 		+ " FOREIGN KEY (equipage_id) REFERENCES equipages(id));")
+	db.query(
+		"CREATE TABLE IF NOT EXISTS equipages_diplomatie ("
+		+ " equipage_a INTEGER NOT NULL REFERENCES equipages(id),"
+		+ " equipage_b INTEGER NOT NULL REFERENCES equipages(id),"
+		+ " initiateur INTEGER NOT NULL,"
+		+ " etat TEXT NOT NULL CHECK (etat IN ('proposition', 'guerre')),"
+		+ " CHECK (equipage_a < equipage_b AND initiateur IN (equipage_a, equipage_b)),"
+		+ " PRIMARY KEY (equipage_a, equipage_b));")
+	_ajouter_colonne_si_absente("equipages", "galions",
+		"INTEGER NOT NULL DEFAULT 0 CHECK (galions BETWEEN 0 AND %d)" % GALIONS_MAX)
 	# bases créées avant ces colonnes : migration douce
 	_ajouter_colonne_si_absente("equipages", "caisse", "INTEGER NOT NULL DEFAULT 0")
 	_ajouter_colonne_si_absente("equipages", "description", "TEXT NOT NULL DEFAULT ''")
 	_ajouter_colonne_si_absente("equipages_membres", "rang", "VARCHAR(20) NOT NULL DEFAULT 'matelot'")
+	db.query("CREATE TABLE IF NOT EXISTS galions_equipage ("
+		+ " id INTEGER PRIMARY KEY AUTOINCREMENT, equipage_id INTEGER NOT NULL REFERENCES equipages(id),"
+		+ " modele TEXT NOT NULL DEFAULT '', pilote TEXT UNIQUE, donnees TEXT NOT NULL DEFAULT '{}');")
+	db.query("CREATE INDEX IF NOT EXISTS galions_par_equipage ON galions_equipage(equipage_id);")
+	# Les anciens galions comptabilisés deviennent des navires à spécialiser.
+	db.query("WITH RECURSIVE suite(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM suite WHERE n < %d)" % GALIONS_MAX
+		+ " INSERT INTO galions_equipage (equipage_id)"
+		+ " SELECT e.id FROM equipages e JOIN suite"
+		+ " ON suite.n <= e.galions - (SELECT COUNT(*) FROM galions_equipage g WHERE g.equipage_id = e.id);")
 
 func _ajouter_colonne_si_absente(table: String, colonne: String, definition: String) -> void:
 	db.query("PRAGMA table_info(%s);" % table)
@@ -793,9 +1021,8 @@ func _ajouter_colonne_si_absente(table: String, colonne: String, definition: Str
 	db.query("ALTER TABLE %s ADD COLUMN %s %s;" % [table, colonne, definition])
 
 func _lire(requete: String) -> Array:
-	if not disponible:
+	if not disponible or not db.query(requete):
 		return []
-	db.query(requete)
 	return db.query_result
 
 func _ecrire(requete: String) -> bool:
@@ -803,11 +1030,17 @@ func _ecrire(requete: String) -> bool:
 		return false
 	return db.query(requete)
 
-func _dernier_id() -> int:
-	db.query("SELECT last_insert_rowid() AS id;")
-	if db.query_result.is_empty():
-		return 0
-	return int(db.query_result[0]["id"])
+func _transaction(requetes: Array[String]) -> bool:
+	if not _ecrire("BEGIN IMMEDIATE;"):
+		return false
+	for requete in requetes:
+		if not _ecrire(requete):
+			_ecrire("ROLLBACK;")
+			return false
+	if _ecrire("COMMIT;"):
+		return true
+	_ecrire("ROLLBACK;")
+	return false
 
 # échappe les apostrophes d'un texte pour l'insérer dans une requête
 func _echapper(texte: String) -> String:

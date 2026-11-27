@@ -19,6 +19,7 @@ const SCRIPT_CARTE_AGRANDIE := preload("res://scripts/world/carte_agrandie.gd")
 
 @export var dimensions_monde := Vector2.ONE
 @export var reperes: Dictionary[Vector2, String] = {}
+var position_vers_plan: Callable
 
 @onready var joueur: Node2D = get_tree().get_first_node_in_group("player")
 
@@ -187,7 +188,8 @@ func _dessiner_pointe(point: Vector2, rayon: float, couleur: Color, losange: boo
 	_calque.draw_colored_polygon(coeur, couleur)
 
 func _position_carte(position_monde: Vector2) -> Vector2:
-	return position_monde / dimensions_monde * size
+	var point: Vector2 = position_vers_plan.call(position_monde) if position_vers_plan.is_valid() else position_monde
+	return point / dimensions_monde * size
 
 func _get_tooltip(point: Vector2) -> String:
 	var proches: Array[Dictionary] = []

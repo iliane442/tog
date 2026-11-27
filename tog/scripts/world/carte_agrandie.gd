@@ -57,6 +57,7 @@ func ouvrir(carte_mini: TextureRect) -> void:
 	_carte.material = _mini.material
 	_carte.texture_filter = _mini.texture_filter
 	_carte.dimensions_monde = _mini.dimensions_monde
+	_carte.position_vers_plan = _mini.position_vers_plan
 	_carte.reperes = _mini.reperes
 	_carte.expand_mode = _mini.expand_mode
 	_carte.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

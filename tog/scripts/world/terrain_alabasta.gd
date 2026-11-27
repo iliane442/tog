@@ -5,6 +5,7 @@ const ASSETS_ALABASTA := "res://assets/world/alabasta/"
 const EAUX := preload("res://scripts/world/eaux_alabasta.gd")
 const SHADER_MER := preload("res://assets/shaders/mer_alabasta.gdshader")
 const MER := preload(ASSETS_ALABASTA + "terrain/mer.png")
+var _fond_mer: ColorRect
 const SABLE := preload(ASSETS_ALABASTA + "terrain/sable.png")
 const DALLAGE := preload(ASSETS_ALABASTA + "terrain/dallage.png")
 const PISTE := preload(ASSETS_ALABASTA + "terrain/route.png")
@@ -318,17 +319,16 @@ func _dessiner_escalier(liaison: Array) -> void:
 		draw_line(dessus[2], dessus[3], Color("#ffdfad"), 1.5)
 
 func _creer_mer() -> void:
-	var fond := ColorRect.new()
-	fond.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	fond.size = taille_monde
-	fond.z_index = -2
+	_fond_mer = ColorRect.new()
+	_fond_mer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fond_mer.z_index = -2
 	var materiau := ShaderMaterial.new()
 	materiau.shader = SHADER_MER
 	materiau.set_shader_parameter("mer", MER)
-	materiau.set_shader_parameter("dimensions", taille_monde)
 	materiau.set_shader_parameter("origine", origine - Vector2(0, DEMI_TUILE.y))
-	fond.material = materiau
-	add_child(fond)
+	_fond_mer.material = materiau
+	add_child(_fond_mer)
+	etendre_mer_du_port(taille_monde)
 
 	var rive := Node2D.new()
 	rive.z_index = -1
@@ -346,3 +346,7 @@ func _creer_mer() -> void:
 			var fin := contour[cote + 1] + descente
 			if cadre.has_point(debut) or cadre.has_point(fin):
 				EAUX.ajouter_ecume(rive, debut, fin, animations[cote - 1])
+
+func etendre_mer_du_port(dimensions: Vector2) -> void:
+	_fond_mer.size = taille_monde.max(dimensions)
+	_fond_mer.material.set_shader_parameter("dimensions", _fond_mer.size)

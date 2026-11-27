@@ -41,6 +41,7 @@ const EMPLACEMENTS_NAVIRE := {
 	"Figure de proue": "proue",
 }
 const SCENE_NAVIRE := "res://scenes/lanterne.tscn"
+const NAVIRES := preload("res://scripts/world/catalogue_navires.gd")
 const PORT_NAVIRE_DEFAUT := "res://scenes/fushia.tscn"
 const PIECES_NAVIRE := {
 	"atelier": {"nom": "Atelier de bord", "prix": 150, "usage": "Fabriquer et améliorer les objets de ton métier. Installer les pièces du navire."},
@@ -52,6 +53,9 @@ var pieces_navire_ouvertes: Array[String] = []
 var escale_navire: Dictionary = {}
 var repere_navire: Dictionary = {}
 var trophee_navire := ""
+var modele_bateau_perso := NAVIRES.DEPART
+const FINITIONS_PONT := preload("res://scripts/world/finitions_pont.gd")
+var finition_pont_perso := FINITIONS_PONT.DEFAUT
 
 const POINTS_PAR_NIVEAU := 5
 const EFFET_REATTRIBUTION := "reset_stats"
@@ -100,12 +104,26 @@ const APPARENCES_HUMAINES := {
 	"loguetown": {"nom": "Contrebandiers de Loguetown", "M": "humain_loguetown", "F": "humaine_loguetown"},
 	"large": {"nom": "Duellistes du large", "M": "humain_duelliste", "F": "humaine_duelliste"},
 }
-const VISUELS_AUTRES_RACES := {
-	"mink": {"M": "mink_pirate", "F": "mink_pirate_f"},
-	"fishman": {"M": "fishman_pirate", "F": "femme_poisson_pirate"},
-	"giant": {"M": "geant_pirate", "F": "geante_pirate"},
+const APPARENCE_GEANT_DEFAUT := "brise_quai"
+const APPARENCES_GEANTS := {
+	"garde_du_cap": {"nom": "Garde du cap", "M": "geant_garde_du_cap", "F": "geante_garde_du_cap"},
+	"brise_quai": {"nom": "Brise-quai", "M": "geant_brise_quai", "F": "geante_brise_quai"},
+	"veilleur_des_cretes": {"nom": "Veilleur des crêtes", "M": "geant_veilleur_des_cretes", "F": "geante_veilleur_des_cretes"},
 }
-var apparence_humaine := APPARENCE_HUMAINE_DEFAUT
+const APPARENCE_PIRATE_DEFAUT := "pirate"
+const APPARENCES_MINKS := {
+	"pirate": {"nom": "Pirate de Zou", "M": "mink_pirate", "F": "mink_pirate_f"},
+	"lynx_des_cimes": {"nom": "Lynx des cimes", "M": "mink_lynx", "F": "mink_lynx_f"},
+	"renard_des_quais": {"nom": "Renard des quais", "M": "mink_renard", "F": "mink_renard_f"},
+}
+const APPARENCES_HOMMES_POISSONS := {
+	"pirate": {"nom": "Pirate des profondeurs", "M": "fishman_pirate", "F": "femme_poisson_pirate"},
+	"rascasse_des_recifs": {"nom": "Rascasse des récifs", "M": "fishman_rascasse", "F": "fishman_rascasse_f"},
+	"raie_des_lagons": {"nom": "Raie des lagons", "M": "fishman_raie", "F": "fishman_raie_f"},
+}
+# Clé commune aux sauvegardes locales et en ligne, conservée pour les anciens personnages.
+const CHAMP_APPARENCE := "apparence_humaine"
+var apparence := APPARENCE_HUMAINE_DEFAUT
 var perso_cree := false
 # vrai quand le perso vit sur le serveur (compte connecté) : chaque
 # sauvegarde part immédiatement au serveur et le fichier local
@@ -323,26 +341,40 @@ func charger_classes() -> void:
 func nom_race() -> String:
 	return races.get(race_id, {}).get("nom", race_id)
 
-func a_une_apparence_humaine(id_race: String) -> bool:
-	return str(races.get(id_race, {}).get("id_technique", "human")) == "human"
+func apparences_race(id_race: String) -> Dictionary:
+	match str(races.get(id_race, {}).get("id_technique", "human")):
+		"human":
+			return APPARENCES_HUMAINES
+		"giant":
+			return APPARENCES_GEANTS
+		"mink":
+			return APPARENCES_MINKS
+		"fishman":
+			return APPARENCES_HOMMES_POISSONS
+	return {}
 
-func normaliser_apparence_humaine(id_race: String, apparence: String) -> String:
-	if a_une_apparence_humaine(id_race) and APPARENCES_HUMAINES.has(apparence):
-		return apparence
+func normaliser_apparence(id_race: String, choix: String) -> String:
+	if apparences_race(id_race).has(choix):
+		return choix
+	match str(races.get(id_race, {}).get("id_technique", "human")):
+		"giant":
+			return APPARENCE_GEANT_DEFAUT
+		"mink", "fishman":
+			return APPARENCE_PIRATE_DEFAUT
 	return APPARENCE_HUMAINE_DEFAUT
 
-func prefixe_visuel(id_race: String, variante_sexe: String, apparence: String) -> String:
-	var id_technique := str(races.get(id_race, {}).get("id_technique", "human"))
+func prefixe_visuel(id_race: String, variante_sexe: String, choix: String) -> String:
 	var cle_sexe := "F" if variante_sexe == "F" else "M"
-	if id_technique == "human":
-		return APPARENCES_HUMAINES[normaliser_apparence_humaine(id_race, apparence)][cle_sexe]
-	return VISUELS_AUTRES_RACES.get(id_technique, {}).get(cle_sexe, "humain_pirate")
+	var catalogue := apparences_race(id_race)
+	if not catalogue.is_empty():
+		return catalogue[normaliser_apparence(id_race, choix)][cle_sexe]
+	return "humain_pirate"
 
-func choisir_apparence_humaine(apparence: String) -> void:
-	var choix := normaliser_apparence_humaine(race_id, apparence)
-	if choix == apparence_humaine:
+func choisir_apparence(choix: String) -> void:
+	var apparence_valide := normaliser_apparence(race_id, choix)
+	if apparence_valide == apparence:
 		return
-	apparence_humaine = choix
+	apparence = apparence_valide
 	sauvegarder()
 
 func portrait_visuel(prefixe: String) -> AtlasTexture:
@@ -1014,6 +1046,8 @@ func amenagement_navire() -> Dictionary:
 		"escale": escale_navire,
 		"repere": repere_navire,
 		"trophee": trophee_navire,
+		"modele": modele_bateau_perso,
+		"finition_pont": finition_pont_perso,
 	}
 
 func appliquer_amenagement_navire(donnees: Variant) -> void:
@@ -1021,8 +1055,12 @@ func appliquer_amenagement_navire(donnees: Variant) -> void:
 	escale_navire = {}
 	repere_navire = {}
 	trophee_navire = ""
+	modele_bateau_perso = NAVIRES.DEPART
+	finition_pont_perso = FINITIONS_PONT.DEFAUT
 	if not donnees is Dictionary:
 		return
+	modele_bateau_perso = NAVIRES.personnel(str(donnees.get("modele", NAVIRES.DEPART)))
+	finition_pont_perso = FINITIONS_PONT.normaliser(str(donnees.get("finition_pont", "")))
 	var pieces: Variant = donnees.get("pieces", [])
 	if pieces is Array:
 		for id in PIECES_NAVIRE:
@@ -1040,9 +1078,25 @@ func a_portee_poste_navire(id: String) -> bool:
 	var scene := get_tree().current_scene
 	return scene != null and scene.scene_file_path == SCENE_NAVIRE and scene.a_portee_poste(id)
 
+func modele_bateau() -> String:
+	if is_instance_valid(Equipages):
+		return str(Equipages.galion_du_joueur(nom).get("modele", modele_bateau_perso))
+	return modele_bateau_perso
+
+func pieces_possibles_navire() -> Array:
+	var pieces: Array = NAVIRES.fiche(modele_bateau_perso)["pieces"].duplicate()
+	# Les pièces déjà payées dans une ancienne partie restent accessibles.
+	for id in pieces_navire_ouvertes:
+		if id not in pieces:
+			pieces.append(id)
+	return pieces
+
+func capacite_cale_navire() -> int:
+	return int(NAVIRES.fiche(modele_bateau_perso)["cale"])
+
 func debloquer_piece_navire(id: String) -> bool:
 	var scene := get_tree().current_scene
-	if not PIECES_NAVIRE.has(id) or id in pieces_navire_ouvertes or scene == null \
+	if id not in pieces_possibles_navire() or id in pieces_navire_ouvertes or scene == null \
 			or scene.scene_file_path != SCENE_NAVIRE or not scene.a_portee_porte(id):
 		return false
 	if id != "atelier" and "atelier" not in pieces_navire_ouvertes:
@@ -1068,22 +1122,44 @@ func emplacement_navire(id: String) -> String:
 
 # une pièce de navire est-elle déjà installée sur l'emplacement ?
 func piece_navire_installee(id: String) -> bool:
-	return bateau.values().has(id)
+	return equipement_navire().values().has(id)
+
+func equipement_navire() -> Dictionary:
+	var modele := modele_bateau()
+	if modele not in NAVIRES.GALIONS:
+		return bateau
+	var equipement_actif := {}
+	if modele == "navigation":
+		for emplacement in EMPLACEMENTS_NAVIRE.values() + ["mat2", "coque2"]:
+			equipement_actif[emplacement] = ""
+		if is_instance_valid(Navires):
+			equipement_actif.merge(Navires.equipement_galion(), true)
+	return equipement_actif
+
+func emplacement_installation_navire(id: String) -> String:
+	var modele := modele_bateau()
+	var emplacement := emplacement_navire(id)
+	if modele != "navigation" or emplacement not in ["mat", "coque"]:
+		return emplacement
+	var modules := equipement_navire()
+	return emplacement + "2" if modules[emplacement] != "" and modules[emplacement + "2"] == "" else emplacement
 
 # installe une pièce de navire possédée : l'ancienne pièce de
 # l'emplacement rejoint l'inventaire ; renvoie l'emplacement, "" en
 # cas de refus
 func installer_piece_navire(id: String) -> String:
-	if not a_portee_poste_navire("atelier"):
+	if not peut_equiper_navire():
 		return ""
-	var emplacement := emplacement_navire(id)
-	if emplacement == "" or emplacement not in bateau or int(Inventaire.objets.get(id, 0)) <= 0:
+	var emplacement := emplacement_installation_navire(id)
+	if emplacement not in equipement_navire() or int(Inventaire.objets.get(id, 0)) <= 0:
 		return ""
 	# une pièce trop exigeante pour le capitaine ne s'installe pas,
 	# comme pour l'équipement porté
 	var details := Inventaire.details_objet(id)
 	if int(details.get("niveau_min", 1)) > niveau:
 		return ""
+	if modele_bateau() == "navigation":
+		return emplacement if Navires.modifier_module(emplacement, id) else ""
 	var ancienne := str(bateau[emplacement])
 	Inventaire.retirer_objet(id, 1)
 	if ancienne != "":
@@ -1096,13 +1172,19 @@ func installer_piece_navire(id: String) -> String:
 # retire la pièce installée d'un emplacement : elle rejoint
 # l'inventaire
 func retirer_piece_navire(emplacement: String) -> bool:
-	if not a_portee_poste_navire("atelier") or not bateau.has(emplacement) or str(bateau[emplacement]) == "":
+	if not peut_equiper_navire() or str(equipement_navire().get(emplacement, "")) == "":
 		return false
+	if modele_bateau() == "navigation":
+		return Navires.modifier_module(emplacement, "")
 	Inventaire.ajouter_objet(str(bateau[emplacement]), 1)
 	bateau[emplacement] = ""
 	recalculer_stats(false)
 	sauvegarder()
 	return true
+
+func peut_equiper_navire() -> bool:
+	var scene := get_tree().current_scene
+	return scene != null and scene.scene_file_path == SCENE_NAVIRE and scene.a_portee_etabli_navire()
 
 # lit la description d'une pièce (« Navire : +25 solidité et +0 % de
 # résistance aux tempêtes ») ; non reconnue → 0/0
@@ -1129,10 +1211,11 @@ func _stats_piece_bateau(id: String) -> Dictionary:
 # solidité et résistance aux tempêtes du navire : la somme des
 # pièces installées
 func stats_bateau() -> Dictionary:
-	var solidite := 0
-	var tempete := 0.0
-	for emplacement in bateau:
-		var id := str(bateau[emplacement])
+	var fiche := NAVIRES.fiche(modele_bateau())
+	var solidite := int(fiche["solidite"])
+	var tempete := float(fiche["tempete"])
+	for piece in equipement_navire().values():
+		var id := str(piece)
 		if id == "":
 			continue
 		var stats := _stats_piece_bateau(id)
@@ -1389,7 +1472,7 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	race_id = nouvelle_race
 	classe_id = nouvelle_classe
 	sexe = nouveau_sexe if VALEURS_SEXES_VALIDES.has(nouveau_sexe) else "M"
-	apparence_humaine = normaliser_apparence_humaine(race_id, nouvelle_apparence)
+	apparence = normaliser_apparence(race_id, nouvelle_apparence)
 	niveau = 1
 	xp = 0
 	berry = 0
@@ -1443,7 +1526,7 @@ func _ecrire_fichier_perso() -> void:
 	cfg.set_value("perso", "race", race_id)
 	cfg.set_value("perso", "classe", classe_id)
 	cfg.set_value("perso", "sexe", sexe)
-	cfg.set_value("perso", "apparence_humaine", apparence_humaine)
+	cfg.set_value("perso", CHAMP_APPARENCE, apparence)
 	cfg.set_value("perso", "berry", berry)
 	cfg.set_value("perso", "niveau", niveau)
 	cfg.set_value("perso", "xp", xp)
@@ -1482,8 +1565,7 @@ func charger_perso() -> void:
 		classe_remplacee = true
 	var sexe_lu := str(cfg.get_value("perso", "sexe", "M"))
 	sexe = sexe_lu if VALEURS_SEXES_VALIDES.has(sexe_lu) else "M"
-	apparence_humaine = normaliser_apparence_humaine(
-		race_id, str(cfg.get_value("perso", "apparence_humaine", APPARENCE_HUMAINE_DEFAUT)))
+	apparence = normaliser_apparence(race_id, str(cfg.get_value("perso", CHAMP_APPARENCE, "")))
 	berry = int(cfg.get_value("perso", "berry", 0))
 	points_statistique = int(cfg.get_value("perso", "points_statistique", 0))
 	prochain_combat_double = bool(cfg.get_value("perso", "prochain_combat_double", false))
@@ -1578,7 +1660,7 @@ func reinitialiser() -> void:
 	nom = "Héros"
 	race_id = "1"
 	classe_id = "1"
-	apparence_humaine = APPARENCE_HUMAINE_DEFAUT
+	apparence = APPARENCE_HUMAINE_DEFAUT
 	niveau = 1
 	xp = 0
 	berry = 0

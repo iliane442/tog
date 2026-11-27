@@ -11,6 +11,7 @@ signal sante_modifiee(vie: int, vie_max: int)
 const DEGATS_FLOTTANTS := preload("res://scripts/combat/degats_flottants.gd")
 
 const VISUEL_DEFAUT := "humain_pirate"
+const VISUEL_JOUEUR := preload("res://scripts/visuel_joueur.gd")
 # planches d'idle et de marche : 4 colonnes/6 colonnes d'animation,
 # 4 lignes de direction (cf. player.gd)
 const LIGNES := {"sud": 0, "ouest": 1, "est": 2, "nord": 3}
@@ -45,10 +46,8 @@ func _ready() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.name = "Sprite2D"
 	_appliquer_visuel()
-	_sprite.position.y = -24.0
 	add_child(_sprite)
 	_etiquette = Label.new()
-	_etiquette.position.y = _sprite.position.y + _sprite.get_rect().position.y - (19.0 if allie else 14.0)
 	_etiquette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_etiquette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_etiquette.add_theme_font_size_override("font_size", 16 if allie else 12)
@@ -93,9 +92,12 @@ func appliquer_profil(profil: Dictionary) -> void:
 	sante_modifiee.emit(pv, pv_max)
 
 func _actualiser_nom() -> void:
+	if _etiquette == null:
+		return
 	_etiquette.text = ("[G] " if allie else "") + nom
 	_etiquette.reset_size()
 	_etiquette.position.x = -_etiquette.size.x / 2.0
+	_etiquette.position.y = _sprite.position.y + _sprite.get_rect().position.y * _sprite.scale.y - (19.0 if allie else 14.0)
 
 # planche de sprites du joueur distant (race/sexe) : planches de repos
 # et de marche, face sud par défaut
@@ -118,6 +120,8 @@ func _appliquer_visuel() -> void:
 	_sprite.hframes = COLONNES_REPOS
 	_sprite.vframes = LIGNES.size()
 	_sprite.frame = _ligne * COLONNES_REPOS
+	VISUEL_JOUEUR.appliquer_gabarit(_sprite, visuel)
+	_actualiser_nom()
 
 # ligne de direction (sud, ouest, est, nord) d'un vecteur de déplacement
 func _ligne_cardinale(direction: Vector2) -> int:

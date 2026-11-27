@@ -56,6 +56,7 @@ var pseudo := ""
 var _derniere_position_envoyee := Vector2(INF, INF)
 var _temps_position := 0.0
 var _temps_sauvegarde := 0.0
+var _bourse_equipage_en_attente := false
 
 # --- client : authentification ---
 var adresse_preferee := "127.0.0.1:%d" % PORT_DEFAUT
@@ -208,7 +209,7 @@ func demarrer_serveur(port := PORT_DEFAUT) -> bool:
 	_ouvrir_base_mmo()
 	# les équipages en ligne vivent dans une base serveur dédiée pour
 	# ne jamais mélanger avec le fichier du jeu solo de la machine
-	Equipages.basculer_serveur()
+	Equipages.basculer_serveur(CHEMIN_DB_MMO)
 	creer_tables_mmo()
 	_migrer_equipages_noms_personnage()
 	print("Serveur en écoute sur le port %d (%d joueurs max)." % [port, JOUEURS_MAX])
@@ -323,13 +324,16 @@ func _nom_personnage(donnees: Dictionary) -> String:
 func _visuel_personnage(donnees: Dictionary) -> String:
 	return Personnage.prefixe_visuel(
 		str(donnees.get("race", "1")), str(donnees.get("sexe", "M")),
-		str(donnees.get("apparence_humaine", Personnage.APPARENCE_HUMAINE_DEFAUT)))
+		str(donnees.get(Personnage.CHAMP_APPARENCE, "")))
 
 func _ouvrir_session(peer_id: int, nom_pseudo: String, perso_json := "") -> void:
 	var donnees: Variant = JSON.parse_string(perso_json) if not perso_json.is_empty() else null
+	var amenagement: Dictionary = donnees.get("amenagement_navire", {}) if donnees is Dictionary else {}
 	_sessions[peer_id] = {
 		"pseudo": nom_pseudo,
 		"nom_personnage": _nom_personnage(donnees) if donnees is Dictionary else "",
+		"modele_bateau": Personnage.NAVIRES.personnel(str(amenagement.get("modele", ""))),
+		"finition_pont": Personnage.FINITIONS_PONT.normaliser(str(amenagement.get("finition_pont", ""))),
 		"position": Vector2(INF, INF),
 		"annonce": false,
 		"embarque": false,
@@ -488,7 +492,11 @@ func envoie_sauvegarde_perso(donnees_json: String) -> void:
 		rpc_id(peer_id, "recoit_message_chat", "Serveur",
 			"Le nom de personnage « %s » est déjà pris — recrée ton perso avec un autre nom." % nom)
 		return
-	if not _ecrire_perso_serveur(int(compte["id"]), donnees_json):
+	var amenagement: Dictionary = donnees.get("amenagement_navire", {})
+	amenagement["modele"] = partie["modele_bateau"]
+	amenagement["finition_pont"] = partie["finition_pont"]
+	donnees["amenagement_navire"] = amenagement
+	if not _ecrire_perso_serveur(int(compte["id"]), JSON.stringify(donnees)):
 		return
 	var visuel := _visuel_personnage(donnees)
 	var nom_modifie: bool = partie["nom_personnage"] != nom
@@ -579,15 +587,17 @@ func _cles_vaincues(nom_scene: String) -> Array:
 
 # RPC serveur : le client annonce la map sur laquelle il joue
 @rpc("any_peer", "call_remote", "reliable")
-func envoie_scene(nom_scene: String, x: float = INF, y: float = INF) -> void:
+func envoie_scene(nom_scene: String, x: float = INF, y: float = INF, carte := "") -> void:
 	if not multiplayer.is_server():
 		return
 	var peer_id := multiplayer.get_remote_sender_id()
 	if not _sessions.has(peer_id):
 		return
 	nom_scene = nom_scene.strip_edges().substr(0, 64)
-	if nom_scene == "Lanterne" or nom_scene.begins_with("Lanterne:"):
-		nom_scene = "Lanterne:%d" % peer_id
+	if carte.length() > 48 or (carte != "" and not carte.is_valid_identifier()):
+		return
+	var fichier := "res://scenes/%s.tscn" % carte if not carte.is_empty() else ""
+	nom_scene = Navires.scene_serveur(peer_id, nom_scene, fichier)
 	var session: Dictionary = _sessions[peer_id]
 	var ancienne_scene: String = session["scene"]
 	if nom_scene == "" or nom_scene == ancienne_scene or str(session["nom_personnage"]).is_empty():
@@ -608,6 +618,7 @@ func envoie_scene(nom_scene: String, x: float = INF, y: float = INF) -> void:
 	# ressources partagées de cette map : les coffres du monde (les
 	# croix au trésor sont personnelles, elles suivent chaque perso)
 	rpc_id(peer_id, "etat_coffres", _json_coffres_scene(nom_scene))
+	Navires.changement_scene(peer_id, fichier)
 
 # RPC serveur : le client annonce l'apparence de son perso (préfixe de
 # planche de sprites, ex. humain_pirate, mink_pirate)
@@ -1581,26 +1592,26 @@ func _annoncer_groupe(id_chef: int) -> void:
 # paramètre est le nom du personnage du joueur (l'identité des
 # équipages, pas le pseudo du compte)
 func _snapshot_equipage(nom_personnage: String) -> String:
+	if nom_personnage.is_empty():
+		return "{}"
+	var joueur_avant := Equipages.joueur_courant
+	var equipage_avant := Equipages.mon_equipage
 	Equipages.joueur_courant = nom_personnage
 	Equipages._recharger_mon_equipage()
-	var autres: Array = []
-	for ligne in Equipages.autres_equipages():
-		autres.append({
-			"id": int(ligne["id"]),
-			"nom": str(ligne["nom"]),
-			"capitaine": str(ligne["capitaine"]),
-			"niveau": int(ligne.get("niveau", 1)),
-			"membres": Equipages.nb_membres_de(int(ligne["id"])),
-		})
+	if not Equipages.mon_equipage.is_empty():
+		Equipages.mon_equipage["flotte_navires"] = Equipages.liste_galions()
+		var galion := Equipages.galion_du_joueur(nom_personnage)
+		Equipages.mon_equipage["modules_galion"] = Equipages.donnees_galion(galion).get("equipement", {})
 	var instantané := {
 		"equipage": Equipages.mon_equipage,
 		"membres": Equipages.liste_membres(),
 		"journal": Equipages.liste_journal(),
-		"autres": autres,
+		"autres": Equipages.autres_equipages(),
 		"flotte": Equipages.ma_flotte(),
 		"membres_flotte": Equipages.membres_de_ma_flotte(),
 	}
-	Equipages.joueur_courant = ""
+	Equipages.joueur_courant = joueur_avant
+	Equipages.mon_equipage = equipage_avant
 	return JSON.stringify(instantané)
 
 # pousse son instantané à chaque membre en ligne d'un équipage
@@ -1610,6 +1621,12 @@ func _diffuser_equipage(id_equipage: int) -> void:
 		var peer_membre := _peer_du_nom_personnage(str(nom_membre))
 		if peer_membre != 0:
 			rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(nom_membre)))
+
+func _diffuser_annuaire_equipages() -> void:
+	for peer_id: int in _sessions:
+		var nom_personnage := str(_sessions[peer_id].get("nom_personnage", ""))
+		if not nom_personnage.is_empty():
+			rpc_id(peer_id, "maj_equipage", _snapshot_equipage(nom_personnage))
 
 # les équipages créés avant l'identification par personnage référençaient
 # le pseudo du compte : une réécriture unique les passe aux noms de
@@ -1664,7 +1681,10 @@ func demande_equipage(action: String, argument: String, montant: int) -> void:
 	# sans perso ne peut pas encore agir sur un équipage
 	var nom_joueur := str(_sessions[peer_id].get("nom_personnage", ""))
 	if nom_joueur.is_empty():
-		rpc_id(peer_id, "message_equipage", "Crée d'abord ton personnage")
+		if action == "deposer" or action == "retirer":
+			rpc_id(peer_id, "resultat_bourse_equipage", 0, "Crée d’abord ton personnage.")
+		else:
+			rpc_id(peer_id, "message_equipage", "Crée d’abord ton personnage.")
 		return
 	Equipages.joueur_courant = nom_joueur
 	Equipages._recharger_mon_equipage()
@@ -1673,18 +1693,17 @@ func demande_equipage(action: String, argument: String, montant: int) -> void:
 			var erreur_creer := Equipages.creer(argument)
 			if erreur_creer != "":
 				rpc_id(peer_id, "message_equipage", erreur_creer)
-			elif not Equipages.mon_equipage.is_empty():
-				_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+			else:
+				_diffuser_annuaire_equipages()
 		"dissoudre":
-			if Equipages.mon_equipage.is_empty():
+			if not Equipages.suis_capitaine():
 				rpc_id(peer_id, "message_equipage", "Vous n'êtes capitaine d'aucun équipage")
 			else:
-				var membres_dissous := Equipages.noms_de_l_equipage(int(Equipages.mon_equipage["id"]))
 				Equipages.dissoudre()
-				for nom_membre in membres_dissous:
-					var peer_membre := _peer_du_nom_personnage(str(nom_membre))
-					if peer_membre != 0:
-						rpc_id(peer_membre, "maj_equipage", _snapshot_equipage(str(nom_membre)))
+				if Equipages.mon_equipage.is_empty():
+					_diffuser_annuaire_equipages()
+				else:
+					rpc_id(peer_id, "message_equipage", "Impossible de dissoudre l’équipage.")
 		"quitter":
 			if Equipages.mon_equipage.is_empty():
 				rpc_id(peer_id, "message_equipage", "Vous n'êtes dans aucun équipage")
@@ -1729,15 +1748,30 @@ func demande_equipage(action: String, argument: String, montant: int) -> void:
 				rpc_id(peer_id, "message_equipage", erreur_description)
 			elif not Equipages.mon_equipage.is_empty():
 				_diffuser_equipage(int(Equipages.mon_equipage["id"]))
-		"deposer":
-			_equipage_deposer(peer_id, pseudo_pair, montant)
-		"retirer":
-			_equipage_retirer(peer_id, pseudo_pair, montant)
-		"alliance":
-			_conclure_alliance_equipage(peer_id, argument)
+		"deposer", "retirer":
+			_equipage_bourse(peer_id, pseudo_pair, montant, action == "deposer")
+		"acheter_galions":
+			var modele := argument if not argument.is_empty() else "ateliers"
+			var erreur := Equipages.acheter_galions(montant, modele)
+			if erreur.is_empty():
+				_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+				rpc_id(peer_id, "message_equipage", "Flotte mise à jour.")
+			else:
+				rpc_id(peer_id, "message_equipage", erreur)
+		"assigner_galion", "choisir_galion":
+			var erreur := Equipages.assigner_galion(montant, argument) if action == "assigner_galion" \
+				else Equipages.choisir_galion(montant, argument)
+			if erreur.is_empty():
+				_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+			else:
+				rpc_id(peer_id, "message_equipage", erreur)
+		"virement", "alliance", "accepter_alliance", "refuser_alliance", "guerre", "lever_guerre":
+			_action_equipage_cible(peer_id, action, argument, montant)
 		"rompre":
 			_rompre_alliance_equipage(peer_id)
 	Equipages.joueur_courant = ""
+	if action in ["assigner_galion", "dissoudre", "quitter", "virer"]:
+		Navires.equipage_modifie()
 
 # le recrutement devient une invitation : la cible reçoit une popup
 # (l'émetteur et la cible sont identifiés par leur nom de personnage)
@@ -1804,70 +1838,67 @@ func reponse_equipage_recruit(accepte: bool) -> void:
 			rpc_id(peer_demandeur, "message_equipage", "%s rejoint l'équipage !" % cible)
 	Equipages.joueur_courant = ""
 
-# versement à la caisse : le Berry en ligne vit dans le perso serveur,
-# c'est lui qu'on débite (jamais Personnage dans le processus serveur)
-func _equipage_deposer(peer_id: int, pseudo_pair: String, montant: int) -> void:
+# Une transaction SQLite couvre la bourse serveur, la caisse et le journal.
+func _equipage_bourse(peer_id: int, pseudo_pair: String, montant: int, depot: bool) -> void:
+	if not Equipages.montant_valide(montant):
+		rpc_id(peer_id, "resultat_bourse_equipage", 0, "Montant invalide.")
+		return
 	var compte := _compte(pseudo_pair)
 	var perso := _perso_json_serveur(compte)
 	if perso.is_empty():
-		rpc_id(peer_id, "message_equipage", "Personnage introuvable")
+		rpc_id(peer_id, "resultat_bourse_equipage", 0, "Personnage introuvable.")
 		return
-	var solde := int(perso.get("berry", 0)) - montant
+	var delta := -montant if depot else montant
+	var solde := int(perso.get("berry", 0)) + delta
 	if solde < 0:
-		rpc_id(peer_id, "message_equipage", "Pas assez de Berry")
-		return
-	var erreur := Equipages.verser_caisse(montant)
-	if erreur != "":
-		rpc_id(peer_id, "message_equipage", erreur)
+		rpc_id(peer_id, "resultat_bourse_equipage", 0, "Pas assez de Berry dans votre bourse.")
 		return
 	perso["berry"] = solde
-	_ecrire_perso_serveur(int(compte["id"]), JSON.stringify(perso))
-	rpc_id(peer_id, "maj_perso_berry", solde)
-	if not Equipages.mon_equipage.is_empty():
-		_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+	var erreur := Equipages.echanger_bourse(-delta, int(compte["id"]), JSON.stringify(perso))
+	if not erreur.is_empty():
+		rpc_id(peer_id, "resultat_bourse_equipage", 0, erreur)
+		return
+	var message := "%d Berry déposés." if depot else "%d Berry retirés."
+	_diffuser_equipage(int(Equipages.mon_equipage["id"]))
+	rpc_id(peer_id, "resultat_bourse_equipage", delta, message % montant)
 
-# retrait de la caisse vers la bourse du perso serveur du joueur
-func _equipage_retirer(peer_id: int, pseudo_pair: String, montant: int) -> void:
-	var compte := _compte(pseudo_pair)
-	var perso := _perso_json_serveur(compte)
-	if perso.is_empty():
-		rpc_id(peer_id, "message_equipage", "Personnage introuvable")
-		return
-	var erreur := Equipages.prendre_caisse(montant)
-	if erreur != "":
-		rpc_id(peer_id, "message_equipage", erreur)
-		return
-	var solde := int(perso.get("berry", 0)) + montant
-	perso["berry"] = solde
-	_ecrire_perso_serveur(int(compte["id"]), JSON.stringify(perso))
-	rpc_id(peer_id, "maj_perso_berry", solde)
-	if not Equipages.mon_equipage.is_empty():
-		_diffuser_equipage(int(Equipages.mon_equipage["id"]))
-
-# alliance : les équipages des deux flottes touchées se rafraîchissent
-func _conclure_alliance_equipage(peer_id: int, argument: String) -> void:
-	if Equipages.mon_equipage.is_empty():
-		rpc_id(peer_id, "message_equipage", "Vous n'êtes pas engagé dans un équipage")
-		return
-	if not argument.is_valid_int():
-		rpc_id(peer_id, "message_equipage", "Équipage introuvable")
+func _action_equipage_cible(peer_id: int, action: String, argument: String, montant: int) -> void:
+	var id_equipage := int(Equipages.mon_equipage.get("id", 0))
+	if id_equipage == 0 or not argument.is_valid_int():
+		rpc_id(peer_id, "message_equipage", "Équipage introuvable.")
 		return
 	var id_cible := int(argument)
-	# toute flotte déjà formée autour de l'un des deux est concernée
-	var equipages_touches := Equipages.equipages_de_la_flotte_de(int(Equipages.mon_equipage["id"]))
-	equipages_touches.append_array(Equipages.equipages_de_la_flotte_de(id_cible))
-	equipages_touches.append(int(Equipages.mon_equipage["id"]))
-	equipages_touches.append(id_cible)
-	var erreur := Equipages.proposer_alliance(id_cible)
-	if erreur != "":
+	var erreur := ""
+	var succes := ""
+	match action:
+		"virement":
+			erreur = Equipages.virer_berry(id_cible, montant)
+			succes = "Virement envoyé."
+		"alliance":
+			erreur = Equipages.proposer_alliance(id_cible)
+			succes = "Demande d’alliance envoyée."
+		"accepter_alliance":
+			erreur = Equipages.repondre_alliance(id_cible, true)
+			succes = "Alliance conclue."
+		"refuser_alliance":
+			erreur = Equipages.repondre_alliance(id_cible, false)
+			succes = "Proposition d’alliance close."
+		"guerre":
+			erreur = Equipages.declarer_guerre(id_cible)
+			succes = "Guerre déclarée."
+		"lever_guerre":
+			erreur = Equipages.lever_guerre(id_cible)
+			succes = "Déclaration de guerre levée."
+	if not erreur.is_empty():
 		rpc_id(peer_id, "message_equipage", erreur)
 		return
-	# l'alliance se conclut automatiquement : le proposant est confirmé
-	# (la proposition n'attend pas le capitaine adverse)
-	rpc_id(peer_id, "message_equipage",
-		"Alliance conclue avec « %s » !" % Equipages.nom_equipage(id_cible))
-	for id_equipage in equipages_touches:
-		_diffuser_equipage(int(id_equipage))
+	var touches := {id_equipage: true, id_cible: true}
+	if action == "accepter_alliance":
+		for id: int in Equipages.equipages_de_la_flotte_de(id_equipage):
+			touches[id] = true
+	for id: int in touches:
+		_diffuser_equipage(id)
+	rpc_id(peer_id, "message_equipage", succes)
 
 # rupture d'alliance : les équipages concernés se rafraîchissent
 func _rompre_alliance_equipage(peer_id: int) -> void:
@@ -1881,6 +1912,7 @@ func _rompre_alliance_equipage(peer_id: int) -> void:
 		return
 	for id_equipage in equipages_touches:
 		_diffuser_equipage(int(id_equipage))
+	rpc_id(peer_id, "message_equipage", "Alliance quittée.")
 
 # le statut en combat d'un membre apparaît dans le panneau du groupe :
 # on rediffuse la composition après chaque changement
@@ -1986,6 +2018,7 @@ func _nettoyer_session(peer_id: int) -> void:
 	var session: Dictionary = _sessions[peer_id]
 	var nom_quittant: String = session["nom_personnage"]
 	_sessions.erase(peer_id)
+	Navires.deconnexion_serveur(peer_id, str(session.get("port_navire", "")))
 	_limiteurs.erase(peer_id)
 	_positions_a_relais.erase(peer_id)
 	print("Déconnexion : %s (%d joueur(s) en ligne)" % [session["pseudo"], _sessions.size()])
@@ -2082,7 +2115,9 @@ func fermer_connexion() -> void:
 	multiplayer.clear()
 	pseudo = ""
 	mode = Mode.HORS_LIGNE
+	_bourse_equipage_en_attente = false
 	_scene_locale = ""
+	Navires.reinitialiser()
 	_annonces_en_attente.clear()
 	etat_rencontres_recu.clear()
 	combat_groupe_local = ""
@@ -2123,6 +2158,7 @@ func _echouer_authentification(message: String) -> void:
 # Le personnage solo reprend sa place en mémoire au départ du compte.
 func _retablir_perso_local() -> void:
 	Personnage.en_ligne = false
+	Inventaire.recharger_etat_local()
 	Personnage.reinitialiser()
 	Personnage.charger_perso()
 
@@ -2158,6 +2194,7 @@ func reponse_authentification(ok: bool, message: String, perso_json: String) -> 
 		_appliquer_perso(perso_json)
 	else:
 		Personnage.reinitialiser()
+		Inventaire.basculer_en_ligne(null, null)
 	authentification_resultat.emit(true, message)
 	print("Connecté en tant que %s." % pseudo)
 
@@ -2170,7 +2207,8 @@ func joueur_rejoint(peer_id: int, nom_recu: String, x: float, y: float, en_comba
 		_annonces_en_attente.append(
 			{"id": peer_id, "nom": nom_recu, "x": x, "y": y, "combat": en_combat, "visuel": str(visuel)})
 		return
-	if _scene_locale != str(get_tree().current_scene.name):
+	if _scene_locale != str(get_tree().current_scene.name) and not (
+			get_tree().current_scene.scene_file_path == Personnage.SCENE_NAVIRE and _scene_locale.begins_with("Lanterne:")):
 		return
 	_maj_avatar(peer_id, nom_recu, Vector2(x, y), str(visuel))
 	if is_instance_valid(_avatars.get(peer_id)):
@@ -2269,7 +2307,7 @@ func _client_annoncer_scene() -> void:
 		return
 	var nom := str(scene.name)
 	if scene.scene_file_path == Personnage.SCENE_NAVIRE:
-		nom = "Lanterne:%d" % multiplayer.get_unique_id()
+		nom = "Lanterne:%d" % (Navires.hote if Navires.hote != 0 else multiplayer.get_unique_id())
 	if nom == _scene_locale:
 		return
 	_retirer_tous_avatars()
@@ -2287,7 +2325,8 @@ func _client_annoncer_scene() -> void:
 	_derniere_position_envoyee = joueur.global_position
 	if joueur.has_method("_prefixe_visuel_race"):
 		rpc_id(1, "annonce_visuel", str(joueur.call("_prefixe_visuel_race")))
-	rpc_id(1, "envoie_scene", nom, joueur.global_position.x, joueur.global_position.y)
+	rpc_id(1, "envoie_scene", nom, joueur.global_position.x, joueur.global_position.y, scene.scene_file_path.get_file().get_basename())
+	Navires.entree_locale(scene.scene_file_path)
 
 # RPC client : etat du monde recu (rencontres deja vaincues sur la map)
 @rpc("any_peer", "call_remote", "reliable")
@@ -3139,22 +3178,15 @@ func reviver_rencontre(cle: String) -> void:
 
 func _client_sauvegarde_periodique(delta: float) -> void:
 	_temps_sauvegarde += delta
-	if _temps_sauvegarde < INTERVALLE_SAUVEGARDE:
-		return
-	_temps_sauvegarde = 0.0
-	# pas de perso créé (compte neuf, écran de création ouvert) :
-	# ne rien envoyer, sinon le serveur retiendrait un perso vide
-	if not Personnage.perso_cree:
-		return
-	rpc_id(1, "envoie_sauvegarde_perso", JSON.stringify(serialiser_perso()))
+	if _temps_sauvegarde >= INTERVALLE_SAUVEGARDE:
+		_temps_sauvegarde = 0.0
+		sauvegarder_perso_immediat()
 
-# envoi immédiat du perso au serveur : appelé par Personnage.sauvegarder
-# à chaque changement important en ligne (hors tick périodique) ; sans
-# effet hors ligne ou tant que le perso n'est pas créé
+# La réponse de la caisse doit arriver avant de renvoyer la bourse locale.
 func sauvegarder_perso_immediat() -> void:
 	if mode != Mode.CLIENT or not multiplayer.has_multiplayer_peer():
 		return
-	if not Personnage.perso_cree:
+	if not Personnage.perso_cree or _bourse_equipage_en_attente or Navires.sauvegarde_suspendue():
 		return
 	_temps_sauvegarde = 0.0
 	rpc_id(1, "envoie_sauvegarde_perso", JSON.stringify(serialiser_perso()))
@@ -3245,12 +3277,14 @@ func serialiser_perso() -> Dictionary:
 	var donnees := {
 		"nom": Personnage.nom, "race": Personnage.race_id, "classe": Personnage.classe_id,
 		"sexe": Personnage.sexe, "niveau": Personnage.niveau, "xp": Personnage.xp,
-		"apparence_humaine": Personnage.apparence_humaine,
+		Personnage.CHAMP_APPARENCE: Personnage.apparence,
 		"vie": Personnage.vie, "berry": Personnage.berry,
 		"points_statistique": Personnage.points_statistique,
 		"points_depenses": Personnage.points_depenses, "equipement": Personnage.equipement,
 		"bateau": Personnage.bateau,
 		"amenagement_navire": Personnage.amenagement_navire(),
+		"sac": Inventaire.objets,
+		"cale_navire": Inventaire.objets_en_cale(),
 		"ameliorations": Personnage.ameliorations,
 		"metiers": Personnage.metiers, "barre_sorts": Personnage.barre_sorts,
 		"barre_objets": Personnage.barre_objets,
@@ -3265,6 +3299,9 @@ func serialiser_perso() -> Dictionary:
 	var scene_fichier := _nom_fichier_scene()
 	if position.is_finite() and scene_fichier != "":
 		donnees["position"] = {"scene": scene_fichier, "x": position.x, "y": position.y}
+	if scene_fichier == "lanterne" and not Navires.est_pilote() and not Navires.escale.is_empty():
+		donnees["position"] = {"scene": str(Navires.escale["scene"]).get_file().get_basename(),
+			"x": Navires.escale["x"], "y": Navires.escale["y"]}
 	return donnees
 
 # remplace le perso en mémoire par la version sauvegardée sur le serveur
@@ -3273,12 +3310,13 @@ func _appliquer_perso(perso_json: String) -> void:
 	if analyse == null or not analyse is Dictionary:
 		return
 	var d: Dictionary = analyse
+	Inventaire.basculer_en_ligne(d.get("sac"), d.get("cale_navire"))
 	Personnage.nom = _nom_personnage(d)
 	Personnage.race_id = str(d.get("race", Personnage.race_id))
 	Personnage.classe_id = str(d.get("classe", Personnage.classe_id))
 	Personnage.sexe = str(d.get("sexe", Personnage.sexe))
-	Personnage.apparence_humaine = Personnage.normaliser_apparence_humaine(
-		Personnage.race_id, str(d.get("apparence_humaine", Personnage.APPARENCE_HUMAINE_DEFAUT)))
+	Personnage.apparence = Personnage.normaliser_apparence(
+		Personnage.race_id, str(d.get(Personnage.CHAMP_APPARENCE, "")))
 	Personnage.niveau = int(d.get("niveau", Personnage.niveau))
 	Personnage.xp = int(d.get("xp", Personnage.xp))
 	Personnage.vie = int(d.get("vie", Personnage.vie))
@@ -3389,6 +3427,8 @@ func _position_exploration() -> Vector2:
 	var joueur := _joueur_local()
 	if joueur == null or not is_instance_valid(joueur):
 		return Vector2(INF, INF)
+	if scene.scene_file_path == Personnage.SCENE_NAVIRE:
+		return scene.position_sur_plan(joueur.global_position)
 	return joueur.global_position
 
 # nom du fichier de la scène courante ("fushia", "drum"…) : c'est lui
@@ -3624,7 +3664,17 @@ func _repondre_invite_groupe(acceptee: bool) -> void:
 func demander_equipage(action: String, argument := "", montant := 0) -> void:
 	if mode != Mode.CLIENT or pseudo == "":
 		return
-	rpc_id(1, "demande_equipage", action, argument, montant)
+	var touche_bourse := action == "deposer" or action == "retirer"
+	if touche_bourse:
+		if _bourse_equipage_en_attente:
+			Equipages.message_serveur("Une opération de caisse est déjà en cours.")
+			return
+		sauvegarder_perso_immediat()
+		_bourse_equipage_en_attente = true
+	if rpc_id(1, "demande_equipage", action, argument, montant) != OK:
+		if touche_bourse:
+			_bourse_equipage_en_attente = false
+		Equipages.message_serveur("Impossible d’envoyer la demande au serveur.")
 
 # RPC client : instantané complet de mon état d'équipage
 @rpc("any_peer", "call_remote", "reliable")
@@ -3762,6 +3812,17 @@ func livraison_hdvente(livraison_json: String) -> void:
 func message_equipage(texte: String) -> void:
 	if multiplayer.is_server():
 		return
+	Equipages.message_serveur(texte)
+
+@rpc("authority", "call_remote", "reliable")
+func resultat_bourse_equipage(delta: int, texte: String) -> void:
+	if not _bourse_equipage_en_attente:
+		return
+	_bourse_equipage_en_attente = false
+	if delta != 0:
+		Personnage.ajouter_berry(delta)
+	else:
+		sauvegarder_perso_immediat()
 	Equipages.message_serveur(texte)
 
 # RPC client : mon solde de Berry vient de changer côté serveur

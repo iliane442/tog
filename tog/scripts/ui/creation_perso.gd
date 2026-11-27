@@ -18,6 +18,7 @@ var ids_races: Array = []
 var ids_classes: Array = []
 var index_race := 0
 var index_classe := 0
+var _choix_apparences: Dictionary = {}
 
 const LIBELLES_SEXES: Array[String] = ["Masculin", "Féminin"]
 const VALEURS_SEXES: Array[String] = ["M", "F"]
@@ -35,15 +36,15 @@ func _ready() -> void:
 	option_sexe.item_selected.connect(func(_i):
 		_maj_affichage()
 		_maj_apercu())
-	option_apparence.item_selected.connect(func(_i): _maj_apercu())
+	option_apparence.item_selected.connect(func(_i):
+		_choix_apparences[ids_races[index_race]] = _apparence_choisie()
+		_maj_apercu())
 	champ_nom.text_changed.connect(func(_texte: String): _maj_affichage())
 	_peupler()
 	for libelle in LIBELLES_SEXES:
 		option_sexe.add_item(libelle)
 	option_sexe.select(0)
-	for apparence in Personnage.APPARENCES_HUMAINES.values():
-		option_apparence.add_item(apparence["nom"])
-	option_apparence.select(0)
+	_remplir_apparences()
 	_maj_affichage()
 	_maj_apercu()
 
@@ -75,13 +76,27 @@ func _sexe_choisi() -> String:
 	return VALEURS_SEXES[option_sexe.selected]
 
 func _apparence_choisie() -> String:
-	return Personnage.APPARENCES_HUMAINES.keys()[option_apparence.selected]
+	return str(option_apparence.get_selected_metadata()) if option_apparence.selected >= 0 else ""
+
+func _remplir_apparences() -> void:
+	option_apparence.clear()
+	if ids_races.is_empty():
+		return
+	var id_race: String = ids_races[index_race]
+	var catalogue := Personnage.apparences_race(id_race)
+	var choix := Personnage.normaliser_apparence(id_race, str(_choix_apparences.get(id_race, "")))
+	for id: String in catalogue:
+		option_apparence.add_item(catalogue[id]["nom"])
+		var index := option_apparence.item_count - 1
+		option_apparence.set_item_metadata(index, id)
+		if id == choix:
+			option_apparence.select(index)
 
 func _maj_apercu() -> void:
-	var humain := not ids_races.is_empty() and Personnage.a_une_apparence_humaine(ids_races[index_race])
-	ligne_apparence.visible = humain
-	cadre_apercu.visible = humain
-	if not humain:
+	var personnalisable := option_apparence.item_count > 0
+	ligne_apparence.visible = personnalisable
+	cadre_apercu.visible = personnalisable
+	if not personnalisable:
 		return
 	var prefixe := Personnage.prefixe_visuel(ids_races[index_race], _sexe_choisi(), _apparence_choisie())
 	apercu.texture = Personnage.portrait_visuel(prefixe)
@@ -118,6 +133,7 @@ func _texte_sorts(classe: Dictionary) -> String:
 
 func _on_race_choisie(index: int) -> void:
 	index_race = index
+	_remplir_apparences()
 	_maj_apercu()
 	_maj_affichage()
 

@@ -2,8 +2,15 @@ extends CharacterBody2D
 
 @export var speed: float = 300.0
 @export var rayon_placement: int = 2
-@export var pa_max: int = 6
+@export var pa_base: int = 6
 @export var pm_max: int = 3
+# un PA supplémentaire tous les 100 niveaux du personnage :
+# niveau 100 -> 7 PA, niveau 200 -> 8 PA, etc.
+const NIVEAUX_PAR_PA := 100
+
+var pa_max: int:
+	get:
+		return pa_base + Personnage.niveau / NIVEAUX_PAR_PA
 # limite de temps d'un tour du joueur, en secondes (0 = pas de limite)
 @export var temps_tour: float = 30.0
 
@@ -14,6 +21,7 @@ const FPS_REPOS := 6.0
 const FPS_MARCHE := 10.0
 const RACE_DEFAUT := "human"
 const VISUEL_DEFAUT := "humain_pirate"
+const VISUEL_JOUEUR := preload("res://scripts/visuel_joueur.gd")
 const SORT_BOULE_DE_FEU := preload("res://scripts/combat/sort.gd")
 
 @onready var sprite: Sprite2D = $Sprite2D
@@ -111,6 +119,8 @@ var _combat_manager
 var _navigation := AStarGrid2D.new()
 var _chemin_exploration: Array[Vector2i] = []
 var _action_arrivee: Callable
+var position_depuis_case: Callable
+var case_depuis_position: Callable
 
 func _ready() -> void:
 	add_to_group("player")
@@ -149,7 +159,7 @@ func _connecter_combat() -> void:
 	_combat_manager.placement_valide.connect(_valider_placement)
 
 func _prefixe_visuel_race() -> String:
-	return Personnage.prefixe_visuel(Personnage.race_id, Personnage.sexe, Personnage.apparence_humaine)
+	return Personnage.prefixe_visuel(Personnage.race_id, Personnage.sexe, Personnage.apparence)
 
 func utiliser_sort_hors_combat(id_sort: String) -> void:
 	if _combat_manager != null and _combat_manager.en_combat:
@@ -257,6 +267,7 @@ func _maj_visuels_race(visuel: String) -> void:
 	_texture_marche = load(marche)
 	sprite.texture = _texture_marche
 	sprite.hframes = FRAMES_MARCHE
+	VISUEL_JOUEUR.appliquer_gabarit(sprite, prefixe)
 	_visuel_charge = visuel
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -314,8 +325,13 @@ func _aller_vers(destination: Vector2) -> void:
 	if _chemin_exploration.is_empty():
 		return
 	# Se recentrer dans la grille avant de longer les obstacles.
-	target = _sol.to_global(_sol.map_to_local(_chemin_exploration.pop_front()))
+	target = _centre_exploration(_chemin_exploration.pop_front())
 	_en_deplacement = true
+
+func _centre_exploration(cellule: Vector2i) -> Vector2:
+	if position_depuis_case.is_valid():
+		return position_depuis_case.call(cellule)
+	return _sol.to_global(_sol.map_to_local(cellule))
 
 func _arreter_exploration() -> void:
 	_en_deplacement = false
@@ -341,7 +357,7 @@ func _physics_process(delta: float) -> void:
 			if action.is_valid():
 				action.call()
 		else:
-			target = _sol.to_global(_sol.map_to_local(_chemin_exploration.pop_front()))
+			target = _centre_exploration(_chemin_exploration.pop_front())
 			direction = target - global_position
 	var en_mouvement := _en_deplacement and direction.length() > 4.0
 	if en_mouvement:
@@ -594,6 +610,8 @@ func ma_case() -> Vector2i:
 	return _case_de(global_position)
 
 func _case_de(position_globale: Vector2) -> Vector2i:
+	if case_depuis_position.is_valid():
+		return case_depuis_position.call(position_globale)
 	return _sol.local_to_map(_sol.to_local(position_globale))
 
 func _case_libre(case: Vector2i) -> bool:

@@ -1526,6 +1526,7 @@ size_flags_vertical = 3
 
 [node name="ColonneEquipage" type="VBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
 [node name="TitreEquipage" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
@@ -1552,6 +1553,84 @@ placeholder_text = "Nom de l'équipage..."
 [node name="BtnFonder" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCreationEquipage"]
 layout_mode = 2
 text = "Fonder l'équipage"
+
+[node name="TitreCaisse" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+theme_type_variation = "Ribbon"
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Caisse d’équipage"
+
+[node name="InfoCaisse" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Caisse d’équipage"
+autowrap_mode = 2
+
+[node name="FormeCaisse" type="HBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NbCaisse" type="SpinBox" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse"]
+custom_minimum_size = Vector2(145, 0)
+layout_mode = 2
+min_value = 1.0
+max_value = 999999999.0
+value = 100.0
+suffix = "Berry"
+
+[node name="BtnDeposer" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse"]
+layout_mode = 2
+text = "Déposer"
+
+[node name="BtnRetirerCaisse" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse"]
+layout_mode = 2
+text = "Retirer"
+
+[node name="FormeVirement" type="HBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Destinataire" type="OptionButton" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeVirement"]
+layout_mode = 2
+size_flags_horizontal = 3
+fit_to_longest_item = false
+text_overrun_behavior = 3
+
+[node name="Montant" type="SpinBox" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeVirement"]
+custom_minimum_size = Vector2(145, 0)
+layout_mode = 2
+min_value = 1.0
+max_value = 999999999.0
+value = 100.0
+suffix = "Berry"
+
+[node name="Envoyer" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeVirement"]
+layout_mode = 2
+text = "Virer les Berry"
+
+[node name="TitreGalions" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_type_variation = "Ribbon"
+theme_override_font_sizes/font_size = 22
+text = "Flotte de galions"
+
+[node name="InfoGalions" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="FormeGalions" type="HBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Quantite" type="SpinBox" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeGalions"]
+layout_mode = 2
+min_value = 1.0
+max_value = 10.0
+value = 1.0
+
+[node name="Acheter" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeGalions"]
+layout_mode = 2
+text = "Acheter"
 
 [node name="TitreMembres" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
 theme_type_variation = "Ribbon"
@@ -1606,7 +1685,7 @@ theme_override_constants/separation = 10
 theme_type_variation = "Ribbon"
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "Alliances et flotte"
+text = "Diplomatie"
 
 [node name="InfoFlotte" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte"]
 layout_mode = 2
@@ -1616,7 +1695,7 @@ autowrap_mode = 2
 
 [node name="BtnRompreFlotte" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte"]
 layout_mode = 2
-text = "Rompre l'alliance (quitter la flotte)"
+text = "Quitter l’alliance"
 
 [node name="DefilementAlliances" type="ScrollContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte"]
 horizontal_scroll_mode = 0
@@ -1641,29 +1720,6 @@ placeholder_text = "Description de l'équipage..."
 [node name="BtnModifierDescription" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeDescription"]
 layout_mode = 2
 text = "Modifier"
-
-[node name="InfoCaisse" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Caisse : 0 Berry"
-autowrap_mode = 2
-
-[node name="FormeCaisse" type="HBoxContainer" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="NbCaisse" type="SpinBox" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse"]
-layout_mode = 2
-max_value = 999999999.0
-value = 100.0
-
-[node name="BtnDeposer" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse"]
-layout_mode = 2
-text = "Déposer"
-
-[node name="BtnRetirerCaisse" type="Button" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse"]
-layout_mode = 2
-text = "Retirer"
 
 [node name="TitreJournal" type="Label" parent="Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte"]
 theme_type_variation = "Ribbon"

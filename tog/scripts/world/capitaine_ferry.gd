@@ -24,6 +24,7 @@ var interaction_en_attente := false
 
 func _ready() -> void:
 	add_to_group("entites_minicarte")
+	add_to_group("capitaines_ferry")
 	var mat := ShaderMaterial.new()
 	mat.shader = shader_surlignage
 	mat.set_shader_parameter("surligne", false)
@@ -80,23 +81,20 @@ func ouvrir_dialogue() -> void:
 		dialogue.ouvrir_choix(nom_affiche, paroles, libelle_traversee, _traverser)
 		return
 	var texte := paroles
+	var cout := int(Personnage.NAVIRES.fiche(Personnage.modele_bateau())["entretien"])
 	if scene.scene_file_path == Personnage.PORT_NAVIRE_DEFAUT and Personnage.escale_navire.is_empty():
 		texte += "\n\nCorbin t’a laissé les clés de la Lanterne. Elle t’attend au quai."
-	dialogue.ouvrir_choix(nom_affiche, texte, libelle_traversee, _traverser,
-		"Monter à bord de la Lanterne", _embarquer)
+	var quai := scene.get_node_or_null("EscaleNavires")
+	dialogue.ouvrir_choix(nom_affiche, texte, "%s · %d Berry" % [libelle_traversee, cout], _traverser,
+		"Navires du port", quai.ouvrir if quai != null else _embarquer)
 
 func _embarquer() -> void:
-	var scene := get_tree().current_scene
-	var joueur := get_tree().get_first_node_in_group("player") as Node2D
-	if joueur == null:
-		return
-	Personnage.memoriser_escale_navire(scene.scene_file_path, joueur.global_position)
-	scene.rejoindre_zone(Personnage.SCENE_NAVIRE, &"DepuisQuai")
+	Navires.embarquer()
 
 func _traverser() -> void:
 	if destination == "":
 		return
-	get_tree().current_scene.rejoindre_zone(destination, arrivee)
+	Navires.naviguer(destination)
 
 func repere_minicarte() -> Dictionary:
 	return {"categorie": "voyages", "nom": nom_affiche, "role": libelle_traversee}

@@ -31,6 +31,9 @@
 radius = 47.0
 
 [node name="ReverseMountain" instance=ExtResource("Zone")]
+mouillage_joueurs = Vector2(1536, 1840)
+mouillage_galions = Vector2(1540, 2690)
+mouillage_en_canal = true
 
 [node name="TerrainZone" parent="." index="0"]
 plan = PackedStringArray(

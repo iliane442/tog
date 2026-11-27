@@ -3,6 +3,7 @@ extends Node2D
 # sprite + pseudo, qui glisse en douceur vers les positions reçues
 
 const VISUEL_DEFAUT := "humain_pirate"
+const VISUEL_JOUEUR := preload("res://scripts/visuel_joueur.gd")
 # planches d'idle et de marche : 4 lignes de direction (sud, ouest,
 # est, nord) ; idle = 4 colonnes, marche = 6 — cf. LIGNES / FRAMES
 # dans player.gd
@@ -29,15 +30,18 @@ var _texture_repos: Texture2D
 var _texture_marche: Texture2D
 var _ligne := 0
 var _colonne := 0.0
+var _filtre_etage: Callable
 
 func _ready() -> void:
 	add_to_group("entites_minicarte")
+	var scene := get_tree().current_scene
+	if scene != null and scene.has_method("avatar_sur_mon_etage"):
+		_filtre_etage = Callable(scene, "avatar_sur_mon_etage")
 	z_index = 20
 	_sprite = Sprite2D.new()
 	_appliquer_visuel()
 	add_child(_sprite)
 	_etiquette = Label.new()
-	_etiquette.position.y = -58.0
 	_etiquette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_etiquette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_etiquette.add_theme_font_size_override("font_size", 14)
@@ -54,6 +58,8 @@ func repere_minicarte() -> Dictionary:
 # anime l'avatar : planche de marche tant que le glissement vers la
 # dernière position reçue dure, puis retour au repos sur place
 func _process(delta: float) -> void:
+	if _filtre_etage.is_valid():
+		visible = not en_combat and bool(_filtre_etage.call(global_position))
 	var en_mouvement := _tween != null and _tween.is_valid()
 	var colonnes := COLONNES_MARCHE if en_mouvement else COLONNES_REPOS
 	_colonne = fmod(_colonne + delta * (FPS_MARCHE if en_mouvement else FPS_REPOS), float(colonnes))
@@ -66,7 +72,9 @@ func _process(delta: float) -> void:
 # apparence du joueur distant (préfixe de planche de sprites, ex.
 # humain_pirate, mink_pirate...) : planches de repos et de marche
 func definir_visuel(prefixe: String) -> void:
-	visuel = str(prefixe)
+	if prefixe == visuel:
+		return
+	visuel = prefixe
 	_appliquer_visuel()
 
 func _appliquer_visuel() -> void:
@@ -84,6 +92,8 @@ func _appliquer_visuel() -> void:
 	_sprite.hframes = COLONNES_REPOS
 	_sprite.vframes = LIGNES.size()
 	_sprite.frame = _ligne * COLONNES_REPOS  # direction courante, face sud au départ
+	VISUEL_JOUEUR.appliquer_gabarit(_sprite, visuel, 0.0)
+	_actualiser_etiquette()
 
 # état de combat du joueur distant : son avatar quitte la map le temps
 # du combat — il est présent dans les arènes des coéquipiers (miroir) et
@@ -114,6 +124,7 @@ func _actualiser_etiquette() -> void:
 		_etiquette.add_theme_font_size_override("font_size", 14)
 	_etiquette.reset_size()
 	_etiquette.position.x = -_etiquette.size.x / 2.0
+	_etiquette.position.y = _sprite.position.y + _sprite.get_rect().position.y * _sprite.scale.y - 10.0
 
 # ligne de direction (sud, ouest, est, nord) d'un vecteur de déplacement
 func _ligne_cardinale(direction: Vector2) -> int:

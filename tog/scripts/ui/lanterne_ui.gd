@@ -17,6 +17,9 @@ var _carte: TextureRect
 var _marques: Control
 var _dimensions_port := Vector2.ZERO
 var _port := ""
+var _vue := ""
+var _commune := false
+var _titre_cale: Label
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -53,25 +56,63 @@ func _ready() -> void:
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_message.hide()
 	colonne.add_child(_message)
+	Navires.bord_modifie.connect(_actualiser_cale_commune)
+	Navires.message_recu.connect(_message_navire)
 
 func ouvrir(id: String) -> void:
-	if not Personnage.a_portee_poste_navire(id):
+	var poste := "cale" if id == "cale_commune" else id
+	if not Personnage.a_portee_poste_navire(poste):
 		return
+	var titre := str(Personnage.PIECES_NAVIRE.get(id, {}).get("nom", "Cale commune" if id == "cale_commune" else "Ma chambre"))
+	_preparer_vue(id, titre)
+	_commune = id == "cale_commune"
+	match id:
+		"cale", "cale_commune": _ouvrir_cale()
+		"cabine": _ouvrir_cabine()
+		"cartes": _ouvrir_cartes()
+		"chambre": _ouvrir_chambre()
+	get_tree().paused = true
+	_fond.show()
+
+func _preparer_vue(id: String, titre: String) -> void:
 	for enfant in _contenu.get_children():
 		_contenu.remove_child(enfant)
 		enfant.queue_free()
 	_message.hide()
-	_titre.text = Personnage.PIECES_NAVIRE[id]["nom"]
-	match id:
-		"cale": _ouvrir_cale()
-		"cabine": _ouvrir_cabine()
-		"cartes": _ouvrir_cartes()
+	_titre.text = titre
+	_vue = id
+
+func ouvrir_choix_atelier(indice: int) -> void:
+	_preparer_vue("choix_atelier", "Atelier %d" % (indice + 1))
+	_etiquette(_contenu, "%s Berry depuis la caisse d’équipage" % prix_affiche(Personnage.NAVIRES.PRIX_ATELIER))
+	var choix := OptionButton.new()
+	_contenu.add_child(choix)
+	for metier in Personnage.professions():
+		choix.add_item(str(Personnage.professions()[metier]["nom"]))
+		choix.set_item_metadata(choix.item_count - 1, metier)
+	_bouton(_contenu, "Acheter et aménager l’atelier", func():
+		if choix.selected >= 0 and Navires.acheter_atelier(indice, str(choix.get_selected_metadata())):
+			fermer())
 	get_tree().paused = true
 	_fond.show()
+
+func _ouvrir_chambre() -> void:
+	var decor: Dictionary = Navires.donnees_a_bord().get("chambres", {}).get(Personnage.nom, {})
+	for categorie: String in Personnage.NAVIRES.DECORS:
+		var ligne := HBoxContainer.new()
+		_contenu.add_child(ligne)
+		_etiquette(ligne, categorie.capitalize()).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var choix := OptionButton.new()
+		ligne.add_child(choix)
+		for nom: String in Personnage.NAVIRES.DECORS[categorie]:
+			choix.add_item(nom)
+		choix.select(int(decor.get(categorie, 0)))
+		choix.item_selected.connect(func(indice: int): Navires.decorer(categorie, indice))
 
 func fermer() -> void:
 	if _fond.visible:
 		_fond.hide()
+		_vue = ""
 		get_tree().paused = false
 
 func _input(evenement: InputEvent) -> void:
@@ -91,6 +132,7 @@ func _ouvrir_cale() -> void:
 	_contenu.add_child(listes)
 	_sac = _liste_stock(listes, "Sac")
 	_cale = _liste_stock(listes, "Coffre de la cale")
+	_titre_cale = _cale.get_parent().get_child(0)
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 10)
 	_contenu.add_child(actions)
@@ -128,8 +170,11 @@ func _remplir_stock(liste: ItemList, objets: Dictionary) -> void:
 		liste.add_item("Vide", null, false)
 
 func _actualiser_stock() -> void:
+	var objets := _stock()
+	var capacite := int(Personnage.NAVIRES.fiche("stockage")["cale"]) if _commune else Personnage.capacite_cale_navire()
+	_titre_cale.text = "%s · %d / %d piles" % ["Cale commune" if _commune else "Cale", objets.size(), capacite]
 	_remplir_stock(_sac, Inventaire.objets)
-	_remplir_stock(_cale, Inventaire.objets_en_cale())
+	_remplir_stock(_cale, objets)
 	_bouton_depot.disabled = true
 	_bouton_retrait.disabled = true
 	_quantite.max_value = 1
@@ -139,7 +184,7 @@ func _selection_stock(index: int, dans_sac: bool) -> void:
 	var liste := _sac if dans_sac else _cale
 	var autre := _cale if dans_sac else _sac
 	var id: String = liste.get_item_metadata(index)
-	var objets := Inventaire.objets if dans_sac else Inventaire.objets_en_cale()
+	var objets := Inventaire.objets if dans_sac else _stock()
 	autre.deselect_all()
 	_quantite.max_value = int(objets.get(id, 1))
 	_quantite.value = 1
@@ -154,11 +199,28 @@ func _transferer(depot: bool) -> void:
 		return
 	var id: String = liste.get_item_metadata(selection[0])
 	var quantite := int(_quantite.value)
-	if Inventaire.transferer_cale(id, quantite, depot):
+	if _commune:
+		if Navires.transferer_cale(id, quantite, depot):
+			_bouton_depot.disabled = true
+			_bouton_retrait.disabled = true
+	elif Inventaire.transferer_cale(id, quantite, depot):
 		_actualiser_stock()
 		_afficher_message("%s ×%d %s." % [Inventaire.nom_objet(id), quantite, "déposé dans la cale" if depot else "récupéré"])
 	else:
-		_afficher_message("Le transfert n’a pas abouti.")
+		_afficher_message("Vérifie l’espace libre dans la cale et la quantité disponible.")
+
+func _stock() -> Dictionary:
+	return Navires.donnees_a_bord().get("cale", {}) if _commune else Inventaire.objets_en_cale()
+
+func _actualiser_cale_commune() -> void:
+	if _vue == "cale_commune" and _fond.visible:
+		_actualiser_stock()
+
+func _message_navire(texte: String) -> void:
+	if _fond.visible:
+		if _vue == "cale_commune":
+			_actualiser_stock()
+		_afficher_message(texte)
 
 func _ouvrir_cabine() -> void:
 	_etiquette(_contenu, "Journal de bord")

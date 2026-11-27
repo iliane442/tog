@@ -201,6 +201,19 @@ var _boutons_navire: Dictionary = {}
 @onready var nb_caisse: SpinBox = $Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse/NbCaisse
 @onready var btn_deposer: Button = $Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse/BtnDeposer
 @onready var btn_retirer_caisse: Button = $Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauEquipage/MargesEquipage/DefilementEquipage/ColonneEquipage/FormeCaisse/BtnRetirerCaisse
+@onready var colonne_equipage: VBoxContainer = info_caisse.get_parent()
+@onready var titre_caisse: Label = colonne_equipage.get_node("TitreCaisse")
+@onready var forme_virement: HBoxContainer = colonne_equipage.get_node("FormeVirement")
+@onready var choix_destinataire: OptionButton = forme_virement.get_node("Destinataire")
+@onready var montant_virement: SpinBox = forme_virement.get_node("Montant")
+@onready var btn_virement: Button = forme_virement.get_node("Envoyer")
+@onready var titre_galions: Label = colonne_equipage.get_node("TitreGalions")
+@onready var info_galions: Label = colonne_equipage.get_node("InfoGalions")
+@onready var forme_galions: HBoxContainer = colonne_equipage.get_node("FormeGalions")
+@onready var quantite_galions: SpinBox = forme_galions.get_node("Quantite")
+@onready var btn_acheter_galions: Button = forme_galions.get_node("Acheter")
+var _choix_modele_galion: OptionButton
+var _liste_galions: VBoxContainer
 @onready var titre_journal: Label = $Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte/TitreJournal
 @onready var liste_journal: VBoxContainer = $Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte/DefilementJournal/ListeJournal
 @onready var info_flotte: Label = $Fenetre/Corps/ContenuEquipage/ZoneEquipage/PanneauFlotte/MargesFlotte/ColonneFlotte/InfoFlotte
@@ -305,8 +318,6 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_ajuster_fenetre)
 	$Fenetre/FermerPlanche.pressed.connect(fermer)
 	option_type_inventaire.item_selected.connect(_on_type_inventaire_selectionne)
-	for apparence in Personnage.APPARENCES_HUMAINES.values():
-		option_apparence.add_item(apparence["nom"])
 	option_apparence.item_selected.connect(_sur_apparence_choisie)
 	case_portables.toggled.connect(_on_portables_toggle)
 	champ_recherche_sac.text_changed.connect(_on_recherche_sac)
@@ -368,6 +379,17 @@ func _ready() -> void:
 	btn_modifier_description.pressed.connect(_on_modifier_description)
 	btn_deposer.pressed.connect(_on_deposer_caisse)
 	btn_retirer_caisse.pressed.connect(_on_retirer_caisse)
+	btn_virement.pressed.connect(_on_virement)
+	choix_destinataire.item_selected.connect(func(index: int): btn_virement.disabled = index == 0)
+	btn_acheter_galions.pressed.connect(_on_acheter_galions)
+	_choix_modele_galion = _choix_galions()
+	forme_galions.add_child(_choix_modele_galion)
+	forme_galions.move_child(_choix_modele_galion, 0)
+	_liste_galions = VBoxContainer.new()
+	_liste_galions.add_theme_constant_override("separation", 7)
+	colonne_equipage.add_child(_liste_galions)
+	colonne_equipage.move_child(_liste_galions, forme_galions.get_index() + 1)
+	quantite_galions.value_changed.connect(func(_valeur: float): _actualiser_prix_galions())
 	Equipages.equipage_modifie.connect(_on_equipage_modifie)
 
 func _ajuster_fenetre() -> void:
@@ -565,18 +587,9 @@ func _maj_resume_navire() -> void:
 	if label_navire == null:
 		return
 	var stats := Personnage.stats_bateau()
-	if int(stats["solidite"]) <= 0 and float(stats["tempete"]) <= 0.0:
-		label_navire.text = "Navire : aucune pièce installée"
-		return
-	var lignes := PackedStringArray()
-	for emplacement in Personnage.EMPLACEMENTS_NAVIRE.values():
-		var id_piece := str(Personnage.bateau.get(emplacement, ""))
-		lignes.append("%s : %s" % [
-			emplacement,
-			Inventaire.nom_objet(id_piece) if id_piece != "" else "vide",
-		])
-	label_navire.text = "Navire — %s\nBonus : +%d PV, +%d DEF, +%d%% vitesse d'exploration (%d solidité · %d%% tempête)" % [
-		" · ".join(lignes),
+	var fiche := Personnage.NAVIRES.fiche(Personnage.modele_bateau())
+	label_navire.text = "%s · %d Berry par traversée\n+%d PV · +%d DEF · +%d%% vitesse (%d solidité · %d%% tempête)" % [
+		fiche["nom"], fiche["entretien"],
 		int(stats["solidite"]) / 20, int(stats["solidite"]) / 200,
 		roundi(float(stats["tempete"])), int(stats["solidite"]), int(stats["tempete"]),
 	]
@@ -595,6 +608,9 @@ func _sur_personnage_modifie() -> void:
 			_maj_bouton_equiper(details_inventaire, detail_id_courant)
 			_maj_bouton_vendre(details_inventaire)
 			_maj_bouton_navire(details_inventaire, detail_id_courant)
+	elif section_actuelle == "equipage" and not Equipages.mon_equipage.is_empty():
+		_actualiser_solde_equipage()
+
 func _maj_resume_personnage() -> void:
 	_maj_portrait_equipement()
 	nom_niveau_inventaire.text = "%s · Niv. %d" % [Personnage.nom, Personnage.niveau]
@@ -604,20 +620,28 @@ func _maj_resume_personnage() -> void:
 	]
 
 func _sur_apparence_choisie(index: int) -> void:
-	Personnage.choisir_apparence_humaine(Personnage.APPARENCES_HUMAINES.keys()[index])
+	Personnage.choisir_apparence(str(option_apparence.get_item_metadata(index)))
 	_maj_apparence_personnage()
 
 func _maj_apparence_personnage() -> void:
-	ligne_apparence.visible = Personnage.a_une_apparence_humaine(Personnage.race_id)
+	var catalogue := Personnage.apparences_race(Personnage.race_id)
+	ligne_apparence.visible = not catalogue.is_empty()
+	option_apparence.clear()
 	if not ligne_apparence.visible:
 		portrait_identite.texture = portrait_identite_defaut
 		return
-	option_apparence.select(Personnage.APPARENCES_HUMAINES.keys().find(Personnage.apparence_humaine))
+	var choix := Personnage.normaliser_apparence(Personnage.race_id, Personnage.apparence)
+	for id: String in catalogue:
+		option_apparence.add_item(catalogue[id]["nom"])
+		var index := option_apparence.item_count - 1
+		option_apparence.set_item_metadata(index, id)
+		if id == choix:
+			option_apparence.select(index)
 	_maj_portrait_equipement()
 	portrait_identite.texture = portrait_equipement.texture
 
 func _maj_portrait_equipement() -> void:
-	var dossier := Personnage.prefixe_visuel(Personnage.race_id, Personnage.sexe, Personnage.apparence_humaine)
+	var dossier := Personnage.prefixe_visuel(Personnage.race_id, Personnage.sexe, Personnage.apparence)
 	if dossier == _visuel_portrait_charge:
 		return
 	var portrait := Personnage.portrait_visuel(dossier)
@@ -644,7 +668,7 @@ func _on_tri_sac_choisi(index: int) -> void:
 # libellé affiché d'un emplacement de filtre : paperdoll ou navire
 const LIBELLES_EMPLACEMENTS_NAVIRE := {
 	"planche": "Planches", "gouvernail": "Gouvernails", "mat": "Mâts",
-	"coque": "Coques", "proue": "Figures de proue",
+	"coque": "Coques", "proue": "Figures de proue", "mat2": "Mâts", "coque2": "Coques",
 }
 
 func _libelle_emplacement_filtre(emplacement: String) -> String:
@@ -1197,8 +1221,8 @@ func _objet_visible(id: String, type_choisi: Variant) -> bool:
 # « anneau » couvrent leurs deux emplacements (principal/secondaire,
 # anneau1/anneau2) ; un emplacement de navire n'accepte que sa pièce
 func _objet_pour_emplacement(id: String, emplacement: String) -> bool:
-	if Personnage.EMPLACEMENTS_NAVIRE.values().has(emplacement):
-		return Personnage.emplacement_navire(id) == emplacement
+	if LIBELLES_EMPLACEMENTS_NAVIRE.has(emplacement):
+		return Personnage.emplacement_navire(id) == emplacement.trim_suffix("2")
 	if Personnage.emplacement_navire(id) != "":
 		return false
 	var details := Inventaire.details_objet(id)
@@ -2042,7 +2066,7 @@ func afficher_metier(id_profession: String) -> void:
 	nom_metier.text = str(infos.get("nom", "-"))
 	desc_metier.text = str(infos.get("description", ""))
 	if not Personnage.a_portee_poste_navire("atelier"):
-		desc_metier.text += "\n\nFabrication et améliorations à l’établi de la Lanterne. Embarque en parlant à un capitaine au port."
+		desc_metier.text += "\n\nPour fabriquer ou améliorer des objets, rejoins un établi de ton métier à bord."
 	if not Personnage.a_metier(id_profession):
 		xp_metier.text = "Métier non choisi - un seul métier est accordé à la création du personnage."
 		titre_recettes.visible = false
@@ -2296,7 +2320,8 @@ func _on_bouton_vendre() -> void:
 # bouton d'installation d'une pièce de navire : visible sur les
 # pièces possédées, il échange avec la pièce déjà en place
 func _maj_bouton_navire(details: Dictionary, id: String) -> void:
-	var emplacement := Personnage.emplacement_navire(id)
+	var emplacement := Personnage.emplacement_installation_navire(id)
+	var pieces := Personnage.equipement_navire()
 	btn_navire.visible = emplacement != ""
 	if emplacement == "":
 		return
@@ -2310,12 +2335,12 @@ func _maj_bouton_navire(details: Dictionary, id: String) -> void:
 		if btn_navire.disabled:
 			btn_navire.tooltip_text = "Niveau %d requis." % int(details.get("niveau_min", 1))
 		else:
+			var ancienne := str(pieces.get(emplacement, ""))
 			btn_navire.tooltip_text = "Prend la place de %s." % (
-				Inventaire.nom_objet(str(Personnage.bateau[emplacement]))
-				if str(Personnage.bateau[emplacement]) != "" else "l'emplacement vide")
-	if not Personnage.a_portee_poste_navire("atelier"):
+				Inventaire.nom_objet(ancienne) if ancienne != "" else "l'emplacement vide")
+	if not Personnage.peut_equiper_navire():
 		btn_navire.disabled = true
-		btn_navire.tooltip_text = "Approche-toi de l’établi de la Lanterne."
+		btn_navire.tooltip_text = "Approche-toi du poste d’équipement de ton navire."
 
 func ouvrir_equipement_navire() -> void:
 	ouvrir("inventaire")
@@ -2332,8 +2357,9 @@ func _on_bouton_navire() -> void:
 		return
 	if Personnage.piece_navire_installee(detail_id_courant):
 		var nom_piece := Inventaire.nom_objet(detail_id_courant)
-		Personnage.retirer_piece_navire(emplacement)
-		prix_detail.text = "%s rejoint l'inventaire." % nom_piece
+		emplacement = str(Personnage.equipement_navire().find_key(detail_id_courant))
+		if Personnage.retirer_piece_navire(emplacement):
+			prix_detail.text = "%s rejoint l’inventaire." % nom_piece
 	else:
 		var nom_piece := Inventaire.nom_objet(detail_id_courant)
 		if Personnage.installer_piece_navire(detail_id_courant) == "":
@@ -2350,8 +2376,9 @@ func _on_bouton_navire() -> void:
 # il ouvre la fiche de la pièce installée (à droite, avec son bouton
 # « Retirer du navire »)
 func maj_panneau_navire() -> void:
+	var pieces := Personnage.equipement_navire()
 	if _boutons_navire.is_empty():
-		for emplacement in Personnage.EMPLACEMENTS_NAVIRE.values():
+		for emplacement in Personnage.EMPLACEMENTS_NAVIRE.values() + ["mat2", "coque2"]:
 			var bouton := Button.new()
 			bouton.custom_minimum_size = Vector2(0, 52)
 			bouton.expand_icon = true
@@ -2360,15 +2387,17 @@ func maj_panneau_navire() -> void:
 			_boutons_navire[str(emplacement)] = bouton
 	for emplacement in _boutons_navire:
 		var bouton: Button = _boutons_navire[emplacement]
-		var id_piece := str(Personnage.bateau.get(emplacement, ""))
+		bouton.visible = pieces.has(emplacement)
+		var id_piece := str(pieces.get(emplacement, ""))
+		var nom_slot := str({"mat2": "Mât supplémentaire", "coque2": "Coque supplémentaire"}.get(emplacement, emplacement))
 		if id_piece == "":
-			bouton.text = "%s\n· vide ·" % emplacement
+			bouton.text = "%s\n· vide ·" % nom_slot
 			bouton.icon = null
 			bouton.disabled = false
 			bouton.tooltip_text = "Emplacement libre : clic pour filtrer le sac sur les pièces de cette place."
 			continue
 		var details := Inventaire.details_objet(id_piece)
-		bouton.text = "%s\n%s" % [emplacement, Inventaire.nom_objet(id_piece)]
+		bouton.text = "%s\n%s" % [nom_slot, Inventaire.nom_objet(id_piece)]
 		bouton.icon = _icone_objet(details)
 		bouton.disabled = false
 		bouton.tooltip_text = "%s\nClic pour filtrer le sac sur cette place et examiner la pièce." % str(details.get("description", ""))
@@ -2390,7 +2419,7 @@ func _sur_slot_navire(emplacement: String) -> void:
 	else:
 		filtre_emplacement = emplacement
 	maj_grille()
-	var id_piece := str(Personnage.bateau.get(emplacement, ""))
+	var id_piece := str(Personnage.equipement_navire().get(emplacement, ""))
 	if id_piece != "":
 		maj_detail_item(id_piece)
 
@@ -2652,13 +2681,20 @@ func maj_equipage() -> void:
 	var equipe := not Equipages.mon_equipage.is_empty()
 	var capitaine := Equipages.suis_capitaine()
 	var gerant := Equipages.puis_je_gerer()
+	var autres := Equipages.autres_equipages() if equipe else []
 	forme_creation_equipage.visible = not equipe
 	btn_dissoudre.visible = capitaine
 	btn_quitter_equipage.visible = equipe and not capitaine
 	titre_membres.visible = equipe
 	forme_ajout_membre.visible = gerant and Equipages.places_libres() > 0
 	forme_description.visible = gerant
+	titre_caisse.visible = equipe
+	info_caisse.visible = equipe
 	forme_caisse.visible = equipe
+	forme_virement.visible = gerant
+	titre_galions.visible = equipe
+	info_galions.visible = equipe
+	forme_galions.visible = gerant
 	btn_retirer_caisse.visible = gerant
 	titre_journal.visible = equipe
 	if equipe:
@@ -2676,7 +2712,15 @@ func maj_equipage() -> void:
 				info_equipage.text += " Seul le capitaine ou le vice-capitaine gère l'équipage."
 		if gerant and champ_description.text.is_empty():
 			champ_description.text = description
-		info_caisse.text = "Caisse : %d Berry" % int(Equipages.mon_equipage["caisse"])
+		_actualiser_solde_equipage()
+		var galions := int(Equipages.mon_equipage.get("galions", 0))
+		info_galions.text = "%d / %d galions · %s Berry l’unité" % [
+			galions, Equipages.GALIONS_MAX, _formater_nombre(Equipages.PRIX_GALION)]
+		quantite_galions.max_value = maxi(1, Equipages.GALIONS_MAX - galions)
+		quantite_galions.editable = galions < Equipages.GALIONS_MAX
+		_actualiser_prix_galions()
+		if gerant:
+			_construire_destinataires(autres)
 	else:
 		info_equipage.text = "Fondez votre équipage : jusqu'à %d joueurs, capitaine compris." % Equipages.MEMBRES_MAX
 		champ_description.text = ""
@@ -2684,11 +2728,13 @@ func maj_equipage() -> void:
 		info_equipage.text += "\n" + Equipages.dernier_message
 		Equipages.dernier_message = ""
 	_construire_membres()
-	_construire_alliances()
+	_construire_galions()
+	_construire_alliances(autres)
 	_construire_journal()
 
 func _construire_membres() -> void:
 	for enfant in liste_membres.get_children():
+		liste_membres.remove_child(enfant)
 		enfant.queue_free()
 	if Equipages.mon_equipage.is_empty():
 		return
@@ -2738,64 +2784,167 @@ func _construire_membres() -> void:
 		encadre.add_child(boite)
 		liste_membres.add_child(encadre)
 
-func _construire_alliances() -> void:
+func _construire_destinataires(autres: Array) -> void:
+	var selection := choix_destinataire.get_selected_id()
+	choix_destinataire.clear()
+	choix_destinataire.add_item("Équipage destinataire", 0)
+	var nouvel_index := 0
+	for equipe in autres:
+		var id := int(equipe["id"])
+		choix_destinataire.add_item(str(equipe["nom"]), id)
+		if id == selection:
+			nouvel_index = choix_destinataire.item_count - 1
+	choix_destinataire.select(nouvel_index)
+	btn_virement.disabled = nouvel_index == 0
+
+func _actualiser_solde_equipage() -> void:
+	info_caisse.text = "%s Berry en caisse · %s Berry en bourse" % [
+		_formater_nombre(int(Equipages.mon_equipage["caisse"])), _formater_nombre(Personnage.berry)]
+
+func _actualiser_prix_galions() -> void:
+	var galions := int(Equipages.mon_equipage.get("galions", 0))
+	var prix := int(quantite_galions.value) * Equipages.PRIX_GALION
+	btn_acheter_galions.text = "Acheter · %s Berry" % _formater_nombre(prix)
+	btn_acheter_galions.disabled = galions >= Equipages.GALIONS_MAX or int(Equipages.mon_equipage.get("caisse", 0)) < prix
+
+func _choix_galions() -> OptionButton:
+	var choix := OptionButton.new()
+	choix.fit_to_longest_item = false
+	choix.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	choix.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for modele: String in Personnage.NAVIRES.GALIONS:
+		var fiche := Personnage.NAVIRES.fiche(modele)
+		choix.add_item(str(fiche["nom"]))
+		choix.set_item_metadata(choix.item_count - 1, modele)
+		choix.get_popup().set_item_tooltip(choix.item_count - 1, str(fiche["usage"]))
+	return choix
+
+func _construire_galions() -> void:
+	for ancien in _liste_galions.get_children():
+		_liste_galions.remove_child(ancien)
+		ancien.queue_free()
+	var flotte := Equipages.liste_galions()
+	if flotte.is_empty():
+		return
+	var capitaine := Equipages.suis_capitaine()
+	var membres := [Equipages.mon_equipage["capitaine"]]
+	for membre: Dictionary in Equipages.liste_membres():
+		membres.append(str(membre["nom_joueur"]))
+	for galion: Dictionary in flotte:
+		var modele := str(galion["modele"])
+		var id := int(galion["id"])
+		var pilote := str(galion["pilote"])
+		var rang := HBoxContainer.new()
+		_liste_galions.add_child(rang)
+		if modele.is_empty() and capitaine:
+			var choix := _choix_galions()
+			rang.add_child(choix)
+			_action_diplomatie(rang, "Spécialiser", func():
+				_retour_equipage(Equipages.choisir_galion(id, str(choix.get_selected_metadata())), "Galion spécialisé."))
+			continue
+		var titre := Label.new()
+		titre.text = "Galion à spécialiser" if modele.is_empty() else str(Personnage.NAVIRES.fiche(modele)["nom"])
+		titre.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		titre.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rang.add_child(titre)
+		if not capitaine or modele.is_empty():
+			titre.text += " · " + pilote if not pilote.is_empty() else ""
+			continue
+		var choix := OptionButton.new()
+		choix.fit_to_longest_item = false
+		choix.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		choix.custom_minimum_size.x = 132
+		rang.add_child(choix)
+		choix.add_item("Sans pilote")
+		choix.set_item_metadata(0, "")
+		for membre: String in membres:
+			choix.add_item(membre)
+			choix.set_item_metadata(choix.item_count - 1, membre)
+			if pilote == membre:
+				choix.select(choix.item_count - 1)
+		_action_diplomatie(rang, "Attribuer", func():
+			_retour_equipage(Equipages.assigner_galion(id, str(choix.get_selected_metadata())), "Attribution mise à jour."))
+
+func _construire_alliances(autres: Array) -> void:
 	for enfant in liste_alliances.get_children():
+		liste_alliances.remove_child(enfant)
 		enfant.queue_free()
 	var flotte := Equipages.ma_flotte()
-	btn_rompre_flotte.visible = not flotte.is_empty() and Equipages.puis_je_gerer()
-	if Equipages.mon_equipage.is_empty():
-		info_flotte.text = "Sans équipage, pas d'alliance possible."
-		btn_rompre_flotte.visible = false
-		var vide := Label.new()
-		vide.text = "Fondez un équipage pour rencontrer d'autres équipages."
-		liste_alliances.add_child(vide)
-		return
-	if flotte.is_empty():
-		info_flotte.text = "Aucune flotte : concluez une alliance avec un autre équipage pour fonder la vôtre."
-	else:
-		info_flotte.text = "« %s » - %d équipage(s)" % [
-			flotte["nom"], Equipages.membres_de_ma_flotte().size()]
 	var gerant := Equipages.puis_je_gerer()
-	var autres := Equipages.autres_equipages()
-	if autres.is_empty():
-		var vide := Label.new()
-		vide.text = "Aucun autre équipage sur les mers pour l'instant."
-		liste_alliances.add_child(vide)
+	btn_rompre_flotte.visible = not flotte.is_empty() and gerant
+	if Equipages.mon_equipage.is_empty():
+		info_flotte.text = "Fondez un équipage pour établir des relations diplomatiques."
 		return
-	for ligne in autres:
-		var id_equipage := int(ligne["id"])
-		var allie := Equipages.est_allie(id_equipage)
-		var encadre := PanelContainer.new()
-		encadre.add_theme_stylebox_override("panel", FICHE_MENU)
-		var boite := HBoxContainer.new()
-		boite.add_theme_constant_override("separation", 12)
+	var allies := {}
+	for allie: Dictionary in Equipages.membres_de_ma_flotte():
+		allies[int(allie["id"])] = true
+	if flotte.is_empty():
+		info_flotte.text = "Aucune alliance en cours."
+	else:
+		info_flotte.text = "Alliance « %s » · %d équipages" % [flotte["nom"], allies.size()]
+	if autres.is_empty():
+		info_flotte.text += "\nAucun autre équipage répertorié."
+		return
+	for equipe in autres:
+		var id_cible := int(equipe["id"])
+		var allie := allies.has(id_cible)
+		var relation := str(equipe.get("etat", ""))
+		var notre_demande := int(equipe.get("initiateur", 0)) == int(Equipages.mon_equipage["id"])
+		var cadre := PanelContainer.new()
+		cadre.add_theme_stylebox_override("panel", FICHE_MENU)
+		var colonne := VBoxContainer.new()
+		cadre.add_child(colonne)
+		liste_alliances.add_child(cadre)
 		var nom := Label.new()
-		nom.text = "« %s » - Capitaine %s" % [str(ligne["nom"]), str(ligne["capitaine"])]
-		nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		nom.text = str(equipe["nom"])
+		nom.add_theme_font_size_override("font_size", 21)
 		nom.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		nom.add_theme_font_size_override("font_size", 22)
-		var infos := Label.new()
-		infos.text = "Niveau %d - %d membres" % [
-			int(ligne["niveau"]), Equipages.nb_membres_de(id_equipage)]
-		boite.add_child(nom)
-		boite.add_child(infos)
+		colonne.add_child(nom)
+		var details := Label.new()
+		details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		details.text = "Niv. %d · %d membres · Capitaine %s" % [
+			int(equipe["niveau"]), int(equipe.get("membres", 1)), str(equipe["capitaine"])]
+		colonne.add_child(details)
+		var statut := Label.new()
+		var couleur := Color("#54432b")
 		if allie:
-			var etiquette := Label.new()
-			etiquette.text = "Allié"
-			etiquette.add_theme_color_override("font_color", Color(0.17, 0.34, 0.13))
-			boite.add_child(etiquette)
+			statut.text = "Allié"
+			couleur = Color("#315b36")
+		elif relation == "guerre":
+			statut.text = "En guerre"
+			couleur = Color("#852b23")
+		elif relation == "proposition":
+			statut.text = "Alliance proposée" if notre_demande else "Proposition reçue"
 		else:
-			var btn := Button.new()
-			btn.text = "Proposer alliance"
-			btn.tooltip_text = "En MMO, la proposition sera à accepter par le capitaine adverse."
-			btn.disabled = not gerant
-			btn.pressed.connect(_on_proposer_alliance.bind(id_equipage))
-			boite.add_child(btn)
-		encadre.add_child(boite)
-		liste_alliances.add_child(encadre)
+			statut.text = "Neutre"
+		statut.add_theme_color_override("font_color", couleur)
+		colonne.add_child(statut)
+		if not gerant or allie:
+			continue
+		var actions := HBoxContainer.new()
+		colonne.add_child(actions)
+		match relation:
+			"guerre":
+				if notre_demande:
+					_action_diplomatie(actions, "Lever la guerre", _on_lever_guerre.bind(id_cible))
+			"proposition":
+				if not notre_demande:
+					_action_diplomatie(actions, "Accepter", _on_repondre_alliance.bind(id_cible, true))
+				var libelle := "Annuler la demande" if notre_demande else "Refuser"
+				_action_diplomatie(actions, libelle, _on_repondre_alliance.bind(id_cible, false))
+			_:
+				_action_diplomatie(actions, "Proposer une alliance", _on_proposer_alliance.bind(id_cible))
+				_action_diplomatie(actions, "Déclarer la guerre", _on_declarer_guerre.bind(id_cible))
+
+func _action_diplomatie(conteneur: HBoxContainer, libelle: String, action: Callable) -> void:
+	var bouton := Button.new()
+	bouton.text = libelle
+	bouton.pressed.connect(action)
+	conteneur.add_child(bouton)
 
 func _construire_journal() -> void:
 	for enfant in liste_journal.get_children():
+		liste_journal.remove_child(enfant)
 		enfant.queue_free()
 	if Equipages.mon_equipage.is_empty():
 		return
@@ -2848,21 +2997,34 @@ func _on_modifier_description() -> void:
 		info_equipage.text = erreur
 
 func _on_deposer_caisse() -> void:
-	var erreur := Equipages.deposer_berry(int(nb_caisse.value))
-	if erreur != "":
-		info_caisse.text = erreur
+	_retour_equipage(Equipages.deposer_berry(int(nb_caisse.value)), "Dépôt enregistré.")
 
 func _on_retirer_caisse() -> void:
-	var erreur := Equipages.retirer_berry(int(nb_caisse.value))
-	if erreur != "":
-		info_caisse.text = erreur
+	_retour_equipage(Equipages.retirer_berry(int(nb_caisse.value)), "Retrait enregistré.")
+
+func _on_virement() -> void:
+	_retour_equipage(Equipages.virer_berry(choix_destinataire.get_selected_id(), int(montant_virement.value)), "Virement envoyé.")
+
+func _on_acheter_galions() -> void:
+	_retour_equipage(Equipages.acheter_galions(int(quantite_galions.value), str(_choix_modele_galion.get_selected_metadata())), "Flotte mise à jour.")
 
 func _on_proposer_alliance(id_equipage: int) -> void:
-	var erreur := Equipages.proposer_alliance(id_equipage)
-	if erreur != "":
-		info_flotte.text = erreur
+	_retour_equipage(Equipages.proposer_alliance(id_equipage), "Alliance conclue.")
+
+func _on_repondre_alliance(id_equipage: int, accepter: bool) -> void:
+	_retour_equipage(Equipages.repondre_alliance(id_equipage, accepter))
+
+func _on_declarer_guerre(id_equipage: int) -> void:
+	_retour_equipage(Equipages.declarer_guerre(id_equipage), "Guerre déclarée.")
+
+func _on_lever_guerre(id_equipage: int) -> void:
+	_retour_equipage(Equipages.lever_guerre(id_equipage), "Déclaration de guerre levée.")
 
 func _on_rompre_flotte() -> void:
-	var erreur := Equipages.rompre_alliance()
-	if erreur != "":
-		info_flotte.text = erreur
+	_retour_equipage(Equipages.rompre_alliance(), "Alliance quittée.")
+
+func _retour_equipage(erreur: String, succes: String = "") -> void:
+	if not erreur.is_empty():
+		Equipages.message_serveur(erreur)
+	elif not Equipages.en_ligne and not succes.is_empty():
+		Equipages.message_serveur(succes)

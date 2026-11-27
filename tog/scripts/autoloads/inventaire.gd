@@ -3,6 +3,8 @@ extends Node
 
 var objets: Dictionary = {}  # id -> quantité
 var _cales_navire: Dictionary = {}
+var _objets_hors_ligne: Dictionary = {}
+var _en_ligne := false
 
 # Noms affichés dans l'inventaire (déclarez vos objets ici)
 var noms: Dictionary = {
@@ -71,6 +73,9 @@ func _charger_objets() -> bool:
 	return cfg.has_section_key("inventaire", "objets")
 
 func _sauver_objets() -> Error:
+	if _en_ligne:
+		Reseau.sauvegarder_perso_immediat()
+		return OK
 	var cfg := ConfigFile.new()
 	cfg.set_value("inventaire", "objets", objets)
 	cfg.set_value("inventaire", "cales_navire", _cales_navire)
@@ -79,6 +84,23 @@ func _sauver_objets() -> Error:
 	if erreur != OK:
 		return erreur
 	return DirAccess.rename_absolute(temporaire, CHEMIN_SAUVEGARDE)
+
+func basculer_en_ligne(sac: Variant, cale: Variant) -> void:
+	if not _en_ligne:
+		_objets_hors_ligne = objets.duplicate()
+	_en_ligne = true
+	if sac is Dictionary:
+		objets = sac.duplicate()
+	if cale is Dictionary:
+		_cales_navire[_proprietaire_cale()] = cale.duplicate()
+	inventaire_modifie.emit()
+
+func recharger_etat_local() -> void:
+	if not _en_ligne:
+		return
+	_en_ligne = false
+	objets = _objets_hors_ligne
+	inventaire_modifie.emit()
 
 func _proprietaire_cale() -> String:
 	if Personnage.en_ligne:
@@ -97,6 +119,8 @@ func transferer_cale(id: String, quantite: int, depot: bool) -> bool:
 		return false
 	var cle := _proprietaire_cale()
 	var cale := objets_en_cale()
+	if depot and not cale.has(id) and cale.size() >= Personnage.capacite_cale_navire():
+		return false
 	var source := objets if depot else cale
 	var destination := cale if depot else objets
 	var disponible := int(source.get(id, 0))
@@ -123,7 +147,8 @@ func reinitialiser() -> void:
 	_cales_navire.erase(_proprietaire_cale())
 	items_connus.clear()
 	_sauver_connus()
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(CHEMIN_SAUVEGARDE))
+	if not _en_ligne:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(CHEMIN_SAUVEGARDE))
 	inventaire_modifie.emit()
 	_ajouter_objets_depart()
 
