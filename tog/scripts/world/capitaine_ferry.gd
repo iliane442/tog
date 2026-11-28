@@ -77,23 +77,16 @@ func ouvrir_dialogue() -> void:
 	var scene := get_tree().current_scene
 	var dialogue := scene.get_node("DialogueUI")
 	if not Personnage.perso_cree:
-		dialogue.ouvrir_choix(nom_affiche, paroles, libelle_traversee, _traverser)
 		return
 	var texte := paroles
-	var cout := int(Personnage.NAVIRES.fiche(Personnage.modele_bateau())["entretien"])
 	if scene.scene_file_path == Personnage.PORT_NAVIRE_DEFAUT and Personnage.escale_navire.is_empty():
 		texte += "\n\nCorbin t’a laissé les clés de la Lanterne. La chaloupe t’y emmènera."
 	var quai := scene.get_node_or_null("EscaleNavires")
-	dialogue.ouvrir_choix(nom_affiche, texte, "%s · %d Berry" % [libelle_traversee, cout], _traverser,
+	dialogue.ouvrir_choix(nom_affiche, texte, "Navigation", Navires.ouvrir_navigation.bind("quai"),
 		"Prendre la chaloupe", quai.approcher if quai != null else _embarquer)
 
 func _embarquer() -> void:
 	Navires.embarquer()
-
-func _traverser() -> void:
-	if destination == "":
-		return
-	Navires.naviguer(destination)
 
 func repere_minicarte() -> Dictionary:
 	return {"categorie": "voyages", "nom": nom_affiche, "role": libelle_traversee}

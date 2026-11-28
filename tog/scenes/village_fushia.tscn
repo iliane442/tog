@@ -47,6 +47,11 @@
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/rochers_moussus.png" id="RochersCotiers"]
 [ext_resource type="Texture2D" path="res://assets/world/kit_cartes/nature/pin_de_montagne.png" id="PinDuCol"]
 
+[ext_resource type="Texture2D" path="res://assets/world/fushia_village/terminal_ferry.png" id="TerminalFerry"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_village/entrepot_marchand.png" id="GrandEntrepot"]
+[ext_resource type="Texture2D" path="res://assets/world/fushia_village/navire_marchand.png" id="NavireMarchand"]
+[ext_resource type="Texture2D" path="res://assets/world/kit_cartes/bourg_port/borne_amarrage.png" id="BorneAmarrage"]
+
 [sub_resource type="ShaderMaterial" id="RefletsFontaine"]
 shader = ExtResource("EauFontaine")
 
@@ -62,8 +67,8 @@ size = Vector2(98, 74)
 [node name="Fushia" instance=ExtResource("Zone")]
 script = ExtResource("CarteTerrasses")
 renouveler_rencontres = false
-mouillage_chaloupe = Vector2(1132.8, 1564.4)
-quai_chaloupe = Vector2(1075.2, 1451.4)
+mouillage_chaloupe = Vector2(755.2, 1774.6)
+quai_chaloupe = Vector2(662.4, 1673.8)
 
 [node name="TerrainZone" parent="." index="0"]
 texture_filter = 1
@@ -84,10 +89,11 @@ custom_minimum_size = Vector2(200, 120)
 reperes = Dictionary[Vector2, String]({
 	Vector2(2656, 1152): "Grande Place",
 	Vector2(2899.2, 966.4): "Taverne de Makino",
-	Vector2(1152, 1406): "Quai des Voiles",
-	Vector2(2099.2, 1704.4): "Quai de pêche",
+	Vector2(915.2, 1547): "Quai des Voiles",
+	Vector2(1939.2, 1780.4): "Bassin marchand",
+	Vector2(2486.4, 2093.8): "Pontons de pêche",
 	Vector2(3897.6, 1280): "Moulin du Levant",
-	Vector2(2790.4, 1937.6): "Crique du Levant"
+	Vector2(2803.2, 2113.6): "Crique du Levant"
 })
 
 [node name="DepuisBois" type="Marker2D" parent="Arrivees"]
@@ -97,10 +103,10 @@ position = Vector2(1708.8, 646.4)
 position = Vector2(3571.2, 686.4)
 
 [node name="DepuisShells" type="Marker2D" parent="Arrivees"]
-position = Vector2(1312, 1320)
+position = Vector2(1100.8, 1448)
 
 [node name="DepuisNavireDuRoux" type="Marker2D" parent="Arrivees"]
-position = Vector2(1075.2, 1451.4)
+position = Vector2(662.4, 1673.8)
 
 [node name="Nuages" type="Node2D" parent="."]
 z_index = 12
@@ -180,7 +186,7 @@ nom_affiche = "Coby"
 paroles = "Un jour, je serai un grand officier de la Marine ! Je me suis enfui du navire d'Alvida, alors un pirate de plus ou de moins, ça ne m'impressionne plus… enfin… presque plus."
 
 [node name="zeff" parent="." instance=ExtResource("23_zeff")]
-position = Vector2(2451.2, 1691.2)
+position = Vector2(2816, 1912)
 nom_affiche = "Zeff"
 paroles = "Trente ans de mer, moussaillon : un cuisinier qui ne sait pas se battre n'a rien à faire sur un navire de pirates. Si tu passes près du Baratie, goûte ma vinaigrette avant d'aller te faire pendre ailleurs."
 
@@ -233,7 +239,7 @@ text = "Alba, la garde"
 horizontal_alignment = 1
 
 [node name="Malo" type="Node2D" parent="." groups=["pnj_fushia"]]
-position = Vector2(1576, 1336)
+position = Vector2(1321.6, 1484.8)
 script = ExtResource("pnj")
 largeur_zone_clic = 78.0
 hauteur_zone_clic = 109.0
@@ -335,13 +341,13 @@ horizontal_alignment = 1
 position = Vector2(2918.4, 1379.2)
 
 [node name="capitaine_ferry" parent="." instance=ExtResource("27_capitaine")]
-position = Vector2(1222.4, 1367.8)
+position = Vector2(905.6, 1556)
 
 [node name="RepereQuai" type="Node2D" parent="." groups=["points_fushia"]]
-position = Vector2(1446.4, 1355.2)
+position = Vector2(1155.2, 1478.4)
 script = ExtResource("point_point")
 titre = "Quai des Voiles"
-description = "Bienvenue à Fushia. En haut de l’escalier, la taverne de Makino donne sur la grande place. Le quai du ferry est à l’ouest et le quai de pêche à l’est."
+description = "Bienvenue à Fushia. La rampe remonte à la grande place. Le bassin marchand est au milieu du port. Sa passerelle rejoint les pontons de pêche du Levant."
 quete = "fushia_reperes"
 
 [node name="Sprite2D" type="Sprite2D" parent="RepereQuai"]
@@ -351,6 +357,32 @@ offset = Vector2(0, -47)
 scale = Vector2(0.8, 0.8)
 
 [node name="Etiquette" type="Label" parent="RepereQuai"]
+z_index = 16
+offset_left = -142.0
+offset_top = -91.80000000000001
+offset_right = 142.0
+offset_bottom = -61.80000000000001
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0.12, 0.13, 0.11, 1)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 17
+text = ""
+horizontal_alignment = 1
+
+[node name="PanneauDuBassin" type="Node2D" parent="." groups=["points_fushia"]]
+position = Vector2(2016, 1601.2)
+script = ExtResource("point_point")
+titre = "Bassin marchand"
+description = "Les entrepôts occupent la terrasse au-dessus du quai. La passerelle de l’est mène vers la crique des pêcheurs."
+
+[node name="Sprite2D" type="Sprite2D" parent="PanneauDuBassin"]
+position = Vector2(0, 0)
+texture = ExtResource("point_dpanneau")
+offset = Vector2(0, -47)
+scale = Vector2(0.8, 0.8)
+
+[node name="Etiquette" type="Label" parent="PanneauDuBassin"]
 z_index = 16
 offset_left = -142.0
 offset_top = -91.80000000000001
@@ -391,10 +423,10 @@ text = ""
 horizontal_alignment = 1
 
 [node name="PanneauCrique" type="Node2D" parent="." groups=["points_fushia"]]
-position = Vector2(2790.4, 1937.6)
+position = Vector2(2803.2, 2113.6)
 script = ExtResource("point_point")
 titre = "Crique du Levant"
-description = "La crique est abritée par les falaises. Le sentier de pierre remonte vers la poissonnerie et la place."
+description = "Les pêcheurs relèvent leurs nasses près des pontons. L’escalier remonte vers la poissonnerie et la passerelle rejoint le quai marchand."
 
 [node name="Sprite2D" type="Sprite2D" parent="PanneauCrique"]
 position = Vector2(0, 0)
@@ -443,7 +475,7 @@ text = ""
 horizontal_alignment = 1
 
 [node name="Nasse1" type="Node2D" parent="." groups=["points_fushia"]]
-position = Vector2(1107.2, 1404.8)
+position = Vector2(713.6, 1579.2)
 script = ExtResource("point_point")
 titre = "Nasse à poissons"
 quete = "fushia_nasses"
@@ -472,7 +504,7 @@ text = ""
 horizontal_alignment = 1
 
 [node name="Nasse2" type="Node2D" parent="." groups=["points_fushia"]]
-position = Vector2(2028.8, 1719.4)
+position = Vector2(2368, 2136.8)
 script = ExtResource("point_point")
 titre = "Nasse à poissons"
 quete = "fushia_nasses"
@@ -501,7 +533,7 @@ text = ""
 horizontal_alignment = 1
 
 [node name="Nasse3" type="Node2D" parent="." groups=["points_fushia"]]
-position = Vector2(2329.6, 1694.4)
+position = Vector2(2681.6, 2129.6)
 script = ExtResource("point_point")
 titre = "Nasse à poissons"
 quete = "fushia_nasses"
@@ -552,21 +584,21 @@ offset = Vector2(0, -157.42)
 metadata/emprise = Vector2(39, 35)
 
 [node name="Poissonnerie" type="Sprite2D" parent="Paysage"]
-position = Vector2(2406.4, 1617.6)
+position = Vector2(2937.6, 1880)
 texture = ExtResource("poissonnerie")
 scale = Vector2(0.6, 0.6)
 offset = Vector2(0, -114.85)
 metadata/emprise = Vector2(66, 59)
 
 [node name="EntrepotDesVoiles" type="Sprite2D" parent="Paysage"]
-position = Vector2(1337.6, 1204.8)
+position = Vector2(1516.8, 1403.2)
 texture = ExtResource("entrepot")
 scale = Vector2(0.49, 0.49)
 offset = Vector2(0, -155.5)
 metadata/emprise = Vector2(55, 52)
 
 [node name="EntrepotDesPecheurs" type="Sprite2D" parent="Paysage"]
-position = Vector2(2649.6, 1649.6)
+position = Vector2(3104, 2017.6)
 texture = ExtResource("entrepot")
 scale = Vector2(0.46, 0.46)
 offset = Vector2(0, -144.67)
@@ -582,14 +614,14 @@ metadata/emprise = Vector2(48, 40)
 flip_h = true
 
 [node name="GrueDeLaDarse" type="Sprite2D" parent="Paysage"]
-position = Vector2(2387.2, 1716.8)
+position = Vector2(2041.6, 1863.6)
 texture = ExtResource("grue")
 scale = Vector2(0.37, 0.37)
 offset = Vector2(0, -137.6)
 metadata/emprise = Vector2(21, 23)
 
 [node name="GrueDuFerry" type="Sprite2D" parent="Paysage"]
-position = Vector2(1158.4, 1275.2)
+position = Vector2(1075.2, 1547.2)
 texture = ExtResource("grue")
 scale = Vector2(0.3, 0.3)
 offset = Vector2(0, -123.46)
@@ -597,21 +629,21 @@ metadata/emprise = Vector2(20, 20)
 flip_h = true
 
 [node name="FerryDeFushia" type="Sprite2D" parent="Paysage"]
-position = Vector2(883.2, 1425.2)
+position = Vector2(547.2, 1585.6)
 texture = ExtResource("ferry")
 scale = Vector2(0.72, 0.72)
 offset = Vector2(0, -144.5)
 z_index = -6
 
 [node name="BateauDesNasses" type="Sprite2D" parent="Paysage"]
-position = Vector2(2176, 1865.6)
+position = Vector2(2233.6, 2130.6)
 texture = ExtResource("bateau_peche")
 scale = Vector2(0.41, 0.41)
 offset = Vector2(0, -195)
 z_index = -6
 
 [node name="BateauDuLevant" type="Sprite2D" parent="Paysage"]
-position = Vector2(1884.8, 1729.8)
+position = Vector2(2368, 2311)
 texture = ExtResource("bateau_peche")
 scale = Vector2(0.35, 0.35)
 offset = Vector2(0, -195)
@@ -1244,119 +1276,119 @@ offset = Vector2(0, -46.67)
 metadata/emprise = Vector2(8, 8)
 
 [node name="Lanterne05" type="Sprite2D" parent="Paysage"]
-position = Vector2(1248, 1256)
+position = Vector2(1011.2, 1374.4)
 texture = ExtResource("Lanterne")
 scale = Vector2(0.58, 0.58)
 offset = Vector2(0, -46.67)
 metadata/emprise = Vector2(8, 8)
 
 [node name="Lanterne06" type="Sprite2D" parent="Paysage"]
-position = Vector2(1452.8, 1384)
+position = Vector2(1222.4, 1499.2)
 texture = ExtResource("Lanterne")
 scale = Vector2(0.58, 0.58)
 offset = Vector2(0, -46.67)
 metadata/emprise = Vector2(8, 8)
 
 [node name="Lanterne07" type="Sprite2D" parent="Paysage"]
-position = Vector2(1939.2, 1486.4)
+position = Vector2(1939.2, 1456.4)
 texture = ExtResource("Lanterne")
 scale = Vector2(0.58, 0.58)
 offset = Vector2(0, -46.67)
 metadata/emprise = Vector2(8, 8)
 
 [node name="Lanterne08" type="Sprite2D" parent="Paysage"]
-position = Vector2(2355.2, 1681.6)
+position = Vector2(2355.2, 1651.6)
 texture = ExtResource("Lanterne")
 scale = Vector2(0.58, 0.58)
 offset = Vector2(0, -46.67)
 metadata/emprise = Vector2(8, 8)
 
 [node name="Lanterne09" type="Sprite2D" parent="Paysage"]
-position = Vector2(2534.4, 1771.2)
+position = Vector2(2534.4, 1741.2)
 texture = ExtResource("Lanterne")
 scale = Vector2(0.58, 0.58)
 offset = Vector2(0, -46.67)
 metadata/emprise = Vector2(8, 8)
 
 [node name="Chargement01" type="Sprite2D" parent="Paysage"]
-position = Vector2(1344, 1259.2)
+position = Vector2(972.8, 1425.6)
 texture = ExtResource("Tonneaux")
 scale = Vector2(0.78, 0.78)
 offset = Vector2(0, -19.2)
 metadata/emprise = Vector2(15, 13)
 
 [node name="Chargement02" type="Sprite2D" parent="Paysage"]
-position = Vector2(1388.8, 1332.8)
+position = Vector2(1286.4, 1419.2)
 texture = ExtResource("Caisses")
 scale = Vector2(0.6, 0.6)
 offset = Vector2(0, -47.45)
 metadata/emprise = Vector2(15, 13)
 
 [node name="Chargement03" type="Sprite2D" parent="Paysage"]
-position = Vector2(1523.2, 1361.6)
+position = Vector2(1139.2, 1547.2)
 texture = ExtResource("Tonneaux")
 scale = Vector2(0.66, 0.66)
 offset = Vector2(0, -16.76)
 metadata/emprise = Vector2(15, 13)
 
 [node name="Chargement04" type="Sprite2D" parent="Paysage"]
-position = Vector2(1612.8, 1412.8)
+position = Vector2(1465.6, 1448)
 texture = ExtResource("Caisses")
 scale = Vector2(0.52, 0.52)
 offset = Vector2(0, -44.8)
 metadata/emprise = Vector2(15, 13)
 
 [node name="Chargement05" type="Sprite2D" parent="Paysage"]
-position = Vector2(2201.6, 1553.6)
+position = Vector2(2144, 1552.4)
 texture = ExtResource("Tonneaux")
 scale = Vector2(0.91, 0.91)
 offset = Vector2(0, -20.97)
 metadata/emprise = Vector2(15, 13)
 
 [node name="Chargement06" type="Sprite2D" parent="Paysage"]
-position = Vector2(2259.2, 1627.2)
+position = Vector2(2291.2, 1613.2)
 texture = ExtResource("Caisses")
 scale = Vector2(0.44, 0.44)
 offset = Vector2(0, -41.14)
 metadata/emprise = Vector2(15, 13)
 
 [node name="Chargement07" type="Sprite2D" parent="Paysage"]
-position = Vector2(2528, 1691.2)
+position = Vector2(2009.6, 1854)
 texture = ExtResource("Tonneaux")
 scale = Vector2(0.78, 0.78)
 offset = Vector2(0, -19.2)
 metadata/emprise = Vector2(15, 13)
 
 [node name="Chargement08" type="Sprite2D" parent="Paysage"]
-position = Vector2(2624, 1732.8)
+position = Vector2(2310.4, 1863.6)
 texture = ExtResource("Caisses")
 scale = Vector2(0.6, 0.6)
 offset = Vector2(0, -47.45)
 metadata/emprise = Vector2(15, 13)
 
 [node name="Chargement09" type="Sprite2D" parent="Paysage"]
-position = Vector2(2208, 1678.4)
+position = Vector2(1708.8, 1774)
 texture = ExtResource("Tonneaux")
 scale = Vector2(0.66, 0.66)
 offset = Vector2(0, -16.76)
 metadata/emprise = Vector2(15, 13)
 
 [node name="HalleDesCordages" type="Sprite2D" parent="Paysage"]
-position = Vector2(1907.2, 1390.4)
+position = Vector2(1881.6, 1297.6)
 texture = ExtResource("poissonnerie")
 scale = Vector2(0.49, 0.49)
 offset = Vector2(0, -109)
 metadata/emprise = Vector2(53, 44)
 
 [node name="PalettesDeLaHalle" type="Sprite2D" parent="Paysage"]
-position = Vector2(1894.4, 1478.4)
+position = Vector2(1760, 1377.6)
 texture = ExtResource("Caisses")
 scale = Vector2(0.56, 0.56)
 offset = Vector2(0, -46)
 metadata/emprise = Vector2(15, 13)
 
 [node name="TonneauxDeLaHalle" type="Sprite2D" parent="Paysage"]
-position = Vector2(1811.2, 1436.8)
+position = Vector2(1734.4, 1326.4)
 texture = ExtResource("Tonneaux")
 scale = Vector2(0.74, 0.74)
 offset = Vector2(0, -18)
@@ -1435,3 +1467,138 @@ scale = Vector2(1.05, 1.05)
 offset = Vector2(0, -31)
 flip_h = true
 metadata/emprise = Vector2(30, 28)
+
+[node name="GareMaritime" type="Sprite2D" parent="Paysage"]
+position = Vector2(1049.6, 1310.4)
+texture = ExtResource("TerminalFerry")
+scale = Vector2(0.63, 0.63)
+offset = Vector2(0, -127.16)
+metadata/emprise = Vector2(63, 53)
+
+[node name="EntrepotMarchandOuest" type="Sprite2D" parent="Paysage"]
+position = Vector2(2080, 1373.2)
+texture = ExtResource("GrandEntrepot")
+scale = Vector2(0.64, 0.64)
+offset = Vector2(0, -83.54)
+metadata/emprise = Vector2(73, 60)
+
+[node name="EntrepotMarchandEst" type="Sprite2D" parent="Paysage"]
+position = Vector2(2457.6, 1520.4)
+texture = ExtResource("GrandEntrepot")
+scale = Vector2(0.67, 0.67)
+offset = Vector2(0, -86.25)
+metadata/emprise = Vector2(74, 57)
+flip_h = true
+
+[node name="NavireDeCommerce" type="Sprite2D" parent="Paysage"]
+position = Vector2(1782.4, 1988.8)
+texture = ExtResource("NavireMarchand")
+scale = Vector2(0.81, 0.81)
+offset = Vector2(0, -205.5)
+z_index = -6
+
+[node name="GrueOuestDuQuaiMarchand" type="Sprite2D" parent="Paysage"]
+position = Vector2(1779.2, 1770.8)
+texture = ExtResource("grue")
+scale = Vector2(0.36, 0.36)
+offset = Vector2(0, -136.67)
+metadata/emprise = Vector2(23, 22)
+flip_h = true
+
+[node name="BarqueDeLaCrique" type="Sprite2D" parent="Paysage"]
+position = Vector2(2627.2, 2382)
+texture = ExtResource("bateau_peche")
+scale = Vector2(0.32, 0.32)
+offset = Vector2(0, -195)
+flip_h = true
+z_index = -6
+
+[node name="CaisseDeLaGrue" type="Sprite2D" parent="Paysage"]
+position = Vector2(1734.4, 1754.8)
+texture = ExtResource("Caisses")
+scale = Vector2(0.54, 0.54)
+offset = Vector2(0, -41.85)
+metadata/emprise = Vector2(14, 13)
+
+[node name="CargaisonMarchande" type="Sprite2D" parent="Paysage"]
+position = Vector2(1926.4, 1722.8)
+texture = ExtResource("Caisses")
+scale = Vector2(0.68, 0.68)
+offset = Vector2(0, -43.32)
+metadata/emprise = Vector2(15, 14)
+
+[node name="ReserveDeLaCriée" type="Sprite2D" parent="Paysage"]
+position = Vector2(2931.2, 2094.4)
+texture = ExtResource("Tonneaux")
+scale = Vector2(0.7, 0.7)
+offset = Vector2(0, -17.78)
+metadata/emprise = Vector2(14, 12)
+
+[node name="BornesDuQuaiMarchand01" type="Sprite2D" parent="Paysage"]
+position = Vector2(1664, 1796.4)
+texture = ExtResource("BorneAmarrage")
+scale = Vector2(0.62, 0.62)
+offset = Vector2(0, -18.56)
+metadata/emprise = Vector2(8, 8)
+
+[node name="BornesDuQuaiMarchand02" type="Sprite2D" parent="Paysage"]
+position = Vector2(1824, 1876.4)
+texture = ExtResource("BorneAmarrage")
+scale = Vector2(0.62, 0.62)
+offset = Vector2(0, -18.56)
+metadata/emprise = Vector2(8, 8)
+
+[node name="BornesDuQuaiMarchand03" type="Sprite2D" parent="Paysage"]
+position = Vector2(1990.4, 1959.6)
+texture = ExtResource("BorneAmarrage")
+scale = Vector2(0.62, 0.62)
+offset = Vector2(0, -18.56)
+metadata/emprise = Vector2(8, 8)
+
+[node name="RochersDeLaDarse" type="Sprite2D" parent="Paysage"]
+position = Vector2(1676.8, 1457.6)
+texture = ExtResource("RochersCotiers")
+scale = Vector2(1.05, 1.05)
+offset = Vector2(0, -29.78)
+metadata/emprise = Vector2(29, 26)
+
+[node name="RochersDeLEscale" type="Sprite2D" parent="Paysage"]
+position = Vector2(1168, 1580.8)
+texture = ExtResource("RochersCotiers")
+scale = Vector2(0.98, 0.98)
+offset = Vector2(0, -26.54)
+metadata/emprise = Vector2(27, 26)
+flip_h = true
+
+[node name="RochersDeLaPlage" type="Sprite2D" parent="Paysage"]
+position = Vector2(2892.8, 2228.8)
+texture = ExtResource("RochersCotiers")
+scale = Vector2(0.92, 0.92)
+offset = Vector2(0, -27.38)
+metadata/emprise = Vector2(26, 25)
+flip_h = true
+
+[node name="FleursDuFret" type="Sprite2D" parent="Paysage"]
+position = Vector2(2419.2, 1440.4)
+texture = ExtResource("Fleurs")
+scale = Vector2(0.64, 0.64)
+offset = Vector2(0, -3.38)
+
+[node name="FleursDuLevant" type="Sprite2D" parent="Paysage"]
+position = Vector2(3040, 1972.8)
+texture = ExtResource("Fleurs")
+scale = Vector2(0.65, 0.65)
+offset = Vector2(0, -5.35)
+
+[node name="CheneDeLaDarse" type="Sprite2D" parent="Paysage"]
+position = Vector2(1587.2, 1457.6)
+texture = ExtResource("chene")
+scale = Vector2(0.36, 0.36)
+offset = Vector2(0, -158)
+metadata/emprise = Vector2(19, 18)
+
+[node name="FleursDeLaPointeDuFerry" type="Sprite2D" parent="Paysage"]
+position = Vector2(1472, 1496)
+texture = ExtResource("Fleurs")
+scale = Vector2(0.66, 0.66)
+offset = Vector2(0, -8)

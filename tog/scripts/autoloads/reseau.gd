@@ -57,6 +57,7 @@ var _derniere_position_envoyee := Vector2(INF, INF)
 var _temps_position := 0.0
 var _temps_sauvegarde := 0.0
 var _bourse_equipage_en_attente := false
+var _effacement_perso_en_attente := false
 
 # --- client : authentification ---
 var adresse_preferee := "127.0.0.1:%d" % PORT_DEFAUT
@@ -469,6 +470,44 @@ func _valider_identifiants(nom_pseudo: String, mdp: String) -> String:
 			return "Pseudo : lettres, chiffres, - _ et espaces seulement."
 	return ""
 
+@rpc("any_peer", "call_remote", "reliable")
+func demande_effacement_perso() -> void:
+	if mode != Mode.SERVEUR or not multiplayer.is_server():
+		return
+	var session := _pair_authentifie()
+	if session.is_empty():
+		return
+	var peer_id := int(session["peer_id"])
+	var erreur := _effacer_personnage_serveur(peer_id)
+	rpc_id(peer_id, "resultat_effacement_perso", erreur)
+	if erreur.is_empty():
+		_diffuser_annuaire_equipages()
+		Navires.equipage_modifie()
+
+func _effacer_personnage_serveur(peer_id: int) -> String:
+	var session: Dictionary = _sessions[peer_id]
+	var nom_pseudo := str(session["pseudo"])
+	var compte := _compte(nom_pseudo)
+	if compte.is_empty():
+		return "Compte introuvable."
+	var profil := _perso_json_serveur(compte)
+	var ancien_nom := _nom_personnage(profil) if not profil.is_empty() else str(session["nom_personnage"])
+	if not Equipages.effacer_personnage(ancien_nom, int(compte["id"])):
+		return "Impossible d’effacer le personnage sur le serveur."
+
+	for cible in _invites_equipage.keys():
+		if str(_invites_equipage[cible].get("demandeur", "")) == ancien_nom:
+			_invites_equipage.erase(cible)
+	# Une autre connexion du même compte pourrait sinon renvoyer l’ancien profil.
+	for autre: int in _sessions.keys():
+		if autre != peer_id and _sessions[autre]["pseudo"] == nom_pseudo:
+			_nettoyer_session(autre)
+			if _pair_connecte(autre):
+				multiplayer.multiplayer_peer.disconnect_peer(autre)
+	_nettoyer_session(peer_id)
+	_ouvrir_session(peer_id, nom_pseudo)
+	return ""
+
 # RPC serveur : sauvegarde périodique du perso d'un joueur
 @rpc("any_peer", "call_remote", "reliable")
 func envoie_sauvegarde_perso(donnees_json: String) -> void:
@@ -492,6 +531,10 @@ func envoie_sauvegarde_perso(donnees_json: String) -> void:
 		rpc_id(peer_id, "recoit_message_chat", "Serveur",
 			"Le nom de personnage « %s » est déjà pris — recrée ton perso avec un autre nom." % nom)
 		return
+	var premier_perso := str(partie["nom_personnage"]).is_empty()
+	if premier_perso and not Equipages.effacer_personnage(nom):
+		rpc_id(peer_id, "recoit_message_chat", "Serveur", "Impossible d’enregistrer le nouveau personnage.")
+		return
 	var amenagement: Dictionary = donnees.get("amenagement_navire", {})
 	amenagement["modele"] = partie["modele_bateau"]
 	amenagement["finition_pont"] = partie["finition_pont"]
@@ -505,6 +548,8 @@ func envoie_sauvegarde_perso(donnees_json: String) -> void:
 	partie["visuel"] = visuel
 	if (nom_modifie or visuel_modifie) and bool(partie["annonce"]):
 		_annoncer_avatar(peer_id, partie)
+	if premier_perso:
+		_diffuser_annuaire_equipages()
 	if nom_modifie:
 		var groupe := _trouver_groupe(peer_id)
 		if not groupe.is_empty():
@@ -1661,7 +1706,10 @@ func _perso_json_serveur(compte: Dictionary) -> Dictionary:
 	var perso: Dictionary = {}
 	if compte.is_empty():
 		return perso
-	var analyse: Variant = JSON.parse_string(_perso_du_serveur(int(compte["id"])))
+	var sauvegarde := _perso_du_serveur(int(compte["id"]))
+	if sauvegarde.is_empty():
+		return perso
+	var analyse: Variant = JSON.parse_string(sauvegarde)
 	if analyse is Dictionary:
 		perso = analyse
 	return perso
@@ -2116,6 +2164,7 @@ func fermer_connexion() -> void:
 	pseudo = ""
 	mode = Mode.HORS_LIGNE
 	_bourse_equipage_en_attente = false
+	_effacement_perso_en_attente = false
 	_scene_locale = ""
 	Navires.reinitialiser()
 	_annonces_en_attente.clear()
@@ -3182,11 +3231,56 @@ func _client_sauvegarde_periodique(delta: float) -> void:
 		_temps_sauvegarde = 0.0
 		sauvegarder_perso_immediat()
 
+func demander_effacement_perso() -> bool:
+	if _effacement_perso_en_attente:
+		return true
+	if mode != Mode.CLIENT or not Personnage.perso_cree or not multiplayer.has_multiplayer_peer() \
+			or _bourse_equipage_en_attente or Navires.sauvegarde_suspendue():
+		return false
+	_effacement_perso_en_attente = true
+	if rpc_id(1, "demande_effacement_perso") == OK:
+		return true
+	_effacement_perso_en_attente = false
+	return false
+
+@rpc("authority", "call_remote", "reliable")
+func resultat_effacement_perso(erreur: String) -> void:
+	if not _effacement_perso_en_attente:
+		return
+	_effacement_perso_en_attente = false
+	if not erreur.is_empty():
+		afficher_erreur_effacement(erreur)
+		return
+	_scene_locale = ""
+	_annonces_en_attente.clear()
+	etat_rencontres_recu.clear()
+	invitation_en_attente.clear()
+	combat_groupe_local = ""
+	groupe_local = []
+	_maj_panneau_groupe()
+	_groupe_ui.cacher_invite_groupe()
+	_cacher_invite_equipage()
+	_cacher_invitation()
+	_retirer_tous_avatars()
+	Personnage.repartir_en_creation()
+
+func afficher_erreur_effacement(texte: String) -> void:
+	var dialogue := AcceptDialog.new()
+	dialogue.process_mode = Node.PROCESS_MODE_ALWAYS
+	dialogue.theme = Navires.theme_fenetre()
+	dialogue.title = "Réinitialiser le personnage"
+	dialogue.dialog_text = texte
+	dialogue.confirmed.connect(dialogue.queue_free)
+	dialogue.canceled.connect(dialogue.queue_free)
+	add_child(dialogue)
+	dialogue.popup_centered()
+
 # La réponse de la caisse doit arriver avant de renvoyer la bourse locale.
 func sauvegarder_perso_immediat() -> void:
 	if mode != Mode.CLIENT or not multiplayer.has_multiplayer_peer():
 		return
-	if not Personnage.perso_cree or _bourse_equipage_en_attente or Navires.sauvegarde_suspendue():
+	if not Personnage.perso_cree or _effacement_perso_en_attente \
+			or _bourse_equipage_en_attente or Navires.sauvegarde_suspendue():
 		return
 	_temps_sauvegarde = 0.0
 	rpc_id(1, "envoie_sauvegarde_perso", JSON.stringify(serialiser_perso()))
@@ -3499,6 +3593,9 @@ func appliquer_position_memorisee(chemin_scene: String, joueur: Node2D) -> bool:
 # position mémorisée disparaît de la mémoire et des préférences
 func oublier_position_memorisee() -> void:
 	position_memorisee = {}
+	_temps_memoire_position = 0.0
+	if Personnage.en_ligne:
+		return
 	var cfg := ConfigFile.new()
 	if cfg.load(CHEMIN_PREF) != OK:
 		return

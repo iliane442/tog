@@ -10,6 +10,8 @@ var _tween_fenetre: Tween
 var _catalogue_wiki: Array = []
 var _wiki_a_actualiser := true
 var _prochaine_maj_hotel_ms := 0
+const MARITIME := preload("res://scripts/world/navigation_maritime.gd")
+
 const FICHE_MENU := preload("res://themes/fiche_menu.tres")
 const TAILLE_MENU := Vector2(1380, 840)
 const TAILLE_CASE_EQUIP := Vector2(58, 58)
@@ -588,8 +590,8 @@ func _maj_resume_navire() -> void:
 		return
 	var stats := Personnage.stats_bateau()
 	var fiche := Personnage.NAVIRES.fiche(Personnage.modele_bateau())
-	label_navire.text = "%s · %d Berry par traversée\n+%d PV · +%d DEF · +%d%% vitesse (%d solidité · %d%% tempête)" % [
-		fiche["nom"], fiche["entretien"],
+	label_navire.text = "%s\n+%d PV · +%d DEF · +%d%% vitesse (%d solidité · %d%% tempête)" % [
+		fiche["nom"],
 		int(stats["solidite"]) / 20, int(stats["solidite"]) / 200,
 		roundi(float(stats["tempete"])), int(stats["solidite"]), int(stats["tempete"]),
 	]
@@ -755,21 +757,10 @@ func _on_reinitialiser_points() -> void:
 	points_en_attente = {}
 	maj_personnage()
 
-# debug : efface le perso (fichier + mémoire), remet quêtes et inventaire
-# à zéro, puis repart du village : l'écran de création réapparaît sur
-# Fushia — un nouveau perso ne reprend pas la carte où l'ancien se
-# tenait quand il a été effacé
+# debug : efface le personnage et rouvre sa création à Fushia
 func _on_effacer_perso() -> void:
-	Personnage.supprimer_perso()
-	QuestManager.reinitialiser()
-	Inventaire.reinitialiser()
-	HotelVentes.reinitialiser()
-	Equipages.reinitialiser()
-	Coffres.reinitialiser()
-	# la dernière position d'exploration disparaît aussi : la reprise
-	# de partie ne retrouverait pas une scène mémorisée de l'ancien
-	Reseau.oublier_position_memorisee()
-	get_tree().change_scene_to_file(Personnage.PORT_NAVIRE_DEFAUT)
+	if not Personnage.supprimer_perso():
+		Reseau.afficher_erreur_effacement("Impossible de réinitialiser le personnage.")
 
 # debug : mène le perso au niveau 200 (montées de niveau normales :
 # points, vie, sorts débloqués inclus)
@@ -2033,9 +2024,13 @@ func maj_detail_aucun_wiki() -> void:
 # debug : ajoute 5 exemplaires de l'objet affiché dans la fiche du wiki
 func _on_donner_item_wiki() -> void:
 	if id_wiki_courant != "":
-		Inventaire.ajouter_objet(id_wiki_courant, 5)
-		var nom := Inventaire.nom_objet(id_wiki_courant)
-		description_wiki.text = "Debug : %s x5 ajouté à l'inventaire" % nom
+		var id := id_wiki_courant
+		if id in [MARITIME.ITEM_TROIS_AIGUILLES, MARITIME.ITEM_CADRE]:
+			var destinations: Array[String] = []
+			destinations.assign(MARITIME.PORTS.keys().slice(0, 3 if id == MARITIME.ITEM_TROIS_AIGUILLES else 4))
+			id = MARITIME.fusion(destinations)
+		Inventaire.ajouter_objet(id, 5)
+		description_wiki.text = "Debug : %s x5 ajouté à l'inventaire" % Inventaire.nom_objet(id)
 
 # --- Métiers et artisanat ---
 
@@ -2224,7 +2219,6 @@ func _construire_recettes(id_profession: String) -> void:
 	for enfant in liste_recettes.get_children():
 		enfant.queue_free()
 	var recettes := Personnage.recettes(id_profession)
-	var a_l_atelier := Personnage.a_portee_poste_navire("atelier")
 	if recettes.is_empty():
 		var vide := Label.new()
 		vide.text = "Aucune recette pour ce métier."
@@ -2243,9 +2237,12 @@ func _construire_recettes(id_profession: String) -> void:
 		nom.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var btn := Button.new()
 		btn.text = "Fabriquer"
-		btn.tooltip_text = Personnage.verifier_recette(str(r["id"])) if a_l_atelier else "Approche-toi de l’établi de la Lanterne."
+		var id_recette := str(r["id"])
+		btn.tooltip_text = Personnage.verifier_recette(id_recette) if Personnage.a_portee_recette(id_recette) else (
+			"Rejoins un établi de ton métier ou la salle de navigation." if id_recette.begins_with("navigation/")
+			else "Approche-toi de l’établi de ton métier.")
 		btn.disabled = btn.tooltip_text != ""
-		btn.pressed.connect(_on_fabriquer.bind(str(r["id"])))
+		btn.pressed.connect(_on_fabriquer.bind(id_recette))
 		entete.add_child(nom)
 		entete.add_child(btn)
 		var fragments: Array[String] = []

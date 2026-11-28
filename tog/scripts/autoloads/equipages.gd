@@ -75,8 +75,8 @@ func _exit_tree() -> void:
 # comme en solo)
 func _recharger_mon_equipage() -> void:
 	mon_equipage = {}
-	if en_ligne and joueur_courant == "":
-		return  # en ligne, l'état vient du serveur (instantanés réseau)
+	if joueur_courant.is_empty() and (en_ligne or not Personnage.perso_cree):
+		return
 	if not disponible:
 		return
 	var nom := _joueur()
@@ -228,6 +228,13 @@ func dissoudre() -> void:
 	if not suis_capitaine():
 		return
 	var id_equipage := int(mon_equipage["id"])
+	if not _transaction(_requetes_dissolution(id_equipage)):
+		message_serveur("Impossible de dissoudre l’équipage.")
+		return
+	mon_equipage = {}
+	equipage_modifie.emit()
+
+func _requetes_dissolution(id_equipage: int) -> Array[String]:
 	var requetes: Array[String] = [
 		"DELETE FROM equipages_membres WHERE equipage_id = %d;" % id_equipage,
 		"DELETE FROM equipages_journal WHERE equipage_id = %d;" % id_equipage,
@@ -236,11 +243,7 @@ func dissoudre() -> void:
 	]
 	requetes.append_array(_requetes_depart_alliance(id_equipage))
 	requetes.append("DELETE FROM equipages WHERE id = %d;" % id_equipage)
-	if not _transaction(requetes):
-		message_serveur("Impossible de dissoudre l’équipage.")
-		return
-	mon_equipage = {}
-	equipage_modifie.emit()
+	return requetes
 
 # quitter l'équipage (simple membre, vice-capitaine compris)
 func quitter() -> void:
@@ -942,15 +945,32 @@ func est_allie(id_equipage: int) -> bool:
 		return true
 	return false
 
-# remet l'équipage du joueur local à zéro (réinitialisation debug du perso)
-func reinitialiser() -> void:
-	if not mon_equipage.is_empty():
-		if suis_capitaine():
-			dissoudre()
-		else:
-			quitter()
-	mon_equipage = {}
-	equipage_modifie.emit()
+# Le nom du personnage disparaît de l’équipage et du registre des pilotes.
+# Sur le serveur, la suppression du profil fait partie de la même transaction.
+func effacer_personnage(nom: String, compte := 0) -> bool:
+	if en_ligne or not disponible or (compte != 0 and not _comptes_lies):
+		return false
+	var requetes: Array[String] = []
+	if not nom.is_empty():
+		var identite := _echapper(nom)
+		requetes.append("UPDATE galions_equipage SET pilote = NULL WHERE pilote = '%s';" % identite)
+		requetes.append("DELETE FROM equipages_membres WHERE nom_joueur = '%s';" % identite)
+		var equipages_commandes := _lire("SELECT id FROM equipages WHERE capitaine = '%s';" % identite).duplicate()
+		for ligne in equipages_commandes:
+			var id := int(ligne["id"])
+			var successeurs := _lire(
+				"SELECT id, nom_joueur FROM equipages_membres WHERE equipage_id = %d AND nom_joueur != '%s'" % [id, identite]
+				+ " ORDER BY (rang = '%s') DESC, id LIMIT 1;" % RANG_VICE)
+			if successeurs.is_empty():
+				requetes.append_array(_requetes_dissolution(id))
+			else:
+				var successeur := str(successeurs[0]["nom_joueur"])
+				requetes.append("UPDATE equipages SET capitaine = '%s' WHERE id = %d;" % [_echapper(successeur), id])
+				requetes.append("DELETE FROM equipages_membres WHERE id = %d;" % int(successeurs[0]["id"]))
+				requetes.append(_requete_journal(id, "%s prend la tête de l’équipage." % successeur))
+	if compte != 0:
+		requetes.append("DELETE FROM comptes.mmo_persos WHERE compte_id = %d;" % compte)
+	return requetes.is_empty() or _transaction(requetes)
 
 # --- Accès à la base ---
 

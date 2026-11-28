@@ -116,25 +116,30 @@ func point_pont(id: String) -> Vector2i:
 	return _plan_pont[id] if est_galion() else POINTS_PONT_PERSONNEL[id]
 
 func couloir() -> Rect2i:
-	return Rect2i(22, 8, 88, 2) if Navires.modele_a_bord() == "vie" else COULOIR
+	return Rect2i(22, 8, 97, 2) if Navires.modele_a_bord() == "vie" else COULOIR
 
 func pieces_bord() -> Dictionary:
 	var modele := Navires.modele_a_bord()
 	match modele:
 		"ateliers":
-			return {"atelier": PIECES["atelier"], "cale": PIECES["cale"], "cabine": PIECES["cabine"]}
+			return {"atelier": PIECES["atelier"], "cale": PIECES["cale"], "cabine": PIECES["cabine"], "cartes": PIECES["cartes"]}
 		"stockage":
-			return {"cale": PIECES["cale"]}
+			return {"cale": PIECES["cale"], "cartes": PIECES["cartes"]}
 		"navigation":
-			return {"atelier": PIECES["atelier"]}
+			return {"atelier": PIECES["atelier"], "cartes": PIECES["cartes"]}
 		"vie":
 			var indice := Navires.indice_chambre()
 			var x := 22 + (indice % 10) * 9
 			var y := 3 if indice < 10 else 11
-			return {"chambre": {"salle": Rect2i(x, y, 7, 4), "porte": Vector2i(x + 3, 7 if indice < 10 else 10),
-				"seuil": Vector2i(x + 3, 8 if indice < 10 else 9), "poste": Vector2i(x + 3, y + 2)}}
+			return {
+				"chambre": {"salle": Rect2i(x, y, 7, 4), "porte": Vector2i(x + 3, 7 if indice < 10 else 10),
+					"seuil": Vector2i(x + 3, 8 if indice < 10 else 9), "poste": Vector2i(x + 3, y + 2)},
+				"cartes": {"salle": Rect2i(112, 11, 7, 4), "porte": Vector2i(115, 10),
+					"seuil": Vector2i(115, 9), "poste": Vector2i(115, 13)},
+			}
 	var pieces := {}
 	if Navires.est_pilote():
+		pieces["cartes"] = PIECES["cartes"]
 		for id in Personnage.pieces_possibles_navire():
 			pieces[id] = PIECES[id]
 	return pieces
@@ -147,6 +152,8 @@ func metier_atelier(id: String) -> String:
 	return str(ateliers.get(str(indice_atelier(id)), ""))
 
 func est_ouverte(id: String) -> bool:
+	if id == "cartes":
+		return Navires.est_pilote()
 	match Navires.modele_a_bord():
 		"ateliers":
 			return Navires.peut_utiliser_galion() and metier_atelier(id) != ""

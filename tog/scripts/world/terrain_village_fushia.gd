@@ -3,11 +3,16 @@ extends "res://scripts/world/terrain_alabasta.gd"
 
 enum Surface { HERBE, PAVE, PLAGE, SENTIER, ROCHE, ARRIERE_PAYS }
 
-const DOMAINE := Rect2i(-8, -11, 42, 39)
+const DOMAINE := Rect2i(-8, -11, 42, 47)
 const GRANDE_PLACE := Rect2i(9, 7, 12, 9)
 const HAUTEUR_PLACE := 96
 const HAUTEUR_JARDINS := 168
 const HAUTEUR_PORT := 24
+const HAUTEUR_ENTREPOTS := 54
+const HAUTEUR_QUAI_MARCHAND := 18
+const HAUTEUR_PECHE := 8
+const TERRASSE_ENTREPOTS := Rect2i(12, 17, 11, 6)
+const QUAI_MARCHAND := Rect2i(12, 23, 12, 7)
 const COULEUR_LISIERE := Color("#587558")
 const PIERRE_COTIERE := preload("res://assets/world/fushia_village/roche_littorale.png")
 const HERBE_LITTORALE := preload("res://assets/world/fushia_village/herbe_littorale.png")
@@ -19,12 +24,13 @@ const COINS: Array[Vector2i] = [
 ]
 
 # Les profils découpent les rives dans la grille. Les segments droits du
-# port correspondent aux deux raccords de la promenade avec les jetées.
+# port correspondent aux quais de pierre et aux raccords des jetées.
 const COTE_PORT: Array[Vector2i] = [
-	Vector2i(-8, 15), Vector2i(-5, 19), Vector2i(-2, 22), Vector2i(1, 24),
-	Vector2i(3, 26), Vector2i(5, 25), Vector2i(8, 25), Vector2i(12, 22),
-	Vector2i(16, 23), Vector2i(20, 23), Vector2i(22, 25), Vector2i(24, 26),
-	Vector2i(26, 23), Vector2i(28, 24), Vector2i(31, 24), Vector2i(34, 18),
+	Vector2i(-8, 15), Vector2i(-5, 19), Vector2i(-2, 22), Vector2i(0, 25),
+	Vector2i(2, 28), Vector2i(4, 30), Vector2i(8, 30), Vector2i(10, 28),
+	Vector2i(11, 25), Vector2i(13, 26), Vector2i(16, 29), Vector2i(21, 29),
+	Vector2i(22, 29), Vector2i(24, 25), Vector2i(25, 23), Vector2i(26, 27),
+	Vector2i(28, 26), Vector2i(30, 28), Vector2i(31, 28), Vector2i(33, 25), Vector2i(34, 20),
 ]
 const COTE_NORD: Array[Vector2i] = [
 	Vector2i(-8, 5), Vector2i(-5, 1), Vector2i(-2, -1), Vector2i(3, -3),
@@ -35,12 +41,14 @@ const COTE_NORD: Array[Vector2i] = [
 const COTE_OUEST: Array[Vector2i] = [
 	Vector2i(-11, 10), Vector2i(-6, 4), Vector2i(-3, 0), Vector2i(1, -4),
 	Vector2i(5, -6), Vector2i(9, -5), Vector2i(12, -4), Vector2i(16, -6),
-	Vector2i(19, -7), Vector2i(22, -4), Vector2i(25, 1), Vector2i(28, 5),
+	Vector2i(19, -7), Vector2i(22, -4), Vector2i(25, -1), Vector2i(28, 1),
+	Vector2i(32, 4), Vector2i(36, 7),
 ]
 const COTE_EST: Array[Vector2i] = [
 	Vector2i(-11, 19), Vector2i(-8, 24), Vector2i(-4, 28), Vector2i(1, 31),
 	Vector2i(5, 30), Vector2i(8, 29), Vector2i(12, 32), Vector2i(15, 33),
-	Vector2i(18, 32), Vector2i(21, 30), Vector2i(24, 29), Vector2i(28, 24),
+	Vector2i(18, 32), Vector2i(21, 31), Vector2i(24, 33), Vector2i(28, 32),
+	Vector2i(32, 27), Vector2i(36, 22),
 ]
 const CRETES_DU_COL := [
 	[Vector2(13.5, -6.1), Vector2(3.7, 3.4), 96.0],
@@ -62,14 +70,23 @@ func _init() -> void:
 	maconnerie = MUR_CALCAIRE
 	escaliers = [
 		[Vector2(16, 2.9), HAUTEUR_JARDINS, Vector2(16, 5.8), HAUTEUR_PLACE, 1.22],
-		[Vector2(6, 14.8), HAUTEUR_PLACE, Vector2(6, 17.4), HAUTEUR_PORT, 0.88],
-		[Vector2(15, 14.5), HAUTEUR_PLACE, Vector2(15, 18.3), HAUTEUR_PORT, 1.60],
+		[Vector2(15, 14.5), HAUTEUR_PLACE, Vector2(15, 18.3), HAUTEUR_ENTREPOTS, 1.60],
 		[Vector2(24, 14.8), HAUTEUR_PLACE, Vector2(24, 17.8), HAUTEUR_PORT, 1.08],
+		[Vector2(14.5, 21.8), HAUTEUR_ENTREPOTS, Vector2(14.5, 24.4), HAUTEUR_QUAI_MARCHAND, 1.15],
+		[Vector2(28.6, 21.3), HAUTEUR_PORT, Vector2(28.6, 24.4), HAUTEUR_PECHE, 0.88],
 	]
-	# Les deux tabliers démarrent sur le dernier carreau de la promenade.
+	# Les rampes utilisent aussi l'emprise de navigation des liaisons d'Alabasta.
+	ponts = [
+		[Vector2(6, 14.2), HAUTEUR_PLACE, Vector2(6, 18.6), HAUTEUR_PORT, 1.35],
+		[Vector2(20.7, 21.4), HAUTEUR_ENTREPOTS, Vector2(20.7, 25.0), HAUTEUR_QUAI_MARCHAND, 1.14],
+	]
+	# Les tabliers s'appuient sur la terre à leurs accès. La dernière
+	# liaison franchit l'anse entre le quai marchand et la plage.
 	quais = [
-		[Vector2(6, 24.8), HAUTEUR_PORT, Vector2(6, 29.5), 6, 1.15],
-		[Vector2(18, 22.8), HAUTEUR_PORT, Vector2(18, 27.0), 6, 1.15],
+		[Vector2(6, 29.8), HAUTEUR_PORT, Vector2(6, 36.2), 8, 1.42],
+		[Vector2(26.7, 26.4), HAUTEUR_PECHE, Vector2(26.7, 29.3), 3, 0.62],
+		[Vector2(30.7, 27.7), HAUTEUR_PECHE, Vector2(30.7, 31.4), 2, 0.77],
+		[Vector2(22.8, 26.25), HAUTEUR_QUAI_MARCHAND, Vector2(26.55, 26.25), HAUTEUR_PECHE, 0.72],
 	]
 
 func _bord_de_mer(u: int) -> int:
@@ -114,17 +131,28 @@ func _carreaux_ajouter(cellule: Vector2i) -> void:
 		niveau = HAUTEUR_JARDINS
 	elif v <= 15:
 		niveau = HAUTEUR_PLACE
+	elif TERRASSE_ENTREPOTS.has_point(cellule):
+		niveau = HAUTEUR_ENTREPOTS
+	elif QUAI_MARCHAND.has_point(cellule):
+		niveau = HAUTEUR_QUAI_MARCHAND
+	elif u >= 26 and v >= 23:
+		niveau = HAUTEUR_PECHE
 	var chemin_du_col := absi(u - 16) <= 1 and v >= -5 and v < -1
 	var chemin_du_bois := v >= 11 and v <= 13 and u <= 1
-	var rues := u >= 3 and u <= 25 and v >= 6
+	var rues := u >= 3 and u <= 25 and v >= 6 and v <= 16
+	var parvis_du_ferry := (u >= 3 and u <= 9 and v >= 24) or (u >= 5 and u <= 8 and v >= 17 and v < 24)
+	var voie_du_port := (u >= 6 and u <= 12 and v >= 18 and v <= 20) or (u >= 23 and u <= 25 and v <= 22 and v >= 17)
+	var zone_du_fret := TERRASSE_ENTREPOTS.has_point(cellule) or QUAI_MARCHAND.has_point(cellule)
+	var plage_des_pecheurs := u >= 26 and v >= 23 and (v >= 25 or u >= 30)
+	var chemin_des_pecheurs := u >= 26 and u <= 30 and v >= 17 and v <= 24
 	var montee := u >= 14 and u <= 17 and v >= -1 and v <= 6
 	var rue_du_bois := v >= 11 and v <= 13 and u <= 4
 	var sol := Surface.HERBE
-	if v >= _bord_de_mer(u) - 1 and (u <= 2 or u >= 26):
+	if plage_des_pecheurs or (v >= _bord_de_mer(u) - 1 and (u <= 2 or u >= 26)):
 		sol = Surface.PLAGE
-	elif chemin_du_col or chemin_du_bois:
+	elif chemin_du_col or chemin_du_bois or chemin_des_pecheurs:
 		sol = Surface.SENTIER
-	elif rues or montee or rue_du_bois:
+	elif rues or montee or rue_du_bois or parvis_du_ferry or voie_du_port or zone_du_fret:
 		sol = Surface.PAVE
 	_carreaux[cellule] = Vector3i(niveau, sol, Relief.VILLE if sol == Surface.PAVE else Relief.SOL)
 
@@ -168,7 +196,7 @@ func _couleur_dalle(dalle: Vector3i) -> Color:
 		Surface.ARRIERE_PAYS:
 			return COULEUR_LISIERE
 		_:
-			return Color("#e4ba86") if dalle.x == HAUTEUR_PORT else Color("#ecd0a4")
+			return Color("#e4ba86") if dalle.x <= HAUTEUR_PORT else Color("#ecd0a4")
 
 func _est_sol(couleur: Color) -> bool:
 	return couleur != COULEUR_LISIERE and super._est_sol(couleur)
@@ -208,7 +236,7 @@ func _dessiner_dalle(cellule: Vector2i, dalle: Vector3i, contour: PackedVector2A
 		_:
 			if GRANDE_PLACE.has_point(cellule):
 				teinte = Color("#fff8ea")
-			elif dalle.x == HAUTEUR_PORT:
+			elif dalle.x <= HAUTEUR_PORT:
 				teinte = Color("#eacfab")
 	var uv := PackedVector2Array()
 	var depart := _projeter(Vector2.ZERO, dalle.x)
@@ -225,8 +253,8 @@ func _dessiner_dalle(cellule: Vector2i, dalle: Vector3i, contour: PackedVector2A
 	draw_polygon(contour, PackedColorArray([teinte]), uv, texture)
 
 func _ecume_standard(cellule: Vector2i) -> bool:
-	return (cellule.x >= 4 and cellule.x <= 8 and cellule.y >= 24) \
-		or (cellule.x >= 16 and cellule.x <= 20 and cellule.y >= 22)
+	return (cellule.x >= 4 and cellule.x <= 8 and cellule.y >= 29) \
+		or (cellule.x >= 16 and cellule.x <= 22 and cellule.y >= 28)
 
 func _coin_littoral(coin: Vector2i) -> Vector2:
 	if _coins_littoraux.has(coin):
@@ -310,6 +338,8 @@ func _draw() -> void:
 		_dessiner_dalle(cellule, dalle, _contour_surface(cellule, dalle, PackedVector2Array()))
 	for escalier in escaliers:
 		_dessiner_escalier(escalier)
+	for rampe in ponts:
+		_dessiner_rampe(rampe)
 	_dessiner_bordure_place()
 	for quai in quais:
 		_dessiner_appontement(quai)
@@ -391,12 +421,30 @@ func _dessiner_bordure_place() -> void:
 	draw_polyline(trace, Color("#e9c296"), 1.0)
 
 func _dessiner_appontement(quai: Array) -> void:
-	var lisiere := _extremites(quai, 1.33)
+	var demi_largeur: float = quai[4] + 0.18
+	var lisiere := _extremites(quai, demi_largeur)
 	for cote in 2:
 		var sommet := lisiere[cote]
 		var pointe := lisiere[cote + 2]
-		for indice in range(1, 7):
-			var poteau := sommet.lerp(pointe, indice / 6.0)
+		var supports := maxi(2, ceili(sommet.distance_to(pointe) / 74.0))
+		for indice in range(1, supports + 1):
+			var poteau := sommet.lerp(pointe, float(indice) / supports)
 			draw_line(poteau, poteau + Vector2(0, 40), Color("#563b30"), 12.0)
 			draw_line(poteau - Vector2(3, 0), poteau + Vector2(-3, 36), Color("#a7794a"), 4.0)
-	_dessiner_liaison(self, [quai[0], quai[1], quai[2], quai[3], true])
+	_dessiner_liaison(self, [quai[0], quai[1], quai[2], quai[3], true], demi_largeur)
+
+func _dessiner_rampe(liaison: Array) -> void:
+	var contour := _polygone_liaison(liaison)
+	var denivele := Vector2.DOWN * float(liaison[1] - liaison[3])
+	var assise := Vector2(0, 2)
+	_dessiner_paroi(PackedVector2Array([contour[0], contour[3], contour[3] + assise, contour[0] + denivele]), 2, true, liaison[1])
+	_dessiner_paroi(PackedVector2Array([contour[1], contour[2], contour[2] + assise, contour[1] + denivele]), 1, true, liaison[1])
+	var depart: Vector2 = liaison[0]
+	var arrivee: Vector2 = liaison[2]
+	var largeur := Vector2(float(liaison[4]), 0)
+	var uv := PackedVector2Array()
+	for coin in [depart - largeur, depart + largeur, arrivee + largeur, arrivee - largeur]:
+		uv.append((coin + Vector2(0.5, 0.5)) * 0.68)
+	draw_polygon(contour, PackedColorArray([Color("#fae4c4")]), uv, DALLAGE)
+	draw_line(contour[0], contour[3], Color("#9d7952"), 4.0)
+	draw_line(contour[1], contour[2], Color("#e1c7a0"), 4.0)

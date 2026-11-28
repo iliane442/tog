@@ -5,6 +5,8 @@
 @tool
 extends Node
 
+const MARITIME := preload("res://scripts/world/navigation_maritime.gd")
+
 const CHEMIN_SOURCE := "res://donnees/glo.db"
 const CHEMIN_TRAVAIL := "user://glo.db"
 const ID_PARCHEMIN_REATTRIBUTION := 975
@@ -37,10 +39,11 @@ func _mettre_a_jour_catalogue() -> void:
 	if not db.query("SELECT COUNT(*) AS total FROM class_skills WHERE skill_id %s;" % plage):
 		return
 	var importer_sorts := int(db.query_result[0]["total"]) != 50
-	if not db.query_with_bindings("SELECT id FROM items WHERE id = ?;", [ID_PARCHEMIN_REATTRIBUTION]):
+	var ids := [ID_PARCHEMIN_REATTRIBUTION, int(MARITIME.ITEM_TROIS_AIGUILLES), int(MARITIME.ITEM_CADRE)]
+	if not db.query_with_bindings("SELECT COUNT(*) AS total FROM items WHERE id IN (?, ?, ?);", ids):
 		return
-	var importer_parchemin := db.query_result.is_empty()
-	if not importer_sorts and not importer_parchemin:
+	var importer_objets := int(db.query_result[0]["total"]) < ids.size()
+	if not importer_sorts and not importer_objets:
 		return
 	# En export, le catalogue embarqué peut se trouver dans le PCK.
 	var source := FileAccess.get_file_as_bytes(CHEMIN_SOURCE)
@@ -55,12 +58,13 @@ func _mettre_a_jour_catalogue() -> void:
 		return
 	if importer_sorts and not _importer_sorts_classes(plage):
 		push_warning("La mise à jour des sorts de classe a échoué.")
-	if importer_parchemin:
-		var champs := "id, name, type, subtype, rarity_id, description, base_price, is_droppable, effects_json, icon_path"
+	if importer_objets:
+		var champs := "id, name, type, subtype, rarity_id, description, base_price, is_craftable, is_tradable, " \
+			+ "is_droppable, min_level, profession_id, craft_level_required, effects_json, icon_path"
 		if not db.query_with_bindings(
-			"INSERT OR IGNORE INTO items (%s) SELECT %s FROM catalogue_embarque.items WHERE id = ?;"
-			% [champs, champs], [ID_PARCHEMIN_REATTRIBUTION]):
-			push_warning("La mise à jour du parchemin de réattribution a échoué.")
+			"INSERT OR IGNORE INTO items (%s) SELECT %s FROM catalogue_embarque.items WHERE id IN (?, ?, ?);"
+			% [champs, champs], ids):
+			push_warning("La mise à jour des objets du catalogue a échoué.")
 	db.query("DETACH DATABASE catalogue_embarque;")
 
 func _importer_sorts_classes(plage: String) -> bool:

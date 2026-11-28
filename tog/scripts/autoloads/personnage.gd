@@ -42,6 +42,8 @@ const EMPLACEMENTS_NAVIRE := {
 }
 const SCENE_NAVIRE := "res://scenes/lanterne.tscn"
 const NAVIRES := preload("res://scripts/world/catalogue_navires.gd")
+const MARITIME := preload("res://scripts/world/navigation_maritime.gd")
+var navigation_maritime := MARITIME.etat({})
 const PORT_NAVIRE_DEFAUT := "res://scenes/village_fushia.tscn"
 const PIECES_NAVIRE := {
 	"atelier": {"nom": "Atelier de bord", "prix": 150, "usage": "Fabriquer et améliorer les objets de ton métier. Installer les pièces du navire."},
@@ -1048,6 +1050,7 @@ func amenagement_navire() -> Dictionary:
 		"trophee": trophee_navire,
 		"modele": modele_bateau_perso,
 		"finition_pont": finition_pont_perso,
+		"navigation": navigation_maritime,
 	}
 
 func appliquer_amenagement_navire(donnees: Variant) -> void:
@@ -1057,6 +1060,7 @@ func appliquer_amenagement_navire(donnees: Variant) -> void:
 	trophee_navire = ""
 	modele_bateau_perso = NAVIRES.DEPART
 	finition_pont_perso = FINITIONS_PONT.DEFAUT
+	navigation_maritime = MARITIME.etat({})
 	if not donnees is Dictionary:
 		return
 	modele_bateau_perso = NAVIRES.personnel(str(donnees.get("modele", NAVIRES.DEPART)))
@@ -1073,6 +1077,7 @@ func appliquer_amenagement_navire(donnees: Variant) -> void:
 	if repere is Dictionary:
 		repere_navire = repere.duplicate()
 	trophee_navire = str(donnees.get("trophee", ""))
+	navigation_maritime = MARITIME.etat(donnees.get("navigation", {}))
 
 func a_portee_poste_navire(id: String) -> bool:
 	var scene := get_tree().current_scene
@@ -1190,7 +1195,7 @@ func peut_equiper_navire() -> bool:
 # résistance aux tempêtes ») ; non reconnue → 0/0
 var _regex_navire: RegEx
 
-func _stats_piece_bateau(id: String) -> Dictionary:
+func _stats_piece_bateau(id: String, niveau_piece: int) -> Dictionary:
 	var stats := {"solidite": 0, "tempete": 0.0}
 	var description := str(Inventaire.details_objet(id).get("description", ""))
 	if _regex_navire == null:
@@ -1202,7 +1207,7 @@ func _stats_piece_bateau(id: String) -> Dictionary:
 		stats["tempete"] = float(analyse.get_string(2))
 	# une pièce améliorée par le charpentier encaisse davantage :
 	# ses niveaux gonflent la solidité comme les stats d'un équipement
-	var facteur := facteur_amelioration(id)
+	var facteur := 1.0 + AMELIORATION_BONUS * float(niveau_piece)
 	if facteur != 1.0:
 		stats["solidite"] = roundi(float(stats["solidite"]) * facteur)
 		stats["tempete"] = float(stats["tempete"]) * facteur
@@ -1211,14 +1216,17 @@ func _stats_piece_bateau(id: String) -> Dictionary:
 # solidité et résistance aux tempêtes du navire : la somme des
 # pièces installées
 func stats_bateau() -> Dictionary:
-	var fiche := NAVIRES.fiche(modele_bateau())
+	return calculer_stats_bateau(modele_bateau(), equipement_navire(), ameliorations)
+
+func calculer_stats_bateau(modele: String, pieces: Dictionary, niveaux: Dictionary) -> Dictionary:
+	var fiche := NAVIRES.fiche(modele)
 	var solidite := int(fiche["solidite"])
 	var tempete := float(fiche["tempete"])
-	for piece in equipement_navire().values():
+	for piece in pieces.values():
 		var id := str(piece)
 		if id == "":
 			continue
-		var stats := _stats_piece_bateau(id)
+		var stats := _stats_piece_bateau(id, int(niveaux.get(id, 0)))
 		solidite += int(stats["solidite"])
 		tempete += float(stats["tempete"])
 	return {"solidite": solidite, "tempete": tempete}
@@ -1461,7 +1469,11 @@ func _equiper_sur_emplacement(emplacement: String, id: String) -> bool:
 # Création définitive du personnage (depuis l'interface de création)
 func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 		id_profession: String = "", nouveau_sexe: String = "M",
-		nouvelle_apparence: String = APPARENCE_HUMAINE_DEFAUT) -> void:
+		nouvelle_apparence: String = APPARENCE_HUMAINE_DEFAUT) -> bool:
+	# Les anciennes versions pouvaient laisser une affiliation sous un nom réutilisé.
+	if not en_ligne and Equipages.disponible and not Equipages.effacer_personnage(nouveau_nom):
+		return false
+	Navires.reinitialiser()
 	# le nouveau perso ne garde rien de l'ancien : l'inventaire et
 	# l'historique des quêtes (fichiers locaux) repartent de zéro,
 	# pas plus sa dernière position d'exploration
@@ -1504,8 +1516,12 @@ func creer(nouveau_nom: String, nouvelle_race: String, nouvelle_classe: String,
 	appliquer_amenagement_navire({})
 	recalculer_stats()
 	perso_cree = true
+	if not en_ligne:
+		Equipages.recharger_etat_local()
 	sauvegarder()
 	barre_sorts_modifiee.emit()
+	return true
+
 func sauvegarder() -> void:
 	# en ligne, le serveur est l'unique référence du perso : la
 	# sauvegarde locale n'est plus touchée pendant la session
@@ -1686,9 +1702,38 @@ func reinitialiser() -> void:
 	# la barre repart à vide : l'interface suit
 	barre_sorts_modifiee.emit()
 
-func supprimer_perso() -> void:
+func supprimer_perso() -> bool:
+	if en_ligne:
+		return Reseau.demander_effacement_perso()
+	var fichier := ProjectSettings.globalize_path(CHEMIN_PERSO)
+	var temporaire := fichier + ".effacement"
+	var sauvegarde_presente := FileAccess.file_exists(fichier)
+	if sauvegarde_presente and DirAccess.rename_absolute(fichier, temporaire) != OK:
+		return false
+	if Equipages.disponible and not Equipages.effacer_personnage(nom):
+		if sauvegarde_presente:
+			DirAccess.rename_absolute(temporaire, fichier)
+		return false
+	if sauvegarde_presente:
+		DirAccess.remove_absolute(temporaire)
+	repartir_en_creation()
+	return true
+
+func repartir_en_creation() -> void:
+	Navires.reinitialiser()
 	reinitialiser()
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(CHEMIN_PERSO))
+	if en_ligne:
+		Equipages.appliquer_snapshot("{}")
+		CartesTresor.appliquer_croix_serveur([])
+	else:
+		Equipages.recharger_etat_local()
+		HotelVentes.reinitialiser()
+		Coffres.reinitialiser()
+	QuestManager.reinitialiser()
+	Inventaire.reinitialiser()
+	Reseau.oublier_position_memorisee()
+	get_tree().paused = false
+	get_tree().change_scene_to_file.call_deferred(PORT_NAVIRE_DEFAUT)
 
 func xp_prochain_niveau() -> int:
 	return niveau * 100
@@ -1957,10 +2002,17 @@ func professions_pour_classe(id_classe: String) -> Array:
 
 func recettes(id_profession: String = "") -> Array:
 	if id_profession == "":
-		return _recettes
-	return _recettes.filter(func(r): return r["profession"] == id_profession)
+		return _recettes + MARITIME.recettes(navigation_maritime)
+	var disponibles := _recettes.filter(func(r): return r["profession"] == id_profession)
+	if id_profession == MARITIME.METIER_NAVIGATEUR:
+		disponibles.append_array(MARITIME.recettes(navigation_maritime))
+	return disponibles
 
 func recette(id_recette: String) -> Dictionary:
+	if id_recette.begins_with("navigation/"):
+		for recette_maritime: Dictionary in MARITIME.recettes(navigation_maritime):
+			if recette_maritime["id"] == id_recette:
+				return recette_maritime
 	return _recettes_par_id.get(id_recette, {})
 
 func a_metier(id_profession: String) -> bool:
@@ -2041,8 +2093,11 @@ func verifier_recette(id_recette: String) -> String:
 
 # fabrique l'objet de la recette : consomme Berry et ingrédients,
 # ajoute le résultat à l'inventaire et donne l'XP de métier
+func a_portee_recette(id_recette: String) -> bool:
+	return a_portee_poste_navire("atelier") or (id_recette.begins_with("navigation/") and a_portee_poste_navire("cartes"))
+
 func artisaner(id_recette: String) -> bool:
-	if not a_portee_poste_navire("atelier") or verifier_recette(id_recette) != "":
+	if not a_portee_recette(id_recette) or verifier_recette(id_recette) != "":
 		return false
 	var r := recette(id_recette)
 	berry -= int(r["cout_berry"])

@@ -1,5 +1,6 @@
 extends Node
 
+const MARITIME := preload("res://scripts/world/navigation_maritime.gd")
 const CATALOGUE := preload("res://scripts/world/catalogue_navires.gd")
 const FINITIONS := preload("res://scripts/world/finitions_pont.gd")
 const THEME_PORT := preload("res://themes/theme_interface_pirate.tres")
@@ -9,6 +10,7 @@ const MAX_QUANTITE := 999999
 
 signal port_modifie
 signal bord_modifie
+signal navigation_modifiee
 signal message_recu(texte: String)
 
 var hote := 0
@@ -22,12 +24,15 @@ var _operation := ""
 var _attente_changement := ""
 var _invitation: ConfirmationDialog
 var _theme_fenetre: Theme
+var _panneau_navigation: AcceptDialog
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Equipages.equipage_modifie.connect(nouvel_equipage)
+	QuestManager.quete_terminee.connect(_sur_quete_terminee)
 
 func reinitialiser() -> void:
+	fermer_navigation()
 	hote = 0
 	mode_bord = ""
 	escale.clear()
@@ -67,7 +72,7 @@ func port_info(fichier: String) -> Dictionary:
 	var routes := {}
 	var arrivees := {}
 	for noeud in carte.get_children():
-		if noeud.has_method("_traverser") and noeud.has_method("_embarquer") and noeud.destination != "":
+		if noeud.has_method("ouvrir_dialogue") and noeud.has_method("_embarquer") and noeud.destination != "":
 			routes[noeud.destination] = {
 				"arrivee": str(noeud.arrivee), "libelle": str(noeud.libelle_traversee), "quai": noeud.position,
 			}
@@ -170,23 +175,175 @@ func acheter_personnel() -> void:
 	else:
 		_message("Il te faut %d Berry pour acheter ce bateau." % prix)
 
-func naviguer(destination: String) -> void:
+func port_courant() -> String:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return ""
+	if scene.scene_file_path == Personnage.SCENE_NAVIRE:
+		return str(escale.get("scene", Personnage.escale_navire.get("scene", Personnage.PORT_NAVIRE_DEFAUT)))
+	return scene.scene_file_path
+
+func ouvrir_navigation(poste: String) -> void:
 	var scene := get_tree().current_scene
 	if not peut_traverser(scene) or not est_pilote():
 		return
-	var port := str(escale.get("scene", Personnage.escale_navire.get("scene", ""))) if scene.scene_file_path == Personnage.SCENE_NAVIRE else scene.scene_file_path
-	var route: Dictionary = port_info(port).get("routes", {}).get(destination, {})
-	if route.is_empty():
+	fermer_navigation()
+	_panneau_navigation = load("res://scripts/ui/navigation_ui.gd").new()
+	scene.add_child(_panneau_navigation)
+	_panneau_navigation.ouvrir(poste)
+
+func fermer_navigation() -> void:
+	if is_instance_valid(_panneau_navigation):
+		_panneau_navigation.hide()
+		_panneau_navigation.queue_free()
+		_panneau_navigation = null
+
+func _route_maritime(depart: String, destination: String) -> Dictionary:
+	var arrivee := MARITIME.scene_port(destination)
+	if arrivee.is_empty() or MARITIME.identifiant(depart) == destination or port_info(depart).is_empty():
+		return {}
+	var repere := str(port_info(depart).get("routes", {}).get(arrivee, {}).get(
+		"arrivee", MARITIME.PORTS[destination]["arrivee"]))
+	if not port_info(arrivee).get("arrivees", {}).has(repere):
+		return {}
+	return {"scene": arrivee, "arrivee": repere}
+
+func devis_navigation(depart: String, destination: String, stats: Dictionary) -> Dictionary:
+	var meteo := MARITIME.meteo(MARITIME.identifiant(depart), destination, int(Time.get_unix_time_from_system()))
+	return {"meteo": meteo["nom"], "prix": MARITIME.prix_traversee(destination, meteo, stats["solidite"], stats["tempete"])}
+
+func naviguer(destination: String, prix_annonce: int) -> void:
+	var scene := get_tree().current_scene
+	if not peut_traverser(scene) or not est_pilote():
+		return
+	var depart := port_courant()
+	var route := _route_maritime(depart, destination)
+	if route.is_empty() or not MARITIME.cap_accessible(Personnage.navigation_maritime, destination):
+		_message("Étalonne le Log Pose ou équipe-en un qui indique cette île.")
 		return
 	if Personnage.en_ligne:
-		_demander("naviguer", [destination])
+		_demander("naviguer", [destination, prix_annonce])
 		return
-	var prix := int(CATALOGUE.fiche(Personnage.modele_bateau())["entretien"])
+	var prix := int(devis_navigation(depart, destination, Personnage.stats_bateau())["prix"])
+	if prix != prix_annonce:
+		_message("La météo ou le tarif a changé. Vérifie le nouveau prix.")
+		return
 	if Personnage.berry < prix:
-		_message("Entretien de %d Berry. Ton bateau reste à quai." % prix)
+		_message("Il te faut %d Berry pour cette traversée." % prix)
 		return
 	Personnage.ajouter_berry(-prix)
-	scene.rejoindre_zone(destination, StringName(route["arrivee"]))
+	fermer_navigation()
+	scene.rejoindre_zone(str(route["scene"]), StringName(route["arrivee"]))
+
+func decouvrir_port(fichier: String) -> void:
+	var port := MARITIME.identifiant(fichier)
+	if Personnage.perso_cree and not port.is_empty() and port not in Personnage.navigation_maritime["visites"]:
+		Personnage.navigation_maritime["visites"].append(port)
+		Personnage.sauvegarder()
+
+func _sur_quete_terminee(quete: String) -> void:
+	if quete == "trm_c6_logpose":
+		etalonner_apres_victoire(quete)
+
+func etalonner_apres_victoire(boss: String) -> void:
+	var navigation := Personnage.navigation_maritime
+	if not MARITIME.CAPS_BOSS.has(boss) or boss in navigation["boss"]:
+		return
+	navigation["boss"].append(boss)
+	navigation["cap"] = MARITIME.CAPS_BOSS[boss]
+	Personnage.sauvegarder()
+	navigation_modifiee.emit()
+	_message("Log Pose étalonné sur %s." % MARITIME.nom_port(navigation["cap"]))
+
+func agir_navigation(action: String, params: Array = []) -> void:
+	var scene := get_tree().current_scene
+	if not peut_traverser(scene) or not est_pilote():
+		return
+	var a_bord := scene.scene_file_path == Personnage.SCENE_NAVIRE
+	if action != "etalonnage" and action != "carte" and not Personnage.a_portee_poste_navire("cartes"):
+		return
+	if Personnage.en_ligne:
+		_demander("navigation_" + action, params)
+		return
+	var navigation := MARITIME.etat(Personnage.navigation_maritime)
+	var resultat := _appliquer_navigation(action, params, port_courant(), a_bord, navigation,
+		Inventaire.objets, Personnage.berry, Personnage.metier_perso())
+	if not resultat.has("erreur"):
+		resultat["navigation"] = navigation
+	_recevoir_navigation(resultat)
+
+func _appliquer_navigation(action: String, params: Array, port: String, a_bord: bool, navigation: Dictionary,
+		sac: Dictionary, berry: int, metier: String) -> Dictionary:
+	var choix := str(params[0]) if params.size() == 1 else ""
+	var equipement: Array = navigation["equipement"]
+	var resultat := {}
+	match action:
+		"etalonnage", "carte":
+			if MARITIME.CLASSIQUE not in equipement:
+				return {"erreur": "Équipe ton Log Pose classique à bord."}
+			if action == "etalonnage":
+				if a_bord or choix not in MARITIME.voisins(MARITIME.identifiant(port)):
+					return {"erreur": "Le capitaine étalonne uniquement vers les îles voisines."}
+				if navigation["cap"] == choix:
+					return {"erreur": "Ton Log Pose indique déjà cette île."}
+				resultat["delta"] = -MARITIME.cout_etalonnage(choix)
+			elif not MARITIME.PORTS.has(choix) or int(sac.get(MARITIME.carte(choix), 0)) < 1:
+				return {"erreur": "Il te faut la carte marine de cette île."}
+			navigation["cap"] = choix
+			resultat["texte"] = "Log Pose étalonné sur %s." % MARITIME.nom_port(choix)
+		"emplacement":
+			if not a_bord or not params.is_empty() or int(navigation["capacite"]) >= MARITIME.MAX_EMPLACEMENTS:
+				return {"erreur": "Aucun nouvel emplacement disponible."}
+			resultat["delta"] = -MARITIME.prix_emplacement(int(navigation["capacite"]))
+			navigation["capacite"] += 1
+			resultat["texte"] = "Emplacement de Log Pose ajouté."
+		"equiper":
+			if not a_bord or not MARITIME.est_log_pose(choix) or choix in equipement or int(sac.get(choix, 0)) < 1:
+				return {"erreur": "Ce Log Pose est indisponible."}
+			if equipement.size() >= int(navigation["capacite"]):
+				return {"erreur": "Libère ou achète un emplacement à bord."}
+			equipement.append(choix)
+			resultat["sac"] = {choix: -1}
+		"retirer":
+			if not a_bord or choix not in equipement:
+				return {"erreur": "Ce Log Pose n’est pas équipé."}
+			equipement.erase(choix)
+			resultat["sac"] = {choix: 1}
+		"fusion":
+			if not a_bord or metier != MARITIME.METIER_NAVIGATEUR or params.size() < 3 or params.size() > 10:
+				return {"erreur": "Choisis de 3 à 10 Log Pose éternels différents dans ton sac."}
+			var ports: Array[String] = []
+			var variations := {}
+			for destination in params:
+				var id := MARITIME.eternel(str(destination))
+				if not MARITIME.PORTS.has(destination) or destination in ports or int(sac.get(id, 0)) < 1:
+					return {"erreur": "Chaque Log Pose éternel choisi doit être dans ton sac."}
+				ports.append(destination)
+				variations[id] = -1
+			var fusion := MARITIME.fusion(ports)
+			variations[fusion] = 1
+			resultat["sac"] = variations
+			resultat["texte"] = "%s fabriqué." % MARITIME.article(fusion)["nom"]
+		_:
+			return {"erreur": "Cette action de navigation est indisponible."}
+	var cout := -int(resultat.get("delta", 0))
+	if cout > berry:
+		return {"erreur": "Il te faut %d Berry pour cette action." % cout}
+	return resultat
+
+func _recevoir_navigation(resultat: Dictionary) -> void:
+	if resultat.has("erreur"):
+		_message(str(resultat["erreur"]))
+		return
+	Personnage.navigation_maritime = MARITIME.etat(resultat["navigation"])
+	Inventaire.appliquer_variations(resultat.get("sac", {}))
+	if resultat.has("delta"):
+		Personnage.ajouter_berry(int(resultat["delta"]))
+	else:
+		Personnage.sauvegarder()
+	navigation_modifiee.emit()
+	if resultat.has("texte"):
+		_message(str(resultat["texte"]))
 
 func embarquer(pilote := 0) -> void:
 	var scene := get_tree().current_scene
@@ -518,7 +675,10 @@ func demande_navire(action: String, params: Array) -> void:
 		"finition_pont":
 			_serveur_finition_pont(pair, params)
 		_:
-			_echec(pair, "Cette action n’est plus disponible.")
+			if action.begins_with("navigation_"):
+				_serveur_navigation(pair, action.trim_prefix("navigation_"), params, port)
+			else:
+				_echec(pair, "Cette action n’est plus disponible.")
 
 func _a_bord(pair: int) -> bool:
 	return str(_session(pair).get("scene", "")).begins_with("Lanterne:") and _session(pair).has("hote_navire")
@@ -544,11 +704,48 @@ func _proche_du_quai(pair: int, port: String) -> bool:
 			return true
 	return false
 
+func _serveur_navigation(pair: int, action: String, params: Array, port: String) -> void:
+	var session := _session(pair)
+	var a_bord := _a_bord(pair)
+	if session.get("en_combat", false) or (a_bord and int(session["hote_navire"]) != pair) \
+			or (not a_bord and not _proche_du_quai(pair, port)):
+		_echec(pair, "Action indisponible depuis ta position.")
+		return
+	var compte := Reseau._compte(str(session["pseudo"]))
+	var profil := Reseau._perso_json_serveur(compte)
+	if profil.is_empty():
+		_echec(pair, "Personnage introuvable.")
+		return
+	var amenagement: Dictionary = profil.get("amenagement_navire", {})
+	var navigation := MARITIME.etat(amenagement.get("navigation", {}))
+	var sac: Dictionary = profil.get("sac", {})
+	var metiers: Dictionary = profil.get("metiers", {})
+	var metier := str(metiers.keys()[0]) if not metiers.is_empty() else ""
+	var resultat := _appliquer_navigation(action, params, port, a_bord, navigation, sac, int(profil.get("berry", 0)), metier)
+	if resultat.has("erreur"):
+		_echec(pair, str(resultat["erreur"]))
+		return
+	for id in resultat.get("sac", {}):
+		var quantite := int(sac.get(id, 0)) + int(resultat["sac"][id])
+		if quantite > 0:
+			sac[id] = quantite
+		else:
+			sac.erase(id)
+	amenagement["navigation"] = navigation
+	profil["amenagement_navire"] = amenagement
+	profil["sac"] = sac
+	profil["berry"] = int(profil.get("berry", 0)) + int(resultat.get("delta", 0))
+	if not Reseau._ecrire_perso_serveur(int(compte["id"]), JSON.stringify(profil)):
+		_echec(pair, "L’opération n’a pas été enregistrée.")
+		return
+	resultat["navigation"] = navigation
+	rpc_id(pair, "resultat_navire", resultat)
+
 func _serveur_depart(pair: int, action: String, params: Array, port: String) -> void:
 	var session := _session(pair)
 	var navigation := action == "naviguer"
-	var destination := str(params[0]) if navigation and params.size() == 1 else ""
-	var route: Dictionary = port_info(port).get("routes", {}).get(destination, {})
+	var destination := str(params[0]) if navigation and params.size() == 2 else ""
+	var route := _route_maritime(port, destination) if navigation else {}
 	if port.is_empty() or session.get("en_combat", false) or (navigation and route.is_empty()):
 		_echec(pair, "Cette traversée est indisponible.")
 		return
@@ -566,30 +763,90 @@ func _serveur_depart(pair: int, action: String, params: Array, port: String) -> 
 		return
 	var amenagement: Dictionary = profil.get("amenagement_navire", {})
 	var personnel := CATALOGUE.personnel(str(amenagement.get("modele", CATALOGUE.DEPART)))
-	var prix := int(CATALOGUE.fiche(_modele_serveur(pair))["entretien"]) if navigation else CATALOGUE.prix_achat(personnel, port)
+	var prix := 0
+	if navigation:
+		var etat := MARITIME.etat(amenagement.get("navigation", {}))
+		if not MARITIME.cap_accessible(etat, destination):
+			_echec(pair, "Étalonne le Log Pose ou équipe-en un qui indique cette île.")
+			return
+		var modele := _modele_serveur(pair)
+		var modules: Dictionary = profil.get("bateau", {})
+		if modele in CATALOGUE.GALIONS:
+			modules = Equipages.donnees_galion(_galion(pair)).get("equipement", {}) if modele == "navigation" else {}
+		var stats := Personnage.calculer_stats_bateau(modele, modules, profil.get("ameliorations", {}))
+		prix = int(devis_navigation(port, destination, stats)["prix"])
+		if prix != int(params[1]):
+			_echec(pair, "La météo ou le tarif a changé. Vérifie le nouveau prix.")
+			return
+	else:
+		prix = CATALOGUE.prix_achat(personnel, port)
 	if prix <= 0:
 		_echec(pair, "Ce bateau n’est pas disponible à l’achat.")
 		return
 	if int(profil.get("berry", 0)) < prix:
-		_echec(pair, "Entretien de %d Berry. Ton bateau reste à quai." % prix if navigation else "Il te faut %d Berry." % prix)
+		_echec(pair, "Il te faut %d Berry." % prix)
 		return
 	profil["berry"] = int(profil["berry"]) - prix
-	if not navigation:
-		personnel = CATALOGUE.modele_vendu(port)
-		amenagement["modele"] = personnel
-		profil["amenagement_navire"] = amenagement
-	else:
-		var position := _position_arrivee(destination, str(route["arrivee"]))
-		profil["position"] = position
+	if navigation:
+		var voyageurs := _voyageurs_a_bord(pair)
+		for membre: int in voyageurs:
+			if _session(membre).get("en_combat", false):
+				_echec(pair, "Attends la fin du combat d’un passager avant de partir.")
+				return
+		if not _enregistrer_traversee(int(compte["id"]), profil, voyageurs, route["scene"], route["arrivee"]):
+			_echec(pair, "La traversée n’a pas été enregistrée.")
+			return
+		_modification_traversee(pair, port, route["scene"], route["arrivee"], prix, voyageurs)
+		return
+	personnel = CATALOGUE.modele_vendu(port)
+	amenagement["modele"] = personnel
+	profil["amenagement_navire"] = amenagement
 	if not Reseau._ecrire_perso_serveur(int(compte["id"]), JSON.stringify(profil)):
 		_echec(pair, "L’opération n’a pas été enregistrée.")
 		return
-	if not navigation:
-		session["modele_bateau"] = personnel
-		_diffuser_port(port)
-		rpc_id(pair, "resultat_navire", {"delta": -prix, "modele": personnel, "texte": "Bateau acheté."})
-		return
-	_modification_traversee(pair, port, destination, str(route["arrivee"]), prix)
+	session["modele_bateau"] = personnel
+	_diffuser_port(port)
+	rpc_id(pair, "resultat_navire", {"delta": -prix, "modele": personnel, "texte": "Bateau acheté."})
+
+func _voyageurs_a_bord(pilote: int) -> Array[int]:
+	var voyageurs: Array[int] = []
+	for pair: int in Reseau._sessions:
+		var session := _session(pair)
+		if pair != pilote and int(session.get("hote_navire", 0)) == pilote \
+				and session.get("mode_navire", "") in ["passager", "equipage"] and _a_bord(pair):
+			voyageurs.append(pair)
+	return voyageurs
+
+func _enregistrer_traversee(compte_pilote: int, profil_pilote: Dictionary, voyageurs: Array[int],
+		destination: String, arrivee: String) -> bool:
+	if not Reseau._sql("BEGIN IMMEDIATE;"):
+		return false
+	_enregistrer_arrivee(profil_pilote, destination, arrivee)
+	var enregistree := Reseau._ecrire_perso_serveur(compte_pilote, JSON.stringify(profil_pilote))
+	for pair: int in voyageurs:
+		if not enregistree:
+			break
+		var compte := Reseau._compte(str(_session(pair)["pseudo"]))
+		var profil := Reseau._perso_json_serveur(compte)
+		if profil.is_empty():
+			enregistree = false
+			break
+		_enregistrer_arrivee(profil, destination, arrivee)
+		enregistree = Reseau._ecrire_perso_serveur(int(compte["id"]), JSON.stringify(profil))
+	if enregistree and Reseau._sql("COMMIT;"):
+		return true
+	Reseau._sql("ROLLBACK;")
+	return false
+
+func _enregistrer_arrivee(profil: Dictionary, destination: String, arrivee: String) -> void:
+	profil["position"] = _position_arrivee(destination, arrivee)
+	var amenagement: Dictionary = profil.get("amenagement_navire", {})
+	var etat := MARITIME.etat(amenagement.get("navigation", {}))
+	var port := MARITIME.identifiant(destination)
+	if not port.is_empty() and port not in etat["visites"]:
+		etat["visites"].append(port)
+	amenagement["navigation"] = etat
+	profil["amenagement_navire"] = amenagement
 
 func _position_arrivee(destination: String, arrivee: String) -> Dictionary:
 	var position: Vector2 = port_info(destination).get("arrivees", {}).get(arrivee, Vector2.INF)
@@ -599,16 +856,12 @@ func _position_arrivee(destination: String, arrivee: String) -> Dictionary:
 		memorisee["y"] = position.y
 	return memorisee
 
-func _modification_traversee(pilote: int, port: String, destination: String, arrivee: String, prix: int) -> void:
+func _modification_traversee(pilote: int, port: String, destination: String, arrivee: String, prix: int,
+		voyageurs: Array[int]) -> void:
 	for pair: int in Reseau._sessions:
 		if pair == pilote or int(_session(pair).get("hote_navire", 0)) != pilote:
 			continue
-		if _session(pair).get("mode_navire", "") == "passager":
-			var compte := Reseau._compte(str(_session(pair)["pseudo"]))
-			var profil := Reseau._perso_json_serveur(compte)
-			if not profil.is_empty():
-				profil["position"] = _position_arrivee(destination, arrivee)
-				Reseau._ecrire_perso_serveur(int(compte["id"]), JSON.stringify(profil))
+		if pair in voyageurs:
 			_session(pair)["port_navire"] = ""
 			_session(pair).erase("hote_navire")
 			_session(pair).erase("mode_navire")
@@ -618,7 +871,7 @@ func _modification_traversee(pilote: int, port: String, destination: String, arr
 	_session(pilote)["port_navire"] = ""
 	_diffuser_port(port)
 	rpc_id(pilote, "resultat_navire", {"delta": -prix, "destination": destination, "arrivee": arrivee,
-		"texte": "%d Berry payés pour l’entretien." % prix})
+		"texte": "%d Berry payés pour la traversée." % prix})
 
 func _serveur_galion(pair: int, action: String, params: Array) -> void:
 	var session := _session(pair)
@@ -778,6 +1031,9 @@ func recevoir_bord(pilote: int, mode: String, modele: String, donnees: Dictionar
 @rpc("authority", "call_remote", "reliable")
 func resultat_navire(resultat: Dictionary) -> void:
 	_operation = ""
+	if resultat.has("navigation"):
+		_recevoir_navigation(resultat)
+		return
 	var destination := str(resultat.get("destination", ""))
 	var scene := get_tree().current_scene
 	if not destination.is_empty():
@@ -805,6 +1061,7 @@ func resultat_navire(resultat: Dictionary) -> void:
 		Personnage.recalculer_stats(false)
 		port_modifie.emit()
 	if not destination.is_empty() and scene != null and scene.has_method("rejoindre_zone"):
+		fermer_navigation()
 		if scene.scene_file_path == Personnage.SCENE_NAVIRE:
 			scene.fermer_interfaces_navire()
 		else:
@@ -821,6 +1078,7 @@ func resultat_navire(resultat: Dictionary) -> void:
 		_message(str(resultat["texte"]))
 
 func entree_locale(fichier: String) -> void:
+	decouvrir_port(fichier)
 	if fichier != Personnage.SCENE_NAVIRE:
 		hote = 0
 		mode_bord = ""

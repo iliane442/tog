@@ -1,6 +1,8 @@
 # inventaire.gd — autoload
 extends Node
 
+const MARITIME := preload("res://scripts/world/navigation_maritime.gd")
+
 var objets: Dictionary = {}  # id -> quantité
 var _cales_navire: Dictionary = {}
 var _objets_hors_ligne: Dictionary = {}
@@ -33,7 +35,7 @@ func _charger_connus() -> void:
 	if cfg.load(CHEMIN_CONNUS) != OK:
 		return
 	for id in cfg.get_value("connus", "ids", PackedStringArray([])):
-		items_connus[str(id)] = true
+		_marquer_connu_sans_sauver(str(id))
 
 func _sauver_connus() -> void:
 	var cfg := ConfigFile.new()
@@ -43,14 +45,19 @@ func _sauver_connus() -> void:
 
 # tout objet qui entre dans l'inventaire est désormais connu du joueur
 func _marquer_connu(id: String) -> void:
-	if id != "" and not items_connus.has(id):
-		items_connus[id] = true
+	if _marquer_connu_sans_sauver(id):
 		_sauver_connus()
 
 # variante sans écriture fichier pour les ajouts en lot
-func _marquer_connu_sans_sauver(id: String) -> void:
-	if id != "" and not items_connus.has(id):
-		items_connus[id] = true
+func _marquer_connu_sans_sauver(id: String) -> bool:
+	if id.is_empty():
+		return false
+	var modele := str(MARITIME.article(id).get("modele", ""))
+	var nouveaute := not items_connus.has(id) or (not modele.is_empty() and not items_connus.has(modele))
+	items_connus[id] = true
+	if not modele.is_empty():
+		items_connus[modele] = true
+	return nouveaute
 
 func est_connu(id: String) -> bool:
 	return items_connus.has(id)
@@ -179,6 +186,20 @@ func ajouter_lot(prises: Array) -> void:
 	_sauver_connus()
 	inventaire_modifie.emit()
 
+func appliquer_variations(variations: Dictionary) -> void:
+	if variations.is_empty():
+		return
+	for id in variations:
+		var quantite := int(objets.get(id, 0)) + int(variations[id])
+		if quantite > 0:
+			objets[id] = quantite
+			_marquer_connu_sans_sauver(id)
+		else:
+			objets.erase(id)
+	_sauver_objets()
+	_sauver_connus()
+	inventaire_modifie.emit()
+
 func retirer_objet(id: String, quantite: int = 1) -> void:
 	if not objets.has(id):
 		return
@@ -189,7 +210,7 @@ func retirer_objet(id: String, quantite: int = 1) -> void:
 	inventaire_modifie.emit()
 
 func nom_objet(id: String) -> String:
-	return noms.get(id, id)
+	return noms.get(id, MARITIME.article(id).get("nom", id))
 
 # détails complets d'un objet pour le menu (base lue une seule fois par id)
 var _cache_details: Dictionary = {}
@@ -202,7 +223,19 @@ func details_objet(id: String) -> Dictionary:
 		"type": "", "sous_type": "", "description": "", "effets": {},
 		"chemin_icone": "", "prix": 0, "niveau_min": 1, "classe_requise": "",
 	}
-	if BaseDonnees.disponible and id.is_valid_int():
+	var article := MARITIME.article(id)
+	if not article.is_empty():
+		var modele := str(article.get("modele", ""))
+		if not modele.is_empty():
+			details = details_objet(modele).duplicate()
+		if str(details["type"]).is_empty():
+			details["type"] = "ressource" if modele.is_empty() else "navigation"
+			details["sous_type"] = "navigation"
+		details["description"] = article["description"]
+		if str(details["chemin_icone"]).is_empty():
+			details["chemin_icone"] = "res://assets/items/176_carte_au_tresor_de_grand_line.png" if id.begins_with("navigation/carte/") \
+				else "res://assets/items/189_log_pose_d_occasion.png"
+	elif BaseDonnees.disponible and id.is_valid_int():
 		var lignes := BaseDonnees.lire(
 			"SELECT i.type, i.subtype, i.description, i.base_price, i.min_level,"
 			+ " i.effects_json, i.rarity_id, i.icon_path, i.required_class,"

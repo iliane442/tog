@@ -73,7 +73,7 @@ func ouvrir() -> void:
 	colonne.add_theme_constant_override("separation", 9)
 	_dialogue.add_child(colonne)
 	var modele := Personnage.modele_bateau()
-	_etiquette(colonne, "%s · %d Berry par traversée" % [CATALOGUE.fiche(modele)["nom"], CATALOGUE.fiche(modele)["entretien"]])
+	_etiquette(colonne, str(CATALOGUE.fiche(modele)["nom"]))
 	_bouton(colonne, "Rejoindre mon bateau", Navires.embarquer)
 	if _scene.scene_file_path == Personnage.PORT_NAVIRE_DEFAUT:
 		_bouton(colonne, "Rejoindre le navire de Shanks", _scene.rejoindre_zone.bind(NAVIRE_DU_ROUX, &"DepuisChaloupe"))
@@ -84,7 +84,8 @@ func ouvrir() -> void:
 		var texte := "Acheter %s · %d Berry" % [fiche["nom"], fiche["prix"]]
 		var prix := CATALOGUE.prix_achat(Personnage.modele_bateau_perso, _scene.scene_file_path)
 		_bouton(colonne, texte, Navires.acheter_personnel).disabled = prix <= 0
-		_etiquette(colonne, "%d piles dans la cale · %d Berry par traversée" % [fiche["cale"], fiche["entretien"]])
+		_etiquette(colonne, "%d piles dans la cale · %d solidité · %d%% résistance aux tempêtes" % [
+			fiche["cale"], fiche["solidite"], fiche["tempete"]])
 
 	if Personnage.en_ligne:
 		var defilement := ScrollContainer.new()

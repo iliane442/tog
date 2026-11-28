@@ -2,6 +2,7 @@
 # barre de recherche (CanvasLayer MarchandUI)
 extends CanvasLayer
 
+const MARITIME := preload("res://scripts/world/navigation_maritime.gd")
 const ICONE_DEFAUT := "res://addons/pixel_ui_fantasy/icons/chest.png"
 # anti-rebond de la saisie : ne reconstruit pas la liste à chaque frappe
 const DELAI_RECHERCHE := 0.15
@@ -33,7 +34,7 @@ func _ready() -> void:
 	recherche.text_changed.connect(func(_texte: String) -> void: _minuteur.start())
 
 func ouvrir(nom_marchand: String = "Marchand Ambulant") -> void:
-	titre.text = "%s — Catalogue complet" % nom_marchand
+	titre.text = nom_marchand
 	_charger_catalogue()
 	fenetre.visible = true
 	_rafraichir()
@@ -61,6 +62,11 @@ func _charger_catalogue() -> void:
 			"nom": str(ligne["name"]),
 			"prix": int(ligne["base_price"]),
 		})
+
+	for port: String in MARITIME.voisins(MARITIME.identifiant(Navires.port_courant())):
+		for est_eternel: bool in [false, true]:
+			var id := MARITIME.eternel(port) if est_eternel else MARITIME.carte(port)
+			_catalogue.push_front({"id": id, "nom": Inventaire.nom_objet(id), "prix": MARITIME.prix_article(port, est_eternel)})
 
 func _rafraichir() -> void:
 	label_argent.text = "Berry : %d" % Personnage.berry
@@ -147,8 +153,8 @@ func _acheter(id: String, prix: int, quantite: SpinBox) -> void:
 	var total := prix * nombre
 	if Personnage.berry < total:
 		return
-	Personnage.ajouter_berry(-total)
 	Inventaire.ajouter_objet(id, nombre)
+	Personnage.ajouter_berry(-total)
 	if nombre > 1:
 		_annonce("Acheté : %s ×%d (%d Berry)" % [Inventaire.nom_objet(id), nombre, total])
 	else:

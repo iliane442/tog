@@ -142,7 +142,11 @@ func _actualiser_interactions() -> void:
 		var nom := _nom_piece(modele, id)
 		if _terrain.est_ouverte(id):
 			_ajouter_interaction(piece["poste"], nom, _utiliser_poste.bind(id), Vector2(0, -45))
-		elif Navires.est_pilote():
+			if id == "cartes" and id in Personnage.pieces_possibles_navire() and id not in Personnage.pieces_navire_ouvertes:
+				var prix := int(Personnage.PIECES_NAVIRE[id]["prix"])
+				_ajouter_interaction(piece["seuil"], "Cartes au trésor · %s Berry" % _interface.prix_affiche(prix),
+					_ouvrir_porte.bind(id), Vector2(0, -32))
+		elif Navires.est_pilote() and id != "cartes":
 			var prix := Personnage.NAVIRES.PRIX_ATELIER if modele == "ateliers" else int(Personnage.PIECES_NAVIRE[id]["prix"])
 			var porte := _centre(piece["porte"])
 			var seuil := _centre(piece["seuil"])
@@ -150,6 +154,8 @@ func _actualiser_interactions() -> void:
 				_ouvrir_porte.bind(id), porte - seuil + Vector2(0, -17))
 
 func _nom_piece(modele: String, id: String) -> String:
+	if id == "cartes":
+		return "Salle de navigation"
 	match modele:
 		"ateliers":
 			var metier: String = _terrain.metier_atelier(id)
@@ -230,11 +236,8 @@ func _ouvrir_routes() -> void:
 	var colonne := VBoxContainer.new()
 	_routes_ui.add_child(colonne)
 	_ajouter_choix_finition(colonne)
-	var prix := int(Personnage.NAVIRES.fiche(Navires.modele_a_bord())["entretien"])
-	var port := str(Navires.escale.get("scene", Personnage.escale_navire.get("scene", Personnage.PORT_NAVIRE_DEFAUT)))
-	var routes: Dictionary = Navires.port_info(port).get("routes", {})
-	for destination: String in routes:
-		_bouton_routes(colonne, "%s · %d Berry" % [routes[destination]["libelle"], prix], Navires.naviguer.bind(destination))
+	var port := Navires.port_courant()
+	_bouton_routes(colonne, "Choisir une destination", Navires.ouvrir_navigation.bind("barre"))
 	if Personnage.en_ligne:
 		var defilement := ScrollContainer.new()
 		defilement.custom_minimum_size.y = 190
@@ -323,6 +326,13 @@ func _acheter(id: String) -> void:
 
 func _utiliser_poste(id: String) -> void:
 	if not _pres_du_poste(id):
+		return
+	if id == "cartes":
+		if id in Personnage.pieces_navire_ouvertes:
+			$DialogueUI.ouvrir_choix("Salle de navigation", "Que veux-tu faire ?", "Gérer les Log Pose",
+				Navires.ouvrir_navigation.bind("salle"), "Consulter la carte au trésor", _interface.ouvrir.bind("cartes"))
+		else:
+			Navires.ouvrir_navigation("salle")
 		return
 	var modele := Navires.modele_a_bord()
 	match modele:

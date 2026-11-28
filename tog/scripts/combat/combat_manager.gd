@@ -91,6 +91,7 @@ var _bouton_combattre: Button
 var _etats_actifs: Dictionary = {}
 # récompenses cumulées du combat en cours : une seule fenêtre de
 # récapitulatif à la fin, pas une par ennemi vaincu
+var _caps_victoire: Dictionary = {}
 var _recompenses := {"vaincus": 0, "xp": 0, "berry": 0, "objets": {}}
 # roster des combattants : menu dépliant des stats + tour actif
 var _panneau_roster: PanelContainer
@@ -1782,6 +1783,13 @@ func _raz_tours_groupe() -> void:
 # un ennemi du groupe est vaincu : le combat continue tant qu'il en
 # reste un debout
 func ennemi_vaincu(ennemi: Node) -> void:
+	if en_combat:
+		var quetes: Variant = ennemi.get("quetes_a_progresser")
+		var cles: Array = quetes.duplicate() if quetes is Array else []
+		cles.append(str(ennemi.get("groupe")))
+		for cle in cles:
+			if Navires.MARITIME.CAPS_BOSS.has(cle):
+				_caps_victoire[cle] = true
 	_ennemis.erase(ennemi)
 	_ennemis_connus.erase(ennemi)
 	_detecteurs.erase(ennemi)
@@ -1941,6 +1949,10 @@ func terminer_combat(victoire: bool, fuite := false) -> void:
 	if _fiche_ennemi != null:
 		_fiche_ennemi.hide()
 	ressources_joueur_modifiees.emit(0, 0, 0, 0)
+	if victoire:
+		for boss: String in _caps_victoire:
+			Navires.etalonner_apres_victoire(boss)
+	_caps_victoire.clear()
 	# récapitulatif unique du combat gagné : XP, Berry et objets de
 	# tous les ennemis vaincus, une fenêtre pour tout le combat
 	if victoire and int(_recompenses["vaincus"]) > 0:

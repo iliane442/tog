@@ -197,8 +197,8 @@ func _dessiner_sol(cellule: Vector2i, secteur: int) -> void:
 func _texture_sol(_cellule: Vector2i, secteur: int) -> Texture2D:
 	return PLANCHES if _est_quai(secteur) else PAVE
 
-func _dessiner_liaison(calque: Node2D, liaison: Array) -> void:
-	var bords := _extremites(liaison, DEMI_LIAISON)
+func _dessiner_liaison(calque: Node2D, liaison: Array, demi_largeur := DEMI_LIAISON) -> void:
+	var bords := _extremites(liaison, demi_largeur)
 	var bois: bool = liaison[4]
 	var nombre := maxi(5, roundi(bords[0].distance_to(bords[2]) / (15.0 if bois else 26.0)))
 	var texture := BOIS if bois else GRES

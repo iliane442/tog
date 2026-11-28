@@ -200,8 +200,10 @@ func _on_commencer() -> void:
 	if id_metier == "":
 		label_erreur.text = "Aucun métier lié à cette classe."
 		return
-	Personnage.creer(nouveau_nom, ids_races[index_race], ids_classes[index_classe],
-		id_metier, _sexe_choisi(), _apparence_choisie())
+	if not Personnage.creer(nouveau_nom, ids_races[index_race], ids_classes[index_classe],
+			id_metier, _sexe_choisi(), _apparence_choisie()):
+		label_erreur.text = "Impossible de réinitialiser les données d’équipage de ce personnage."
+		return
 	_donner_ingredients_debug(id_metier)
 	get_tree().paused = false
 	queue_free()

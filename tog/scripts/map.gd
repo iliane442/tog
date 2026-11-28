@@ -49,6 +49,7 @@ func _enter_tree() -> void:
 				$player.position = quai_chaloupe
 
 func _ready() -> void:
+	Navires.decouvrir_port(scene_file_path)
 	_styliser_notification()
 	_installer_chaloupe()
 	var terrain := get_node_or_null("TerrainZone")
